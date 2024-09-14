@@ -1,44 +1,46 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
+  <q-layout view="hHh lpR fFf" id="inspire">
+    <!-- Menu Lateral -->
+    <q-drawer v-model="drawer" side="left" :content-class="'bg-grey-1'" bordered>
+      <q-list dense>
+        <q-item-label header class="text-primary">Navegação</q-item-label>
+        <q-separator spaced></q-separator>
 
-        <q-toolbar-title>
-          Quasar App
-        </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
-      </q-toolbar>
-    </q-header>
-
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
-      <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
-
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.title"
-          v-bind="link"
-        />
+        <q-item
+          v-for="item in items"
+          :key="item.title"
+          :to="item.router_name"
+          clickable
+          v-ripple
+        >=
+          <q-item-section avatar>
+            <q-icon :name="item.icon"></q-icon>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>{{ item.title }}</q-item-label>
+          </q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
+    <!-- Barra Superior -->
+    <q-header class="bg-grey-1" elevated >
+      <q-toolbar>
+        <q-btn flat round dense icon="mdi-menu" @click="drawer = !drawer" color="primary"></q-btn>
+        <q-avatar size="35px">
+         <!-- <img src="/assets/laranja.png" alt="logo" /> -->
+        </q-avatar>
+        <q-toolbar-title style="color: black">
+        SellerBot v1.0.0
+        </q-toolbar-title>
+        <q-space></q-space>
+        <div style="color: black">User: {{ currentUser }}</div>
+        <q-space></q-space>
+        <div style="color: black">Database: {{ databaseUpdate }}</div>
+      </q-toolbar>
+    </q-header>
+
+    <!-- Conteúdo Principal -->
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -46,61 +48,37 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import EssentialLink from 'components/EssentialLink.vue'
+import { ref, onMounted, computed } from 'vue';
+import { useStore } from '../stores/store';
 
-defineOptions({
-  name: 'MainLayout'
-})
+// Estado do Drawer e Itens do Menu
+const drawer = ref(false);
+const items = [
+  { title: "Login", icon: "mdi-login", router_name: "/login" },
+  { title: "Contas", icon: "mdi-playlist-edit", router_name: "/accounts" },
+  { title: "Full Sem Estoque", icon: "mdi-package-variant", router_name: "/no-stock-fulfillment" },
+  { title: "Frete Grátis", icon: "mdi-truck-fast", router_name: "/free-shipping" },
+  { title: "Flex - Fulfillment", icon: "mdi-truck-fast", router_name: "/flex" },
+  { title: "API - Dados Fiscais", icon: "mdi-api", router_name: "/fiscal-data" },
+  { title: "API - Dados Gerais", icon: "mdi-api", router_name: "/general-data" },
+  { title: "Atualizar DB - Tiny", icon: "mdi-database", router_name: "/update-db" },
+  { title: "Promoções", icon: "mdi-database", router_name: "/deals" },
+];
 
-const linksList = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
-  }
-]
+// Usando Pinia para acessar o estado
+const store = useStore();
+const currentUser = computed(() => store.currentUser);
+const databaseUpdate = computed(() => store.databaseUpdate);
 
-const leftDrawerOpen = ref(false)
-
-function toggleLeftDrawer () {
-  leftDrawerOpen.value = !leftDrawerOpen.value
-}
+// Lifecycle hook
+onMounted(() => {
+  console.log('Criando o createCable');
+  store.createCable();  // Chama a ação diretamente
+});
 </script>
+
+<style scoped>
+#inspire {
+  background-color: var(--q-background-base);
+}
+</style>

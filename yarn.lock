@@ -134,7 +134,7 @@
     vite "^2.9.13"
     webpack-merge "^5.8.0"
 
-"@quasar/extras@^1.16.4":
+"@quasar/extras@^1.16.12":
   version "1.16.12"
   resolved "http://nexus.petrobras.com.br:8081/nexus/repository/npm-all/@quasar/extras/-/extras-1.16.12.tgz#2dac82eac8bb6b069a677d2817e479261d51f234"
   integrity sha512-hLlb3Buxo38Xg/2w0BTkz98RBh/VH8apZ2r6Fl8YpPgrVQ0diHyN/BVTvIOk5Kch2y38L2kvwOIddsB2UcCuIg==
@@ -377,6 +377,11 @@ acorn@^8.8.2:
   version "8.12.1"
   resolved "http://nexus.petrobras.com.br:8081/nexus/repository/npm-all/acorn/-/acorn-8.12.1.tgz#71616bdccbe25e27a54439e0046e89ca76df2248"
   integrity sha512-tcpGyI9zbizT9JbV6oYE477V6mTlXvvi0T0G3SNIYE2apm/G5huBa1+K89VGeovbg+jycCrfhl3ADxErOuO6Jg==
+
+actioncable@^5.2.8-1:
+  version "5.2.8-1"
+  resolved "http://nexus.petrobras.com.br:8081/nexus/repository/npm-all/actioncable/-/actioncable-5.2.8-1.tgz#1b01df0c7f4928b1b9646323705e8a0196ccf3c1"
+  integrity sha512-p/a9jeFs3KB3SWZ9w/T5HLyztooYSufOG++Uhau9YzprdBNyjFfsqrtN1roVVEzNDBGZJVr/2SSWwofvavPL1w==
 
 ajv@^8.0.1:
   version "8.17.1"
