@@ -1,51 +1,39 @@
+// src/router/routes.js
+
+// Todas as páginas que exigem autenticação devem começar com /app. O /app representa o aplicativo de produção em si.
+// A rota "/" agora aponta diretamente para a HomePage.vue, que será a landing page sem o uso de um layout global.
+
 const routes = [
   {
     path: "/",
-    component: () => import("layouts/MainLayout.vue"),
-    children: [
-      {
-        path: "",
-        name: "home",
-        component: () => import("pages/IndexPage.vue"),
-      },
-    ],
+    name: "home",
+    component: () => import("pages/HomePage.vue"), // Ponto de entrada direto para a HomePage
   },
-
   {
     path: "/signup",
-    component: () => import("layouts/MainLayout.vue"),
-    children: [
-      {
-        path: "",
-        name: "signup",
-        component: () => import("pages/SignupPage.vue"),
-      },
-    ],
+    name: "signup",
+    component: () => import("pages/SignupPage.vue"),
   },
-
   {
     path: "/signup-success",
-    component: () => import("layouts/MainLayout.vue"),
-    children: [
-      { path: "", component: () => import("pages/SignupSuccessPage.vue") },
-    ],
+    name: "signup-success",
+    component: () => import("pages/SignupSuccessPage.vue"),
   },
-
   {
     path: "/login",
-    component: () => import("layouts/MainLayout.vue"),
-    children: [{ path: "", component: () => import("pages/LoginPage.vue") }],
+    name: "login",
+    component: () => import("pages/LoginPage.vue"),
   },
-
   {
-    path: "/accounts",
+    path: "/app", // Nova rota para o app principal
     component: () => import("layouts/MainLayout.vue"),
     children: [
       {
         path: "",
-        name: "accounts",
-        component: () => import("pages/AccountsPage.vue"),
+        name: "dashboard", // Exemplo de página dentro do app
+        component: () => import("pages/DashboardPage.vue"),
       },
+      // Outras rotas do seu app
     ],
   },
 ];

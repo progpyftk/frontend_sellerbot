@@ -134,6 +134,18 @@
   resolved "http://nexus.petrobras.com.br:8081/nexus/repository/npm-all/@quasar/extras/-/extras-1.16.12.tgz"
   integrity sha512-hLlb3Buxo38Xg/2w0BTkz98RBh/VH8apZ2r6Fl8YpPgrVQ0diHyN/BVTvIOk5Kch2y38L2kvwOIddsB2UcCuIg==
 
+"@quasar/quasar-app-extension-qflashcard@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.npmjs.org/@quasar/quasar-app-extension-qflashcard/-/quasar-app-extension-qflashcard-1.0.5.tgz"
+  integrity sha512-TDa8jJ7NuB7VR50taGyZiJMb7h9InBvZTnVcPll/1bKXb07SGkQA3t2waOq57SleSOh/drB81daZJuf716aYqw==
+  dependencies:
+    "@quasar/quasar-ui-qflashcard" "^1.0.5"
+
+"@quasar/quasar-ui-qflashcard@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.npmjs.org/@quasar/quasar-ui-qflashcard/-/quasar-ui-qflashcard-1.0.5.tgz"
+  integrity sha512-nYO+fZa+SQ0F1P28Ce9s72NrEV7Wfl7tk3USjpudlhfwMVfvpXae18t2T3W+93OaBKGu54wYnzOxcGrcOOoYZg==
+
 "@quasar/render-ssr-error@^1.0.3":
   version "1.0.3"
   resolved "http://nexus.petrobras.com.br:8081/nexus/repository/npm-all/@quasar/render-ssr-error/-/render-ssr-error-1.0.3.tgz"

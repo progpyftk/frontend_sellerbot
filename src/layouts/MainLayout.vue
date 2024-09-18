@@ -82,8 +82,8 @@ const router = useRouter(); // Para fazer o redirecionamento
 // Estado do Drawer e Itens do Menu
 const drawer = ref(false);
 const items = [
-  { title: "Signup", icon: "mdi-login", router_name: "/signup" },
-  { title: "Login", icon: "mdi-login", router_name: "/login" },
+  // { title: "Signup", icon: "mdi-login", router_name: "/signup" },
+  // { title: "Login", icon: "mdi-login", router_name: "/login" },
   { title: "Contas", icon: "mdi-playlist-edit", router_name: "/accounts" },
   { title: "Full Sem Estoque", icon: "mdi-package-variant", router_name: "/no-stock-fulfillment" },
   { title: "Frete Grátis", icon: "mdi-truck-fast", router_name: "/free-shipping" },
