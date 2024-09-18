@@ -12,7 +12,7 @@
           :to="item.router_name"
           clickable
           v-ripple
-        >=
+        >
           <q-item-section avatar>
             <q-icon :name="item.icon"></q-icon>
           </q-item-section>
@@ -24,17 +24,41 @@
     </q-drawer>
 
     <!-- Barra Superior -->
-    <q-header class="bg-grey-1" elevated >
+    <q-header class="bg-grey-1" elevated>
       <q-toolbar>
         <q-btn flat round dense icon="mdi-menu" @click="drawer = !drawer" color="primary"></q-btn>
         <q-avatar size="35px">
-         <!-- <img src="/assets/laranja.png" alt="logo" /> -->
+          <!-- <img src="/assets/laranja.png" alt="logo" /> -->
         </q-avatar>
         <q-toolbar-title style="color: black">
-        SellerBot v1.0.0
+          SellerBot v1.0.0
         </q-toolbar-title>
         <q-space></q-space>
-        <div style="color: black">User: {{ currentUser }}</div>
+
+        <!-- Exibe o nome do usuário logado -->
+        <div v-if="currentUser" style="color: black">User: {{ currentUser.username }}</div>
+        <div v-else style="color: black">User: Guest</div>
+
+        <!-- Condicional para exibir botão de Login ou Logout -->
+        <q-btn
+          v-if="currentUser"
+          flat
+          icon="exit_to_app"
+          @click="handleLogout"
+          label="Logout"
+          color="negative"
+          class="q-ml-md"
+        />
+        <q-btn
+          v-else
+          flat
+          icon="login"
+          @click="redirectToLogin"
+          label="Login"
+          color="primary"
+          class="q-ml-md"
+        />
+
         <q-space></q-space>
         <div style="color: black">Database: {{ databaseUpdate }}</div>
       </q-toolbar>
@@ -48,12 +72,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { useStore } from '../stores/store';
+import { ref, computed } from 'vue';
+import { useStore } from '../stores/store'; // Importa o store
+import { useRouter } from 'vue-router'; // Importa o router para redirecionamento
+
+const store = useStore();
+const router = useRouter(); // Para fazer o redirecionamento
 
 // Estado do Drawer e Itens do Menu
 const drawer = ref(false);
 const items = [
+  { title: "Signup", icon: "mdi-login", router_name: "/signup" },
   { title: "Login", icon: "mdi-login", router_name: "/login" },
   { title: "Contas", icon: "mdi-playlist-edit", router_name: "/accounts" },
   { title: "Full Sem Estoque", icon: "mdi-package-variant", router_name: "/no-stock-fulfillment" },
@@ -65,16 +94,22 @@ const items = [
   { title: "Promoções", icon: "mdi-database", router_name: "/deals" },
 ];
 
-// Usando Pinia para acessar o estado
-const store = useStore();
+// Computed para pegar o usuário atual
 const currentUser = computed(() => store.currentUser);
+
+// Computed para a atualização do banco de dados
 const databaseUpdate = computed(() => store.databaseUpdate);
 
-// Lifecycle hook
-onMounted(() => {
-  console.log('Criando o createCable');
-  store.createCable();  // Chama a ação diretamente
-});
+// Função de logout
+const handleLogout = () => {
+  store.logoutUser(); // Chama a função de logout do store
+  router.push('/login'); // Redireciona para a página de login
+};
+
+// Redireciona para a página de login
+const redirectToLogin = () => {
+  router.push('/login');
+};
 </script>
 
 <style scoped>
