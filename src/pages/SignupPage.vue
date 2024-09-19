@@ -1,97 +1,115 @@
+<!-- src/pages/SignupPage.vue -->
+
 <template>
-  <q-page class="flex flex-center">
-    <q-card class="q-pa-lg" style="width: 350px; margin-top: 40px;">
-      <q-card-section>
-        <div class="text-h6 text-center">Registro de Usuário</div>
-      </q-card-section>
+  <q-layout view="hHh lpR fFf">
+    <!-- Incluindo a toolbar personalizada no layout -->
+    <HomeToolbar />
 
-      <q-card-section>
-        <!-- Exibição do erro, caso exista -->
-        <q-alert
-          v-if="errorMessages.length"
-          color="negative"
-          icon="warning"
-          class="custom-alert"
-          dense
-          style="width: 100%;"
-        >
-          <ul class="error-list">
-            <li v-for="(message, index) in errorMessages" :key="index" class="error-message">{{ message }}</li>
-          </ul>
-        </q-alert>
+    <!-- Container para as páginas dentro do layout -->
+    <q-page-container>
+      <!-- Página de registro de usuário -->
+      <q-page class="flex flex-center">
+        <q-card class="q-pa-lg" style="width: 350px; margin-top: 40px">
+          <q-card-section>
+            <div class="text-h6 text-center">Registro de Usuário</div>
+          </q-card-section>
 
-        <q-form @submit="registerUser">
-          <q-input
-            v-model="username"
-            label="Nome de usuário"
-            outlined
-            required
-            class="q-mb-md"
-            :error="!!usernameError"
-            :error-message="usernameError"
-          />
-          <q-input
-            v-model="email"
-            label="Email"
-            type="email"
-            outlined
-            required
-            class="q-mb-md"
-            :error="!!emailError"
-            :error-message="emailError"
-            @blur="validateEmail"
-          />
-          <q-input
-            v-model="password"
-            label="Senha"
-            type="password"
-            outlined
-            required
-            class="q-mb-md"
-            @blur="validatePasswords"
-            @input="validatePasswords"
-            :error="!!passwordError"
-            :error-message="passwordError"
-          />
-          <q-input
-            v-model="passwordConfirmation"
-            label="Confirme a Senha"
-            type="password"
-            outlined
-            required
-            class="q-mb-md"
-            @blur="validatePasswords"
-            @input="validatePasswords"
-            :error="!!passwordConfirmationError"
-            :error-message="passwordConfirmationError"
-          />
-          <q-btn
-            label="Registrar"
-            type="submit"
-            color="primary"
-            class="full-width q-mt-md"
-            :loading="loading"
-          />
-        </q-form>
+          <q-card-section>
+            <!-- Exibição do erro, caso exista -->
+            <q-alert
+              v-if="errorMessages.length"
+              color="negative"
+              icon="warning"
+              class="custom-alert"
+              dense
+              style="width: 100%"
+            >
+              <ul class="error-list">
+                <li
+                  v-for="(message, index) in errorMessages"
+                  :key="index"
+                  class="error-message"
+                >
+                  {{ message }}
+                </li>
+              </ul>
+            </q-alert>
 
-        <q-card-actions align="center" class="q-pt-none">
-          <q-btn flat label="Já tenho uma conta" color="primary" @click="goToLogin" />
-        </q-card-actions>
-      </q-card-section>
-    </q-card>
-  </q-page>
+            <q-form @submit="registerUser">
+              <q-input
+                v-model="username"
+                label="Nome de usuário"
+                outlined
+                required
+                class="q-mb-md"
+                :error="!!usernameError"
+                :error-message="usernameError"
+              />
+              <q-input
+                v-model="email"
+                label="Email"
+                type="email"
+                outlined
+                required
+                class="q-mb-md"
+                :error="!!emailError"
+                :error-message="emailError"
+                @blur="validateEmail"
+              />
+              <q-input
+                v-model="password"
+                label="Senha"
+                type="password"
+                outlined
+                required
+                class="q-mb-md"
+                @blur="validatePasswords"
+                @input="validatePasswords"
+                :error="!!passwordError"
+                :error-message="passwordError"
+              />
+              <q-input
+                v-model="passwordConfirmation"
+                label="Confirme a Senha"
+                type="password"
+                outlined
+                required
+                class="q-mb-md"
+                @blur="validatePasswords"
+                @input="validatePasswords"
+                :error="!!passwordConfirmationError"
+                :error-message="passwordConfirmationError"
+              />
+              <q-btn
+                label="Registrar"
+                type="submit"
+                color="primary"
+                class="full-width q-mt-md"
+                :loading="loading"
+              />
+            </q-form>
+
+            <q-card-actions align="center" class="q-pt-none">
+              <q-btn flat label="Já tenho uma conta" color="primary" @click="goToLogin" />
+            </q-card-actions>
+          </q-card-section>
+        </q-card>
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
-import { useStore } from '../stores/store'; // Importando o store principal
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { api } from "boot/axios"; // Importando o `api` configurado
+import { useStore } from "../stores/store"; // Importando o store principal
+import HomeToolbar from "src/layouts/HomeToolbar.vue"; // Importando a toolbar personalizada
 
-const username = ref('');
-const email = ref('');
-const password = ref('');
-const passwordConfirmation = ref('');
+const username = ref("");
+const email = ref("");
+const password = ref("");
+const passwordConfirmation = ref("");
 const loading = ref(false);
 const router = useRouter();
 const store = useStore(); // Acessando o store
@@ -111,19 +129,31 @@ const registerUser = () => {
 
   loading.value = true;
 
-  axios
-    .post(`${store.backend_host}/users/register/`, {
+  api
+    .post("/users/register/", {
       username: username.value,
       email: email.value,
       password: password.value,
       password_confirmation: passwordConfirmation.value,
     })
     .then((response) => {
-      console.log(response.data);
-      router.push('/signup-success');
+      // Log da resposta completa do servidor
+      console.log("Resposta completa do servidor:", response);
+
+      // Log dos dados recebidos do servidor
+      console.log("Dados recebidos:", response.data);
+
+      router.push("/signup-success");
     })
     .catch((error) => {
+      // Log do erro completo
+      console.error("Erro completo:", error);
+
       if (error.response && error.response.data) {
+        // Log do status e dos dados da resposta de erro
+        console.error("Status de erro:", error.response.status);
+        console.error("Dados de erro recebidos:", error.response.data);
+
         if (error.response.data.email) {
           errorMessages.value.push("Email informado já está em uso.");
         }
@@ -131,14 +161,20 @@ const registerUser = () => {
           errorMessages.value.push("Usuário informado já está em uso.");
         }
         if (!errorMessages.value.length) {
-          errorMessages.value.push('Erro desconhecido. Tente novamente mais tarde.');
+          errorMessages.value.push("Erro desconhecido. Tente novamente mais tarde.");
         }
       } else {
-        errorMessages.value = ['Erro de conexão. Verifique sua rede.'];
+        // Log do erro de conexão
+        console.error("Erro de conexão ou outro erro:", error.message);
+        errorMessages.value = ["Erro de conexão. Verifique sua rede."];
       }
     })
     .finally(() => {
-      loading.value = false; // Finaliza o carregamento
+      // Log para indicar que a requisição foi finalizada
+      console.log("Requisição finalizada");
+
+      // Finaliza o carregamento
+      loading.value = false;
     });
 };
 
@@ -157,7 +193,8 @@ const validatePasswords = () => {
   const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\W_]).{8,}$/;
 
   if (!strongPasswordPattern.test(password.value)) {
-    passwordError.value = "A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e símbolos.";
+    passwordError.value =
+      "A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e símbolos.";
   } else {
     passwordError.value = null;
   }
@@ -170,7 +207,7 @@ const validatePasswords = () => {
 };
 
 const goToLogin = () => {
-  router.push('/login'); // Redireciona para a página de login
+  router.push("/login"); // Redireciona para a página de login
 };
 </script>
 

@@ -1,13 +1,11 @@
-// src/router/routes.js
+import { useStore } from "src/stores/store"; // Importa o store para verificar o estado de autenticação
 
-// Todas as páginas que exigem autenticação devem começar com /app. O /app representa o aplicativo de produção em si.
-// A rota "/" agora aponta diretamente para a HomePage.vue, que será a landing page sem o uso de um layout global.
-
+// Definição das rotas
 const routes = [
   {
     path: "/",
     name: "home",
-    component: () => import("pages/HomePage.vue"), // Ponto de entrada direto para a HomePage
+    component: () => import("pages/HomePage.vue"),
   },
   {
     path: "/signup",
@@ -25,15 +23,14 @@ const routes = [
     component: () => import("pages/LoginPage.vue"),
   },
   {
-    path: "/app", // Nova rota para o app principal
+    path: "/app",
     component: () => import("layouts/MainLayout.vue"),
     children: [
       {
-        path: "",
-        name: "dashboard", // Exemplo de página dentro do app
-        component: () => import("pages/DashboardPage.vue"),
+        path: "accounts",
+        name: "accounts",
+        component: () => import("pages/AccountsPage.vue"),
       },
-      // Outras rotas do seu app
     ],
   },
 ];

@@ -1,7 +1,13 @@
 <template>
   <q-layout view="hHh lpR fFf" id="inspire">
     <!-- Menu Lateral -->
-    <q-drawer v-model="drawer" side="left" :content-class="'bg-grey-1'" bordered>
+    <q-drawer
+      v-model="drawer"
+      side="left"
+      :content-class="'bg-grey-1'"
+      bordered
+      show-if-above
+    >
       <q-list dense>
         <q-item-label header class="text-primary">Navegação</q-item-label>
         <q-separator spaced></q-separator>
@@ -9,7 +15,7 @@
         <q-item
           v-for="item in items"
           :key="item.title"
-          :to="item.router_name"
+          :to="{ name: item.router_name }"
           clickable
           v-ripple
         >
@@ -24,43 +30,60 @@
     </q-drawer>
 
     <!-- Barra Superior -->
-    <q-header class="bg-grey-1" elevated>
-      <q-toolbar>
-        <q-btn flat round dense icon="mdi-menu" @click="drawer = !drawer" color="primary"></q-btn>
-        <q-avatar size="35px">
-          <!-- <img src="/assets/laranja.png" alt="logo" /> -->
-        </q-avatar>
-        <q-toolbar-title style="color: black">
-          SellerBot v1.0.0
-        </q-toolbar-title>
-        <q-space></q-space>
-
-        <!-- Exibe o nome do usuário logado -->
-        <div v-if="currentUser" style="color: black">User: {{ currentUser.username }}</div>
-        <div v-else style="color: black">User: Guest</div>
-
-        <!-- Condicional para exibir botão de Login ou Logout -->
+    <q-header class="bg-white text-black" elevated>
+      <q-toolbar class="q-pa-none">
+        <!-- Botão para abrir o menu lateral, fixado à esquerda -->
         <q-btn
-          v-if="currentUser"
           flat
-          icon="exit_to_app"
-          @click="handleLogout"
-          label="Logout"
-          color="negative"
-          class="q-ml-md"
-        />
-        <q-btn
-          v-else
-          flat
-          icon="login"
-          @click="redirectToLogin"
-          label="Login"
+          round
+          size="lg"
+          icon="mdi-menu"
+          @click="drawer = !drawer"
           color="primary"
-          class="q-ml-md"
-        />
+        ></q-btn>
 
-        <q-space></q-space>
-        <div style="color: black">Database: {{ databaseUpdate }}</div>
+        <!-- Espaço flexível para empurrar logo para o centro -->
+        <q-space />
+
+        <!-- Logo SellerBot -->
+        <q-toolbar-title class="text-center">
+          <img src="/images/logo_sellerbot.png" alt="Logo" class="logo-img" />
+        </q-toolbar-title>
+
+        <!-- Espaço flexível para empurrar os elementos de login/logout para a direita -->
+        <q-space />
+
+        <!-- Coluna com os botões de login/logout à direita -->
+        <div
+          style="
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-right: 20px;
+          "
+        >
+          <template v-if="currentUser">
+            <span class="q-mr-md">Bem-vindo, {{ currentUser.username }}!</span>
+            <q-btn
+              unelevated
+              color="negative"
+              label="Logout"
+              no-caps
+              class="logout-btn"
+              @click="handleLogout"
+            />
+          </template>
+          <template v-else>
+            <q-btn
+              unelevated
+              color="primary"
+              label="Login"
+              no-caps
+              class="login-btn"
+              @click="redirectToLogin"
+            />
+          </template>
+        </div>
       </q-toolbar>
     </q-header>
 
@@ -72,20 +95,24 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useStore } from '../stores/store'; // Importa o store
-import { useRouter } from 'vue-router'; // Importa o router para redirecionamento
+import { ref, computed } from "vue";
+import { useStore } from "../stores/store"; // Importa o store
+import { useRouter } from "vue-router"; // Importa o router para redirecionamento
 
 const store = useStore();
 const router = useRouter(); // Para fazer o redirecionamento
 
 // Estado do Drawer e Itens do Menu
-const drawer = ref(false);
+const drawer = ref(true); // Menu começa aberto
+
+// Itens do menu
 const items = [
-  // { title: "Signup", icon: "mdi-login", router_name: "/signup" },
-  // { title: "Login", icon: "mdi-login", router_name: "/login" },
-  { title: "Contas", icon: "mdi-playlist-edit", router_name: "/accounts" },
-  { title: "Full Sem Estoque", icon: "mdi-package-variant", router_name: "/no-stock-fulfillment" },
+  { title: "Contas", icon: "mdi-playlist-edit", router_name: "accounts" },
+  {
+    title: "Full Sem Estoque",
+    icon: "mdi-package-variant",
+    router_name: "/no-stock-fulfillment",
+  },
   { title: "Frete Grátis", icon: "mdi-truck-fast", router_name: "/free-shipping" },
   { title: "Flex - Fulfillment", icon: "mdi-truck-fast", router_name: "/flex" },
   { title: "API - Dados Fiscais", icon: "mdi-api", router_name: "/fiscal-data" },
@@ -97,23 +124,43 @@ const items = [
 // Computed para pegar o usuário atual
 const currentUser = computed(() => store.currentUser);
 
-// Computed para a atualização do banco de dados
-const databaseUpdate = computed(() => store.databaseUpdate);
-
 // Função de logout
 const handleLogout = () => {
   store.logoutUser(); // Chama a função de logout do store
-  router.push('/login'); // Redireciona para a página de login
+  router.push("/login"); // Redireciona para a página de login
 };
 
 // Redireciona para a página de login
 const redirectToLogin = () => {
-  router.push('/login');
+  router.push("/login");
 };
 </script>
 
 <style scoped>
-#inspire {
-  background-color: var(--q-background-base);
+.q-header {
+  .q-toolbar {
+    min-height: 64px;
+  }
+}
+
+.logo-img {
+  max-height: 40px;
+  width: auto;
+}
+
+/* Estilo para alinhar os botões de login/logout */
+.logout-btn,
+.login-btn {
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 10px;
+}
+
+.q-btn {
+  font-weight: 500;
+}
+
+:deep(.q-btn) {
+  text-transform: none;
 }
 </style>
