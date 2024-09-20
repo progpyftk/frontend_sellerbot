@@ -51,8 +51,6 @@ export const useStore = defineStore("main", {
       console.log(this.currentUser);
       console.log(this.authToken);
       console.log(this.refreshToken);
-      // Redirecionar para a página de login
-      router.push("/login");
     },
   },
 });

@@ -9,8 +9,18 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
 
 const { configure } = require("quasar/wrappers");
+const fs = require("fs");
+const path = require("path");
+const httpsConfig =
+  fs.existsSync(path.resolve(__dirname, "key.pem")) &&
+  fs.existsSync(path.resolve(__dirname, "cert.pem"))
+    ? {
+        key: fs.readFileSync(path.resolve(__dirname, "key.pem")),
+        cert: fs.readFileSync(path.resolve(__dirname, "cert.pem")),
+      }
+    : false;
 
-module.exports = configure(function (/* ctx */) {
+module.exports = configure(function (ctx) {
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -70,7 +80,8 @@ module.exports = configure(function (/* ctx */) {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
     devServer: {
-      // https: true
+      https: httpsConfig,
+
       open: true, // opens browser window automatically
     },
 

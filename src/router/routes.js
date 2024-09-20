@@ -31,7 +31,21 @@ const routes = [
         name: "accounts",
         component: () => import("pages/AccountsPage.vue"),
       },
+      {
+        path: "user/config",
+        name: "user-config",
+        component: () => import("pages/UserConfigPage.vue"),
+      },
     ],
+  },
+  {
+    path: "/ml-redirect",
+    component: () => import("pages/MLRedirect.vue"),
+  },
+  // Sempre deixe esta rota no final
+  {
+    path: "/:catchAll(.*)*",
+    component: () => import("pages/ErrorNotFound.vue"),
   },
 ];
 

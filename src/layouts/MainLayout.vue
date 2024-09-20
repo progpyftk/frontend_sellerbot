@@ -4,35 +4,42 @@
     <q-drawer
       v-model="drawer"
       side="left"
-      :content-class="'bg-grey-1'"
+      :width="220"
+      :breakpoint="500"
       bordered
-      show-if-above
+      class="bg-grey-1"
     >
-      <q-list dense>
-        <q-item-label header class="text-primary">Navegação</q-item-label>
-        <q-separator spaced></q-separator>
-
-        <q-item
-          v-for="item in items"
-          :key="item.title"
-          :to="{ name: item.router_name }"
-          clickable
-          v-ripple
-        >
-          <q-item-section avatar>
-            <q-icon :name="item.icon"></q-icon>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>{{ item.title }}</q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
+      <q-scroll-area class="fit">
+        <q-list padding class="menu-list">
+          <template v-for="(section, index) in menuSections" :key="index">
+            <q-item-label header class="text-weight-bold text-primary q-pb-sm">
+              {{ section.title }}
+            </q-item-label>
+            <q-item
+              v-for="item in section.items"
+              :key="item.route"
+              clickable
+              v-ripple
+              @click="navigateTo(item.route)"
+              :to="{ name: item.route }"
+              exact
+              active-class="my-menu-link"
+            >
+              <q-item-section avatar class="items-center">
+                <q-icon :name="item.icon" color="primary" size="sm" />
+              </q-item-section>
+              <q-item-section>{{ item.label }}</q-item-section>
+            </q-item>
+            <q-separator v-if="index < menuSections.length - 1" spaced class="q-my-sm" />
+          </template>
+        </q-list>
+      </q-scroll-area>
     </q-drawer>
 
     <!-- Barra Superior -->
     <q-header class="bg-white text-black" elevated>
       <q-toolbar class="q-pa-none">
-        <!-- Botão para abrir o menu lateral, fixado à esquerda -->
+        <!-- Botão para abrir o menu lateral -->
         <q-btn
           flat
           round
@@ -42,36 +49,51 @@
           color="primary"
         ></q-btn>
 
-        <!-- Espaço flexível para empurrar logo para o centro -->
         <q-space />
 
         <!-- Logo SellerBot -->
         <q-toolbar-title class="text-center">
-          <img src="/images/logo_sellerbot.png" alt="Logo" class="logo-img" />
+          <img src="/images/logo_sellerbot.png" alt="SellerBot Logo" class="logo-img" />
         </q-toolbar-title>
 
-        <!-- Espaço flexível para empurrar os elementos de login/logout para a direita -->
         <q-space />
 
-        <!-- Coluna com os botões de login/logout à direita -->
-        <div
-          style="
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            margin-right: 20px;
-          "
-        >
+        <!-- Área de Login/Logout -->
+        <div class="user-area q-gutter-sm">
           <template v-if="currentUser">
-            <span class="q-mr-md">Bem-vindo, {{ currentUser.username }}!</span>
-            <q-btn
-              unelevated
-              color="negative"
-              label="Logout"
-              no-caps
-              class="logout-btn"
-              @click="handleLogout"
-            />
+            <q-btn-dropdown flat no-caps class="user-menu" color="primary">
+              <template v-slot:label>
+                <div class="row items-center no-wrap">
+                  <q-avatar size="32px" class="q-mr-sm">
+                    <img
+                      :src="
+                        currentUser.avatarUrl ||
+                        'https://cdn.quasar.dev/img/boy-avatar.png'
+                      "
+                    />
+                  </q-avatar>
+                  <div class="text-left">
+                    <div class="text-weight-bold">{{ currentUser.username }}</div>
+                    <div class="text-caption">{{ currentUser.email }}</div>
+                  </div>
+                </div>
+              </template>
+
+              <q-list>
+                <q-item clickable v-close-popup @click="navigateTo('user-config')">
+                  <q-item-section avatar>
+                    <q-icon name="settings" />
+                  </q-item-section>
+                  <q-item-section>Configurações</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="handleLogout">
+                  <q-item-section avatar>
+                    <q-icon name="logout" />
+                  </q-item-section>
+                  <q-item-section>Sair</q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
           </template>
           <template v-else>
             <q-btn
@@ -79,7 +101,6 @@
               color="primary"
               label="Login"
               no-caps
-              class="login-btn"
               @click="redirectToLogin"
             />
           </template>
@@ -96,44 +117,52 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useStore } from "../stores/store"; // Importa o store
-import { useRouter } from "vue-router"; // Importa o router para redirecionamento
+import { useStore } from "src/stores/store";
+import { useRouter } from "vue-router";
 
 const store = useStore();
-const router = useRouter(); // Para fazer o redirecionamento
+const router = useRouter();
 
-// Estado do Drawer e Itens do Menu
-const drawer = ref(true); // Menu começa aberto
-
-// Itens do menu
-const items = [
-  { title: "Contas", icon: "mdi-playlist-edit", router_name: "accounts" },
-  {
-    title: "Full Sem Estoque",
-    icon: "mdi-package-variant",
-    router_name: "/no-stock-fulfillment",
-  },
-  { title: "Frete Grátis", icon: "mdi-truck-fast", router_name: "/free-shipping" },
-  { title: "Flex - Fulfillment", icon: "mdi-truck-fast", router_name: "/flex" },
-  { title: "API - Dados Fiscais", icon: "mdi-api", router_name: "/fiscal-data" },
-  { title: "API - Dados Gerais", icon: "mdi-api", router_name: "/general-data" },
-  { title: "Atualizar DB - Tiny", icon: "mdi-database", router_name: "/update-db" },
-  { title: "Promoções", icon: "mdi-database", router_name: "/deals" },
-];
-
-// Computed para pegar o usuário atual
+const drawer = ref(true);
 const currentUser = computed(() => store.currentUser);
 
-// Função de logout
+const menuSections = [
+  {
+    title: "MercadoLivre",
+    items: [
+      { label: "Contas", icon: "mdi-account-plus", route: "accounts" },
+      { label: "Frete Grátis", icon: "mdi-truck-fast", route: "free-shipping" },
+      { label: "Análise de Frete", icon: "mdi-chart-bar", route: "shipping-analysis" },
+    ],
+  },
+  {
+    title: "Configurações",
+    items: [
+      {
+        label: "Configurações do Usuário",
+        icon: "mdi-account-settings",
+        route: "user-config",
+      },
+    ],
+  },
+];
+
 const handleLogout = () => {
-  store.logoutUser(); // Chama a função de logout do store
-  router.push("/login"); // Redireciona para a página de login
+  store.logoutUser();
+  router.replace("/login");
 };
 
-// Redireciona para a página de login
+const navigateTo = (routeName) => {
+  if (currentUser.value) {
+    router.push({ name: routeName, path: `/app/${routeName}` });
+  } else {
+    router.push("/login");
+  }
+};
 const redirectToLogin = () => {
   router.push("/login");
 };
+const defaultAvatar = "https://cdn.quasar.dev/img/boy-avatar.png";
 </script>
 
 <style scoped>
@@ -158,6 +187,74 @@ const redirectToLogin = () => {
 
 .q-btn {
   font-weight: 500;
+}
+
+.q-drawer {
+  .menu-list {
+    .q-item {
+      border-radius: 0 16px 16px 0;
+      margin-right: 8px;
+      min-height: 40px;
+      padding: 8px 16px;
+
+      &.q-item--active {
+        color: #1976d2;
+        font-weight: 500;
+        background: #e3f2fd;
+      }
+    }
+
+    .q-item__section--avatar {
+      min-width: 40px;
+      padding-right: 12px;
+
+      .q-icon {
+        color: #1976d2;
+      }
+    }
+
+    .q-item-label {
+      letter-spacing: 0.01785714em;
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.25rem;
+      padding: 0 8px;
+    }
+
+    .q-item__label {
+      font-size: 0.8125rem;
+      font-weight: 400;
+    }
+
+    .q-separator--spaced {
+      margin: 8px 0;
+    }
+  }
+}
+
+.my-menu-link {
+  color: #1976d2 !important;
+  background: #e3f2fd !important;
+}
+
+.user-area {
+  display: flex;
+  align-items: center;
+}
+
+.user-menu {
+  .q-btn__content {
+    flex-wrap: nowrap;
+  }
+}
+
+.q-avatar {
+  border: 2px solid #1976d2;
+}
+
+.text-caption {
+  font-size: 0.7rem;
+  opacity: 0.7;
 }
 
 :deep(.q-btn) {

@@ -1,259 +1,146 @@
 <template>
-  <div>
+  <q-page padding>
+    <h1 class="text-h4 q-mb-md">Contas MercadoLivre</h1>
+
     <!-- Loading Indicator -->
-    <div v-if="loadingtable">
-      <q-page class="flex flex-center">
-        <q-card class="q-pa-md">
-          <q-spinner size="50px" color="primary"></q-spinner>
-        </q-card>
-      </q-page>
+    <div v-if="loading" class="flex flex-center q-pa-md">
+      <q-spinner color="primary" size="3em" />
     </div>
 
     <!-- Data Table -->
-    <q-card v-else class="q-pa-md" outlined>
-      <q-table
-        :rows="accounts"
-        :columns="headers"
-        row-key="ml_seller_id"
-        flat
-      >
-        <template v-slot:top="props">
-          <q-toolbar>
-            <q-toolbar-title>MercadoLivre - Contas on Seller Bot</q-toolbar-title>
-            <q-separator class="q-mx-md" vertical></q-separator>
-            <q-space></q-space>
-            <q-btn color="primary" icon="add" label="Add Account" @click="openDialog"></q-btn>
-          </q-toolbar>
-        </template>
+    <q-table
+      v-else
+      :rows="accounts"
+      :columns="columns"
+      row-key="ml_seller_id"
+      flat
+      bordered
+    >
+      <template v-slot:top>
+        <q-btn color="primary" icon="add" label="Adicionar Conta" @click="startMLAuth" />
+      </template>
 
-        <template v-slot:body-cell-actions="props">
-          <q-td>
-            <q-btn flat round icon="edit" @click="editItem(props.row)" />
-            <q-btn flat round icon="delete" color="negative" @click="confirmDelete(props.row)" />
-          </q-td>
-        </template>
-      </q-table>
-    </q-card>
+      <template v-slot:body-cell-actions="props">
+        <q-td :props="props">
+          <q-btn
+            flat
+            round
+            color="negative"
+            icon="delete"
+            @click="confirmDelete(props.row)"
+          />
+        </q-td>
+      </template>
+    </q-table>
 
-    <!-- Dialog for Adding/Editing Accounts -->
-    <q-dialog v-model="dialog">
+    <!-- Delete Confirmation Dialog -->
+    <q-dialog v-model="deleteDialog">
       <q-card>
-        <q-card-section>
-          <div class="text-h6">{{ formTitle }}</div>
-        </q-card-section>
-
-        <q-card-section>
-          <q-input v-model="editedItem.nickname" label="Account Name" />
-          <q-input v-if="editedIndex === -1" v-model="editedItem.ml_seller_id" label="Seller ID" />
-          <q-input v-else v-model="editedItem.ml_seller_id" label="Seller ID - Not editable" readonly />
-          <q-input v-model="editedItem.code" label="Code" />
-          <q-input v-if="editedIndex > -1" v-model="editedItem.access_token" label="Access Token" />
-          <q-input v-if="editedIndex > -1" v-model="editedItem.refresh_token" label="Refresh Token" />
+        <q-card-section class="row items-center">
+          <span class="q-ml-sm">Tem certeza que deseja excluir esta conta?</span>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" @click="close" />
-          <q-btn flat label="Save" color="primary" @click="save" />
+          <q-btn flat label="Cancelar" color="primary" v-close-popup />
+          <q-btn flat label="Excluir" color="negative" @click="deleteAccount" />
         </q-card-actions>
       </q-card>
     </q-dialog>
-
-    <!-- Dialog for Confirming Deletion -->
-    <q-dialog v-model="dialogDelete">
-      <q-card>
-        <q-card-section class="text-h6">
-          Are you sure you want to delete this item?
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" @click="closeDelete" />
-          <q-btn flat label="OK" color="primary" @click="deleteSeller" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-  </div>
+  </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useStore } from '../stores/store';
-import axios from 'axios';
+import { ref, onMounted } from "vue";
+import { api } from "src/boot/axios";
 
-// Pinia Store
-const store = useStore();
+const CLIENT_ID = "6026212895630598";
+const REDIRECT_URI = "https://0782-179-177-165-121.ngrok-free.app/ml-redirect";
+const test =
+  "https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=6026212895630598&redirect_uri=https://127.0.0.1:9000/ml-redirect&state=$12345";
 
-// State Variables
-const dialog = ref(false);
-const dialogDelete = ref(false);
-const loadingtable = ref(false);
-const editedIndex = ref(-1);
+const loading = ref(false);
 const accounts = ref([]);
-const editedItem = ref({
-  ml_seller_id: '',
-  sellerid: '',
-  access_token: '',
-  refresh_token: ''
-});
-const defaultItem = {
-  ml_seller_id: '',
-  sellerid: '',
-  access_token: '',
-  refresh_token: ''
-};
+const deleteDialog = ref(false);
+const accountToDelete = ref(null);
 
-// Headers for the Table
-const headers = [
-  { name: 'ml_seller_id', label: 'Seller ID', align: 'left' },
-  { name: 'nickname', label: 'Nickname', align: 'left' },
-  { name: 'code', label: 'Code', align: 'left' },
-  { name: 'access_token', label: 'Access Token', align: 'left' },
-  { name: 'refresh_token', label: 'Refresh Token', align: 'left' },
-  { name: 'actions', label: 'Actions', align: 'center' }
+const columns = [
+  { name: "ml_seller_id", align: "left", label: "Seller ID", field: "ml_seller_id" },
+  { name: "nickname", align: "left", label: "Nickname", field: "nickname" },
+  { name: "actions", align: "center", label: "Ações", field: "actions" },
 ];
 
-// Computed Property
-const formTitle = computed(() => (editedIndex.value === -1 ? 'Add Account' : 'Edit Account'));
-
-// Fetch Accounts
-const getAccounts = () => {
-  loadingtable.value = true;
-  axios
-    .get(`${store.backend_url}/accounts}/seller/index`, {
-      headers: {
-        'Content-Type': 'application/json;charset=UTF-8',
-        'Accept': 'application/json',
-        Authorization: store.authToken
-      }
-    })
-    .then((res) => {
-      accounts.value = res.data;
-      loadingtable.value = false;
-    })
-    .catch((error) => {
-      console.log(error);
-      if (error.response.status === 401) {
-        this.$router.push('/login');
-      }
-      loadingtable.value = false;
-    });
-};
-
-// Open Dialog for Editing/Adding
-const openDialog = () => {
-  dialog.value = true;
-};
-
-// Save Account
-const save = () => {
-  if (editedIndex.value > -1) {
-    editSeller();
-  } else {
-    createSeller();
+const getAccounts = async () => {
+  loading.value = true;
+  try {
+    console.log("Buscando contas do MercadoLivre...");
+    const response = await api.get("/accounts/seller/index");
+    console.log("Contas recebidas:", response.data);
+    accounts.value = response.data;
+  } catch (error) {
+    console.error("Erro ao buscar contas:", error);
+  } finally {
+    loading.value = false;
   }
 };
 
-// Create Seller
-const createSeller = () => {
-  axios
-    .post(`${store.backend_url}/seller/create`, {
+const startMLAuth = () => {
+  const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
+    REDIRECT_URI
+  )}`;
+  console.log("Redirecionando para:", authUrl);
+  window.open(authUrl, "_blank");
+};
+
+// Esta função deve ser chamada quando a página de redirecionamento é carregada
+const handleRedirect = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  console.log("Código recebido:", code);
+  if (code) {
+    exchangeCodeForToken(code);
+  } else {
+    console.log("Nenhum código encontrado na URL.");
+  }
+};
+
+const exchangeCodeForToken = async (code) => {
+  try {
+    console.log("Trocando código por token...");
+    const response = await api.post("/mercadolivre/exchange-code", { code });
+    console.log("Token recebido:", response.data);
+    getAccounts(); // Atualiza a lista de contas
+  } catch (error) {
+    console.error("Erro ao trocar código por token:", error);
+  }
+};
+
+const confirmDelete = (account) => {
+  accountToDelete.value = account;
+  deleteDialog.value = true;
+};
+
+const deleteAccount = async () => {
+  try {
+    console.log("Deletando conta:", accountToDelete.value.ml_seller_id);
+    await api.post("/seller/delete", {
       seller: {
-        nickname: editedItem.value.nickname,
-        code: editedItem.value.code,
-        ml_seller_id: editedItem.value.ml_seller_id
-      }
-    }, {
-      headers: { Authorization: store.authToken }
-    })
-    .then((res) => {
-      getAccounts();
-      close();
-    })
-    .catch((error) => {
-      console.log(error);
-      if (error.response.status === 401) {
-        this.$router.push('/login');
-      }
+        ml_seller_id: accountToDelete.value.ml_seller_id,
+      },
     });
+    console.log("Conta excluída com sucesso!");
+    getAccounts(); // Atualiza a lista de contas
+  } catch (error) {
+    console.error("Erro ao excluir conta:", error);
+  } finally {
+    deleteDialog.value = false;
+  }
 };
 
-// Edit Seller
-const editSeller = () => {
-  axios
-    .post(`${store.backend_url}/seller/edit`, {
-      seller: {
-        nickname: editedItem.value.nickname,
-        code: editedItem.value.code,
-        ml_seller_id: editedItem.value.ml_seller_id,
-        access_token: editedItem.value.access_token,
-        refresh_token: editedItem.value.refresh_token
-      }
-    }, {
-      headers: { Authorization: store.authToken }
-    })
-    .then((res) => {
-      cf();
-      close();
-    })
-    .catch((error) => {
-      console.log(error);
-      if (error.response.status === 401) {
-        this.$router.push('/login');
-      }
-    });
-};
-
-// Delete Seller
-const deleteSeller = () => {
-  axios
-    .post(`${store.backend_url}/seller/delete`, {
-      seller: {
-        ml_seller_id: editedItem.value.ml_seller_id
-      }
-    }, {
-      headers: { Authorization: store.authToken }
-    })
-    .then((res) => {
-      getAccounts();
-      closeDelete();
-    })
-    .catch((error) => {
-      console.log(error);
-      if (error.response.status === 401) {
-        this.$router.push('/login');
-      }
-    });
-};
-
-// Edit an Existing Item
-const editItem = (item) => {
-  editedIndex.value = accounts.value.indexOf(item);
-  editedItem.value = { ...item };
-  dialog.value = true;
-};
-
-// Confirm Delete
-const confirmDelete = (item) => {
-  editedIndex.value = accounts.value.indexOf(item);
-  editedItem.value = { ...item };
-  dialogDelete.value = true;
-};
-
-// Close Dialog
-const close = () => {
-  dialog.value = false;
-  editedItem.value = { ...defaultItem };
-  editedIndex.value = -1;
-};
-
-// Close Delete Dialog
-const closeDelete = () => {
-  dialogDelete.value = false;
-  editedItem.value = { ...defaultItem };
-  editedIndex.value = -1;
-};
-
-// Fetch accounts on mounted
 onMounted(getAccounts);
 
-
+// Se esta é a página de redirecionamento, chame handleRedirect
+if (window.location.pathname === "/ml-redirect") {
+  console.log("Página de redirecionamento detectada. Verificando código...");
+  handleRedirect();
+}
 </script>
