@@ -62,8 +62,6 @@ export default boot(({ app }) => {
         } catch (refreshError) {
           console.error("Erro ao tentar fazer refresh do token:", refreshError);
 
-          // Se o refresh falhar, faça o logout chamando a função do store
-          store.logoutUser(); // Chamando a função de logout centralizada no store
           return Promise.reject(refreshError);
         }
       }

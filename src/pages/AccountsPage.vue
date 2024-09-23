@@ -8,30 +8,83 @@
     </div>
 
     <!-- Data Table -->
-    <q-table
-      v-else
-      :rows="accounts"
-      :columns="columns"
-      row-key="ml_seller_id"
-      flat
-      bordered
-    >
-      <template v-slot:top>
+    <template v-else>
+      <div class="q-mb-md">
         <q-btn color="primary" icon="add" label="Adicionar Conta" @click="startMLAuth" />
-      </template>
-
-      <template v-slot:body-cell-actions="props">
-        <q-td :props="props">
-          <q-btn
-            flat
-            round
-            color="negative"
-            icon="delete"
-            @click="confirmDelete(props.row)"
-          />
-        </q-td>
-      </template>
-    </q-table>
+      </div>
+      <q-table
+        :rows="accounts"
+        :columns="columns"
+        row-key="account_id"
+        flat
+        bordered
+        v-if="accounts.length > 0"
+      >
+        <template v-slot:body-cell-access_token="props">
+          <q-td :props="props">
+            {{ truncateToken(props.row.access_token) }}
+            <q-btn
+              flat
+              round
+              dense
+              icon="content_copy"
+              @click="copyToClipboard(props.row.access_token)"
+            >
+              <q-tooltip>Copiar token completo</q-tooltip>
+            </q-btn>
+          </q-td>
+        </template>
+        <template v-slot:body-cell-refresh_token="props">
+          <q-td :props="props">
+            {{ truncateToken(props.row.refresh_token) }}
+            <q-btn
+              flat
+              round
+              dense
+              icon="content_copy"
+              @click="copyToClipboard(props.row.refresh_token)"
+            >
+              <q-tooltip>Copiar token completo</q-tooltip>
+            </q-btn>
+          </q-td>
+        </template>
+        <template v-slot:body-cell-is_connected="props">
+          <q-td :props="props">
+            <div class="row items-center">
+              <div
+                :style="{
+                  backgroundColor: props.row.is_connected ? 'green' : 'red',
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  marginRight: '8px',
+                }"
+              ></div>
+              <span>
+                {{ props.row.is_connected ? "Conectado" : "Desconectado" }}
+              </span>
+            </div>
+          </q-td>
+        </template>
+        <template v-slot:body-cell-actions="props">
+          <q-td :props="props">
+            <q-btn
+              flat
+              round
+              color="negative"
+              icon="delete"
+              @click="confirmDelete(props.row)"
+            />
+          </q-td>
+        </template>
+      </q-table>
+      <div v-else class="text-center q-pa-md">Nenhuma conta encontrada.</div>
+    </template>
+    <template v-slot:body-cell-token_expires_at="props">
+      <q-td :props="props">
+        {{ formatDate(props.row.token_expires_at) }}
+      </q-td>
+    </template>
 
     <!-- Delete Confirmation Dialog -->
     <q-dialog v-model="deleteDialog">
@@ -53,6 +106,7 @@
 import { ref, onMounted } from "vue";
 import { api } from "src/boot/axios";
 import { useQuasar } from "quasar";
+import { date } from "quasar";
 
 const $q = useQuasar();
 
@@ -60,31 +114,97 @@ const CLIENT_ID = "6026212895630598";
 const REDIRECT_URI =
   "https://sellerbot-frontend-367123809032.us-central1.run.app/ml-redirect";
 
-const loading = ref(false);
+const loading = ref(true);
 const accounts = ref([]);
 const deleteDialog = ref(false);
 const accountToDelete = ref(null);
 
 const columns = [
-  { name: "ml_seller_id", align: "left", label: "Seller ID", field: "ml_seller_id" },
-  { name: "nickname", align: "left", label: "Nickname", field: "nickname" },
+  { name: "account_id", align: "left", label: "Seller ID", field: "account_id" },
+  {
+    name: "account_nickname",
+    align: "left",
+    label: "Nickname",
+    field: "account_nickname",
+  },
+  { name: "access_token", align: "left", label: "Access Token", field: "access_token" },
+  {
+    name: "refresh_token",
+    align: "left",
+    label: "Refresh Token",
+    field: "refresh_token",
+  },
+  {
+    name: "is_connected",
+    align: "left",
+    label: "Status",
+    field: "is_connected",
+  },
+  {
+    name: "token_expires_at",
+    align: "left",
+    label: "Token Expira em",
+    field: "token_expires_at",
+  },
   { name: "actions", align: "center", label: "Ações", field: "actions" },
 ];
+
+const truncateToken = (token) => {
+  if (token && token.length > 10) {
+    return token.substring(0, 5) + "..." + token.substring(token.length - 5);
+  }
+  return token;
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  const parsedDate = new Date(dateString);
+  return date.formatDate(parsedDate, "DD/MM/YYYY HH:mm");
+};
+
+const copyToClipboard = (text) => {
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      $q.notify({
+        type: "positive",
+        message: "Token copiado para a área de transferência",
+        timeout: 2000,
+      });
+    })
+    .catch((err) => {
+      console.error("Erro ao copiar: ", err);
+      $q.notify({
+        type: "negative",
+        message: "Erro ao copiar o token",
+        timeout: 2000,
+      });
+    });
+};
 
 const getAccounts = async () => {
   loading.value = true;
   try {
-    const response = await api.get("/accounts/seller/index");
-    accounts.value = response.data;
+    console.log("Iniciando busca de contas");
+    const response = await api.get("/mercadolivre/accounts/");
+    console.log("Resposta da API:", response);
+    if (response.data && Array.isArray(response.data)) {
+      accounts.value = response.data;
+    } else {
+      accounts.value = [];
+      console.warn("Dados de contas não encontrados ou não são um array:", response.data);
+    }
+    console.log("Contas atualizadas:", accounts.value);
   } catch (error) {
-    console.error("Erro ao buscar contas:", error);
+    console.error("Erro detalhado ao buscar contas:", error);
+    accounts.value = []; // Garantir que accounts seja sempre um array
     $q.notify({
-      color: "negative",
+      type: "negative",
       message: "Erro ao buscar contas. Por favor, tente novamente.",
-      icon: "error",
     });
   } finally {
     loading.value = false;
+    console.log("Loading finalizado");
   }
 };
 
@@ -99,7 +219,7 @@ const startMLAuth = () => {
   )}`;
 
   if (authWindow && !authWindow.closed) {
-    authWindow.focus(); // Reutiliza a janela existente
+    authWindow.focus();
   } else {
     authWindow = window.open(authUrl, "_blank");
   }
@@ -109,25 +229,21 @@ const handleAuthSuccess = async (code) => {
   if (!isAuthenticating.value) return;
   try {
     loading.value = true;
-    console.log("O código que será enviado é:");
-    console.log(code);
     const response = await api.post("/mercadolivre/auth/", { code: code });
-    if (response.data.success) {
+    if (response.data && response.data.success) {
       $q.notify({
-        color: "positive",
+        type: "positive",
         message: "Conta autenticada com sucesso!",
-        icon: "check",
       });
       getAccounts(); // Atualiza a lista de contas
     } else {
-      throw new Error(response.data.message || "Erro desconhecido");
+      throw new Error(response.data?.message || "Erro desconhecido");
     }
   } catch (error) {
     console.error("Erro na autenticação:", error);
     $q.notify({
-      color: "negative",
+      type: "negative",
       message: `Erro na autenticação: ${error.message}`,
-      icon: "error",
     });
   } finally {
     isAuthenticating.value = false;
@@ -141,27 +257,27 @@ const confirmDelete = (account) => {
 };
 
 const deleteAccount = async () => {
+  if (!accountToDelete.value) return;
   try {
     await api.post("/seller/delete", {
       seller: {
-        ml_seller_id: accountToDelete.value.ml_seller_id,
+        ml_seller_id: accountToDelete.value.account_id,
       },
     });
     $q.notify({
-      color: "positive",
+      type: "positive",
       message: "Conta excluída com sucesso!",
-      icon: "check",
     });
     getAccounts(); // Atualiza a lista de contas
   } catch (error) {
     console.error("Erro ao excluir conta:", error);
     $q.notify({
-      color: "negative",
+      type: "negative",
       message: "Erro ao excluir conta. Por favor, tente novamente.",
-      icon: "error",
     });
   } finally {
     deleteDialog.value = false;
+    accountToDelete.value = null;
   }
 };
 
