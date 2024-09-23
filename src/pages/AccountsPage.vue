@@ -52,11 +52,13 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { api } from "src/boot/axios";
+import { useQuasar } from "quasar";
+
+const $q = useQuasar();
 
 const CLIENT_ID = "6026212895630598";
-const REDIRECT_URI = "https://0782-179-177-165-121.ngrok-free.app/ml-redirect";
-const test =
-  "https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=6026212895630598&redirect_uri=https://127.0.0.1:9000/ml-redirect&state=$12345";
+const REDIRECT_URI =
+  "https://sellerbot-frontend-367123809032.us-central1.run.app/ml-redirect";
 
 const loading = ref(false);
 const accounts = ref([]);
@@ -72,45 +74,64 @@ const columns = [
 const getAccounts = async () => {
   loading.value = true;
   try {
-    console.log("Buscando contas do MercadoLivre...");
     const response = await api.get("/accounts/seller/index");
-    console.log("Contas recebidas:", response.data);
     accounts.value = response.data;
   } catch (error) {
     console.error("Erro ao buscar contas:", error);
+    $q.notify({
+      color: "negative",
+      message: "Erro ao buscar contas. Por favor, tente novamente.",
+      icon: "error",
+    });
   } finally {
     loading.value = false;
   }
 };
 
+let authWindow = null;
+const isAuthenticating = ref(false);
+
 const startMLAuth = () => {
+  if (isAuthenticating.value) return;
+  isAuthenticating.value = true;
   const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
     REDIRECT_URI
   )}`;
-  console.log("Redirecionando para:", authUrl);
-  window.open(authUrl, "_blank");
-};
 
-// Esta função deve ser chamada quando a página de redirecionamento é carregada
-const handleRedirect = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get("code");
-  console.log("Código recebido:", code);
-  if (code) {
-    exchangeCodeForToken(code);
+  if (authWindow && !authWindow.closed) {
+    authWindow.focus(); // Reutiliza a janela existente
   } else {
-    console.log("Nenhum código encontrado na URL.");
+    authWindow = window.open(authUrl, "_blank");
   }
 };
 
-const exchangeCodeForToken = async (code) => {
+const handleAuthSuccess = async (code) => {
+  if (!isAuthenticating.value) return;
   try {
-    console.log("Trocando código por token...");
-    const response = await api.post("/mercadolivre/exchange-code", { code });
-    console.log("Token recebido:", response.data);
-    getAccounts(); // Atualiza a lista de contas
+    loading.value = true;
+    console.log("O código que será enviado é:");
+    console.log(code);
+    const response = await api.post("/mercadolivre/auth/", { code: code });
+    if (response.data.success) {
+      $q.notify({
+        color: "positive",
+        message: "Conta autenticada com sucesso!",
+        icon: "check",
+      });
+      getAccounts(); // Atualiza a lista de contas
+    } else {
+      throw new Error(response.data.message || "Erro desconhecido");
+    }
   } catch (error) {
-    console.error("Erro ao trocar código por token:", error);
+    console.error("Erro na autenticação:", error);
+    $q.notify({
+      color: "negative",
+      message: `Erro na autenticação: ${error.message}`,
+      icon: "error",
+    });
+  } finally {
+    isAuthenticating.value = false;
+    loading.value = false;
   }
 };
 
@@ -121,26 +142,35 @@ const confirmDelete = (account) => {
 
 const deleteAccount = async () => {
   try {
-    console.log("Deletando conta:", accountToDelete.value.ml_seller_id);
     await api.post("/seller/delete", {
       seller: {
         ml_seller_id: accountToDelete.value.ml_seller_id,
       },
     });
-    console.log("Conta excluída com sucesso!");
+    $q.notify({
+      color: "positive",
+      message: "Conta excluída com sucesso!",
+      icon: "check",
+    });
     getAccounts(); // Atualiza a lista de contas
   } catch (error) {
     console.error("Erro ao excluir conta:", error);
+    $q.notify({
+      color: "negative",
+      message: "Erro ao excluir conta. Por favor, tente novamente.",
+      icon: "error",
+    });
   } finally {
     deleteDialog.value = false;
   }
 };
 
-onMounted(getAccounts);
-
-// Se esta é a página de redirecionamento, chame handleRedirect
-if (window.location.pathname === "/ml-redirect") {
-  console.log("Página de redirecionamento detectada. Verificando código...");
-  handleRedirect();
-}
+onMounted(() => {
+  getAccounts();
+  window.addEventListener("message", (event) => {
+    if (event.data.type === "ML_AUTH_SUCCESS") {
+      handleAuthSuccess(event.data.code);
+    }
+  });
+});
 </script>

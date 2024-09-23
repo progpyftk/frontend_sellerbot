@@ -1,22 +1,20 @@
 // src/boot/axios.js
-
 import { boot } from "quasar/wrappers";
 import axios from "axios";
-import { useStore } from "src/stores/store"; // Importe o store onde já está sua lógica de logout
 
-// Inicialize e exporte o `api` fora da função `boot`
-export const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_HOST,
-});
+// Define a URL base dependendo do ambiente
+const apiBaseUrl =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:8000" // URL da API de desenvolvimento
+    : "VITE_BACKEND_HOST_PLACEHOLDER"; // Placeholder que será substituído no Nginx
 
-if (process.env.DEV) {
-  console.log(`I'm on a development build`);
-}
+// Crie a instância do Axios
+const api = axios.create({ baseURL: apiBaseUrl });
 
-console.log("Backend Host Teste do Vite:", import.meta.env.VITE_BACKEND_HOST);
+export default boot(({ app }) => {
+  console.log("API Base URL:", api.defaults.baseURL);
 
-export default boot(({ app, router }) => {
-  // Intercepta todas as requisições para adicionar o token de acesso
+  // Interceptor para adicionar o token de acesso
   api.interceptors.request.use(
     (config) => {
       const accessToken = sessionStorage.getItem("accessToken");
@@ -78,3 +76,6 @@ export default boot(({ app, router }) => {
   app.config.globalProperties.$axios = axios;
   app.config.globalProperties.$api = api;
 });
+
+// Exporta a instância da API
+export { api };
