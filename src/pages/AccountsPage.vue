@@ -66,6 +66,13 @@
             </div>
           </q-td>
         </template>
+
+        <template v-slot:body-cell-token_expires_at="props">
+          <q-td :props="props">
+            {{ formatDate(props.row.token_expires_at) }}
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td :props="props">
             <q-btn
@@ -79,11 +86,6 @@
         </template>
       </q-table>
       <div v-else class="text-center q-pa-md">Nenhuma conta encontrada.</div>
-    </template>
-    <template v-slot:body-cell-token_expires_at="props">
-      <q-td :props="props">
-        {{ formatDate(props.row.token_expires_at) }}
-      </q-td>
     </template>
 
     <!-- Delete Confirmation Dialog -->
@@ -105,8 +107,8 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { api } from "src/boot/axios";
-import { useQuasar } from "quasar";
-import { date } from "quasar";
+import { useQuasar, date } from "quasar";
+import { DateTime } from "luxon";
 
 const $q = useQuasar();
 
@@ -157,9 +159,16 @@ const truncateToken = (token) => {
 };
 
 const formatDate = (dateString) => {
+  console.log(dateString);
   if (!dateString) return "";
-  const parsedDate = new Date(dateString);
-  return date.formatDate(parsedDate, "DD/MM/YYYY HH:mm");
+
+  // Converte a string UTC para uma data no fuso horário de São Paulo
+  const saoPauloDate = DateTime.fromISO(dateString, { zone: "UTC" }).setZone(
+    "America/Sao_Paulo"
+  );
+
+  // Formata a data para dd/MM/yyyy HH:mm
+  return saoPauloDate.toFormat("dd/MM/yyyy HH:mm");
 };
 
 const copyToClipboard = (text) => {
