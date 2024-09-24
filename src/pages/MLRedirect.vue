@@ -5,7 +5,7 @@
         <q-card class="auth-card q-pa-lg">
           <q-card-section class="text-center">
             <q-avatar size="80px" class="q-mb-md">
-              <img
+              <q-img
                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/MercadoLibre.svg/1200px-MercadoLibre.svg.png"
                 alt="MercadoLivre Logo"
               />
@@ -47,11 +47,12 @@ const closeTab = () => {
 };
 
 onMounted(() => {
+
   const urlParams = new URLSearchParams(window.location.search);
   code.value = urlParams.get("code");
 
   if (code.value) {
-    window.opener.postMessage({ type: "ML_AUTH_SUCCESS", code: code.value }, "*");
+    window.opener?.postMessage({ type: "ML_AUTH_SUCCESS", code: code.value }, "*");
     $q.notify({
       type: "positive",
       message: "Autenticação concluída com sucesso!",
@@ -59,7 +60,7 @@ onMounted(() => {
       timeout: 2000,
     });
   } else {
-    console.log("Nenhum código de autorização encontrado.");
+    console.error("Nenhum código de autorização encontrado.");
     $q.notify({
       type: "negative",
       message: "Falha na autenticação. Tente novamente.",

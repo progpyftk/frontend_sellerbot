@@ -42,7 +42,11 @@ export default boot(({ app }) => {
         try {
           const refreshToken = localStorage.getItem("refreshToken");
           if (!refreshToken) {
-            throw new Error("Refresh token não encontrado.");
+            // Desloga o usuário se o refreshToken não for encontrado
+            const store = useStore();
+            store.logoutUser();
+            router.push({ name: "login" });
+            return Promise.reject(new Error("Usuário deslogado"));
           }
 
           // Faz a requisição para obter um novo token de acesso
@@ -62,6 +66,10 @@ export default boot(({ app }) => {
         } catch (refreshError) {
           console.error("Erro ao tentar fazer refresh do token:", refreshError);
 
+          // Desloga o usuário em caso de falha no refresh
+          const store = useStore();
+          store.logoutUser();
+          router.push({ name: "login" });
           return Promise.reject(refreshError);
         }
       }

@@ -13,7 +13,9 @@
 
 
 
+import {Notify} from 'quasar'
 
 
-export default { config: {"brand":{"primary":"#ff5722","secondary":"#607d8b","accent":"#03a9f4","dark":"#1D1D1D","positive":"#4caf50","negative":"#f44336","info":"#2196f3","warning":"#ffeb3b","background":"#f0f0f0"}} }
+
+export default { config: {"brand":{"primary":"#ff5722","secondary":"#607d8b","accent":"#03a9f4","dark":"#1D1D1D","positive":"#4caf50","negative":"#f44336","info":"#2196f3","warning":"#ffeb3b","background":"#f0f0f0"},"touchPlugin":{"passive":true,"capture":false}},plugins: {Notify} }
 

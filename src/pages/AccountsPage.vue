@@ -10,7 +10,13 @@
     <!-- Data Table -->
     <template v-else>
       <div class="q-mb-md">
-        <q-btn color="primary" icon="add" label="Adicionar Conta" @click="startMLAuth" />
+        <q-btn
+          color="primary"
+          icon="add"
+          label="Adicionar Conta"
+          @click="startMLAuth"
+          :loading="isAuthenticating"
+        />
       </div>
       <q-table
         :rows="accounts"
@@ -105,12 +111,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { api } from "src/boot/axios";
 import { useQuasar, date } from "quasar";
 import { DateTime } from "luxon";
 
-const $q = useQuasar();
+const quasar = useQuasar();
+
+const notify = (message, type = "info") => {
+  quasar.notify({
+    message,
+    type,
+    position: "top",
+    timeout: 2000,
+  });
+};
 
 const CLIENT_ID = "6026212895630598";
 const REDIRECT_URI =
@@ -175,19 +190,11 @@ const copyToClipboard = (text) => {
   navigator.clipboard
     .writeText(text)
     .then(() => {
-      $q.notify({
-        type: "positive",
-        message: "Token copiado para a área de transferência",
-        timeout: 2000,
-      });
+      notify("Token copiado com sucesso para área de transferência!", "positive");
     })
     .catch((err) => {
       console.error("Erro ao copiar: ", err);
-      $q.notify({
-        type: "negative",
-        message: "Erro ao copiar o token",
-        timeout: 2000,
-      });
+      notify(`Erro nao copiar o CODE: ${error.message}`, "negative");
     });
 };
 
@@ -207,10 +214,7 @@ const getAccounts = async () => {
   } catch (error) {
     console.error("Erro detalhado ao buscar contas:", error);
     accounts.value = []; // Garantir que accounts seja sempre um array
-    $q.notify({
-      type: "negative",
-      message: "Erro ao buscar contas. Por favor, tente novamente.",
-    });
+    notify("Erro ao buscar contas. Por favor, tente novamente.", "negative");
   } finally {
     loading.value = false;
     console.log("Loading finalizado");
@@ -240,20 +244,14 @@ const handleAuthSuccess = async (code) => {
     loading.value = true;
     const response = await api.post("/mercadolivre/auth/", { code: code });
     if (response.data && response.data.success) {
-      $q.notify({
-        type: "positive",
-        message: "Conta autenticada com sucesso!",
-      });
-      getAccounts(); // Atualiza a lista de contas
+      notify("Conta adicionada com sucesso!", "positive");
+      await getAccounts(); // Atualiza a lista de contas
     } else {
       throw new Error(response.data?.message || "Erro desconhecido");
     }
   } catch (error) {
     console.error("Erro na autenticação:", error);
-    $q.notify({
-      type: "negative",
-      message: `Erro na autenticação: ${error.message}`,
-    });
+    notify(`Erro na autenticação: ${error.message}`, "negative");
   } finally {
     isAuthenticating.value = false;
     loading.value = false;
@@ -273,29 +271,29 @@ const deleteAccount = async () => {
         ml_seller_id: accountToDelete.value.account_id,
       },
     });
-    $q.notify({
-      type: "positive",
-      message: "Conta excluída com sucesso!",
-    });
-    getAccounts(); // Atualiza a lista de contas
+    notify("Conta deletada com sucesso!", "positive");
+    await getAccounts(); // Atualiza a lista de contas
   } catch (error) {
     console.error("Erro ao excluir conta:", error);
-    $q.notify({
-      type: "negative",
-      message: "Erro ao excluir conta. Por favor, tente novamente.",
-    });
+    notify(`Erro ao excluir a conta: ${error.message}`, "negative");
   } finally {
     deleteDialog.value = false;
     accountToDelete.value = null;
   }
 };
 
+const handleMessage = (event) => {
+  if (event.data.type === "ML_AUTH_SUCCESS") {
+    handleAuthSuccess(event.data.code);
+  }
+};
+
 onMounted(() => {
   getAccounts();
-  window.addEventListener("message", (event) => {
-    if (event.data.type === "ML_AUTH_SUCCESS") {
-      handleAuthSuccess(event.data.code);
-    }
-  });
+  window.addEventListener("message", handleMessage, { passive: true });
+});
+
+onUnmounted(() => {
+  window.addEventListener("message", handleMessage, { passive: true });
 });
 </script>
