@@ -48,7 +48,7 @@ const env = urlParams.get("env"); // Parâmetro que indica o ambiente (dev ou pr
 // Define a URL base dependendo do valor de `env`
 const apiBaseUrl =
   env === "dev"
-    ? "http://localhost:9000/app/accounts" // Para desenvolvimento
+    ? "https://localhost:9000/app/accounts" // Para desenvolvimento
     : "https://sellerbot-frontend-367123809032.us-central1.run.app/app/accounts"; // Para produção
 
 onMounted(() => {
