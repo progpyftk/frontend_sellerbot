@@ -8,7 +8,7 @@ RUN npm install -g npm@latest @quasar/cli
 
 # Copiar apenas os arquivos necessários para instalar dependências
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copiar o restante dos arquivos do projeto
 COPY . .
