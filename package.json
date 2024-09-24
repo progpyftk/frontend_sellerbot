@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Sellerbot project",
   "productName": "SellerBot Frontend",
-  "author": "Lorenzo Simonassi Cabrini - PrestServ <lorenzocabrini.prestserv@petrobras.com.br>",
+  "author": "Lorenzo Simonassi Cabrini>",
   "private": true,
   "scripts": {
     "test": "echo \"No test specified\" && exit 0",
