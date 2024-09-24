@@ -7,14 +7,14 @@ WORKDIR /app
 # Instalar dependências do sistema necessárias (opcional)
 RUN apk add --no-cache python3 make g++
 
-# Atualizar npm e instalar Quasar CLI globalmente
-RUN npm install -g npm@latest @quasar/cli && npm cache clean --force
+# Atualizar npm, instalar Quasar CLI globalmente, e limpar o cache do npm
+RUN npm install -g npm@8 @quasar/cli && npm cache clean --force
 
 # Copiar apenas os arquivos necessários para instalar dependências
 COPY package*.json ./
 
-# Usar npm ci para instalação determinística
-RUN npm ci --ignore-scripts
+# Definir permissões e rodar npm ci com permissões seguras
+RUN chmod -R 777 /app && npm ci --ignore-scripts --unsafe-perm
 
 # Copiar o restante dos arquivos do projeto
 COPY . .
