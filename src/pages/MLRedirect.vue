@@ -41,43 +41,33 @@ import { useQuasar } from "quasar";
 const $q = useQuasar();
 const code = ref(null);
 
+// Extrai o parâmetro `env` da URL
+const urlParams = new URLSearchParams(window.location.search);
+const env = urlParams.get("env"); // Parâmetro que indica o ambiente (dev ou prod)
+
+// Define a URL base dependendo do valor de `env`
+const apiBaseUrl =
+  env === "dev"
+    ? "http://localhost:9000/app/accounts" // Para desenvolvimento
+    : "https://sellerbot-frontend-367123809032.us-central1.run.app/app/accounts"; // Para produção
+
 onMounted(() => {
   // Extrai o código da URL após a autenticação do Mercado Livre
-  const urlParams = new URLSearchParams(window.location.search);
   code.value = urlParams.get("code");
 
   if (code.value) {
-    // Se for uma janela pop-up (desktop), envia a mensagem de sucesso para a janela de origem
-    if (window.opener) {
-      window.opener.postMessage({ type: "ML_AUTH_SUCCESS", code: code.value }, "*");
+    // Exibe uma notificação de sucesso
+    $q.notify({
+      type: "positive",
+      message: "Autenticação concluída com sucesso! Redirecionando...",
+      position: "top",
+      timeout: 1000, // Ajustei para um tempo de redirecionamento mais curto (1s)
+    });
 
-      // Exibe uma notificação de sucesso
-      $q.notify({
-        type: "positive",
-        message: "Autenticação concluída com sucesso!",
-        position: "top",
-        timeout: 2000,
-      });
-
-      // Fecha a aba de autenticação após um breve intervalo
-      setTimeout(() => {
-        window.close();
-      }, 1500);
-    } else {
-      // Se for redirecionamento em uma aba (mobile), redireciona de volta para a página principal
-      $q.notify({
-        type: "positive",
-        message: "Autenticação concluída com sucesso! Redirecionando...",
-        position: "top",
-        timeout: 2000,
-      });
-
-      // Redireciona de volta para a página principal do app
-      setTimeout(() => {
-        window.location.href =
-          "https://sellerbot-frontend-367123809032.us-central1.run.app/app/accounts"; // Substitua pela URL da página principal do seu app
-      }, 1500);
-    }
+    // Redireciona de volta para a página de contas com o `code` na URL
+    setTimeout(() => {
+      window.location.href = `${apiBaseUrl}?code=${code.value}`;
+    }, 1000); // Reduzido para 1 segundo
   } else {
     console.error("Nenhum código de autorização encontrado.");
     $q.notify({

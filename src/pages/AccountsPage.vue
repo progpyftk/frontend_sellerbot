@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted } from "vue";
 import { api } from "src/boot/axios";
 import { useQuasar } from "quasar";
 import { DateTime } from "luxon";
@@ -128,13 +128,18 @@ const notify = (message, type = "info") => {
 };
 
 const CLIENT_ID = "6026212895630598";
-const REDIRECT_URI =
-  "https://sellerbot-frontend-367123809032.us-central1.run.app/ml-redirect";
+
+const isDevEnvironment = process.env.NODE_ENV === "development"; // Verifica o ambiente com NODE_ENV
+const REDIRECT_URI = isDevEnvironment
+  ? "https://sellerbot-frontend-367123809032.us-central1.run.app/ml-redirect?env=dev" // URL de dev
+  : "https://sellerbot-frontend-367123809032.us-central1.run.app/ml-redirect?env=prod"; // URL de produção
 
 const loading = ref(true);
 const accounts = ref([]);
 const deleteDialog = ref(false);
 const accountToDelete = ref(null);
+const isAuthenticating = ref(false); // Declarar a variável isAuthenticating como ref
+console.log("AMBIENTE :", process.env.NODE_ENV);
 
 const columns = [
   { name: "account_id", align: "left", label: "Seller ID", field: "account_id" },
@@ -207,36 +212,21 @@ const getAccounts = async () => {
   }
 };
 
-// Parte adicionada para detectar dispositivos móveis
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-let authWindow = null;
-const isAuthenticating = ref(false);
-
+// Inicia o fluxo de autenticação para o Mercado Livre
 const startMLAuth = () => {
   if (isAuthenticating.value) return;
-  isAuthenticating.value = true;
+  isAuthenticating.value = true; // Mostra o estado de carregamento
   const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
     REDIRECT_URI
   )}`;
-
-  if (isMobile) {
-    // Redireciona na mesma aba para dispositivos móveis
-    window.location.href = authUrl;
-  } else {
-    // Abre uma nova janela para desktop
-    if (authWindow && !authWindow.closed) {
-      authWindow.focus();
-    } else {
-      authWindow = window.open(authUrl, "_blank");
-    }
-  }
+  window.location.href = authUrl;
 };
 
+// Captura e trata o código de autenticação recebido na URL após redirecionamento
 const handleAuthSuccess = async (code) => {
-  if (!isAuthenticating.value) return;
   try {
     loading.value = true;
-    const response = await api.post("/mercadolivre/auth/", { code: code });
+    const response = await api.post("/mercadolivre/auth/", { code });
     if (response.data && response.data.success) {
       notify("Conta adicionada com sucesso!", "positive");
       await getAccounts(); // Atualiza a lista de contas
@@ -246,24 +236,22 @@ const handleAuthSuccess = async (code) => {
   } catch (error) {
     notify(`Erro na autenticação: ${error.message}`, "negative");
   } finally {
-    isAuthenticating.value = false;
     loading.value = false;
   }
 };
 
-// Captura a mensagem da RedirectPage com o CODE
-const handleMessage = (event) => {
-  if (event.data.type === "ML_AUTH_SUCCESS") {
-    handleAuthSuccess(event.data.code);
-  }
-};
-
+// Verifica se há um `code` na URL e o envia ao backend
 onMounted(() => {
-  getAccounts();
-  window.addEventListener("message", handleMessage, { passive: true });
-});
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
 
-onUnmounted(() => {
-  window.removeEventListener("message", handleMessage);
+  if (code) {
+    handleAuthSuccess(code);
+
+    // Limpa o código da URL para evitar duplicações
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  getAccounts(); // Busca a lista de contas já autenticadas
 });
 </script>
