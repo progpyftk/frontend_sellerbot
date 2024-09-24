@@ -74,7 +74,8 @@ onMounted(() => {
 
       // Redireciona de volta para a página principal do app
       setTimeout(() => {
-        window.location.href = "https://app-url/principal"; // Substitua pela URL da página principal do seu app
+        window.location.href =
+          "https://sellerbot-frontend-367123809032.us-central1.run.app/app/accounts"; // Substitua pela URL da página principal do seu app
       }, 1500);
     }
   } else {
