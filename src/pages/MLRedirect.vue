@@ -19,8 +19,7 @@
               <div v-if="code" key="success">
                 <q-icon name="check_circle" color="positive" size="3rem" />
                 <p class="text-h6 q-mt-md">Autenticação bem-sucedida!</p>
-                <p class="q-mb-lg">Você pode fechar esta guia com segurança.</p>
-                <q-btn color="primary" label="Fechar" @click="closeTab" />
+                <p class="q-mb-lg">Você será redirecionado em breve...</p>
               </div>
               <div v-else key="loading">
                 <q-spinner-dots color="primary" size="3rem" />
@@ -42,23 +41,42 @@ import { useQuasar } from "quasar";
 const $q = useQuasar();
 const code = ref(null);
 
-const closeTab = () => {
-  window.close();
-};
-
 onMounted(() => {
-
+  // Extrai o código da URL após a autenticação do Mercado Livre
   const urlParams = new URLSearchParams(window.location.search);
   code.value = urlParams.get("code");
 
   if (code.value) {
-    window.opener?.postMessage({ type: "ML_AUTH_SUCCESS", code: code.value }, "*");
-    $q.notify({
-      type: "positive",
-      message: "Autenticação concluída com sucesso!",
-      position: "top",
-      timeout: 2000,
-    });
+    // Se for uma janela pop-up (desktop), envia a mensagem de sucesso para a janela de origem
+    if (window.opener) {
+      window.opener.postMessage({ type: "ML_AUTH_SUCCESS", code: code.value }, "*");
+
+      // Exibe uma notificação de sucesso
+      $q.notify({
+        type: "positive",
+        message: "Autenticação concluída com sucesso!",
+        position: "top",
+        timeout: 2000,
+      });
+
+      // Fecha a aba de autenticação após um breve intervalo
+      setTimeout(() => {
+        window.close();
+      }, 1500);
+    } else {
+      // Se for redirecionamento em uma aba (mobile), redireciona de volta para a página principal
+      $q.notify({
+        type: "positive",
+        message: "Autenticação concluída com sucesso! Redirecionando...",
+        position: "top",
+        timeout: 2000,
+      });
+
+      // Redireciona de volta para a página principal do app
+      setTimeout(() => {
+        window.location.href = "https://app-url/principal"; // Substitua pela URL da página principal do seu app
+      }, 1500);
+    }
   } else {
     console.error("Nenhum código de autorização encontrado.");
     $q.notify({

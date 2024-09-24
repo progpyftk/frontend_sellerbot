@@ -113,7 +113,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 import { api } from "src/boot/axios";
-import { useQuasar, date } from "quasar";
+import { useQuasar } from "quasar";
 import { DateTime } from "luxon";
 
 const quasar = useQuasar();
@@ -151,12 +151,7 @@ const columns = [
     label: "Refresh Token",
     field: "refresh_token",
   },
-  {
-    name: "is_connected",
-    align: "left",
-    label: "Status",
-    field: "is_connected",
-  },
+  { name: "is_connected", align: "left", label: "Status", field: "is_connected" },
   {
     name: "token_expires_at",
     align: "left",
@@ -174,15 +169,12 @@ const truncateToken = (token) => {
 };
 
 const formatDate = (dateString) => {
-  console.log(dateString);
   if (!dateString) return "";
 
-  // Converte a string UTC para uma data no fuso horário de São Paulo
   const saoPauloDate = DateTime.fromISO(dateString, { zone: "UTC" }).setZone(
     "America/Sao_Paulo"
   );
 
-  // Formata a data para dd/MM/yyyy HH:mm
   return saoPauloDate.toFormat("dd/MM/yyyy HH:mm");
 };
 
@@ -194,33 +186,29 @@ const copyToClipboard = (text) => {
     })
     .catch((err) => {
       console.error("Erro ao copiar: ", err);
-      notify(`Erro nao copiar o CODE: ${error.message}`, "negative");
+      notify(`Erro ao copiar o CODE: ${err.message}`, "negative");
     });
 };
 
 const getAccounts = async () => {
   loading.value = true;
   try {
-    console.log("Iniciando busca de contas");
     const response = await api.get("/mercadolivre/accounts/");
-    console.log("Resposta da API:", response);
     if (response.data && Array.isArray(response.data)) {
       accounts.value = response.data;
     } else {
       accounts.value = [];
-      console.warn("Dados de contas não encontrados ou não são um array:", response.data);
     }
-    console.log("Contas atualizadas:", accounts.value);
   } catch (error) {
-    console.error("Erro detalhado ao buscar contas:", error);
-    accounts.value = []; // Garantir que accounts seja sempre um array
+    accounts.value = [];
     notify("Erro ao buscar contas. Por favor, tente novamente.", "negative");
   } finally {
     loading.value = false;
-    console.log("Loading finalizado");
   }
 };
 
+// Parte adicionada para detectar dispositivos móveis
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 let authWindow = null;
 const isAuthenticating = ref(false);
 
@@ -231,10 +219,16 @@ const startMLAuth = () => {
     REDIRECT_URI
   )}`;
 
-  if (authWindow && !authWindow.closed) {
-    authWindow.focus();
+  if (isMobile) {
+    // Redireciona na mesma aba para dispositivos móveis
+    window.location.href = authUrl;
   } else {
-    authWindow = window.open(authUrl, "_blank");
+    // Abre uma nova janela para desktop
+    if (authWindow && !authWindow.closed) {
+      authWindow.focus();
+    } else {
+      authWindow = window.open(authUrl, "_blank");
+    }
   }
 };
 
@@ -250,7 +244,6 @@ const handleAuthSuccess = async (code) => {
       throw new Error(response.data?.message || "Erro desconhecido");
     }
   } catch (error) {
-    console.error("Erro na autenticação:", error);
     notify(`Erro na autenticação: ${error.message}`, "negative");
   } finally {
     isAuthenticating.value = false;
@@ -258,30 +251,7 @@ const handleAuthSuccess = async (code) => {
   }
 };
 
-const confirmDelete = (account) => {
-  accountToDelete.value = account;
-  deleteDialog.value = true;
-};
-
-const deleteAccount = async () => {
-  if (!accountToDelete.value) return;
-  try {
-    await api.post("/seller/delete", {
-      seller: {
-        ml_seller_id: accountToDelete.value.account_id,
-      },
-    });
-    notify("Conta deletada com sucesso!", "positive");
-    await getAccounts(); // Atualiza a lista de contas
-  } catch (error) {
-    console.error("Erro ao excluir conta:", error);
-    notify(`Erro ao excluir a conta: ${error.message}`, "negative");
-  } finally {
-    deleteDialog.value = false;
-    accountToDelete.value = null;
-  }
-};
-
+// Captura a mensagem da RedirectPage com o CODE
 const handleMessage = (event) => {
   if (event.data.type === "ML_AUTH_SUCCESS") {
     handleAuthSuccess(event.data.code);
@@ -294,6 +264,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  window.addEventListener("message", handleMessage, { passive: true });
+  window.removeEventListener("message", handleMessage);
 });
 </script>
