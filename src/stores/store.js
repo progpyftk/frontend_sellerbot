@@ -55,7 +55,7 @@ export const useStore = defineStore("main", {
 
     async refreshAuthToken() {
       try {
-        const response = await api.post("/auth/refresh/", {
+        const response = await api.post("/users/token/refresh/", {
           refresh: this.refreshToken,
         });
 
