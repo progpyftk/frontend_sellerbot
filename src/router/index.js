@@ -22,19 +22,28 @@ export default route(function (/* { store, ssrContext } */) {
   });
 
   // Guarda de navegação global
-  Router.beforeEach((to, from, next) => {
-    const store = useStore(); // Acessa o store para verificar o status do usuário
+  Router.beforeEach(async (to, from, next) => {
+    const store = useStore(); // Acessa o store Pinia
 
-    const requiresAuth = to.path.startsWith("/app"); // Verifica se a rota começa com /app (rotas protegidas)
-    const isLoggedIn = !!store.currentUser; // Verifica se o usuário está logado
+    const requiresAuth = to.path.startsWith("/app"); // Rotas que exigem autenticação
+    const isLoggedIn = !!store.authToken; // Verifica se o usuário tem um token armazenado
 
-    if (requiresAuth && !isLoggedIn) {
-      next("/login"); // Redireciona para login se o usuário não estiver logado
-    } else if ((to.path === "/signup" || to.path === "/login") && isLoggedIn) {
-      next("/app"); // Impede que usuários logados acessem signup ou login
-    } else {
-      next(); // Permite continuar a navegação
+    if (requiresAuth) {
+      if (!isLoggedIn) {
+        console.log("Usuário não está logado. Redirecionando para o login.");
+        return next("/login"); // Redireciona para o login
+      }
+
+      // Verifica se o token é válido antes de permitir a navegação
+      const isValid = await store.ensureValidToken();
+      if (!isValid) {
+        console.log("Token inválido ou expirado. Redirecionando para o login.");
+        return next("/login");
+      }
     }
+
+    // Se a rota não exigir autenticação ou o token for válido, prossiga
+    next();
   });
 
   return Router;

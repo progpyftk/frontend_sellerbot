@@ -9,17 +9,18 @@ export const useStore = defineStore("main", {
     currentUser: JSON.parse(localStorage.getItem("currentUser")) || null,
   }),
   actions: {
-    loginUser(accessToken, refreshToken, userData) {
+    loginUser(accessToken, refreshToken) {
       this.authToken = accessToken;
       this.refreshToken = refreshToken;
-      this.currentUser = userData;
 
       sessionStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      localStorage.setItem("currentUser", JSON.stringify(this.currentUser));
 
-      // Configure o token no cabeçalho padrão do Axios
+      // Configura o cabeçalho do axios com o novo token
       api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+
+      // Buscar o usuário atual após o login
+      this.fetchCurrentUser();
     },
 
     async fetchCurrentUser() {
@@ -27,14 +28,52 @@ export const useStore = defineStore("main", {
         const response = await api.get("/users/me/");
         this.currentUser = response.data;
         localStorage.setItem("currentUser", JSON.stringify(this.currentUser));
+        console.log("Usuário atual obtido com sucesso:", this.currentUser);
       } catch (error) {
-        console.error("Erro ao buscar o usuário atual", error);
-        if (error.response && error.response.status === 401) {
-          // Tenta renovar o token se a resposta for 401 (Não autorizado)
-          await this.refreshAuthToken();
-        } else {
+        console.error("Erro ao buscar o usuário atual:", error);
+        this.logoutUser(); // Se não conseguir pegar o currentUser, desloga o usuário
+      }
+    },
+
+    async ensureValidToken() {
+      if (this.isTokenExpired()) {
+        const success = await this.refreshAuthToken();
+        if (!success) {
           this.logoutUser();
+          return false;
         }
+      }
+      return true;
+    },
+
+    async refreshAuthToken() {
+      const refreshToken = this.refreshToken;
+      if (!refreshToken) {
+        console.log(
+          "Nenhum refresh token disponível. Redirecionando para o login."
+        );
+        this.logoutUser();
+        return false;
+      }
+
+      try {
+        console.log(
+          "Tentando renovar o token com o refresh token:",
+          refreshToken
+        );
+        const response = await api.post("/users/token/refresh/", {
+          refresh: refreshToken,
+        });
+        const newAccessToken = response.data.access;
+        this.loginUser(newAccessToken, refreshToken); // Chama o loginUser para pegar o currentUser
+        return true;
+      } catch (error) {
+        console.error(
+          "Erro ao renovar o token:",
+          error.response ? error.response.data : error.message
+        );
+        this.logoutUser();
+        return false;
       }
     },
 
@@ -47,69 +86,18 @@ export const useStore = defineStore("main", {
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("currentUser");
 
-      // Remove o token do cabeçalho padrão do Axios
       delete api.defaults.headers.common["Authorization"];
-
-      console.log("Usuário deslogado");
+      router.push("/login"); // Redireciona para login
     },
 
-    async refreshAuthToken() {
-      try {
-        const response = await api.post("/users/token/refresh/", {
-          refresh: this.refreshToken,
-        });
-
-        const newAccessToken = response.data.access;
-        this.loginUser(newAccessToken, this.refreshToken, this.currentUser);
-
-        return true;
-      } catch (error) {
-        console.error("Erro ao renovar o token", error);
-        this.logoutUser();
-        return false;
-      }
-    },
-
-    // Novo método para verificar e renovar o token se necessário
-    async ensureValidToken() {
-      const tokenExp = this.getTokenExpiration();
-      if (tokenExp && tokenExp - Date.now() < 5 * 60 * 1000) {
-        // Se o token expira em menos de 5 minutos
-        await this.refreshAuthToken();
-      }
-    },
-
-    // Método auxiliar para obter a expiração do token
-    getTokenExpiration() {
-      if (!this.authToken) return null;
+    isTokenExpired() {
+      if (!this.authToken) return true;
       try {
         const payload = JSON.parse(atob(this.authToken.split(".")[1]));
-        return payload.exp * 1000; // Converte para milissegundos
+        return Date.now() >= payload.exp * 1000; // Verifica a expiração do token
       } catch (e) {
-        return null;
+        return true;
       }
     },
   },
 });
-
-// Interceptor para renovar o token automaticamente
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (
-      error.response &&
-      error.response.status === 401 &&
-      error.config &&
-      !error.config.__isRetryRequest
-    ) {
-      const store = useStore();
-      const success = await store.refreshAuthToken();
-      if (success) {
-        error.config.__isRetryRequest = true;
-        error.config.headers["Authorization"] = `Bearer ${store.authToken}`;
-        return api(error.config);
-      }
-    }
-    return Promise.reject(error);
-  }
-);
