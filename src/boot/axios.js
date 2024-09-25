@@ -109,9 +109,25 @@ export default boot(({ app }) => {
         }
       }
 
-      // Se o erro não for 401 ou já for uma tentativa de renovação, rejeita a promessa
-      console.error("Erro sem tentativa de renovação de token:", error);
-      return Promise.reject(error);
+      // Se o erro não for 401 ou já for uma tentativa de renovação
+      if (error.response) {
+        const { data, status } = error.response;
+
+        // Exibe a mensagem de erro retornada pelo backend, se houver
+        if (status === 400 && data.errors) {
+          console.error(`Erro ${status}:`, data.message || "Erro desconhecido");
+        } else {
+          // Outros erros com status diferente
+          console.error(
+            `Erro sem tentativa de renovação de token (${status}):`,
+            error.message
+          );
+        }
+      } else {
+        console.error("Erro desconhecido:", error.message);
+      }
+
+      return Promise.reject(error); // Rejeita a promessa e passa o erro adiante
     }
   );
 
