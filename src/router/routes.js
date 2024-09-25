@@ -13,11 +13,6 @@ const routes = [
     component: () => import("pages/SignupPage.vue"),
   },
   {
-    path: "/signup-success",
-    name: "signup-success",
-    component: () => import("pages/SignupSuccessPage.vue"),
-  },
-  {
     path: "/login",
     name: "login",
     component: () => import("pages/LoginPage.vue"),

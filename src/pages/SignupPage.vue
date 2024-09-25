@@ -140,6 +140,17 @@ const emailError = ref(null);
 const passwordError = ref(null);
 const passwordConfirmationError = ref(null);
 const usernameError = ref(null);
+const quasar = useQuasar();
+
+const notify = (message, type = "positive") => {
+  $q.notify({
+    message,
+    type,
+    position: "top",
+    timeout: 3000,
+    actions: [{ icon: "close", color: "white" }],
+  });
+};
 
 const formattedUsername = computed({
   get: () => username.value,
@@ -177,7 +188,11 @@ const registerUser = async () => {
       password: password.value,
       password_confirmation: passwordConfirmation.value,
     });
-    router.push("/signup-success");
+    notify("Bem-vindo! Seu cadastro foi concluído com sucesso.");
+    // Redirecionar para a página de login após um breve delay
+    setTimeout(() => {
+      router.push("/");
+    }, 1000);
   } catch (error) {
     handleRegistrationError(error);
   } finally {
@@ -222,8 +237,7 @@ const goToLogin = () => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.q-field
- {
+.q-field {
   &::v-deep(.q-field__control) {
     height: 56px;
   }

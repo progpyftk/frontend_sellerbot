@@ -1,50 +1,70 @@
-<!-- src/pages/LoginPage.vue -->
-
 <template>
   <q-layout view="hHh lpR fFf">
-    <!-- Incluindo a toolbar personalizada no layout -->
     <HomeToolbar />
-
-    <!-- Container para as páginas dentro do layout -->
     <q-page-container>
-      <!-- Página de login -->
-      <q-page class="flex flex-center">
-        <q-card class="q-pa-lg" style="width: 350px; margin-top: 40px">
-          <q-card-section>
-            <div class="text-h6 text-center">Login</div>
+      <q-page class="flex flex-center bg-grey-1">
+        <q-card class="login-card q-pa-lg">
+          <q-card-section class="text-center">
+            <h5 class="text-h5 q-mt-sm q-mb-md">Login</h5>
           </q-card-section>
 
           <q-card-section>
-            <q-alert v-if="errorMessage" color="negative" icon="warning" class="q-mb-md">
-              {{ errorMessage }}
-            </q-alert>
-
-            <q-form @submit="loginUser">
-              <!-- Atualização para aceitar nome de usuário ou email -->
+            <q-form @submit="loginUser" class="q-gutter-md">
               <q-input
-                v-model="usernameOrEmail"
-                label="Email ou Nome de Usuário"
-                type="text"
-                outlined
-                required
-                class="q-mb-md"
-              />
+                v-model="formattedUsernameOrEmail"
+                label="Nome de usuário ou Email"
+                filled
+                :rules="[(val) => !!val || 'Campo obrigatório']"
+                :error="!!usernameOrEmailError"
+                :error-message="usernameOrEmailError"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="person" />
+                </template>
+              </q-input>
+
               <q-input
                 v-model="password"
+                :type="showPassword ? 'text' : 'password'"
                 label="Senha"
-                type="password"
-                outlined
-                required
-                class="q-mb-md"
-              />
-              <q-btn
-                label="Login"
-                type="submit"
-                color="primary"
-                class="full-width q-mt-md"
-                :loading="loading"
-              />
+                filled
+                :rules="[(val) => !!val || 'Campo obrigatório']"
+                :error="!!passwordError"
+                :error-message="passwordError"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="lock" />
+                </template>
+                <template v-slot:append>
+                  <q-icon
+                    :name="showPassword ? 'visibility_off' : 'visibility'"
+                    class="cursor-pointer"
+                    @click="showPassword = !showPassword"
+                  />
+                </template>
+              </q-input>
+
+              <div class="text-center q-mt-lg">
+                <q-btn
+                  label="Entrar"
+                  type="submit"
+                  color="primary"
+                  :loading="loading"
+                  size="lg"
+                  class="full-width"
+                />
+              </div>
             </q-form>
+          </q-card-section>
+
+          <q-card-section class="text-center q-pa-none">
+            <q-btn
+              flat
+              label="Criar uma conta"
+              color="primary"
+              @click="goToSignup"
+              class="q-mt-sm"
+            />
           </q-card-section>
         </q-card>
       </q-page>
@@ -53,53 +73,127 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
-import { api } from "boot/axios"; // Importando o `api` configurado
-import { useStore } from "../stores/store"; // Importando o store principal
+import { api } from "boot/axios";
+import { useQuasar } from "quasar";
+import { useStore } from "../stores/store";
 import HomeToolbar from "src/layouts/HomeToolbar.vue";
+
+const $q = useQuasar();
+const router = useRouter();
+const store = useStore();
 
 const usernameOrEmail = ref("");
 const password = ref("");
 const loading = ref(false);
-const errorMessage = ref(null);
-const router = useRouter();
-const store = useStore(); // Acessando o store
+const showPassword = ref(false);
 
-const loginUser = () => {
-  loading.value = true;
-  errorMessage.value = null;
+const usernameOrEmailError = ref(null);
+const passwordError = ref(null);
 
-  api
-    .post("/users/login/", {
-      username: usernameOrEmail.value, // Usando 'username' para o campo
+const formattedUsernameOrEmail = computed({
+  get: () => usernameOrEmail.value,
+  set: (value) => {
+    // Se o valor parece ser um email, não aplicamos a formatação de username
+    if (value.includes("@")) {
+      usernameOrEmail.value = value.toLowerCase();
+    } else {
+      usernameOrEmail.value = value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    }
+  },
+});
+
+const loginUser = async () => {
+  try {
+    loading.value = true;
+    usernameOrEmailError.value = null;
+    passwordError.value = null;
+
+    const response = await api.post("/users/login/", {
+      username: usernameOrEmail.value,
       password: password.value,
-    })
-    .then((response) => {
-      console.log("Login Response:", response.data);
-      const accessToken = response.data.access;
-      const refreshToken = response.data.refresh;
-      const userData = response.data.user; // Definindo `userData`
-
-      // Chama a ação para armazenar o token e o usuário logado
-      store.loginUser(accessToken, refreshToken, userData);
-
-      // Redireciona para a página principal
-      router.push("/app"); // Ajuste para redirecionar para a rota principal autenticada
-    })
-    .catch((error) => {
-      if (error.response && error.response.data) {
-        errorMessage.value =
-          error.response.data.detail ||
-          error.response.data.non_field_errors ||
-          "Erro ao fazer login. Verifique suas credenciais.";
-      } else {
-        errorMessage.value = "Erro de rede. Tente novamente mais tarde.";
-      }
-      console.error("Erro no login:", error.response?.data || error);
-    })
-    .finally(() => {
-      loading.value = false;
     });
+
+    const { access: accessToken, refresh: refreshToken, user: userData } = response.data;
+
+    store.loginUser(accessToken, refreshToken, userData);
+
+    $q.notify({
+      type: "positive",
+      message: "Login realizado com sucesso!",
+      position: "top",
+      timeout: 2000,
+    });
+
+    router.push("/app");
+  } catch (error) {
+    handleLoginError(error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleLoginError = (error) => {
+  if (error.response && error.response.data) {
+    const errorData = error.response.data;
+    if (errorData.detail) {
+      $q.notify({
+        type: "negative",
+        message: errorData.detail,
+        position: "top",
+        timeout: 3000,
+      });
+    } else if (errorData.non_field_errors) {
+      $q.notify({
+        type: "negative",
+        message: errorData.non_field_errors[0],
+        position: "top",
+        timeout: 3000,
+      });
+    } else {
+      $q.notify({
+        type: "negative",
+        message: "Erro ao fazer login. Verifique suas credenciais.",
+        position: "top",
+        timeout: 3000,
+      });
+    }
+  } else {
+    $q.notify({
+      type: "negative",
+      message: "Erro de conexão. Verifique sua rede.",
+      position: "top",
+      timeout: 3000,
+    });
+  }
+};
+
+const goToSignup = () => {
+  router.push("/signup");
 };
 </script>
+
+<style lang="scss" scoped>
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.q-field {
+  &::v-deep(.q-field__control) {
+    height: 56px;
+  }
+
+  &::v-deep(.q-field__marginal) {
+    height: 56px;
+  }
+}
+
+.q-btn {
+  text-transform: none;
+}
+</style>
+
