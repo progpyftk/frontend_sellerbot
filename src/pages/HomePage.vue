@@ -11,6 +11,9 @@
         <CreatorsCommunitySection />
         <LevelUpSkillsSection />
         <SupportBusinessSection />
+        <SignUpCallToAction />
+        <PlanSelectionSection />
+        <HomePageFooter />
       </q-page>
     </q-page-container>
   </q-layout>
@@ -26,6 +29,9 @@ import MarketProductsSection from "src/components/home/MarketProductsSection.vue
 import CreatorsCommunitySection from "src/components/home/CreatorsCommunitySection.vue";
 import LevelUpSkillsSection from "src/components/home/LevelUpSkillsSection.vue";
 import SupportBusinessSection from "src/components/home/SupportBusinessSection.vue";
+import SignUpCallToAction from "src/components/home/SignUpCallToAction.vue";
+import PlanSelectionSection from "src/components/home/PlanSelectionSection.vue";
+import HomePageFooter from "src/components/home/HomePageFooter.vue";
 
 export default defineComponent({
   name: "HomePage",
@@ -38,6 +44,9 @@ export default defineComponent({
     CreatorsCommunitySection,
     LevelUpSkillsSection,
     SupportBusinessSection,
+    SignUpCallToAction,
+    PlanSelectionSection,
+    HomePageFooter,
   },
 });
 </script>
