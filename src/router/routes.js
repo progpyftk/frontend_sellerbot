@@ -27,6 +27,11 @@ const routes = [
         component: () => import("pages/AccountsPage.vue"),
       },
       {
+        path: "free-shipping",
+        name: "free-shipping",
+        component: () => import("pages/FreeShippingPage.vue"),
+      },
+      {
         path: "user/config",
         name: "user-config",
         component: () => import("pages/UserConfigPage.vue"),
