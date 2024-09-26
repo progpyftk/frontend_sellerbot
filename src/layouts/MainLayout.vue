@@ -133,6 +133,7 @@ const menuSections = [
       { label: "Contas", icon: "mdi-account-plus", route: "accounts" },
       { label: "Frete Grátis", icon: "mdi-truck-fast", route: "free-shipping" },
       { label: "Análise de Frete", icon: "mdi-chart-bar", route: "shipping-analysis" },
+      { label: "Detalhe de Venda", icon: "mdi-chart-bar", route: "order-details" },
     ],
   },
   {
