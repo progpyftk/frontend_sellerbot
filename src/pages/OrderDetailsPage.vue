@@ -54,7 +54,7 @@
 
           <!-- Exibição dos detalhes da ordem -->
           <div v-else>
-            <vue-json-pretty :data="orderDetails" :deep="3"></vue-json-pretty>
+            <vue-json-pretty :data="orderDetails" :deep="10"></vue-json-pretty>
           </div>
         </q-card-section>
       </q-card>
