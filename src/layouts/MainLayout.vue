@@ -134,6 +134,8 @@ const menuSections = [
       { label: "Frete Grátis", icon: "mdi-truck-fast", route: "free-shipping" },
       { label: "Análise de Frete", icon: "mdi-chart-bar", route: "shipping-analysis" },
       { label: "Detalhe de Venda", icon: "mdi-chart-bar", route: "order-details" },
+      { label: "Detalhe do Anúncio", icon: "mdi-chart-bar", route: "item-details" },
+      { label: "Vendas", icon: "mdi-chart-bar", route: "sales" },
     ],
   },
   {
