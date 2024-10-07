@@ -64,7 +64,7 @@
               <q-table
                 :rows="filteredSales"
                 :columns="salesColumns"
-                row-key="order_id"
+                row-key="sale_id"
                 flat
                 bordered
                 separator="cell"
@@ -90,7 +90,7 @@
                       <!-- Coluna de Itens com Verificação de Tipo -->
                       <div v-if="col.name === 'order_items'">
                         <!-- Caso seja um pack, mostrar todos os títulos dos itens -->
-                        <div v-if="props.row.type === 'pack'">
+                        <div v-if="props.row.sale_type === 'pack'">
                           <ul>
                             <li v-for="(order, index) in props.row.orders" :key="index">
                               <div v-for="(item, idx) in order.order_items" :key="idx">
@@ -99,10 +99,13 @@
                             </li>
                           </ul>
                         </div>
-                        <!-- Caso seja um pedido único, mostrar apenas o título do item -->
+                        <!-- Caso seja uma venda única, mostrar apenas o título do item -->
                         <div v-else>
                           <ul>
-                            <li v-for="(item, idx) in props.row.order_items" :key="idx">
+                            <li
+                              v-for="(item, idx) in props.row.orders[0].order_items"
+                              :key="idx"
+                            >
                               {{ item.item.title }}
                             </li>
                           </ul>
@@ -111,17 +114,19 @@
                       <!-- Ajuste para Coluna de Valor Total -->
                       <div v-else-if="col.name === 'total_amount'">
                         <!-- Caso seja um pack, calcular a soma do total dos itens -->
-                        <div v-if="props.row.type === 'pack'">
+                        <div v-if="props.row.sale_type === 'pack'">
                           R$
                           {{ calculatePackTotal(props.row.orders).toFixed(2) }}
                         </div>
-                        <!-- Caso seja um pedido único, mostrar o valor total -->
-                        <div v-else>R$ {{ props.row.total_amount.toFixed(2) }}</div>
+                        <!-- Caso seja uma venda única, mostrar o valor total -->
+                        <div v-else>
+                          R$ {{ props.row.orders[0].total_amount.toFixed(2) }}
+                        </div>
                       </div>
                       <!-- Coluna para Quantidade -->
                       <div v-else-if="col.name === 'quantity'">
                         <!-- Caso seja um pack, mostrar todas as quantidades -->
-                        <div v-if="props.row.type === 'pack'">
+                        <div v-if="props.row.sale_type === 'pack'">
                           <ul>
                             <li v-for="(order, index) in props.row.orders" :key="index">
                               <div v-for="(item, idx) in order.order_items" :key="idx">
@@ -130,15 +135,15 @@
                             </li>
                           </ul>
                         </div>
-                        <!-- Caso seja um pedido único, mostrar a quantidade -->
+                        <!-- Caso seja uma venda única, mostrar a quantidade -->
                         <div v-else>
-                          {{ props.row.order_items[0].quantity }}
+                          {{ props.row.orders[0].order_items[0].quantity }}
                         </div>
                       </div>
                       <!-- Coluna para Categoria Especial -->
                       <div v-else-if="col.name === 'categoria_especial'">
                         <!-- Caso seja um pack, mostrar se a categoria é especial -->
-                        <div v-if="props.row.type === 'pack'">
+                        <div v-if="props.row.sale_type === 'pack'">
                           <ul>
                             <li v-for="(order, index) in props.row.orders" :key="index">
                               <div v-for="(item, idx) in order.order_items" :key="idx">
@@ -147,17 +152,19 @@
                             </li>
                           </ul>
                         </div>
-                        <!-- Caso seja um pedido único, mostrar se a categoria é especial -->
+                        <!-- Caso seja uma venda única, mostrar se a categoria é especial -->
                         <div v-else>
                           {{
-                            props.row.order_items[0].categoria_especial ? "Sim" : "Não"
+                            props.row.orders[0].order_items[0].categoria_especial
+                              ? "Sim"
+                              : "Não"
                           }}
                         </div>
                       </div>
                       <!-- Coluna para Nome da Categoria -->
                       <div v-else-if="col.name === 'nome_categoria'">
                         <!-- Caso seja um pack, mostrar todos os nomes das categorias -->
-                        <div v-if="props.row.type === 'pack'">
+                        <div v-if="props.row.sale_type === 'pack'">
                           <ul>
                             <li v-for="(order, index) in props.row.orders" :key="index">
                               <div v-for="(item, idx) in order.order_items" :key="idx">
@@ -166,15 +173,18 @@
                             </li>
                           </ul>
                         </div>
-                        <!-- Caso seja um pedido único, mostrar o nome da categoria -->
+                        <!-- Caso seja uma venda única, mostrar o nome da categoria -->
                         <div v-else>
-                          {{ props.row.order_items[0].nome_categoria || "Não Informado" }}
+                          {{
+                            props.row.orders[0].order_items[0].nome_categoria ||
+                            "Não Informado"
+                          }}
                         </div>
                       </div>
                       <!-- Coluna para Preço Unitário -->
                       <div v-else-if="col.name === 'unit_price'">
                         <!-- Caso seja um pack, mostrar todos os preços unitários -->
-                        <div v-if="props.row.type === 'pack'">
+                        <div v-if="props.row.sale_type === 'pack'">
                           <ul>
                             <li v-for="(order, index) in props.row.orders" :key="index">
                               <div v-for="(item, idx) in order.order_items" :key="idx">
@@ -183,70 +193,10 @@
                             </li>
                           </ul>
                         </div>
-                        <!-- Caso seja um pedido único, mostrar o preço unitário -->
+                        <!-- Caso seja uma venda única, mostrar o preço unitário -->
                         <div v-else>
-                          R$ {{ props.row.order_items[0].unit_price.toFixed(2) }}
-                        </div>
-                      </div>
-                      <!-- Coluna para Lead Cost -->
-                      <div v-else-if="col.name === 'lead_cost'">
-                        <!-- Caso seja um pack, mostrar todos os lead costs -->
-                        <div v-if="props.row.type === 'pack'">
-                          <ul>
-                            <li v-for="(order, index) in props.row.orders" :key="index">
-                              {{
-                                order.shipping_details.lead_time?.cost || "Não Informado"
-                              }}
-                            </li>
-                          </ul>
-                        </div>
-                        <!-- Caso seja um pedido único, mostrar o lead cost -->
-                        <div v-else>
-                          {{
-                            props.row.shipping_details.lead_time?.cost || "Não Informado"
-                          }}
-                        </div>
-                      </div>
-                      <!-- Coluna para Cost Type -->
-                      <div v-else-if="col.name === 'cost_type'">
-                        <!-- Caso seja um pack, mostrar todos os tipos de custo -->
-                        <div v-if="props.row.type === 'pack'">
-                          <ul>
-                            <li v-for="(order, index) in props.row.orders" :key="index">
-                              {{
-                                order.shipping_details.lead_time?.cost_type ||
-                                "Não Informado"
-                              }}
-                            </li>
-                          </ul>
-                        </div>
-                        <!-- Caso seja um pedido único, mostrar o tipo de custo -->
-                        <div v-else>
-                          {{
-                            props.row.shipping_details.lead_time?.cost_type ||
-                            "Não Informado"
-                          }}
-                        </div>
-                      </div>
-                      <!-- Coluna para List Cost -->
-                      <div v-else-if="col.name === 'list_cost'">
-                        <!-- Caso seja um pack, mostrar todos os list costs -->
-                        <div v-if="props.row.type === 'pack'">
-                          <ul>
-                            <li v-for="(order, index) in props.row.orders" :key="index">
-                              {{
-                                order.shipping_details.lead_time?.list_cost ||
-                                "Não Informado"
-                              }}
-                            </li>
-                          </ul>
-                        </div>
-                        <!-- Caso seja um pedido único, mostrar o list cost -->
-                        <div v-else>
-                          {{
-                            props.row.shipping_details.lead_time?.list_cost ||
-                            "Não Informado"
-                          }}
+                          R$
+                          {{ props.row.orders[0].order_items[0].unit_price.toFixed(2) }}
                         </div>
                       </div>
                       <!-- Outras Colunas -->
@@ -298,8 +248,9 @@
       <q-card flat bordered>
         <q-card-section>
           <div class="text-h6">
-            Detalhes da {{ selectedSale?.type === "pack" ? "Pack" : "Venda Única" }} - ID:
-            {{ selectedSale?.order_id }}
+            Detalhes da
+            {{ selectedSale?.sale_type === "pack" ? "Pack" : "Venda Única" }} - ID:
+            {{ selectedSale?.sale_id }}
           </div>
         </q-card-section>
         <q-card-section>
@@ -323,12 +274,14 @@
 
     <!-- QDialog para Exibir o JSON Completo da Venda -->
     <q-dialog v-model="isSaleJSONDialogOpen" max-width="800px">
-      <q-card flat bordered>
-        <q-card-section>
-          <div class="text-h6">Dados da API - ID: {{ selectedSale?.order_id }}</div>
+      <q-card flat bordered class="q-pa-md shadow-2">
+        <q-card-section class="q-mb-md">
+          <div class="text-h6 text-primary">
+            Dados da API - ID: {{ selectedSale?.sale_id }}
+          </div>
         </q-card-section>
         <q-card-section>
-          <q-markup-table>
+          <q-markup-table class="q-pa-md bg-grey-2 q-border-radius-md">
             <pre>{{ JSON.stringify(selectedSale, null, 2) }}</pre>
           </q-markup-table>
         </q-card-section>
@@ -367,13 +320,13 @@ const search = ref("");
 // Computed para filtragem de vendas
 const filteredSales = computed(() => {
   if (!search.value) return sales.value;
-  return sales.value.filter((sale) => sale.order_id.toString().includes(search.value));
+  return sales.value.filter((sale) => sale.sale_id.toString().includes(search.value));
 });
 
 // Colunas da tabela de vendas
 const salesColumns = [
-  { name: "order_id", align: "left", label: "Venda ID", field: "order_id" },
-  { name: "type", align: "left", label: "Tipo", field: "type" },
+  { name: "sale_id", align: "left", label: "Venda ID", field: "sale_id" },
+  { name: "sale_type", align: "left", label: "Tipo", field: "sale_type" },
   {
     name: "date_created",
     align: "left",
@@ -386,9 +339,12 @@ const salesColumns = [
   { name: "order_items", align: "left", label: "Itens", field: "order_items" },
   { name: "quantity", align: "left", label: "Quantidade", field: "quantity" },
   { name: "unit_price", align: "left", label: "Preço Unitário", field: "unit_price" },
-  { name: "lead_cost", align: "left", label: "Lead Cost", field: "lead_cost" },
-  { name: "cost_type", align: "left", label: "Cost Type", field: "cost_type" },
-  { name: "list_cost", align: "left", label: "List Cost", field: "list_cost" },
+  {
+    name: "categoria_especial",
+    align: "left",
+    label: "Categoria Especial",
+    field: "categoria_especial",
+  },
 ];
 
 // Calcula o total de packs
