@@ -1,0 +1,32 @@
+steps:
+# Construir a imagem
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/sellerbot-frontend:$COMMIT_SHA', '.']
+
+# Fazer push da imagem para o Container Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/sellerbot-frontend:$COMMIT_SHA']
+
+# Implantar no Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+  - 'run'
+  - 'deploy'
+  - 'sellerbot-frontend'
+  - '--image'
+  - 'gcr.io/$PROJECT_ID/sellerbot-frontend:$COMMIT_SHA'
+  - '--platform'
+  - 'managed'
+  - '--region'
+  - 'us-central1'
+  - '--allow-unauthenticated'
+  - '--set-env-vars'
+  - 'VITE_BACKEND_HOST=https://sellerbot-backend-367123809032.us-central1.run.app'
+
+# Configuração de logging
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+- 'gcr.io/$PROJECT_ID/sellerbot-frontend:$COMMIT_SHA'
