@@ -33,8 +33,8 @@ export default {
       }
 
       // 2) Envia esse code para o backend, que trocará pelo access_token
-      console.info("[TinyCallback] Enviando 'code' para o backend em /api/tiny/exchange-code...");
-      const response = await api.post("/api/tiny/exchange-code", {
+      console.info("[TinyCallback] Enviando 'code' para o backend em /api/tiny/exchange-code/ ...");
+      const response = await api.post("/api/tiny/exchange-code/", {
         code: code,
       });
 
