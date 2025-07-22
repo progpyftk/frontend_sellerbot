@@ -1,67 +1,70 @@
 <template>
-  <div>
-    <h1>Processando autorização Tiny...</h1>
-    <p v-if="error" class="text-negative">{{ error }}</p>
-    <p v-else-if="success" class="text-positive">Autorizado com sucesso!</p>
-    <p v-else>Por favor, aguarde...</p>
-  </div>
+  <q-page class="q-pa-md flex flex-center">
+    <div class="text-center">
+      <q-spinner size="40px" color="primary" />
+      <div class="q-mt-md text-subtitle1">Processando autorização com o Tiny...</div>
+    </div>
+  </q-page>
 </template>
 
-<script>
+<script setup>
+import { onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { api } from "src/boot/axios";
+import { useQuasar } from "quasar";
 
-export default {
-  name: "TinyCallback",
-  data() {
-    return {
-      error: null,
-      success: false,
-    };
-  },
-  async created() {
-    console.info("[TinyCallback] Componente criado. Iniciando fluxo de autorização Tiny...");
+const $q = useQuasar();
+const router = useRouter();
 
-    try {
-      // 1) Captura o "code" da query string: ?code=...
-      const code = this.$route.query.code;
-      console.debug("[TinyCallback] Código recebido nos query params:", code);
+onMounted(async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  const state = urlParams.get("state");
 
-      if (!code) {
-        console.warn("[TinyCallback] Nenhum 'code' encontrado na URL.");
-        this.error = "Nenhum code recebido do Tiny.";
-        return;
-      }
+  console.log("🔁 [TinyCallback] Iniciado com:", { code, state });
 
-      // 2) Envia esse code para o backend, que trocará pelo access_token
-      console.info("[TinyCallback] Enviando 'code' para o backend em /api/tiny/exchange-code/ ...");
-      const response = await api.post("/api/tiny/exchange-code/", {
-        code: code,
+  if (!code || !state) {
+    $q.notify({ message: "Erro: código ou estado ausente na URL", color: "negative" });
+    router.push("/app/accounts");
+    return;
+  }
+
+  try {
+    console.log("📤 [TinyCallback] Enviando para backend /exchange-code...");
+    console.log("📤 [TinyCallback] baseURL:", api.defaults.baseURL)
+    console.log("🌐 Enviando para:", api.defaults.baseURL + "/tiny/exchange-code/");
+    const response = await api.post("/api/erps/tiny/exchange-code/", {
+      code,
+      state
+    });
+
+    console.log("✅ [TinyCallback] Sucesso:", response.data);
+
+    if (response.data?.success !== false) {
+      $q.notify({
+        message: response.data.message || "Conta Tiny vinculada com sucesso!",
+        color: "positive",
+        position: "top"
       });
-
-      // Checamos se houve sucesso na resposta
-      if (response.data && response.data.success) {
-        console.info("[TinyCallback] Resposta de sucesso do backend:", response.data);
-        this.success = true;
-      } else {
-        const backendError = response.data?.error || "Erro desconhecido";
-        console.error("[TinyCallback] O backend retornou erro:", backendError);
-        this.error = backendError;
-      }
-    } catch (err) {
-      // Captura erros de rede ou exceções
-      console.error("[TinyCallback] Exceção ao processar code do Tiny:", err);
-      this.error = err.message || "Erro ao processar code do Tiny";
+      // ✅ Protege contra recarregamento com o code
+      window.history.replaceState({}, document.title, "/app/accounts");
+    } else {
+      throw new Error(response.data?.error || "Erro desconhecido");
     }
-  },
-};
+
+  } catch (error) {
+    const message = error?.response?.data?.error || error?.message || "Erro inesperado na vinculação";
+    console.error("❌ [TinyCallback] Erro:", message, error);
+
+    $q.notify({
+      message,
+      color: "negative",
+      position: "top"
+    });
+  } finally {
+    setTimeout(() => {
+      router.push("/app/accounts"); // caminho corrigido para página de contas
+    }, 1500);
+  }
+});
 </script>
-
-<style scoped>
-.text-negative {
-  color: red;
-}
-
-.text-positive {
-  color: green;
-}
-</style>
