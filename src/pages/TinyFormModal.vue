@@ -72,7 +72,7 @@ const submit = async () => {
     const authUrl = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?` +
       `client_id=${encodeURIComponent(payload.client_id)}` +
       `&redirect_uri=${encodeURIComponent(payload.redirect_uri)}` +
-      `&scope=openid&response_type=code&state=${props.mlAccountId}`
+      `&scope=openid offline_access email&response_type=code&state=${props.mlAccountId}`
 
     window.location.href = authUrl
   } catch (error) {
