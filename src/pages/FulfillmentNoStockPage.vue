@@ -120,7 +120,7 @@ const reativarAnuncio = async (row) => {
       position: "top",
     });
 
-    await api.post("mercadolivre/fulfillment/reativar-anuncio/", { item_id, account_id });
+    await api.post("/mercadolivre/fulfillment-reativar-anuncio/", { item_id, account_id });
 
     $q.notify({
       message: "✅ Anúncio reativado com sucesso!",
