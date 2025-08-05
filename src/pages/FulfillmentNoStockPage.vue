@@ -1,3 +1,4 @@
+<!-- src/pages/FulfillmentNoStockPage.vue -->
 <template>
   <q-page class="bg-grey-1">
     <div class="q-pa-md">
@@ -45,7 +46,7 @@
                     <div class="text-center">
                       <q-btn v-if="!props.row.is_removed_from_fulfillment" color="negative" label="Retirar do Full"
                         @click="openRemoveFull(props.row)" />
-                      <q-btn v-else color="primary" label="Sincronizar Estoque" @click="syncWithTiny(props.row)" />
+                      <q-btn v-else color="primary" label="Reativar Anúncio" @click="reativarAnuncio(props.row)" />
                     </div>
                   </q-td>
                 </template>
@@ -110,49 +111,36 @@ const openRemoveFull = (row) => {
   window.open(url, "_blank");
 };
 
-/**
- * Ação ao clicar em "Sincronizar Estoque"
- */
-const syncWithTiny = async (row) => {
+const reativarAnuncio = async (row) => {
   try {
     const { item_id, account_id } = row;
     $q.notify({
-      message: `🔄 Sincronizando com o Tiny...`,
-      caption: `Item: ${item_id}`,
+      message: "Reativando anúncio...",
       color: "info",
       position: "top",
-      timeout: 3000,
     });
 
-    const response = await api.post("/mercadolivre/sync-tiny/", {
-      item_id,
-      account_id,
-    });
+    await api.post("mercadolivre/fulfillment/reativar-anuncio/", { item_id, account_id });
 
     $q.notify({
-      message: "✅ Estoque sincronizado com sucesso!",
-      caption: `SKU: ${response.data.sku}`,
+      message: "✅ Anúncio reativado com sucesso!",
       color: "positive",
       position: "top",
     });
 
-    // Atualiza a tabela para refletir a mudança
     fetchFulfillmentNoStockItems();
   } catch (error) {
-    const msg = error.response?.data?.error || "Erro inesperado na sincronização.";
+    const msg = error.response?.data?.error || "Erro inesperado ao reativar.";
     $q.notify({
-      message: "❌ Falha ao sincronizar com o Tiny",
+      message: "❌ Falha na reativação do anúncio",
       caption: msg,
       color: "negative",
       position: "top",
-      timeout: 4000,
     });
   }
 };
 
-/**
- * Busca os anúncios fulfillment sem estoque e atualiza os removidos do Full
- */
+
 const fetchFulfillmentNoStockItems = async () => {
   loading.value = true;
   try {
