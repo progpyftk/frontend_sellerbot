@@ -106,6 +106,8 @@ const menuSections = [
       { label: "Detalhe do Anúncio", icon: "mdi-chart-bar", route: "item-details" },
       { label: "Vendas", icon: "mdi-chart-bar", route: "sales" },
       { label: "Fulfillment Sem Estoque", icon: "mdi-chart-bar", route: "fulfillment-no-stock" },
+      { label: "MercadoLivre Ads", icon: "mdi-chart-bar", route: "mercadolivre-ads" },
+      { label: "Fotos em Massa", icon: "mdi-chart-bar", route: "mercadolivre-fotos-em-massa" },
     ],
   },
   {

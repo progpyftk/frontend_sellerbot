@@ -56,6 +56,17 @@ const routes = [
         name: "fulfillment-no-stock",
         component: () => import("pages/FulfillmentNoStockPage.vue"),
       },
+      {
+        path: "mercadolivre-ads",
+        name: "mercadolivre-ads",
+        component: () => import("pages/MercadoLivreAdsPage.vue"),
+      },
+      {
+        path: "mercadolivre-fotos-em-massa",
+        name: "mercadolivre-fotos-em-massa",
+        component: () => import("pages/FotosEmMassaPage.vue"),
+      }
+
     ],
   },
   {
@@ -72,6 +83,7 @@ const routes = [
     name: 'TinyCallback',
     component: () => import("pages/TinyCallback.vue"),
   },
+
 ];
 
 export default routes;

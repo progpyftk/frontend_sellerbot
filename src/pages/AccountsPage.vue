@@ -249,8 +249,7 @@ const handleAuthSuccess = async (code) => {
   } finally {
     loading.value = false;
     isAuthenticating.value = false;
-  }
-};
+  }};
 
 // Exclusão
 const confirmDelete = (account) => {
