@@ -65,7 +65,12 @@ const routes = [
         path: "mercadolivre-fotos-em-massa",
         name: "mercadolivre-fotos-em-massa",
         component: () => import("pages/FotosEmMassaPage.vue"),
-      }
+      },
+      {
+        path: "items", // URL final: /app/items
+        name: "items",
+        component: () => import("pages/ItemsPage.vue"),
+      },
 
     ],
   },

@@ -80,9 +80,9 @@ module.exports = configure(function (ctx) {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
     devServer: {
-      https: httpsConfig,
-
-      open: true, // opens browser window automatically
+      https: false, // 👈 MUDE ISTO PARA FALSE (ou remova a linha)
+      port: 9000,
+      open: true,
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework

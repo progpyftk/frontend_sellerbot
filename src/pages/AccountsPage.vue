@@ -1,4 +1,3 @@
-<!-- src/pages/AccountPage.vue -->
 <template>
   <q-page class="bg-grey-1">
     <div class="q-pa-md">
@@ -38,7 +37,6 @@
                   </q-td>
                 </template>
 
-                <!-- Access Token -->
                 <template v-slot:body-cell-access_token="props">
                   <q-td :props="props" class="text-no-wrap">
                     {{ truncateToken(props.row.access_token) }}
@@ -49,7 +47,6 @@
                   </q-td>
                 </template>
 
-                <!-- Refresh Token -->
                 <template v-slot:body-cell-refresh_token="props">
                   <q-td :props="props" class="text-no-wrap">
                     {{ truncateToken(props.row.refresh_token) }}
@@ -60,7 +57,6 @@
                   </q-td>
                 </template>
 
-                <!-- Status -->
                 <template v-slot:body-cell-is_connected="props">
                   <q-td :props="props">
                     <q-chip :color="props.row.is_connected ? 'positive' : 'negative'" text-color="white" size="sm">
@@ -69,14 +65,12 @@
                   </q-td>
                 </template>
 
-                <!-- Token Expira -->
                 <template v-slot:body-cell-token_expires_at="props">
                   <q-td :props="props">
                     {{ formatDate(props.row.token_expires_at) }}
                   </q-td>
                 </template>
 
-                <!-- Tiny ERP Status -->
                 <template v-slot:body-cell-tiny_status="props">
                   <q-td :props="props">
                     <template v-if="!props.row.is_tiny_connected">
@@ -91,7 +85,6 @@
                   </q-td>
                 </template>
 
-                <!-- Ações -->
                 <template v-slot:body-cell-actions="props">
                   <q-td :props="props" class="text-center">
                     <q-btn flat round color="negative" icon="delete" size="sm" @click="confirmDelete(props.row)">
@@ -113,7 +106,6 @@
         </q-card-section>
       </q-card>
 
-      <!-- Modal Exclusão -->
       <q-dialog v-model="deleteDialog">
         <q-card>
           <q-card-section class="row items-center">
@@ -130,9 +122,6 @@
     <TinyFormModal v-model="showTinyModal" :ml-account-id="selectedMlAccountId" :cnpj="selectedCnpj" />
 
   </q-page>
-
-
-
 </template>
 
 <script setup>
@@ -146,8 +135,6 @@ const showTinyModal = ref(false)
 const selectedMlAccountId = ref(null)
 const selectedCnpj = ref(null)
 
-const selectedAccountId = ref(null)
-const tinyFormModal = ref(null);
 const $q = useQuasar();
 const loading = ref(true);
 const accounts = ref([]);
@@ -157,15 +144,16 @@ const isAuthenticating = ref(false);
 
 const CLIENT_ID = "6026212895630598";
 const isDevEnvironment = process.env.NODE_ENV === "development";
+const NGROK_URL = "https://iodimetric-fiona-protandrously.ngrok-free.dev";
+
 const REDIRECT_URI = isDevEnvironment
-  ? "https://sellerbot-frontend-367123809032.us-central1.run.app/ml-redirect?env=dev"
+  ? `${NGROK_URL}/ml-redirect?env=dev`
   : "https://sellerbot-frontend-367123809032.us-central1.run.app/ml-redirect?env=prod";
 
-// Colunas da tabela
 const columns = [
   { name: "account_id", align: "left", label: "Seller ID", field: "account_id" },
   { name: "account_nickname", align: "left", label: "Nickname", field: "account_nickname" },
-  { name: "cnpj", align: "left", label: "CNPJ", field: "cnpj" }, // 👈 aqui
+  { name: "cnpj", align: "left", label: "CNPJ", field: "cnpj" },
   { name: "access_token", align: "left", label: "Access Token", field: "access_token" },
   { name: "refresh_token", align: "left", label: "Refresh Token", field: "refresh_token" },
   { name: "is_connected", align: "left", label: "Status", field: "is_connected" },
@@ -174,7 +162,6 @@ const columns = [
   { name: "actions", align: "center", label: "Ações", field: "actions" }
 ];
 
-// Helpers
 const truncateToken = (token) => {
   return token && token.length > 10
     ? token.substring(0, 5) + "..." + token.substring(token.length - 5)
@@ -211,13 +198,28 @@ const copyToClipboard = (text) => {
   });
 };
 
-// Busca contas do backend
+// --- AQUI ESTÁ A CORREÇÃO PRINCIPAL ---
 const getAccounts = async () => {
   loading.value = true;
   try {
     const response = await api.get("/mercadolivre/accounts/");
-    accounts.value = Array.isArray(response.data) ? response.data : [];
+
+    // Log para depuração
+    console.log("📦 [Front-Accounts] Resposta API:", response.data);
+
+    if (response.data && Array.isArray(response.data.results)) {
+      // Formato Paginado (O novo padrão do Backend)
+      accounts.value = response.data.results;
+    } else if (Array.isArray(response.data)) {
+      // Formato Lista Simples (Legado ou se paginação estiver off)
+      accounts.value = response.data;
+    } else {
+      console.warn("⚠️ Formato desconhecido, resetando lista.");
+      accounts.value = [];
+    }
+
   } catch (error) {
+    console.error("❌ Erro ao buscar contas:", error);
     $q.notify({
       message: "Erro ao buscar contas",
       color: "negative",
@@ -229,7 +231,6 @@ const getAccounts = async () => {
   }
 };
 
-// Autenticação ML
 const startMLAuth = () => {
   isAuthenticating.value = true;
   const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
@@ -249,9 +250,9 @@ const handleAuthSuccess = async (code) => {
   } finally {
     loading.value = false;
     isAuthenticating.value = false;
-  }};
+  }
+};
 
-// Exclusão
 const confirmDelete = (account) => {
   accountToDelete.value = account;
   deleteDialog.value = true;
@@ -271,17 +272,12 @@ const deleteAccount = async () => {
   }
 };
 
-
-// Abrir modal do Tiny
 const openTinyModal = (mlAccountId, cnpj) => {
   selectedMlAccountId.value = mlAccountId
   selectedCnpj.value = cnpj
   showTinyModal.value = true
 }
 
-
-
-// Lifecycle
 onMounted(() => {
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get("code");

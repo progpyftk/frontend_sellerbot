@@ -1,69 +1,90 @@
-<!-- src/pages/FulfillmentNoStockPage.vue -->
 <template>
   <q-page class="bg-grey-1">
     <div class="q-pa-md">
-      <q-card flat bordered class="bg-white">
-        <!-- CABEÇALHO -->
-        <q-card-section class="bg-primary text-white">
-          <div class="row items-center justify-between q-col-gutter-md">
-            <div class="col-grow row items-center">
-              <img src="https://logospng.org/wp-content/uploads/mercado-livre.jpg" alt="MercadoLivre Logo"
-                style="width: 50px; height: 50px; object-fit: contain" class="q-mr-md" />
-              <div>
-                <div class="text-subtitle2">Anúncios Fulfillment Sem Estoque</div>
-                <div class="text-h6 text-weight-bold">
-                  Gerenciar Anúncios
-                </div>
-              </div>
+      <q-card flat bordered>
+        <q-card-section class="bg-deep-orange-9 text-white">
+          <div class="row items-center">
+            <q-icon name="warning_amber" size="md" class="q-mr-md" />
+            <div>
+              <div class="text-subtitle2">Ritual da Manhã</div>
+              <div class="text-h6 text-weight-bold">Resgate do Full sem Estoque</div>
             </div>
+            <q-space />
+            <q-btn flat round dense icon="refresh" @click="fetchItems" :loading="loading">
+              <q-tooltip>Buscar novamente</q-tooltip>
+            </q-btn>
           </div>
         </q-card-section>
 
-        <!-- CORPO -->
-        <q-card-section>
-          <!-- Spinner de carregamento -->
-          <div v-if="loading" class="flex flex-center q-pa-xl">
-            <q-spinner color="primary" size="3em" />
+        <q-banner class="bg-orange-1 text-orange-10 q-px-md">
+          <template v-slot:avatar>
+            <q-icon name="info" color="orange-10" />
+          </template>
+          <b>Fluxo de Resgate:</b>
+          <ol class="q-my-xs q-pl-md" style="font-size: 14px;">
+            <li class="q-mb-xs">Clique em <b>"1. Abrir no ML"</b>. Na nova aba, mude a logística para <b>"Cross
+                Docking"</b>
+              (Normal) e Salve.</li>
+            <li>Volte aqui e clique em <b>"2. Repor Estoque"</b>. Isso ativa o anúncio e força o Tiny a atualizar
+              depois.</li>
+          </ol>
+        </q-banner>
+
+        <q-card-section class="q-pa-none">
+
+          <div v-if="items.length === 0 && !loading" class="text-center q-pa-xl text-grey-6">
+            <q-icon name="task_alt" size="5em" color="positive" />
+            <div class="text-h5 text-weight-bold q-mt-md">Tudo Limpo!</div>
+            <div class="text-subtitle1">Nenhum produto travado no Full.</div>
           </div>
 
-          <!-- Conteúdo da tabela -->
-          <template v-else>
-            <div v-if="items.length > 0">
-              <q-table :rows="items" :columns="columns" row-key="item_id" flat bordered separator="cell"
-                :pagination="{ rowsPerPage: 10 }">
-                <!-- Célula com link do título -->
-                <template v-slot:body-cell-title="props">
-                  <q-td :props="props">
-                    <a :href="props.row.permalink" target="_blank" rel="noopener noreferrer" class="text-primary">
-                      {{ props.row.title }}
-                    </a>
-                  </q-td>
-                </template>
+          <q-table v-else :rows="items" :columns="columns" row-key="id" flat :loading="loading" binary-state-sort
+            :pagination="{ rowsPerPage: 50 }">
+            <template v-slot:body-cell-thumbnail="props">
+              <q-td :props="props" style="width: 60px">
+                <q-avatar rounded size="50px" class="shadow-1">
+                  <img :src="props.row.thumbnail" style="object-fit: cover;" />
+                </q-avatar>
+              </q-td>
+            </template>
 
-                <!-- Célula com ação dinâmica -->
-                <template v-slot:body-cell-acao="props">
-                  <q-td :props="props">
-                    <div class="text-center">
-                      <q-btn v-if="!props.row.is_removed_from_fulfillment" color="negative" label="Retirar do Full"
-                        @click="openRemoveFull(props.row)" />
-                      <q-btn v-else color="primary" label="Reativar Anúncio" @click="reativarAnuncio(props.row)" />
-                    </div>
-                  </q-td>
-                </template>
-              </q-table>
-            </div>
+            <template v-slot:body-cell-title="props">
+              <q-td :props="props">
+                <div class="text-weight-bold text-body2">{{ props.row.title }}</div>
+                <div class="row items-center q-gutter-x-sm text-caption text-grey-7 q-mt-xs">
+                  <q-badge outline color="deep-orange" label="Full" />
+                  <span>{{ props.row.item_id }}</span>
+                  <span>|</span>
+                  <span>SKU: <b>{{ props.row.sku }}</b></span>
+                </div>
+                <div class="text-caption text-blue-grey-8 q-mt-xs">
+                  Conta: {{ props.row.account_nickname }}
+                </div>
+              </q-td>
+            </template>
 
-            <!-- Se não existem itens -->
-            <div v-else class="text-center q-pa-xl">
-              <q-icon name="inventory_2" size="6em" color="grey-5" />
-              <p class="text-h6 q-mt-md">
-                Nenhum anúncio Fulfillment sem estoque encontrado.
-              </p>
-              <p class="text-subtitle1 q-mt-sm">
-                Verifique se suas contas do Mercado Livre estão conectadas e se há itens no Full sem estoque.
-              </p>
-            </div>
-          </template>
+            <template v-slot:body-cell-actions="props">
+              <q-td :props="props" align="right">
+                <div class="row justify-end items-center q-gutter-sm">
+
+                  <q-btn outline color="primary" icon="open_in_new" label="1. Abrir no ML" type="a"
+                    :href="`https://www.mercadolivre.com.br/anuncios/${props.row.item_id}/modificar`" target="_blank"
+                    size="sm" padding="sm md">
+                    <q-tooltip>Abre a edição para você tirar do Full manualmente</q-tooltip>
+                  </q-btn>
+
+                  <q-icon name="arrow_forward" color="grey-4" />
+
+                  <q-btn unelevated color="green-7" icon="flash_on" label="2. Repor Estoque" size="sm" padding="sm md"
+                    @click="injectStock(props.row)" :loading="props.row.injecting">
+                    <q-tooltip>Injeta 1 unidade para ativar o anúncio</q-tooltip>
+                  </q-btn>
+
+                </div>
+              </q-td>
+            </template>
+
+          </q-table>
         </q-card-section>
       </q-card>
     </div>
@@ -71,108 +92,96 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { api } from "src/boot/axios";
-import { useQuasar } from "quasar";
+import { ref, onMounted } from 'vue'
+import { api } from 'src/boot/axios'
+import { useQuasar } from 'quasar'
 
-const $q = useQuasar();
-const loading = ref(true);
-const items = ref([]);
+const $q = useQuasar()
+const items = ref([])
+const loading = ref(false)
 
-// Definindo as colunas da tabela
+// Colunas da Tabela
 const columns = [
-  { name: "account_nickname", align: "left", label: "Conta", field: "account_nickname" },
-  { name: "item_id", align: "left", label: "Item ID", field: "item_id" },
-  { name: "title", align: "left", label: "Título", field: "title" },
-  { name: "sold_quantity", align: "center", label: "Vendas", field: "sold_quantity" },
-  {
-    name: "price",
-    align: "right",
-    label: "Preço (R$)",
-    field: "price",
-    format: val =>
-      val != null
-        ? val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-        : "---",
-  },
-  { name: "available_quantity", align: "center", label: "Qtd", field: "available_quantity" },
-  { name: "acao", align: "center", label: "Ação", field: "acao" },
-];
+  { name: 'thumbnail', align: 'center', label: 'Foto', field: 'thumbnail' },
+  { name: 'title', align: 'left', label: 'Produto / SKU / Conta', field: 'title' },
+  { name: 'actions', align: 'right', label: 'Ações de Resgate' }
+]
 
-/**
- * Ação ao clicar em "Retirar do Full"
- */
-const openRemoveFull = (row) => {
-  let numericId = row.item_id || "";
-  if (numericId.startsWith("MLB")) {
-    numericId = numericId.slice(3);
-  }
-  const url = `https://www.mercadolivre.com.br/anuncios/lista/space_management?filters=with-fulfillment-with-empty-stock&search=${numericId}`;
-  window.open(url, "_blank");
-};
-
-const reativarAnuncio = async (row) => {
+// --- CARREGAR A LISTA ---
+const fetchItems = async () => {
+  loading.value = true
   try {
-    const { item_id, account_id } = row;
-    $q.notify({
-      message: "Reativando anúncio...",
-      color: "info",
-      position: "top",
-    });
+    // Chama a View Especialista que já traz apenas (Full + Sem Estoque)
+    const response = await api.get('/mercadolivre/fulfillment-resgate/')
 
-    await api.post("/mercadolivre/fulfillment-reativar-anuncio/", { item_id, account_id });
+    const data = response.data.results || response.data
 
-    $q.notify({
-      message: "✅ Anúncio reativado com sucesso!",
-      color: "positive",
-      position: "top",
-    });
+    // Adiciona uma propriedade local 'injecting' para controlar o loading do botão individual
+    items.value = data.map(item => ({
+      ...item,
+      injecting: false
+    }))
 
-    fetchFulfillmentNoStockItems();
   } catch (error) {
-    const msg = error.response?.data?.error || "Erro inesperado ao reativar.";
+    console.error(error)
     $q.notify({
-      message: "❌ Falha na reativação do anúncio",
-      caption: msg,
-      color: "negative",
-      position: "top",
-    });
-  }
-};
-
-
-const fetchFulfillmentNoStockItems = async () => {
-  loading.value = true;
-  try {
-    // Busca a lista atualizada
-    const response = await api.get("/mercadolivre/fulfillment-no-stock/");
-    items.value = response.data.items || [];
-  } catch (error) {
-    items.value = [];
-    $q.notify({
-      message: "Erro ao buscar anúncios Fulfillment sem estoque.",
-      color: "negative",
-      position: "top",
-      timeout: 2000,
-    });
+      type: 'negative',
+      message: 'Erro ao carregar lista de resgate.'
+    })
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
-// Executa ao carregar a página
+// --- PASSO 2: INJETAR ESTOQUE ---
+const injectStock = async (item) => {
+  item.injecting = true
+  try {
+    // Chama a ação específica de ativação
+    const response = await api.post(`/mercadolivre/fulfillment-resgate/${item.id}/ativar-item/`)
+
+    // Feedback de Sucesso
+    $q.notify({
+      type: 'positive',
+      icon: 'check_circle',
+      message: 'Sucesso! Anúncio ativado.',
+      caption: `Estoque definido em ${response.data.new_quantity}. Tiny deve assumir em breve.`
+    })
+
+    // Remove o item da lista visualmente (pois ele não é mais um "problema")
+    items.value = items.value.filter(i => i.id !== item.id)
+
+  } catch (error) {
+    console.error(error)
+    const errorMsg = error.response?.data?.message || 'Erro desconhecido.'
+    const mlError = error.response?.data?.ml_error?.message || ''
+
+    // Modal Explicativo em caso de Erro
+    $q.dialog({
+      title: 'Não foi possível ativar',
+      message: `
+        O Mercado Livre recusou a adição de estoque.<br><br>
+        <b>Motivo Provável:</b> Você ainda não mudou a logística para "Manual" na aba do Mercado Livre.<br>
+        O item ainda consta como Fulfillment lá.<br><br>
+        <span class="text-grey-7" style="font-size: 12px">Erro técnico: ${errorMsg} ${mlError}</span>
+      `,
+      html: true,
+      ok: { label: 'Entendi, vou mudar lá', color: 'primary' }
+    })
+  } finally {
+    item.injecting = false
+  }
+}
+
+// Inicializa ao abrir a tela
 onMounted(() => {
-  fetchFulfillmentNoStockItems();
-});
+  fetchItems()
+})
 </script>
 
 <style scoped>
-.q-td {
-  vertical-align: middle;
-}
-
-.q-table td {
-  white-space: nowrap;
-  vertical-align: middle;
+/* Pequeno ajuste para alinhar texto nas badges */
+.text-caption {
+  line-height: 1.2;
 }
 </style>

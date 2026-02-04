@@ -100,8 +100,13 @@ const menuSections = [
     title: "MercadoLivre",
     items: [
       { label: "Contas", icon: "mdi-account-plus", route: "accounts" },
+
+      // --- ADICIONE ESTA LINHA AQUI ---
+      { label: "Anúncios", icon: "mdi-package-variant", route: "items" },
+      // -------------------------------
+
       { label: "Frete Grátis", icon: "mdi-truck-fast", route: "free-shipping" },
-      { label: "Análise de Frete", icon: "mdi-chart-bar", route: "shipping-analysis" },
+      { label: "Análise de Frete", icon: "mdi-chart-bar", route: "shipping-analysis" }, // Atenção: verifique se essa rota existe no routes.js
       { label: "Detalhe de Venda", icon: "mdi-chart-bar", route: "order-details" },
       { label: "Detalhe do Anúncio", icon: "mdi-chart-bar", route: "item-details" },
       { label: "Vendas", icon: "mdi-chart-bar", route: "sales" },

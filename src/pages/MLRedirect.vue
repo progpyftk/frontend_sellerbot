@@ -7,15 +7,10 @@
             <q-avatar size="80px" class="q-mb-md">
               <q-img
                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/MercadoLibre.svg/1200px-MercadoLibre.svg.png"
-                alt="MercadoLivre Logo"
-              />
+                alt="MercadoLivre Logo" />
             </q-avatar>
             <h4 class="text-weight-bold q-mt-none q-mb-md">Autenticação MercadoLivre</h4>
-            <transition
-              appear
-              enter-active-class="animated fadeIn"
-              leave-active-class="animated fadeOut"
-            >
+            <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
               <div v-if="code" key="success">
                 <q-icon name="check_circle" color="positive" size="3rem" />
                 <p class="text-h6 q-mt-md">Autenticação bem-sucedida!</p>
@@ -48,8 +43,8 @@ const env = urlParams.get("env"); // Parâmetro que indica o ambiente (dev ou pr
 // Define a URL base dependendo do valor de `env`
 const apiBaseUrl =
   env === "dev"
-    ? "https://localhost:9000/app/accounts" // Para desenvolvimento
-    : "https://sellerbot-frontend-367123809032.us-central1.run.app/app/accounts"; // Para produção
+    ? "https://localhost:9000/app/accounts" // 👈 HTTPS (Para o redirect de volta)
+    : "https://sellerbot-frontend-367123809032.us-central1.run.app/app/accounts"; // Producao
 
 onMounted(() => {
   // Extrai o código da URL após a autenticação do Mercado Livre
@@ -66,7 +61,10 @@ onMounted(() => {
 
     // Redireciona de volta para a página de contas com o `code` na URL
     setTimeout(() => {
-      window.location.href = `${apiBaseUrl}?code=${code.value}`;
+      // ✅ USAMOS CAMINHO RELATIVO
+      // Isso funciona tanto no Ngrok, quanto no Localhost, quanto em Produção!
+      // O router do Vue ou o navegador vai entender que é na mesma origem.
+      window.location.href = `/app/accounts?code=${code.value}`;
     }, 1000); // Reduzido para 1 segundo
   } else {
     console.error("Nenhum código de autorização encontrado.");
