@@ -27,46 +27,6 @@ const routes = [
         component: () => import("pages/AccountsPage.vue"),
       },
       {
-        path: "free-shipping",
-        name: "free-shipping",
-        component: () => import("pages/FreeShippingPage.vue"),
-      },
-      {
-        path: "order-details",
-        name: "order-details",
-        component: () => import("pages/OrderDetailsPage.vue"),
-      },
-      {
-        path: "item-details",
-        name: "item-details",
-        component: () => import("pages/ItemDetailsPage.vue"),
-      },
-      {
-        path: "sales",
-        name: "sales",
-        component: () => import("src/pages/SalesPage.vue"),
-      },
-      {
-        path: "user/config",
-        name: "user-config",
-        component: () => import("pages/UserConfigPage.vue"),
-      },
-      {
-        path: "fulfillment-no-stock",
-        name: "fulfillment-no-stock",
-        component: () => import("pages/FulfillmentNoStockPage.vue"),
-      },
-      {
-        path: "mercadolivre-ads",
-        name: "mercadolivre-ads",
-        component: () => import("pages/MercadoLivreAdsPage.vue"),
-      },
-      {
-        path: "mercadolivre-fotos-em-massa",
-        name: "mercadolivre-fotos-em-massa",
-        component: () => import("pages/FotosEmMassaPage.vue"),
-      },
-      {
         path: "items", // URL final: /app/items
         name: "items",
         component: () => import("pages/ItemsPage.vue"),
@@ -83,11 +43,7 @@ const routes = [
     path: "/:catchAll(.*)*",
     component: () => import("pages/ErrorNotFound.vue"),
   },
-  {
-    path: '/tiny/callback',
-    name: 'TinyCallback',
-    component: () => import("pages/TinyCallback.vue"),
-  },
+
 
 ];
 
