@@ -27,21 +27,21 @@
           <div class="row q-col-gutter-sm">
             <div class="col-12 col-md-4">
               <q-input v-model="filters.search" debounce="600" placeholder="Buscar (Título, SKU, MLB)..." outlined dense
-                bg-color="white" clearable>
+                bg-color="white" clearable @update:model-value="resetPagination">
                 <template v-slot:prepend><q-icon name="search" class="text-grey-5" /></template>
               </q-input>
             </div>
 
             <div class="col-12 col-md-3">
-              <q-select v-model="filters.account" :options="accountOptions" option-value="id"
-                option-label="account_nickname" label="Conta" outlined dense bg-color="white" emit-value map-options
-                multiple use-chips clearable />
+              <q-select v-model="filters.account" :options="accountOptions" option-value="id" option-label="nickname"
+                label="Conta" outlined dense bg-color="white" emit-value map-options multiple use-chips clearable
+                @update:model-value="resetPagination" />
             </div>
 
             <div class="col-12 col-md-3">
               <q-select v-model="filters.logistic_type" :options="logisticOptions" option-value="value"
                 option-label="label" label="Logística" outlined dense bg-color="white" emit-value map-options multiple
-                use-chips clearable />
+                use-chips clearable @update:model-value="resetPagination" />
             </div>
 
             <div class="col-12 col-md-2">
@@ -54,36 +54,80 @@
             <div class="row q-col-gutter-sm">
               <div class="col-12 col-md-3">
                 <q-select v-model="filters.status" :options="statusOptions" option-value="value" option-label="label"
-                  label="Status" outlined dense bg-color="white" emit-value map-options multiple use-chips clearable />
+                  label="Status" outlined dense bg-color="white" emit-value map-options multiple use-chips clearable
+                  @update:model-value="resetPagination" />
               </div>
 
               <div class="col-12 col-md-3">
                 <q-select v-model="filters.stockStatus" :options="stockOptions" option-value="value"
-                  option-label="label" label="Estoque" outlined dense bg-color="white" emit-value map-options
-                  clearable />
+                  option-label="label" label="Estoque" outlined dense bg-color="white" emit-value map-options clearable
+                  @update:model-value="resetPagination" />
               </div>
 
               <div class="col-12 col-md-3">
                 <q-select v-model="filters.is_flex" :options="flexOptions" option-value="value" option-label="label"
-                  label="Flex" outlined dense bg-color="white" emit-value map-options clearable />
+                  label="Flex" outlined dense bg-color="white" emit-value map-options clearable
+                  @update:model-value="resetPagination" />
               </div>
 
               <div class="col-6 col-md-1.5">
                 <q-input v-model.number="filters.priceMin" type="number" label="Preço mín" outlined dense
-                  bg-color="white" clearable />
+                  bg-color="white" clearable debounce="600" @update:model-value="resetPagination" />
               </div>
 
               <div class="col-6 col-md-1.5">
                 <q-input v-model.number="filters.priceMax" type="number" label="Preço máx" outlined dense
-                  bg-color="white" clearable />
+                  bg-color="white" clearable debounce="600" @update:model-value="resetPagination" />
               </div>
+            </div>
+
+            <div class="row q-mt-sm q-gutter-x-sm">
+              <q-badge color="orange-1" text-color="orange-9" class="cursor-pointer q-py-xs hover-badge"
+                @click="setFilterFullNoStock">
+                🔥 Full Sem Estoque
+              </q-badge>
+              <q-badge color="blue-1" text-color="blue-9" class="cursor-pointer q-py-xs hover-badge"
+                @click="setFilterOpportunityFlex">
+                💰 Oportunidade Flex
+              </q-badge>
+              <q-space />
+              <q-btn flat color="grey-8" icon="filter_alt_off" label="Limpar Tudo" size="sm" @click="clearFilters" />
             </div>
           </div>
         </q-card-section>
 
+        <transition name="slide-fade">
+          <q-card-section v-if="showMagicLink" class="q-pa-md bg-orange-1 border-bottom">
+            <div class="row items-center q-col-gutter-md">
+              <div class="col-12 col-md-auto text-center">
+                <q-icon name="warning_amber" color="deep-orange" size="lg" />
+              </div>
+              <div class="col-12 col-md">
+                <div class="text-subtitle1 text-weight-bold text-deep-orange-9">
+                  Ação Necessária na conta: {{ selectedAccountName }}
+                </div>
+                <div class="text-caption text-grey-9">
+                  Você está filtrando itens <b>FULL sem estoque</b>. Utilize o link abaixo para acessar a gestão de
+                  retirada do Mercado Livre e evitar cobranças de armazenagem prolongada.
+                </div>
+              </div>
+              <div class="col-12 col-md-5">
+                <q-input outlined dense readonly bg-color="white" :model-value="magicLinkUrl">
+                  <template v-slot:append>
+                    <q-btn unelevated color="primary" label="Copiar" icon="content_copy" @click="copyMagicLink"
+                      size="sm" class="q-mr-sm" />
+                    <q-btn flat round color="grey-7" icon="open_in_new" type="a" :href="magicLinkUrl" target="_blank" />
+                  </template>
+                </q-input>
+              </div>
+            </div>
+          </q-card-section>
+        </transition>
+
         <q-table :rows="items" :columns="columns" row-key="item_id" flat :loading="loading"
           v-model:pagination="pagination" @request="onRequest" binary-state-sort
-          class="sticky-header-table my-custom-table">
+          class="sticky-header-table my-custom-table" no-data-label="Nenhum anúncio encontrado.">
+
           <template v-slot:header="props">
             <q-tr :props="props" class="bg-grey-2 text-grey-8 text-uppercase text-caption">
               <q-th auto-width />
@@ -116,14 +160,6 @@
                 </div>
               </q-td>
 
-              <q-td key="status" :props="props" align="left" style="width: 120px">
-                <q-chip dense square :color="props.row.status === 'active' ? 'green-1' : 'orange-1'"
-                  :text-color="props.row.status === 'active' ? 'green-9' : 'orange-10'"
-                  :icon="props.row.status === 'active' ? 'check_circle' : 'pause_circle'" class="text-caption">
-                  {{ props.row.status === 'active' ? 'Ativo' : 'Pausado' }}
-                </q-chip>
-              </q-td>
-
               <q-td key="title" :props="props" style="max-width: 350px; white-space: normal;">
                 <div class="column q-gutter-y-xs">
                   <a :href="props.row.permalink" target="_blank" class="text-grey-9 text-weight-bold hover-link"
@@ -153,26 +189,19 @@
 
                     <q-badge v-if="props.row.catalog_listing" outline color="indigo" label="CATÁLOGO"
                       class="text-weight-bold" />
+                  </div>
 
-                    <div class="row q-gutter-sm q-mt-xs">
-                      <div class="mini-metric">
-                        <div class="mini-label">Estoque</div>
-                        <div class="mini-value" :class="props.row.available_quantity > 0 ? 'text-grey-9' : 'text-red'">
-                          {{ props.row.available_quantity }}
-                        </div>
-                      </div>
-
-                      <div class="mini-metric">
-                        <div class="mini-label">Vendas</div>
-                        <div class="mini-value text-grey-9">
-                          {{ props.row.sold_quantity }}
-                        </div>
-                      </div>
+                  <div class="row q-gutter-x-md q-mt-xs">
+                    <div class="row items-center text-caption">
+                      <q-icon name="inventory" size="xs" class="q-mr-xs text-grey-6" />
+                      <span :class="props.row.available_quantity > 0 ? 'text-grey-9' : 'text-red text-weight-bold'">
+                        {{ props.row.available_quantity }} un
+                      </span>
                     </div>
-
-
-
-
+                    <div class="row items-center text-caption">
+                      <q-icon name="shopping_cart" size="xs" class="q-mr-xs text-grey-6" />
+                      <span class="text-grey-9">{{ props.row.sold_quantity }} vendas</span>
+                    </div>
                   </div>
 
                   <div class="row q-gutter-x-xs q-mt-xs" v-if="getPromotions(props.row).length > 0">
@@ -184,33 +213,18 @@
                 </div>
               </q-td>
 
-              <q-td key="catalog" :props="props" align="center">
-                <div v-if="props.row.catalog_listing">
-                  <q-icon name="layers" color="indigo" size="sm">
-                    <q-tooltip>Anúncio de Catálogo (Buy Box)</q-tooltip>
-                  </q-icon>
-                </div>
-                <div v-else>
-                  <q-icon name="remove" color="grey-4" size="xs" />
-                </div>
-              </q-td>
-
               <q-td key="health" :props="props" align="center">
-                <!-- Sem avisos: mostra percentual com cor por score -->
                 <div v-if="getQualityWarnings(props.row).length === 0">
                   <q-chip dense :color="getHealthColor(props.row)" :text-color="getHealthTextColor(props.row)"
                     icon="verified">
                     {{ formatHealth(props.row.health) }}
                   </q-chip>
                 </div>
-
-                <!-- Com avisos: chip de avisos + tooltip -->
                 <div v-else class="cursor-pointer">
                   <q-chip dense :color="getHealthColor(props.row)" :text-color="getHealthTextColor(props.row)"
                     icon="warning">
                     {{ getQualityWarnings(props.row).length }} Avisos • {{ formatHealth(props.row.health) }}
                   </q-chip>
-
                   <q-tooltip content-class="bg-grey-9 text-white" max-width="300px">
                     <div class="text-weight-bold q-mb-xs">Correções necessárias:</div>
                     <ul class="q-pl-md q-ma-none text-caption" style="list-style-type: disc;">
@@ -229,9 +243,6 @@
                       <span class="text-weight-medium text-caption">
                         {{ getLogisticMeta(props.row.logistic_type).label }}
                       </span>
-                      <span class="text-caption text-grey-6 font-mono">
-                        {{ props.row.logistic_type }}
-                      </span>
                     </div>
                     <q-icon name="info_outline" size="xs" class="q-ml-sm text-grey-6">
                       <q-tooltip content-class="bg-grey-9 text-white" max-width="260px">
@@ -239,33 +250,12 @@
                       </q-tooltip>
                     </q-icon>
                   </div>
-
                   <div class="row q-gutter-x-xs">
-                    <q-badge v-if="props.row.listing_type_id === 'gold_pro'" outline color="yellow-9" label="Premium"
-                      size="xs" />
-                    <q-badge v-else outline color="grey-6" label="Clássico" size="xs" />
-
                     <q-badge v-if="props.row.is_flex" outline color="purple-6" label="Flex" size="xs" />
-
                     <q-badge v-if="props.row.is_full" outline color="green-7" label="Full" size="xs" />
-
                     <q-badge v-if="props.row.free_shipping" outline color="teal-7" label="Frete Grátis" size="xs" />
                   </div>
                 </div>
-              </q-td>
-
-              <q-td key="available_quantity" :props="props" align="center">
-                <div class="text-subtitle2" :class="props.row.available_quantity > 0 ? 'text-grey-9' : 'text-red'">
-                  {{ props.row.available_quantity }}
-                </div>
-                <div class="text-caption text-grey-5">disp.</div>
-              </q-td>
-
-              <q-td key="sold_quantity" :props="props" align="center" style="width: 90px">
-                <q-badge color="grey-2" text-color="grey-9" class="text-weight-bold">
-                  {{ props.row.sold_quantity ?? 0 }}
-                </q-badge>
-                <div class="text-caption text-grey-5">vend.</div>
               </q-td>
 
               <q-td key="price" :props="props" align="right">
@@ -273,18 +263,15 @@
                   <div v-if="hasDiscount(props.row)" class="text-strike text-grey-5 text-caption">
                     {{ formatCurrency(getEffectiveRegularPrice(props.row)) }}
                   </div>
-
                   <div class="text-subtitle1 text-weight-bold text-grey-9">
                     {{ formatCurrency(getEffectivePrice(props.row)) }}
                   </div>
-
                   <q-badge v-if="hasDiscount(props.row) && getDiscountPct(props.row) != null" color="green-1"
                     text-color="green-9" class="q-mt-xs text-weight-bold text-caption">
                     {{ getDiscountPct(props.row) }}% OFF
                   </q-badge>
                 </div>
               </q-td>
-
             </q-tr>
 
             <q-tr v-show="props.expand" :props="props">
@@ -293,7 +280,6 @@
                   <div class="row q-col-gutter-lg">
                     <div class="col-12 col-md-8">
                       <div class="text-overline text-grey-7 q-mb-sm">Variações</div>
-
                       <q-markup-table flat bordered class="bg-white" dense>
                         <thead class="bg-grey-2">
                           <tr>
@@ -304,24 +290,23 @@
                             <th class="text-center">ID</th>
                           </tr>
                         </thead>
-
                         <tbody>
                           <tr v-if="isDetailLoading(props.row)">
                             <td colspan="5" class="text-center text-caption text-grey-6 q-pa-md">
-                              Carregando variações...
+                              <q-spinner-dots color="indigo" size="2em" /> Carregando...
                             </td>
                           </tr>
-
                           <tr v-else-if="getVariations(props.row).length === 0">
                             <td colspan="5" class="text-center text-caption text-grey-6 q-pa-md">
                               Sem variações
                             </td>
                           </tr>
-
                           <tr v-else v-for="v in getVariations(props.row)" :key="v.variation_id || v.id">
-                            <td>{{ v.attribute_combination || 'Padrão' }}</td>
-                            <td class="font-mono text-grey-7">{{ v.sku }}</td>
-                            <td class="text-center" :class="v.available_quantity > 0 ? 'text-green-7' : 'text-red'">
+                            <td><q-badge color="grey-3" text-color="black">{{ v.attribute_combination || 'Padrão'
+                            }}</q-badge></td>
+                            <td class="font-mono text-grey-7">{{ v.sku || '-' }}</td>
+                            <td class="text-center"
+                              :class="v.available_quantity > 0 ? 'text-green-7 text-bold' : 'text-red'">
                               {{ v.available_quantity }}
                             </td>
                             <td class="text-right">{{ formatCurrency(v.price) }}</td>
@@ -344,7 +329,6 @@
                         </q-item>
                       </q-list>
                     </div>
-
                   </div>
                 </div>
               </q-td>
@@ -358,56 +342,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, watch } from 'vue'
+import { ref, onMounted, reactive, computed, watch } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import { useQuasar, copyToClipboard } from 'quasar'
 
 const $q = useQuasar()
-
 const items = ref([])
 const loading = ref(false)
 
-const accountOptions = ref([])
+// Opções dinâmicas (Facets)
+const availableAccounts = ref([])
+const availableStatuses = ref([])
+const availableLogistics = ref([])
+
 const showAdvancedFilters = ref(false)
 
-const logisticOptions = ref([
-  { label: 'Full (fulfillment)', value: 'fulfillment' },
-  { label: 'Coleta / Cross-docking (cross_docking)', value: 'cross_docking' },
-  { label: 'Postagem em Agência (drop_off)', value: 'drop_off' },
-  { label: 'Postagem em Agência XD (xd_drop_off)', value: 'xd_drop_off' },
-  { label: 'Flex / Envio por você (self_service)', value: 'self_service' }
-])
-
-const statusOptions = ref([
-  { label: 'Ativo', value: 'active' },
-  { label: 'Pausado', value: 'paused' }
-])
-
-const stockOptions = ref([
-  { label: 'Todos', value: null },
-  { label: 'Sem estoque (0)', value: 'zero' },
-  { label: 'Com estoque (>0)', value: 'positive' }
-])
-
-const flexOptions = ref([
-  { label: 'Todos', value: null },
-  { label: 'Flex: Sim', value: true },
-  { label: 'Flex: Não', value: false }
-])
-
-const columns = [
-  { name: 'thumbnail', align: 'center', label: '', field: 'thumbnail' },
-  { name: 'title', align: 'left', label: 'PRODUTO', field: 'title' },
-  { name: 'health', align: 'center', label: 'QUALIDADE', field: 'health' },
-  { name: 'logistic_type', align: 'left', label: 'LOGÍSTICA', field: 'logistic_type' },
-  { name: 'price', align: 'right', label: 'PREÇO', field: 'effective_price' }
-]
-
+// --- STATE DOS FILTROS ---
 const filters = reactive({
   search: '',
   account: [],
   logistic_type: [],
-  status: ['active', 'paused'],
+  status: [], // Vazio = Todos (backend entende)
   stockStatus: null,
   is_flex: null,
   priceMin: null,
@@ -422,222 +377,249 @@ const pagination = ref({
   rowsNumber: 0
 })
 
-// ---------- Helpers (promo / warnings / variations) ----------
+// --- COMPUTEDS: OPÇÕES INTELIGENTES ---
+const accountOptions = computed(() => availableAccounts.value)
 
-const getPromotions = (row) => {
-  const promos = []
+const logisticOptions = computed(() => {
+  return availableLogistics.value.map(l => ({
+    label: LOGISTIC_META[l]?.label || l,
+    value: l
+  }))
+})
 
-  if (row.promotions_info && Array.isArray(row.promotions_info)) {
-    row.promotions_info.forEach(p => {
-      const name = p?.name || p?.type || p?.id
-      if (name) promos.push(String(name))
-    })
-  }
+// Mapeia status do banco para Label bonita
+const STATUS_LABELS = {
+  active: 'Ativo', paused: 'Pausado', closed: 'Fechado', under_review: 'Em Revisão', inactive: 'Inativo'
+}
+const statusOptions = computed(() => {
+  return availableStatuses.value.map(s => ({
+    label: STATUS_LABELS[s] || s,
+    value: s
+  }))
+})
 
-  if (promos.length === 0 && row.pricing_details && row.pricing_details.deal_ids) {
-    row.pricing_details.deal_ids.forEach(() => promos.push('Oferta'))
-  }
+// Opções estáticas
+const stockOptions = [
+  { label: 'Todos', value: null },
+  { label: 'Sem estoque (0)', value: 'zero' },
+  { label: 'Com estoque (>0)', value: 'positive' }
+]
 
-  // remove duplicados
-  return [...new Set(promos)].slice(0, 3)
+const flexOptions = [
+  { label: 'Todos', value: null },
+  { label: 'Flex: Sim', value: true },
+  { label: 'Flex: Não', value: false }
+]
+
+// --- LINK MÁGICO ---
+const magicLinkUrl = "https://www.mercadolivre.com.br/anuncios/lista/space_management?filters=with-fulfillment-with-empty-stock"
+
+const showMagicLink = computed(() => {
+  // Mostra se: 1 conta selecionada + Logística Full + Sem Estoque
+  return filters.account && filters.account.length === 1 &&
+    filters.logistic_type.includes('fulfillment') &&
+    filters.stockStatus === 'zero'
+})
+
+const selectedAccountName = computed(() => {
+  if (!filters.account || filters.account.length !== 1) return ''
+  const acc = availableAccounts.value.find(a => a.id === filters.account[0])
+  return acc ? acc.nickname : 'Conta'
+})
+
+const copyMagicLink = () => {
+  copyToClipboard(magicLinkUrl)
+    .then(() => $q.notify({ type: 'positive', message: 'Link copiado!', icon: 'content_copy' }))
 }
 
-const getQualityWarnings = (row) => {
-  if (row.quality_warnings && Array.isArray(row.quality_warnings)) {
-    return row.quality_warnings.map(w => (typeof w === 'object' ? (w.message || w.reason || JSON.stringify(w)) : String(w)))
-  }
-  // fallback leve
-  const h = row.health
-  if (h != null && Number(h) < 1) return ['Verifique a qualidade no painel do ML']
-  return []
+// --- MACROS ---
+const setFilterFullNoStock = () => {
+  filters.logistic_type = ['fulfillment']
+  filters.stockStatus = 'zero'
+  // Limpa outros conflitantes
+  filters.is_flex = null
+  refreshData()
 }
 
-// lazy-load detail
-const detailLoading = ref({}) // item_id -> boolean
+const setFilterOpportunityFlex = () => {
+  filters.is_flex = false // Não é flex
+  filters.status = ['active']
+  filters.stockStatus = 'positive' // Tem estoque
 
-const isDetailLoading = (row) => !!detailLoading.value[row.item_id]
+  // Tenta selecionar coletas se existir
+  if (availableLogistics.value.includes('cross_docking')) {
+    filters.logistic_type = ['cross_docking']
+  } else {
+    filters.logistic_type = []
+  }
+  refreshData()
+}
 
-const ensureItemDetail = async (row) => {
-  const key = row.item_id
-  if (!key) return
-  if (row._detail) return
-  if (detailLoading.value[key]) return
+const clearFilters = () => {
+  filters.search = ''
+  filters.account = []
+  filters.logistic_type = []
+  filters.status = []
+  filters.stockStatus = null
+  filters.is_flex = null
+  filters.priceMin = null
+  filters.priceMax = null
+  refreshData()
+}
 
-  detailLoading.value = { ...detailLoading.value, [key]: true }
+// --- DATA FETCHING ---
+// Função separada apenas para carregar os filtros (Facets)
+const loadFilters = async () => {
   try {
-    const r = await MercadoLivreService.getItem(key)
-    row._detail = r.data
+    const { data } = await MercadoLivreService.getFacets()
+    availableAccounts.value = data.accounts
+    availableStatuses.value = data.status || []
+    availableLogistics.value = data.logistic_type || []
   } catch (e) {
-    console.error(e)
-    $q.notify({ type: 'negative', message: 'Falha ao carregar detalhes do item', timeout: 1200 })
-  } finally {
-    detailLoading.value = { ...detailLoading.value, [key]: false }
-  }
-}
-
-const getVariations = (row) => row._detail?.variation_objects || []
-
-// ---------- Formatters / pricing ----------
-
-const formatCurrency = (val) =>
-  val != null && val !== ''
-    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val))
-    : ''
-
-const formatHealth = (h) => {
-  if (h == null) return '—'
-  const n = Number(h)
-  // aceita 0-1 ou 0-100
-  const pct = n <= 1 ? Math.round(n * 100) : Math.round(n)
-  return `${pct}%`
-}
-
-// --- Health colors (ADICIONE AQUI) ---
-const getHealthColor = (row) => {
-  const h = row.health
-  if (h == null) return 'grey-4'
-  const pct = Number(h) <= 1 ? Number(h) * 100 : Number(h)
-  if (pct >= 99) return 'green-1'
-  if (pct >= 80) return 'yellow-1'
-  return 'red-1'
-}
-
-const getHealthTextColor = (row) => {
-  const h = row.health
-  if (h == null) return 'grey-7'
-  const pct = Number(h) <= 1 ? Number(h) * 100 : Number(h)
-  if (pct >= 99) return 'green-9'
-  if (pct >= 80) return 'yellow-10'
-  return 'red-10'
-}
-
-const hasDiscount = (row) => {
-  // preferencial: backend manda
-  if (row.active_promotion === true) return true
-  if (row.active_promotion === false) return false
-
-  // fallback: tenta comparar
-  const regular = getEffectiveRegularPrice(row)
-  const eff = getEffectivePrice(row)
-  if (regular == null || eff == null) return false
-  return Number(regular) > Number(eff)
-}
-
-const getEffectivePrice = (row) => {
-  if (row.effective_price != null) return row.effective_price
-  if (row.price != null) return row.price
-  return null
-}
-
-const getEffectiveRegularPrice = (row) => {
-  if (row.effective_regular_price != null) return row.effective_regular_price
-  if (row.original_price != null) return row.original_price
-  if (row.base_price != null) return row.base_price
-  return null
-}
-
-const getDiscountPct = (row) => {
-  if (row.discount_percentage != null) return row.discount_percentage
-
-  const regular = Number(getEffectiveRegularPrice(row))
-  const eff = Number(getEffectivePrice(row))
-  if (!regular || !eff || regular <= eff) return null
-  return Math.round(((regular - eff) / regular) * 100)
-}
-
-const LOGISTIC_META = {
-  fulfillment: {
-    label: 'Full (Mercado Envios)',
-    helper: 'O Mercado Livre armazena e envia. Você repõe estoque no full.',
-    icon: 'bolt',
-    color: 'green-7'
-  },
-  cross_docking: {
-    label: 'Coleta / Cross-docking',
-    helper: 'O ML coleta na sua operação (ou fluxo de coleta). Você prepara e o ML transporta.',
-    icon: 'local_shipping',
-    color: 'orange-8'
-  },
-  drop_off: {
-    label: 'Postagem em Agência (Drop-off)',
-    helper: 'Você leva o pacote até uma agência/ponto de postagem do Mercado Envios.',
-    icon: 'store',
-    color: 'grey-7'
-  },
-  xd_drop_off: {
-    label: 'Postagem em Agência (XD Drop-off)',
-    helper: 'Variação de drop-off (rede/fluxo XD). Na prática: você posta em ponto/agência.',
-    icon: 'store',
-    color: 'blue-grey-7'
-  },
-  self_service: {
-    label: 'Flex (Envio por você)',
-    helper: 'Você faz a entrega (Flex). Geralmente com retirada/entrega rápida local.',
-    icon: 'two_wheeler',
-    color: 'purple-6'
-  }
-}
-
-const getLogisticMeta = (type) => LOGISTIC_META[type] || {
-  label: type || '—',
-  helper: 'Tipo de logística não mapeado.',
-  icon: 'help_outline',
-  color: 'grey-7'
-}
-
-
-const copyText = (text) => {
-  if (!text) return
-  copyToClipboard(text).then(() => $q.notify({ type: 'positive', message: 'Copiado!', timeout: 500 }))
-}
-
-// ---------- API logic ----------
-
-const fetchAccounts = async () => {
-  try {
-    const r = await MercadoLivreService.listAccounts()
-    // aceita tanto {results: []} quanto []
-    accountOptions.value = Array.isArray(r.data) ? r.data : (r.data?.results || [])
-  } catch (e) {
-    console.error(e)
+    console.error('Erro silencioso ao carregar filtros:', e)
+    // Não vamos travar a tela se os filtros falharem
   }
 }
 
 const refreshData = () => onRequest({ pagination: pagination.value })
 
+const resetPagination = () => { pagination.value.page = 1 }
+
 const onRequest = async (props) => {
   const { page, rowsPerPage, sortBy, descending } = props.pagination
   loading.value = true
+
   try {
-    const response = await MercadoLivreService.listItems(props.pagination, filters)
+    const params = {
+      page,
+      page_size: rowsPerPage,
+      ordering: descending ? `-${sortBy}` : sortBy,
+      search: filters.search || undefined,
+      // Arrays
+      account: filters.account?.length ? filters.account.join(',') : undefined,
+      logistic_type: filters.logistic_type?.length ? filters.logistic_type.join(',') : undefined,
+      status: filters.status?.length ? filters.status.join(',') : undefined,
+      // Booleanos/Strings
+      stock_status: filters.stockStatus || undefined,
+      is_flex: filters.is_flex,
+      price_min: filters.priceMin,
+      price_max: filters.priceMax
+    }
+
+    // Limpa undefined
+    Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
+
+    const response = await MercadoLivreService.listItems(params)
     items.value = response.data.results || []
     pagination.value.rowsNumber = response.data.count || 0
+
+    // Atualiza estado local da paginacao
     pagination.value.page = page
     pagination.value.rowsPerPage = rowsPerPage
     pagination.value.sortBy = sortBy
     pagination.value.descending = descending
+
   } catch (error) {
     console.error(error)
-    $q.notify({ type: 'negative', message: 'Falha ao carregar anúncios', timeout: 1200 })
+    $q.notify({ type: 'negative', message: 'Falha ao buscar anúncios' })
   } finally {
     loading.value = false
   }
 }
 
-// debounce simples pro watcher (evita flood em múltiplos selects)
-let filtersTimer = null
-watch(
-  filters,
-  () => {
-    pagination.value.page = 1
-    if (filtersTimer) clearTimeout(filtersTimer)
-    filtersTimer = setTimeout(() => refreshData(), 250)
-  },
-  { deep: true }
-)
+// Watcher inteligente com debounce
+let timer
+watch(filters, () => {
+  pagination.value.page = 1
+  clearTimeout(timer)
+  timer = setTimeout(refreshData, 400)
+}, { deep: true })
 
-onMounted(async () => {
-  await fetchAccounts()
+
+// --- METADADOS / HELPERS VISUAIS ---
+const LOGISTIC_META = {
+  fulfillment: { label: 'Full', helper: 'Estoque no ML', icon: 'bolt', color: 'green-7' },
+  cross_docking: { label: 'Coleta', helper: 'ML coleta no seu CD', icon: 'local_shipping', color: 'orange-8' },
+  drop_off: { label: 'Agência', helper: 'Postagem em ponto', icon: 'store', color: 'grey-7' },
+  xd_drop_off: { label: 'Agência XD', helper: 'Postagem Places', icon: 'store', color: 'blue-grey-7' },
+  self_service: { label: 'Flex', helper: 'Envio próprio', icon: 'two_wheeler', color: 'purple-6' }
+}
+
+const getLogisticMeta = (type) => LOGISTIC_META[type] || { label: type, icon: 'help', color: 'grey' }
+
+// Detalhes Lazy Load
+const detailLoading = ref({})
+const isDetailLoading = (row) => !!detailLoading.value[row.item_id]
+const ensureItemDetail = async (row) => {
+  if (row._detail || detailLoading.value[row.item_id]) return
+  detailLoading.value[row.item_id] = true
+  try {
+    const { data } = await MercadoLivreService.getItem(row.item_id)
+    row._detail = data
+  } catch (e) { console.error(e) }
+  finally { detailLoading.value[row.item_id] = false }
+}
+const getVariations = (row) => row._detail?.variation_objects || []
+
+// Formatters
+const formatCurrency = (val) => val ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val)) : ''
+const formatHealth = (h) => h != null ? `${Math.round(Number(h) <= 1 ? Number(h) * 100 : Number(h))}%` : '—'
+
+const getHealthColor = (row) => {
+  const h = Number(row.health || 0)
+  const pct = h <= 1 ? h * 100 : h
+  if (pct >= 99) return 'green-1'
+  if (pct >= 80) return 'yellow-1'
+  return 'red-1'
+}
+const getHealthTextColor = (row) => {
+  const h = Number(row.health || 0)
+  const pct = h <= 1 ? h * 100 : h
+  if (pct >= 99) return 'green-9'
+  if (pct >= 80) return 'yellow-10'
+  return 'red-10'
+}
+
+const getPromotions = (row) => {
+  const promos = []
+  if (row.promotions_info) row.promotions_info.forEach(p => promos.push(p.name || p.type))
+  if (!promos.length && row.pricing_details?.deal_ids) promos.push('Oferta')
+  return [...new Set(promos)].slice(0, 3)
+}
+
+const getQualityWarnings = (row) => {
+  if (row.quality_warnings) return row.quality_warnings.map(w => w.message || w)
+  return (Number(row.health) < 0.8) ? ['Verifique qualidade'] : []
+}
+
+// Helpers de Preço
+const getEffectivePrice = (row) => row.effective_price || row.price
+const getEffectiveRegularPrice = (row) => row.effective_regular_price || row.original_price || row.base_price
+const hasDiscount = (row) => {
+  const reg = getEffectiveRegularPrice(row)
+  const eff = getEffectivePrice(row)
+  return reg && eff && Number(reg) > Number(eff)
+}
+const getDiscountPct = (row) => {
+  const reg = Number(getEffectiveRegularPrice(row))
+  const eff = Number(getEffectivePrice(row))
+  return (reg && eff && reg > eff) ? Math.round(((reg - eff) / reg) * 100) : null
+}
+const copyText = (t) => { copyToClipboard(t); $q.notify('Copiado!') }
+
+const columns = [
+  { name: 'thumbnail', align: 'center', label: '', field: 'thumbnail' },
+  { name: 'title', align: 'left', label: 'PRODUTO', field: 'title' },
+  { name: 'health', align: 'center', label: 'QUALIDADE', field: 'health' },
+  { name: 'logistic_type', align: 'left', label: 'LOGÍSTICA', field: 'logistic_type' },
+  { name: 'price', align: 'right', label: 'PREÇO', field: 'effective_price' }
+]
+
+onMounted(() => {
+  // 1. Dispara o carregamento dos filtros (em paralelo)
+  loadFilters()
+
+  // 2. Dispara o carregamento da tabela IMEDIATAMENTE
   refreshData()
 })
 </script>
@@ -663,5 +645,23 @@ onMounted(async () => {
 
 .border-grey {
   border: 1px solid #eee;
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+.hover-badge:hover {
+  filter: brightness(0.95);
 }
 </style>
