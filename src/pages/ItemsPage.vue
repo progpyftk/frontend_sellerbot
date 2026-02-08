@@ -213,24 +213,31 @@
                 </div>
               </q-td>
 
-              <q-td key="health" :props="props" align="center">
-                <div v-if="getQualityWarnings(props.row).length === 0">
-                  <q-chip dense :color="getHealthColor(props.row)" :text-color="getHealthTextColor(props.row)"
-                    icon="verified">
-                    {{ formatHealth(props.row.health) }}
-                  </q-chip>
+              <q-td key="sold_quantity" :props="props" align="center">
+                <div class="column items-center">
+                  <div class="text-subtitle2 text-weight-bold text-grey-9">
+                    {{ props.row.sold_quantity }}
+                  </div>
+
                 </div>
-                <div v-else class="cursor-pointer">
-                  <q-chip dense :color="getHealthColor(props.row)" :text-color="getHealthTextColor(props.row)"
-                    icon="warning">
-                    {{ getQualityWarnings(props.row).length }} Avisos • {{ formatHealth(props.row.health) }}
-                  </q-chip>
-                  <q-tooltip content-class="bg-grey-9 text-white" max-width="300px">
-                    <div class="text-weight-bold q-mb-xs">Correções necessárias:</div>
-                    <ul class="q-pl-md q-ma-none text-caption" style="list-style-type: disc;">
-                      <li v-for="w in getQualityWarnings(props.row)" :key="w">{{ w }}</li>
-                    </ul>
-                  </q-tooltip>
+              </q-td>
+
+              <q-td key="health" :props="props" align="center">
+                <div class="cursor-pointer row justify-center relative-position group"
+                  @click.stop="openHealthDialog(props.row)">
+                  <q-circular-progress show-value font-size="10px"
+                    :value="props.row.health <= 1 ? props.row.health * 100 : props.row.health" size="45px"
+                    :thickness="0.25" :color="getHealthColorName(props.row.health)" track-color="grey-3"
+                    class="text-weight-bold">
+                    {{ Math.round(props.row.health <= 1 ? props.row.health * 100 : props.row.health) }}%
+                      </q-circular-progress>
+
+                      <q-badge v-if="getQualityWarnings(props.row).length > 0" floating rounded color="red"
+                        class="q-mr-xs q-mt-xs" style="transform: scale(0.8);">
+                        !
+                      </q-badge>
+
+                      <q-tooltip>Clique para ver detalhes da qualidade</q-tooltip>
                 </div>
               </q-td>
 
@@ -338,6 +345,81 @@
         </q-table>
       </q-card>
     </div>
+    <q-dialog v-model="showHealthDialog">
+      <q-card style="width: 500px; max-width: 90vw;">
+
+        <q-card-section class="row items-center q-pb-none"
+          :class="`bg-${getHealthColorName(activeHealthItem?.health || 0)}-1`">
+          <div class="text-h6 text-grey-9">Diagnóstico do Anúncio</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md" :class="`bg-${getHealthColorName(activeHealthItem?.health || 0)}-1`">
+          <div class="row items-center no-wrap q-mb-md">
+            <q-avatar rounded size="60px" class="q-mr-md bg-white shadow-1">
+              <img :src="activeHealthItem?.thumbnail" style="object-fit: contain;">
+            </q-avatar>
+
+            <div>
+              <div class="text-subtitle2 ellipsis-2-lines" style="line-height: 1.2;">
+                {{ activeHealthItem?.title }}
+              </div>
+              <div class="text-caption text-grey-7 font-mono q-mt-xs">
+                {{ activeHealthItem?.item_id }}
+              </div>
+            </div>
+          </div>
+
+          <div class="row items-center q-gutter-x-md">
+            <q-linear-progress size="15px" :value="activeHealthItem?.health || 0"
+              :color="getHealthColorName(activeHealthItem?.health || 0)" rounded class="col">
+              <div class="absolute-full flex flex-center">
+                <q-badge color="transparent" text-color="white" :label="formatHealth(activeHealthItem?.health)" />
+              </div>
+            </q-linear-progress>
+          </div>
+        </q-card-section>
+
+        <q-card-section class="q-pa-none">
+          <div v-if="!activeHealthItem || getQualityWarnings(activeHealthItem).length === 0"
+            class="text-center q-pa-lg">
+            <q-icon name="verified" size="4em" color="green-5" class="q-mb-sm" />
+            <div class="text-h6 text-green-8">Tudo Perfeito!</div>
+            <div class="text-grey-6">Este anúncio segue todas as recomendações do Mercado Livre.</div>
+          </div>
+
+          <q-list separator v-else>
+            <q-item-label header class="text-weight-bold text-uppercase text-xs text-grey-7">
+              Ações Necessárias ({{ getQualityWarnings(activeHealthItem).length }})
+            </q-item-label>
+
+            <q-item v-for="(warn, index) in getQualityWarnings(activeHealthItem)" :key="index">
+              <q-item-section avatar>
+                <q-icon name="error_outline" color="deep-orange" />
+              </q-item-section>
+
+              <q-item-section>
+                <q-item-label class="text-weight-medium text-grey-9">
+                  {{ warn }}
+                </q-item-label>
+                <q-item-label caption>
+                  Impacta na exposição do anúncio
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Fechar" color="grey-7" v-close-popup />
+          <q-btn unelevated color="primary" icon="open_in_new" label="Resolver no Mercado Livre" type="a"
+            :href="activeHealthItem?.permalink" target="_blank" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -370,7 +452,7 @@ const filters = reactive({
 })
 
 const pagination = ref({
-  sortBy: 'last_synced_at',
+  sortBy: 'sold_quantity', // Mude de 'last_synced_at' para 'sold_quantity'
   descending: true,
   page: 1,
   rowsPerPage: 20,
@@ -547,6 +629,24 @@ const LOGISTIC_META = {
 
 const getLogisticMeta = (type) => LOGISTIC_META[type] || { label: type, icon: 'help', color: 'grey' }
 
+// --- ESTADO DO MODAL DE SAÚDE ---
+const showHealthDialog = ref(false)
+const activeHealthItem = ref(null)
+
+// Função para abrir o modal
+const openHealthDialog = (row) => {
+  activeHealthItem.value = row
+  showHealthDialog.value = true
+}
+
+// Helper para pegar a cor baseada na nota (reaproveitando lógica, mas ajustando para Quasar colors)
+const getHealthColorName = (health) => {
+  const pct = health <= 1 ? health * 100 : health
+  if (pct >= 99) return 'positive' // verde
+  if (pct >= 70) return 'warning'  // laranja
+  return 'negative'                // vermelho
+}
+
 // Detalhes Lazy Load
 const detailLoading = ref({})
 const isDetailLoading = (row) => !!detailLoading.value[row.item_id]
@@ -587,9 +687,55 @@ const getPromotions = (row) => {
   return [...new Set(promos)].slice(0, 3)
 }
 
+// Substitua a função getQualityWarnings existente por esta:
 const getQualityWarnings = (row) => {
-  if (row.quality_warnings) return row.quality_warnings.map(w => w.message || w)
-  return (Number(row.health) < 0.8) ? ['Verifique qualidade'] : []
+  // 1. Defesa: Se o campo for nulo/undefined
+  const rawData = row.quality_warnings
+
+  // Lista temporária para processamento
+  let warningsList = []
+
+  // 2. Se for String (as vezes o banco retorna JSON como string), tenta converter
+  if (typeof rawData === 'string') {
+    try {
+      warningsList = JSON.parse(rawData)
+    } catch (e) {
+      warningsList = [] // Falha no parse
+    }
+  } else if (Array.isArray(rawData)) {
+    warningsList = rawData
+  }
+
+  // 3. Processamento dos Itens (Extrair mensagem legível)
+  const formattedWarnings = warningsList.map(w => {
+    // Se já for texto, retorna
+    if (typeof w === 'string') return w
+
+    // Se for objeto, tenta achar a propriedade correta (API do ML varia)
+    if (typeof w === 'object' && w !== null) {
+      return w.message || w.reason || w.label || w.id || 'Ajuste necessário'
+    }
+    return null
+  }).filter(Boolean) // Remove nulos/vazios
+
+  // 4. Fallback Inteligente (A CEREJA DO BOLO)
+  // Se a lista estiver vazia, mas a saúde for menor que 99%, criamos um aviso genérico.
+  // Isso resolve o problema do item com 80% sem aviso explicito.
+  if (formattedWarnings.length === 0) {
+    const health = Number(row.health || 0)
+    // Normaliza para 0-100 ou 0-1
+    const pct = health <= 1 ? health * 100 : health
+
+    if (pct > 0 && pct < 99) {
+      return [
+        'Complete a ficha técnica',
+        'Verifique fotos e atributos obrigatórios',
+        'Melhore a descrição do anúncio'
+      ]
+    }
+  }
+
+  return formattedWarnings
 }
 
 // Helpers de Preço
@@ -610,6 +756,7 @@ const copyText = (t) => { copyToClipboard(t); $q.notify('Copiado!') }
 const columns = [
   { name: 'thumbnail', align: 'center', label: '', field: 'thumbnail' },
   { name: 'title', align: 'left', label: 'PRODUTO', field: 'title' },
+  { name: 'sold_quantity', align: 'center', label: 'VENDAS', field: 'sold_quantity', sortable: true },
   { name: 'health', align: 'center', label: 'QUALIDADE', field: 'health' },
   { name: 'logistic_type', align: 'left', label: 'LOGÍSTICA', field: 'logistic_type' },
   { name: 'price', align: 'right', label: 'PREÇO', field: 'effective_price' }
