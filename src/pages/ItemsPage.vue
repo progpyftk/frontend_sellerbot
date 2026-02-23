@@ -1,3 +1,5 @@
+<!-- src/pages/ItemsPage.vue -->
+
 <template>
   <q-page class="bg-grey-2">
     <div class="q-pa-md">
@@ -222,22 +224,21 @@
                 </div>
               </q-td>
 
-              <q-td key="health" :props="props" align="center">
+              <q-td key="performance_score" :props="props" align="center">
                 <div class="cursor-pointer row justify-center relative-position group"
                   @click.stop="openHealthDialog(props.row)">
-                  <q-circular-progress show-value font-size="10px"
-                    :value="props.row.health <= 1 ? props.row.health * 100 : props.row.health" size="45px"
-                    :thickness="0.25" :color="getHealthColorName(props.row.health)" track-color="grey-3"
+                  <q-circular-progress show-value font-size="10px" :value="props.row.performance_score || 0" size="45px"
+                    :thickness="0.25" :color="getHealthColorName(props.row.performance_score || 0)" track-color="grey-3"
                     class="text-weight-bold">
-                    {{ Math.round(props.row.health <= 1 ? props.row.health * 100 : props.row.health) }}%
-                      </q-circular-progress>
+                    {{ Math.round(props.row.performance_score || 0) }}%
+                  </q-circular-progress>
 
-                      <q-badge v-if="getQualityWarnings(props.row).length > 0" floating rounded color="red"
-                        class="q-mr-xs q-mt-xs" style="transform: scale(0.8);">
-                        !
-                      </q-badge>
+                  <q-badge v-if="getQualityWarnings(props.row).length > 0" floating rounded color="red"
+                    class="q-mr-xs q-mt-xs" style="transform: scale(0.8);">
+                    !
+                  </q-badge>
 
-                      <q-tooltip>Clique para ver detalhes da qualidade</q-tooltip>
+                  <q-tooltip>Clique para ver detalhes da qualidade</q-tooltip>
                 </div>
               </q-td>
 
@@ -349,13 +350,13 @@
       <q-card style="width: 500px; max-width: 90vw;">
 
         <q-card-section class="row items-center q-pb-none"
-          :class="`bg-${getHealthColorName(activeHealthItem?.health || 0)}-1`">
+          :class="`bg-${getHealthColorName(activeHealthItem?.performance_score || 0)}-1`">
           <div class="text-h6 text-grey-9">Diagnóstico do Anúncio</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-pt-md" :class="`bg-${getHealthColorName(activeHealthItem?.health || 0)}-1`">
+        <q-card-section class="q-pt-md" :class="`bg-${getHealthColorName(activeHealthItem?.performance_score || 0)}-1`">
           <div class="row items-center no-wrap q-mb-md">
             <q-avatar rounded size="60px" class="q-mr-md bg-white shadow-1">
               <img :src="activeHealthItem?.thumbnail" style="object-fit: contain;">
@@ -372,10 +373,11 @@
           </div>
 
           <div class="row items-center q-gutter-x-md">
-            <q-linear-progress size="15px" :value="activeHealthItem?.health || 0"
-              :color="getHealthColorName(activeHealthItem?.health || 0)" rounded class="col">
+            <q-linear-progress size="15px" :value="(activeHealthItem?.performance_score || 0) / 100"
+              :color="getHealthColorName(activeHealthItem?.performance_score || 0)" rounded class="col">
               <div class="absolute-full flex flex-center">
-                <q-badge color="transparent" text-color="white" :label="formatHealth(activeHealthItem?.health)" />
+                <q-badge color="transparent" text-color="white"
+                  :label="formatHealth(activeHealthItem?.performance_score)" />
               </div>
             </q-linear-progress>
           </div>
@@ -640,11 +642,11 @@ const openHealthDialog = (row) => {
 }
 
 // Helper para pegar a cor baseada na nota (reaproveitando lógica, mas ajustando para Quasar colors)
-const getHealthColorName = (health) => {
-  const pct = health <= 1 ? health * 100 : health
-  if (pct >= 99) return 'positive' // verde
-  if (pct >= 70) return 'warning'  // laranja
-  return 'negative'                // vermelho
+const getHealthColorName = (score) => {
+  const pct = Number(score || 0)
+  if (pct >= 99) return 'positive'
+  if (pct >= 70) return 'warning'
+  return 'negative'
 }
 
 // Detalhes Lazy Load
@@ -659,26 +661,13 @@ const ensureItemDetail = async (row) => {
   } catch (e) { console.error(e) }
   finally { detailLoading.value[row.item_id] = false }
 }
-const getVariations = (row) => row._detail?.variation_objects || []
 
+const getVariations = (row) => row._detail?.variations || []
 // Formatters
 const formatCurrency = (val) => val ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val)) : ''
-const formatHealth = (h) => h != null ? `${Math.round(Number(h) <= 1 ? Number(h) * 100 : Number(h))}%` : '—'
+const formatHealth = (score) =>
+  score != null ? `${Math.round(Number(score))}%` : '—'
 
-const getHealthColor = (row) => {
-  const h = Number(row.health || 0)
-  const pct = h <= 1 ? h * 100 : h
-  if (pct >= 99) return 'green-1'
-  if (pct >= 80) return 'yellow-1'
-  return 'red-1'
-}
-const getHealthTextColor = (row) => {
-  const h = Number(row.health || 0)
-  const pct = h <= 1 ? h * 100 : h
-  if (pct >= 99) return 'green-9'
-  if (pct >= 80) return 'yellow-10'
-  return 'red-10'
-}
 
 const getPromotions = (row) => {
   const promos = []
@@ -689,43 +678,25 @@ const getPromotions = (row) => {
 
 // Substitua a função getQualityWarnings existente por esta:
 const getQualityWarnings = (row) => {
-  // 1. Defesa: Se o campo for nulo/undefined
-  const rawData = row.quality_warnings
+  const rawData = row?.performance_pending_rules
 
-  // Lista temporária para processamento
   let warningsList = []
-
-  // 2. Se for String (as vezes o banco retorna JSON como string), tenta converter
   if (typeof rawData === 'string') {
-    try {
-      warningsList = JSON.parse(rawData)
-    } catch (e) {
-      warningsList = [] // Falha no parse
-    }
+    try { warningsList = JSON.parse(rawData) } catch { warningsList = [] }
   } else if (Array.isArray(rawData)) {
     warningsList = rawData
   }
 
-  // 3. Processamento dos Itens (Extrair mensagem legível)
   const formattedWarnings = warningsList.map(w => {
-    // Se já for texto, retorna
     if (typeof w === 'string') return w
-
-    // Se for objeto, tenta achar a propriedade correta (API do ML varia)
-    if (typeof w === 'object' && w !== null) {
-      return w.message || w.reason || w.label || w.id || 'Ajuste necessário'
+    if (w && typeof w === 'object') {
+      return w.title || w.message || w.reason || w.label || w.rule_key || w.id || 'Ajuste necessário'
     }
     return null
-  }).filter(Boolean) // Remove nulos/vazios
+  }).filter(Boolean)
 
-  // 4. Fallback Inteligente (A CEREJA DO BOLO)
-  // Se a lista estiver vazia, mas a saúde for menor que 99%, criamos um aviso genérico.
-  // Isso resolve o problema do item com 80% sem aviso explicito.
   if (formattedWarnings.length === 0) {
-    const health = Number(row.health || 0)
-    // Normaliza para 0-100 ou 0-1
-    const pct = health <= 1 ? health * 100 : health
-
+    const pct = Number(row?.performance_score || 0)
     if (pct > 0 && pct < 99) {
       return [
         'Complete a ficha técnica',
@@ -737,7 +708,6 @@ const getQualityWarnings = (row) => {
 
   return formattedWarnings
 }
-
 // Helpers de Preço
 const getEffectivePrice = (row) => row.effective_price || row.price
 const getEffectiveRegularPrice = (row) => row.effective_regular_price || row.original_price || row.base_price
@@ -757,7 +727,7 @@ const columns = [
   { name: 'thumbnail', align: 'center', label: '', field: 'thumbnail' },
   { name: 'title', align: 'left', label: 'PRODUTO', field: 'title' },
   { name: 'sold_quantity', align: 'center', label: 'VENDAS', field: 'sold_quantity', sortable: true },
-  { name: 'health', align: 'center', label: 'QUALIDADE', field: 'health' },
+  { name: 'performance_score', align: 'center', label: 'QUALIDADE', field: 'performance_score', sortable: true },
   { name: 'logistic_type', align: 'left', label: 'LOGÍSTICA', field: 'logistic_type' },
   { name: 'price', align: 'right', label: 'PREÇO', field: 'effective_price' }
 ]
