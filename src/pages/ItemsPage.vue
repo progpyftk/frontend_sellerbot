@@ -280,7 +280,18 @@
                   </q-badge>
 
                   <!-- 3) Flag(s) extras -->
-                  <q-badge v-if="props.row.free_shipping" outline color="teal-7" label="Frete Grátis" size="xs" />
+                  <q-badge v-if="props.row.free_shipping" outline
+                    :color="getEffectivePrice(props.row) < 79 ? 'deep-orange-7' : 'teal-7'" size="xs" class="q-mt-xs">
+                    <q-icon v-if="getEffectivePrice(props.row) < 79" name="warning" size="11px" class="q-mr-xs" />
+                    Frete Grátis
+
+                    <q-tooltip v-if="getEffectivePrice(props.row) < 79" class="bg-deep-orange-9 text-white shadow-4"
+                      max-width="250px">
+                      <div class="text-weight-bold q-mb-xs">Atenção à Margem!</div>
+                      Produto abaixo de R$ 79,00 com Frete Grátis ativo. Você pode estar pagando o custo integral do
+                      envio.
+                    </q-tooltip>
+                  </q-badge>
                 </div>
               </q-td>
 
@@ -367,18 +378,31 @@
                         </tbody>
                       </q-markup-table>
                     </div>
-
-                    <div class="col-12 col-md-4" v-if="getQualityWarnings(props.row).length > 0">
-                      <div class="text-overline text-red-7 q-mb-sm">Problemas Detectados</div>
+                    <div class="col-12 col-md-4"
+                      v-if="props.row.performance_pending_rules && props.row.performance_pending_rules.length > 0">
+                      <div class="text-overline text-red-7 q-mb-sm">Ações Necessárias</div>
                       <q-list dense bordered class="bg-white rounded-borders">
-                        <q-item v-for="(warn, idx) in getQualityWarnings(props.row)" :key="idx">
+
+                        <q-item v-for="(rule, idx) in props.row.performance_pending_rules.slice(0, 3)" :key="idx">
                           <q-item-section avatar min-width>
-                            <q-icon name="error_outline" color="red" size="xs" />
+                            <q-icon :name="rule.mode === 'WARNING' ? 'error_outline' : 'lightbulb'"
+                              :color="rule.mode === 'WARNING' ? 'red' : 'blue'" size="xs" />
                           </q-item-section>
-                          <q-item-section class="text-caption text-grey-9">{{ warn }}</q-item-section>
+                          <q-item-section class="text-caption text-grey-9">
+                            {{ rule.title || rule.variable_title }}
+                          </q-item-section>
                         </q-item>
+
+                        <q-item clickable @click="openHealthDialog(props.row)" class="bg-grey-1">
+                          <q-item-section class="text-primary text-caption text-weight-bold text-center">
+                            Ver Auditoria Completa ({{ props.row.performance_pending_rules.length }})
+                          </q-item-section>
+                        </q-item>
+
                       </q-list>
                     </div>
+
+
                   </div>
                 </div>
               </q-td>
@@ -388,12 +412,12 @@
         </q-table>
       </q-card>
     </div>
-    <q-dialog v-model="showHealthDialog">
-      <q-card style="width: 500px; max-width: 90vw;">
 
+    <q-dialog v-model="showHealthDialog">
+      <q-card style="width: 600px; max-width: 95vw;">
         <q-card-section class="row items-center q-pb-none"
           :class="`bg-${getHealthColorName(activeHealthItem?.performance_score || 0)}-1`">
-          <div class="text-h6 text-grey-9">Diagnóstico do Anúncio</div>
+          <div class="text-h6 text-grey-9">Auditoria do Anúncio</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
@@ -403,17 +427,16 @@
             <q-avatar rounded size="60px" class="q-mr-md bg-white shadow-1">
               <img :src="activeHealthItem?.thumbnail" style="object-fit: contain;">
             </q-avatar>
-
             <div>
               <div class="text-subtitle2 ellipsis-2-lines" style="line-height: 1.2;">
                 {{ activeHealthItem?.title }}
               </div>
               <div class="text-caption text-grey-7 font-mono q-mt-xs">
-                {{ activeHealthItem?.item_id }}
+                MLB: {{ activeHealthItem?.item_id }} | Qualidade: {{ activeHealthItem?.performance_level_wording ||
+                  'N/A' }}
               </div>
             </div>
           </div>
-
           <div class="row items-center q-gutter-x-md">
             <q-linear-progress size="15px" :value="(activeHealthItem?.performance_score || 0) / 100"
               :color="getHealthColorName(activeHealthItem?.performance_score || 0)" rounded class="col">
@@ -425,45 +448,88 @@
           </div>
         </q-card-section>
 
-        <q-card-section class="q-pa-none">
-          <div v-if="!activeHealthItem || getQualityWarnings(activeHealthItem).length === 0"
-            class="text-center q-pa-lg">
-            <q-icon name="verified" size="4em" color="green-5" class="q-mb-sm" />
-            <div class="text-h6 text-green-8">Tudo Perfeito!</div>
-            <div class="text-grey-6">Este anúncio segue todas as recomendações do Mercado Livre.</div>
-          </div>
-
-          <q-list separator v-else>
-            <q-item-label header class="text-weight-bold text-uppercase text-xs text-grey-7">
-              Ações Necessárias ({{ getQualityWarnings(activeHealthItem).length }})
-            </q-item-label>
-
-            <q-item v-for="(warn, index) in getQualityWarnings(activeHealthItem)" :key="index">
-              <q-item-section avatar>
-                <q-icon name="error_outline" color="deep-orange" />
-              </q-item-section>
-
-              <q-item-section>
-                <q-item-label class="text-weight-medium text-grey-9">
-                  {{ warn }}
-                </q-item-label>
-                <q-item-label caption>
-                  Impacta na exposição do anúncio
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-card-section>
-
         <q-separator />
 
-        <q-card-actions align="right" class="q-pa-md bg-grey-1">
-          <q-btn flat label="Fechar" color="grey-7" v-close-popup />
-          <q-btn unelevated color="primary" icon="open_in_new" label="Resolver no Mercado Livre" type="a"
-            :href="activeHealthItem?.permalink" target="_blank" />
-        </q-card-actions>
+        <q-card-section class="q-pa-none bg-grey-2" style="max-height: 60vh; overflow-y: auto;">
+          <div v-if="!activeHealthItem?.performance_details?.buckets?.length" class="text-center q-pa-xl">
+            <q-icon name="analytics" size="3em" color="grey-4" class="q-mb-sm" />
+            <div class="text-h6 text-grey-6">Detalhes Indisponíveis</div>
+            <div class="text-caption text-grey-5">O Mercado Livre ainda não disponibilizou a auditoria completa para
+              este
+              item ou a sincronização está pendente.</div>
+          </div>
+
+          <q-list v-else class="q-pa-sm q-gutter-y-sm">
+            <q-expansion-item v-for="(bucket, bIdx) in activeHealthItem.performance_details.buckets"
+              :key="'bucket-' + bIdx" class="bg-white shadow-1 rounded-borders overflow-hidden"
+              :header-class="bucket.status === 'COMPLETED' ? 'bg-green-1' : (bucket.score >= 50 ? 'bg-orange-1' : 'bg-red-1')"
+              expand-separator default-opened>
+              <template v-slot:header>
+                <q-item-section avatar>
+                  <q-icon
+                    :name="bucket.status === 'COMPLETED' ? 'check_circle' : (bucket.score >= 50 ? 'warning' : 'error')"
+                    :color="bucket.status === 'COMPLETED' ? 'positive' : (bucket.score >= 50 ? 'warning' : 'negative')"
+                    size="md" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-weight-bold text-grey-9">{{ bucket.title || bucket.type }}</q-item-label>
+                  <q-item-label caption v-if="bucket.status !== 'COMPLETED'">
+                    Nota da seção: <span class="text-weight-bold">{{ Math.round(bucket.score || 0) }}%</span>
+                  </q-item-label>
+                  <q-item-label caption class="text-positive text-weight-medium" v-else>
+                    Tudo perfeito nesta seção!
+                  </q-item-label>
+                </q-item-section>
+              </template>
+
+              <q-separator />
+
+              <q-list separator class="bg-white">
+                <template v-for="(variable, vIdx) in bucket.variables" :key="'var-'+vIdx">
+
+                  <q-item v-for="(rule, rIdx) in variable.rules" :key="'rule-' + rIdx" class="q-py-md"
+                    :class="rule.status === 'COMPLETED' ? 'opacity-70' : ''">
+                    <q-item-section avatar top>
+                      <q-icon
+                        :name="rule.status === 'COMPLETED' ? 'task_alt' : (rule.mode === 'WARNING' ? 'report_problem' : 'lightbulb')"
+                        :color="rule.status === 'COMPLETED' ? 'green-5' : (rule.mode === 'WARNING' ? 'red-6' : 'blue-5')" />
+                    </q-item-section>
+
+                    <q-item-section>
+                      <q-item-label
+                        :class="rule.status === 'COMPLETED' ? 'text-strike text-grey-6' : 'text-weight-bold text-grey-9'">
+                        {{ variable.title }}
+                      </q-item-label>
+
+                      <q-item-label caption class="q-mt-xs text-grey-7" v-if="rule.wordings?.title">
+                        {{ rule.wordings.title }}
+                      </q-item-label>
+
+                      <div v-if="rule.status === 'PENDING' && rule.progress != null && rule.progress < 1"
+                        class="row items-center q-mt-sm">
+                        <q-linear-progress :value="rule.progress" :color="rule.mode === 'WARNING' ? 'red-4' : 'blue-4'"
+                          size="8px" rounded class="col" />
+                        <span class="q-ml-sm text-caption text-weight-bold"
+                          :class="rule.mode === 'WARNING' ? 'text-red-8' : 'text-blue-8'">
+                          {{ Math.round(rule.progress * 100) }}%
+                        </span>
+                      </div>
+                    </q-item-section>
+
+                    <q-item-section side v-if="rule.status === 'PENDING' && rule.wordings?.link">
+                      <q-btn outline dense unelevated :color="rule.mode === 'WARNING' ? 'red' : 'primary'"
+                        :label="rule.wordings.label || 'Resolver'" icon-right="open_in_new" size="sm" class="q-px-sm"
+                        type="a" :href="rule.wordings.link" target="_blank" />
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-list>
+            </q-expansion-item>
+          </q-list>
+        </q-card-section>
       </q-card>
     </q-dialog>
+
   </q-page>
 </template>
 
@@ -809,38 +875,7 @@ const getPromotions = (row) => {
   return []
 }
 
-// Substitua a função getQualityWarnings existente por esta:
-const getQualityWarnings = (row) => {
-  const rawData = row?.performance_pending_rules
 
-  let warningsList = []
-  if (typeof rawData === 'string') {
-    try { warningsList = JSON.parse(rawData) } catch { warningsList = [] }
-  } else if (Array.isArray(rawData)) {
-    warningsList = rawData
-  }
-
-  const formattedWarnings = warningsList.map(w => {
-    if (typeof w === 'string') return w
-    if (w && typeof w === 'object') {
-      return w.title || w.message || w.reason || w.label || w.rule_key || w.id || 'Ajuste necessário'
-    }
-    return null
-  }).filter(Boolean)
-
-  if (formattedWarnings.length === 0) {
-    const pct = Number(row?.performance_score || 0)
-    if (pct > 0 && pct < 99) {
-      return [
-        'Complete a ficha técnica',
-        'Verifique fotos e atributos obrigatórios',
-        'Melhore a descrição do anúncio'
-      ]
-    }
-  }
-
-  return formattedWarnings
-}
 // Helpers de Preço
 const getEffectivePrice = (row) => row.effective_price || row.price
 const getEffectiveRegularPrice = (row) => row.effective_regular_price || row.original_price || row.base_price
