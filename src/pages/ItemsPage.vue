@@ -206,10 +206,18 @@
                     </div>
                   </div>
 
-                  <div class="row q-gutter-x-xs q-mt-xs" v-if="getPromotions(props.row).length > 0">
+                  <div class="row q-gutter-x-xs q-mt-xs"
+                    v-if="getPromotions(props.row).length > 0 || (props.expand && isDetailLoading(props.row))">
+                    <q-badge v-if="props.expand && isDetailLoading(props.row)" color="grey-3" text-color="grey-8"
+                      class="text-weight-bold q-py-xs">
+                      <q-spinner-dots size="14px" class="q-mr-xs" />
+                      Carregando promoções...
+                    </q-badge>
+
                     <q-badge v-for="promo in getPromotions(props.row)" :key="promo" color="purple-1"
                       text-color="purple-9" class="text-weight-bold q-py-xs">
-                      <q-icon name="local_offer" size="10px" class="q-mr-xs" /> {{ promo }}
+                      <q-icon name="local_offer" size="10px" class="q-mr-xs" />
+                      {{ promo }}
                     </q-badge>
                   </div>
                 </div>
@@ -233,36 +241,70 @@
                     {{ Math.round(props.row.performance_score || 0) }}%
                   </q-circular-progress>
 
-                  <q-badge v-if="getQualityWarnings(props.row).length > 0" floating rounded color="red"
-                    class="q-mr-xs q-mt-xs" style="transform: scale(0.8);">
-                    !
-                  </q-badge>
+
 
                   <q-tooltip>Clique para ver detalhes da qualidade</q-tooltip>
                 </div>
               </q-td>
 
               <q-td key="logistic_type" :props="props" align="left">
-                <div class="column q-gutter-y-xs">
-                  <div class="row items-center no-wrap">
-                    <q-icon :name="getLogisticMeta(props.row.logistic_type).icon"
-                      :color="getLogisticMeta(props.row.logistic_type).color" size="xs" class="q-mr-sm" />
-                    <div class="column">
-                      <span class="text-weight-medium text-caption">
-                        {{ getLogisticMeta(props.row.logistic_type).label }}
-                      </span>
-                    </div>
-                    <q-icon name="info_outline" size="xs" class="q-ml-sm text-grey-6">
-                      <q-tooltip content-class="bg-grey-9 text-white" max-width="260px">
+                <div class="column items-start q-gutter-y-xs logi-stack">
+                  <!-- 1) Badge principal (Full/Agência/Coleta/etc.) -->
+                  <q-badge rounded :color="getLogisticMeta(props.row.logistic_type).color" text-color="white"
+                    class="logi-pill">
+                    <q-icon :name="getLogisticMeta(props.row.logistic_type).icon" size="14px" class="q-mr-xs" />
+                    {{ getLogisticMeta(props.row.logistic_type).label }}
+
+                    <!-- Tooltip NO PRÓPRIO BADGE (sem info repetida) -->
+                    <q-tooltip content-class="bg-grey-9 text-white" max-width="320px">
+                      <div class="text-body2">
                         {{ getLogisticMeta(props.row.logistic_type).helper }}
-                      </q-tooltip>
-                    </q-icon>
-                  </div>
-                  <div class="row q-gutter-x-xs">
-                    <q-badge v-if="props.row.is_flex" outline color="purple-6" label="Flex" size="xs" />
-                    <q-badge v-if="props.row.is_full" outline color="green-7" label="Full" size="xs" />
-                    <q-badge v-if="props.row.free_shipping" outline color="teal-7" label="Frete Grátis" size="xs" />
-                  </div>
+                      </div>
+
+                      <div class="q-mt-xs text-caption">
+                        <div>logistic_type: {{ props.row.logistic_type || '—' }}</div>
+                        <div v-if="props.row.is_full && props.row.logistic_type !== 'fulfillment'"
+                          class="q-mt-xs text-warning">
+                          Obs: flag Full ativa, mas logistic_type != fulfillment
+                        </div>
+                      </div>
+                    </q-tooltip>
+                  </q-badge>
+
+                  <!-- 2) Flex SEMPRE (ativo ou com X) -->
+                  <q-badge rounded :outline="getFlexIndicator(props.row).outline"
+                    :color="getFlexIndicator(props.row).color" :text-color="getFlexIndicator(props.row).textColor"
+                    class="logi-subpill">
+                    <q-icon :name="getFlexIndicator(props.row).icon" size="14px" class="q-mr-xs" />
+                    {{ getFlexIndicator(props.row).label }}
+                  </q-badge>
+
+                  <!-- 3) Flag(s) extras -->
+                  <q-badge v-if="props.row.free_shipping" outline color="teal-7" label="Frete Grátis" size="xs" />
+                </div>
+              </q-td>
+
+              <q-td key="promotions" :props="props" align="left" class="promo-td">
+                <div v-if="getPromotionBadges(props.row).length === 0" class="text-caption text-grey-6">
+                  Sem promoção
+                </div>
+
+                <div v-else class="column q-gutter-y-xs">
+                  <q-badge v-for="p in getPromotionBadges(props.row)" :key="p.key"
+                    :color="p.status === 'started' ? 'purple-1' : 'grey-3'"
+                    :text-color="p.status === 'started' ? 'purple-9' : 'grey-8'" class="promo-badge">
+                    <q-icon name="local_offer" size="12px" class="q-mr-xs" />
+                    <span class="promo-label">
+                      {{ p.label }}
+                      <span v-if="p.discount_pct"> — {{ p.discount_pct }}% OFF</span>
+                      <span v-if="p.status && p.status !== 'started'"> ({{ p.status }})</span>
+                    </span>
+
+                    <!-- Tooltip com mais detalhes -->
+                    <q-tooltip v-if="p.tooltip" max-width="420px">
+                      <div class="text-caption">{{ p.tooltip }}</div>
+                    </q-tooltip>
+                  </q-badge>
                 </div>
               </q-td>
 
@@ -471,6 +513,34 @@ const logisticOptions = computed(() => {
   }))
 })
 
+// Helpers logistica
+
+const getPrimaryLogistic = (row) => {
+  const t = row?.logistic_type
+
+  // prioridade: Full > Flex > demais
+  if (t === 'fulfillment' || row?.is_full) {
+    return { label: 'Full', icon: 'bolt', color: 'green-7', textColor: 'white', helper: 'Estoque no ML' }
+  }
+  if (t === 'self_service' || row?.is_flex) {
+    return { label: 'Flex', icon: 'two_wheeler', color: 'purple-6', textColor: 'white', helper: 'Envio próprio' }
+  }
+  if (t === 'cross_docking') {
+    return { label: 'Coleta', icon: 'local_shipping', color: 'orange-8', textColor: 'white', helper: 'ML coleta no seu CD' }
+  }
+  if (t === 'drop_off' || t === 'xd_drop_off') {
+    return { label: 'Agência', icon: 'store', color: 'blue-grey-7', textColor: 'white', helper: 'Postagem em ponto' }
+  }
+  return { label: t || '—', icon: 'help', color: 'grey-6', textColor: 'white', helper: '' }
+}
+
+const getFlexIndicator = (row) => {
+  const active = !!row?.is_flex
+  return active
+    ? { label: 'Flex', icon: 'two_wheeler', color: 'purple-6', textColor: 'white', outline: false }
+    : { label: 'Flex ✕', icon: 'close', color: 'red-2', textColor: 'red-10', outline: true }
+}
+
 // Mapeia status do banco para Label bonita
 const STATUS_LABELS = {
   active: 'Ativo', paused: 'Pausado', closed: 'Fechado', under_review: 'Em Revisão', inactive: 'Inativo'
@@ -523,6 +593,55 @@ const setFilterFullNoStock = () => {
   // Limpa outros conflitantes
   filters.is_flex = null
   refreshData()
+}
+
+// Helpers promoções
+const toNum = (v) => {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+const calcDiscountPct = (regular, price) => {
+  const r = toNum(regular)
+  const p = toNum(price)
+  if (!r || !p || r <= 0 || p >= r) return 0
+  return Math.round(((r - p) / r) * 100)
+}
+
+const fmtBRL = (v) => (v != null && v !== '')
+  ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v))
+  : '—'
+
+const getPromotionBadges = (row) => {
+  const promos = Array.isArray(row?.promotions_info) ? row.promotions_info : []
+  const fallbackRegular =
+    row?.effective_regular_price ?? row?.original_price ?? row?.base_price ?? null
+
+  return promos
+    .filter(p => p && typeof p === 'object')
+    .map(p => {
+      const label = p.name || p.type || 'Promoção'
+      const price = p.price
+      const regular = p.original_price ?? fallbackRegular
+      const discount_pct = calcDiscountPct(regular, price)
+
+      const tooltipParts = [
+        `Tipo: ${p.type || '—'}`,
+        `Status: ${p.status || '—'}`,
+        `De: ${fmtBRL(regular)} · Por: ${fmtBRL(price)}`,
+        p.start_date ? `Início: ${p.start_date}` : null,
+        p.finish_date ? `Fim: ${p.finish_date}` : null,
+        p.id ? `ID: ${p.id}` : null,
+      ].filter(Boolean)
+
+      return {
+        key: p.id || `${label}-${p.status || ''}-${p.price || ''}`,
+        label,
+        status: p.status,
+        discount_pct,
+        tooltip: tooltipParts.join('\n'),
+      }
+    })
 }
 
 const setFilterOpportunityFlex = () => {
@@ -670,10 +789,24 @@ const formatHealth = (score) =>
 
 
 const getPromotions = (row) => {
-  const promos = []
-  if (row.promotions_info) row.promotions_info.forEach(p => promos.push(p.name || p.type))
-  if (!promos.length && row.pricing_details?.deal_ids) promos.push('Oferta')
-  return [...new Set(promos)].slice(0, 3)
+  // 1) DETALHE (quando expandiu e carregou)
+  const promosInfo = row?._detail?.promotions_info
+  if (Array.isArray(promosInfo) && promosInfo.length) {
+    const labels = promosInfo
+      .map(p => p?.name || p?.type)
+      .filter(Boolean)
+
+    return [...new Set(labels)]
+  }
+
+  // 2) LISTA (fallback leve)
+  const p = row?.active_promotion
+  if (p) return [p.name || p.type || 'Promoção'].filter(Boolean)
+
+  if (row?.price_source === 'PROMOTION_INFO') return ['Promoção']
+  if (row?.price_source === 'PRICES_API') return ['Oferta']
+
+  return []
 }
 
 // Substitua a função getQualityWarnings existente por esta:
@@ -729,7 +862,9 @@ const columns = [
   { name: 'sold_quantity', align: 'center', label: 'VENDAS', field: 'sold_quantity', sortable: true },
   { name: 'performance_score', align: 'center', label: 'QUALIDADE', field: 'performance_score', sortable: true },
   { name: 'logistic_type', align: 'left', label: 'LOGÍSTICA', field: 'logistic_type' },
-  { name: 'price', align: 'right', label: 'PREÇO', field: 'effective_price' }
+  { name: 'promotions', align: 'left', label: 'PROMOÇÕES', field: 'promotions_info' },
+
+  { name: 'price', align: 'right', label: 'PREÇO', field: 'effective_price' },
 ]
 
 onMounted(() => {
@@ -743,7 +878,29 @@ onMounted(() => {
 
 <style scoped>
 .my-custom-table :deep(tbody tr td) {
-  height: 65px;
+  min-height: 65px;
+  height: auto;
+  vertical-align: top;
+}
+
+.promo-td {
+  min-width: 260px;
+  /* ajuste se quiser mais espaço */
+}
+
+.promo-badge {
+  font-size: 12px;
+  line-height: 1.1;
+  padding: 2px 6px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.promo-label {
+  white-space: normal;
+  /* permite quebrar linha */
+  overflow-wrap: anywhere;
+  /* quebra palavras longas */
 }
 
 .hover-link:hover {
@@ -780,5 +937,20 @@ onMounted(() => {
 
 .hover-badge:hover {
   filter: brightness(0.95);
+}
+
+.logi-stack .q-badge {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.logi-pill {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.logi-subpill {
+  font-size: 11px;
+  padding: 4px 10px;
 }
 </style>
