@@ -104,15 +104,10 @@ const menuSections = [
       // --- ADICIONE ESTA LINHA AQUI ---
       { label: "Anúncios", icon: "mdi-package-variant", route: "items" },
       // -------------------------------
-
-      { label: "Frete Grátis", icon: "mdi-truck-fast", route: "free-shipping" },
-      { label: "Análise de Frete", icon: "mdi-chart-bar", route: "shipping-analysis" }, // Atenção: verifique se essa rota existe no routes.js
+      // Atenção: verifique se essa rota existe no routes.js
       { label: "Detalhe de Venda", icon: "mdi-chart-bar", route: "order-details" },
       { label: "Detalhe do Anúncio", icon: "mdi-chart-bar", route: "item-details" },
       { label: "Vendas", icon: "mdi-chart-bar", route: "sales" },
-      { label: "Fulfillment Sem Estoque", icon: "mdi-chart-bar", route: "fulfillment-no-stock" },
-      { label: "MercadoLivre Ads", icon: "mdi-chart-bar", route: "mercadolivre-ads" },
-      { label: "Fotos em Massa", icon: "mdi-chart-bar", route: "mercadolivre-fotos-em-massa" },
     ],
   },
   {

@@ -24,5 +24,9 @@ export default {
   // 5. SYNC (Se precisar forçar atualização)
   syncAccount(accountId) {
     return api.post(`/mercadolivre/accounts/${accountId}/sync/`)
+  },
+
+  reactivateItem(itemId, quantity = 1) {
+    return api.put(`/mercadolivre/items/${itemId}/reactivate/`, { quantity })
   }
 }

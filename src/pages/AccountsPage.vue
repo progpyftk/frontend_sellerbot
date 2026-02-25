@@ -71,20 +71,6 @@
                   </q-td>
                 </template>
 
-                <template v-slot:body-cell-tiny_status="props">
-                  <q-td :props="props">
-                    <template v-if="!props.row.is_tiny_connected">
-                      <q-btn label="Vincular Tiny" color="indigo" size="sm" icon="link"
-                        @click="() => openTinyModal(props.row.account_id, props.row.cnpj)" />
-                    </template>
-                    <template v-else>
-                      <q-chip color="positive" text-color="white" icon="check_circle" size="sm">
-                        Vinculada ao Tiny
-                      </q-chip>
-                    </template>
-                  </q-td>
-                </template>
-
                 <template v-slot:body-cell-actions="props">
                   <q-td :props="props" class="text-center">
                     <q-btn flat round color="negative" icon="delete" size="sm" @click="confirmDelete(props.row)">
@@ -119,7 +105,6 @@
         </q-card>
       </q-dialog>
     </div>
-    <TinyFormModal v-model="showTinyModal" :ml-account-id="selectedMlAccountId" :cnpj="selectedCnpj" />
 
   </q-page>
 </template>
@@ -129,9 +114,7 @@ import { ref, onMounted } from "vue";
 import { api } from "src/boot/axios";
 import { useQuasar } from "quasar";
 import { DateTime } from "luxon";
-import TinyFormModal from 'pages/TinyFormModal.vue'
 
-const showTinyModal = ref(false)
 const selectedMlAccountId = ref(null)
 const selectedCnpj = ref(null)
 
@@ -158,7 +141,6 @@ const columns = [
   { name: "refresh_token", align: "left", label: "Refresh Token", field: "refresh_token" },
   { name: "is_connected", align: "left", label: "Status", field: "is_connected" },
   { name: "token_expires_at", align: "left", label: "Token Expira em", field: "token_expires_at" },
-  { name: "tiny_status", align: "center", label: "Tiny ERP", field: "is_tiny_connected" },
   { name: "actions", align: "center", label: "Ações", field: "actions" }
 ];
 
@@ -272,11 +254,7 @@ const deleteAccount = async () => {
   }
 };
 
-const openTinyModal = (mlAccountId, cnpj) => {
-  selectedMlAccountId.value = mlAccountId
-  selectedCnpj.value = cnpj
-  showTinyModal.value = true
-}
+
 
 onMounted(() => {
   const urlParams = new URLSearchParams(window.location.search);
