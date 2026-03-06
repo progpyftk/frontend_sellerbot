@@ -27,10 +27,15 @@ const routes = [
         component: () => import("pages/AccountsPage.vue"),
       },
       {
-        path: "items", // URL final: /app/items
+        path: "items",
         name: "items",
         component: () => import("pages/ItemsPage.vue"),
       },
+      { path: 'promotions',
+        name: "promotions",
+        component: () => import('pages/PromotionsManagerPage.vue')
+      },
+
 
     ],
   },

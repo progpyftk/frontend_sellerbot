@@ -28,5 +28,13 @@ export default {
 
   reactivateItem(itemId, quantity = 1) {
     return api.put(`/mercadolivre/items/${itemId}/reactivate/`, { quantity })
+  },
+
+  getPromotions() {
+    return api.get('/mercadolivre/promotions/')
+  },
+
+  activatePromotions(payload) {
+    return api.post('/mercadolivre/promotions/', payload)
   }
 }

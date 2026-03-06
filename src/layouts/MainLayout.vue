@@ -103,10 +103,12 @@ const menuSections = [
 
       // --- ADICIONE ESTA LINHA AQUI ---
       { label: "Anúncios", icon: "mdi-package-variant", route: "items" },
+      { label: "Promoções ML", icon: "mdi-sale", route: "promotions" },
       // -------------------------------
       // Atenção: verifique se essa rota existe no routes.js
       { label: "Detalhe de Venda", icon: "mdi-chart-bar", route: "order-details" },
       { label: "Detalhe do Anúncio", icon: "mdi-chart-bar", route: "item-details" },
+
       { label: "Vendas", icon: "mdi-chart-bar", route: "sales" },
     ],
   },
