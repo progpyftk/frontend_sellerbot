@@ -222,19 +222,25 @@ const startMLAuth = () => {
 const handleAuthSuccess = async (code) => {
   try {
     loading.value = true;
-    const response = await api.post("/mercadolivre/auth/", { code });
+
+    // 🔥 AJUSTE: Passando o redirect_uri no corpo da requisição
+    const response = await api.post("/mercadolivre/auth/", {
+      code: code,
+      redirect_uri: REDIRECT_URI
+    });
+
     if (response.data?.success) {
       $q.notify({ message: "Conta adicionada!", color: "positive" });
       await getAccounts();
     }
   } catch (error) {
+    console.error("Erro na autenticação:", error);
     $q.notify({ message: "Erro na autenticação", color: "negative" });
   } finally {
     loading.value = false;
     isAuthenticating.value = false;
   }
 };
-
 const confirmDelete = (account) => {
   accountToDelete.value = account;
   deleteDialog.value = true;
