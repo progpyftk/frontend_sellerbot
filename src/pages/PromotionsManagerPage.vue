@@ -49,7 +49,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-weight-bold text-subtitle1">{{ accountData.account_nickname
-                    }}</q-item-label>
+                  }}</q-item-label>
                   <q-item-label caption class="text-grey-7">MLB: {{ accountData.account_id }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
@@ -158,7 +158,9 @@
 
                         <q-btn v-else unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Itens"
                           size="sm" class="text-weight-bold shadow-1 transition-scale"
-                          @click="openActivationDialog(accountData, props.row)" />
+                          @click="openActivationDialog(accountData, props.row)" :disable="isAnyPromoProcessing"
+                          :title="isAnyPromoProcessing ? 'Aguarde o processamento atual finalizar' : 'Ativar esta promoção'" />
+
                       </q-td>
 
                     </q-tr>
@@ -225,7 +227,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import { useQuasar } from 'quasar'
 
@@ -234,11 +236,22 @@ const loading = ref(false)
 const accountsPromotions = ref([])
 let pollInterval = null // Guarda o ID do temporizador do Polling
 
+const isAnyPromoProcessing = computed(() => {
+  if (!accountsPromotions.value) return false
+
+  // Varre todas as contas e todas as promoções buscando algum 'is_processing' true
+  return accountsPromotions.value.some(account =>
+    account.promotions.some(promo => promo.is_processing)
+  )
+})
+
 // ESTADO DO DIALOG
 const showActivationDialog = ref(false)
 const selectedPromo = ref(null)
 const selectedAccount = ref(null)
 const maxDiscount = ref(15)
+
+
 
 // TABELA
 const columns = [
