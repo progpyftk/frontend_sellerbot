@@ -24,11 +24,7 @@
         <div class="col-12 col-md-6">
           <div class="image-container">
             <div class="circle-backdrop"></div>
-            <img
-              src="https://vulk.cssninja.io/assets/illustrations/features/commerce-feature-1.png"
-              alt="Product Sales"
-              class="feature-image"
-            />
+            <img alt="Product Sales" class="feature-image" />
           </div>
         </div>
       </div>
@@ -137,9 +133,11 @@ export default defineComponent({
   0% {
     transform: scale(1) rotate(0deg);
   }
+
   50% {
     transform: scale(1.05) rotate(3deg);
   }
+
   100% {
     transform: scale(1) rotate(0deg);
   }

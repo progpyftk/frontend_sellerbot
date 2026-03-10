@@ -2,27 +2,15 @@
 <template>
   <section class="support-business-section q-py-xl">
     <div class="wave-container">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 1440 320"
-        preserveAspectRatio="none"
-      >
-        <path
-          fill="#ffffff"
-          fill-opacity="1"
-          d="M0,240 C700,520 960,100 1440,160 L1440,0 L0,0 Z"
-        ></path>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
+        <path fill="#ffffff" fill-opacity="1" d="M0,240 C700,520 960,100 1440,160 L1440,0 L0,0 Z"></path>
       </svg>
     </div>
     <div class="content-wrapper">
       <div class="row items-center">
         <div class="col-12 col-md-6">
           <div class="image-container">
-            <img
-              src="https://vulk.cssninja.io/assets/illustrations/features/commerce-feature-4.png"
-              alt="Support Illustration"
-              class="feature-image"
-            />
+            <img alt="Support Illustration" class="feature-image" />
           </div>
         </div>
         <div class="col-12 col-md-6 q-pl-md">
@@ -36,11 +24,7 @@
           <div class="row q-col-gutter-sm">
             <div class="col-12 col-sm-6" v-for="(item, index) in features" :key="index">
               <div class="feature-item">
-                <span
-                  class="material-icons text-purple q-mb-sm"
-                  style="font-size: 32px"
-                  >{{ item.icon }}</span
-                >
+                <span class="material-icons text-purple q-mb-sm" style="font-size: 32px">{{ item.icon }}</span>
                 <h4 class="text-weight-bold q-mb-xs">{{ item.title }}</h4>
                 <p class="text-grey-8">{{ item.description }}</p>
               </div>
@@ -166,7 +150,8 @@ export default defineComponent({
   font-family: "Material Icons";
   font-weight: normal;
   font-style: normal;
-  font-size: 24px; /* Preferred icon size */
+  font-size: 24px;
+  /* Preferred icon size */
   display: inline-block;
   line-height: 1;
   text-transform: none;

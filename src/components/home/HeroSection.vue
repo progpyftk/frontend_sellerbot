@@ -12,13 +12,11 @@
             Selling digital downloads, subscriptions and software licenses has never been easier, faster or more secure.
           </p>
           <div>
-          <q-btn unelevated color="purple" label="Free Trial" no-caps class="cta-btn q-mr-sm" />
-          <q-btn outline color="grey-6" label="Demo" no-caps class="cta-btn demo-btn" />
+            <q-btn unelevated color="purple" label="Free Trial" no-caps class="cta-btn q-mr-sm" />
+            <q-btn outline color="grey-6" label="Demo" no-caps class="cta-btn demo-btn" />
+          </div>
         </div>
-        </div>
-        <div class="col-12 col-md-6 illustration-container">
-          <img src="https://vulk.cssninja.io/assets/illustrations/hero/commerce.svg" alt="Hero illustration" class="hero-image">
-        </div>
+
       </div>
     </div>
   </section>

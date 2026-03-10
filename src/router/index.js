@@ -6,7 +6,7 @@ import {
   createWebHashHistory,
 } from "vue-router";
 import routes from "./routes";
-import { useStore } from "src/stores/store"; // Importa o Pinia store
+import { useStore } from "src/stores/store";
 
 export default route(function (/* { store, ssrContext } */) {
   const createHistory = process.env.SERVER
@@ -21,28 +21,27 @@ export default route(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
-  // Guarda de navegação global
-  Router.beforeEach(async (to, from, next) => {
+  // Guarda de navegação global (Sem async, pois agora é síncrono)
+  Router.beforeEach((to, from, next) => {
     const store = useStore(); // Acessa o store Pinia
 
     const requiresAuth = to.path.startsWith("/app"); // Rotas que exigem autenticação
-    const isLoggedIn = !!store.authToken; // Verifica se o usuário tem um token armazenado
 
-    if (requiresAuth) {
-      if (!isLoggedIn) {
-        console.log("Usuário não está logado. Redirecionando para o login.");
-        return next("/login"); // Redireciona para o login
-      }
+    // Usando a variável limpa que criamos no store para checar se tem token
+    const isLoggedIn = store.isAuthenticated;
 
-      // Verifica se o token é válido antes de permitir a navegação
-      const isValid = await store.ensureValidToken();
-      if (!isValid) {
-        console.log("Token inválido ou expirado. Redirecionando para o login.");
-        return next("/login");
-      }
+    // Se a rota exige login e ele não tá logado, manda pro /login
+    if (requiresAuth && !isLoggedIn) {
+      console.log("Usuário não está logado. Redirecionando para o login.");
+      return next("/login");
     }
 
-    // Se a rota não exigir autenticação ou o token for válido, prossiga
+    // Regra de Ouro: Se o usuário já está logado e tenta voltar pra tela de login, joga ele pro /app
+    if ((to.path === '/login' || to.path === '/signup') && isLoggedIn) {
+       return next('/app');
+    }
+
+    // Se passou por tudo, deixa a navegação seguir normalmente
     next();
   });
 

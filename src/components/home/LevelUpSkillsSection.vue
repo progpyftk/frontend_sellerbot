@@ -12,13 +12,7 @@
           <q-card flat bordered class="resource-card">
             <q-card-section>
               <div class="row q-mb-sm">
-                <q-chip
-                  v-for="tag in resource.tags"
-                  :key="tag"
-                  color="grey-3"
-                  text-color="grey-8"
-                  dense
-                >
+                <q-chip v-for="tag in resource.tags" :key="tag" color="grey-3" text-color="grey-8" dense>
                   {{ tag }}
                 </q-chip>
               </div>
@@ -51,19 +45,16 @@ export default defineComponent({
           tags: ["Commerce", "Conversion", "Profit"],
           title: "Increase conversion rates and learn how to manage abandoned carts",
           likes: 112,
-          image: "https://vulk.cssninja.io/assets/illustrations/blog/commerce-1.svg",
         },
         {
           tags: ["Orders", "Checkout", "Conversion"],
           title: "How order bumps can help increasing your revenue and conversions",
           likes: 319,
-          image: "https://vulk.cssninja.io/assets/illustrations/blog/commerce-2.svg",
         },
         {
           tags: ["Conversion", "Sales", "Products"],
           title: "How a rich and well maintained catalogue easily converts customers",
           likes: 519,
-          image: "https://vulk.cssninja.io/assets/illustrations/blog/commerce-3.svg",
         },
       ],
     };

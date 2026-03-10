@@ -15,48 +15,17 @@
 
         <q-space />
 
-        <!-- Botões de Login e Signup (exibidos apenas se o usuário não estiver logado) -->
-        <template v-if="!currentUser">
-          <q-btn
-            unelevated
-            color="primary"
-            label="Login"
-            no-caps
-            class="login-btn q-mr-sm"
-            @click="goToLogin"
-          />
-          <q-btn
-            unelevated
-            color="purple"
-            label="Signup"
-            class="login-btn q-mr-sm"
-            no-caps
-            @click="goToSignup"
-          />
+        <template v-if="!store.isAuthenticated">
+          <q-btn unelevated color="primary" label="Login" no-caps class="login-btn q-mr-sm" @click="goToLogin" />
+          <q-btn unelevated color="purple" label="Signup" class="login-btn q-mr-sm" no-caps @click="goToSignup" />
         </template>
 
-        <!-- Nome do usuário, botão de Logout e Sellerbot App (exibidos apenas se o usuário estiver logado) -->
         <template v-else>
-          <span class="q-mr-md">Bem-vindo, {{ currentUser.username }}!</span>
+          <span class="q-mr-md gt-xs">Bem-vindo, {{ store.currentUser?.username || 'Usuário' }}!</span>
 
-          <!-- Botão Sellerbot App -->
-          <q-btn
-            unelevated
-            color="secondary"
-            label="Sellerbot App"
-            no-caps
-            class="app-btn q-mr-sm"
-            @click="goToApp"
-          />
+          <q-btn unelevated color="secondary" label="Sellerbot App" no-caps class="app-btn q-mr-sm" @click="goToApp" />
 
-          <q-btn
-            unelevated
-            color="negative"
-            label="Logout"
-            no-caps
-            class="logout-btn"
-            @click="handleLogout"
-          />
+          <q-btn unelevated color="negative" label="Logout" no-caps class="logout-btn" @click="handleLogout" />
         </template>
       </q-toolbar>
     </div>
@@ -64,36 +33,28 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { useStore } from "../stores/store"; // Importa o store para pegar os dados do usuário
+import { useStore } from "../stores/store";
 
-// Acessando o roteador para redirecionar
 const router = useRouter();
-const store = useStore(); // Acessando o store
+const store = useStore();
 
-// Computed para verificar se o usuário está logado
-const currentUser = computed(() => store.currentUser);
-
-// Função para redirecionar para a página de Login
 const goToLogin = () => {
-  router.push("/login"); // Redireciona para a página de login
+  router.push("/login");
 };
 
-// Função para redirecionar para a página de Signup
 const goToSignup = () => {
-  router.push("/signup"); // Redireciona para a página de signup
+  router.push("/signup");
 };
 
-// Função para redirecionar para a página /app
 const goToApp = () => {
-  router.push("/app"); // Redireciona para a página do Sellerbot App
+  router.push("/app");
 };
 
-// Função de logout
 const handleLogout = () => {
-  store.logoutUser(); // Chama a função de logout do store
-  router.push("/login"); // Redireciona para a página de login após logout
+  store.logoutUser();
+  // O router.push('/login') já está sendo feito dentro do logoutUser() no store,
+  // mas se preferir garantir, pode deixar aqui também sem problemas.
 };
 </script>
 
@@ -111,17 +72,16 @@ const handleLogout = () => {
 }
 
 .nav-items {
-  margin-left: 20px; // Ajuste este valor conforme necessário
+  margin-left: 20px;
 }
 
 .q-btn {
   font-weight: 500;
 }
 
-/* Estilo para a imagem do logo */
 .logo-img {
-  max-height: 40px; /* Ajuste a altura máxima do logo */
-  width: auto; /* Mantém a proporção da imagem */
+  max-height: 40px;
+  width: auto;
 }
 
 @media (max-width: 1200px) {
@@ -131,12 +91,7 @@ const handleLogout = () => {
 }
 
 .login-btn,
-.app-btn {
-  font-size: 14px;
-  padding: 8px 16px;
-  border-radius: 10px;
-}
-
+.app-btn,
 .logout-btn {
   font-size: 14px;
   padding: 8px 16px;

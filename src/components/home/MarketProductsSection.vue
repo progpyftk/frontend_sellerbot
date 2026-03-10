@@ -6,11 +6,7 @@
         <div class="col-12 col-md-6">
           <div class="image-container">
             <div class="circle-backdrop"></div>
-            <img
-              src="https://vulk.cssninja.io/assets/illustrations/features/commerce-feature-2.png"
-              alt="Market Products"
-              class="feature-image"
-            />
+            <img alt="Market Products" class="feature-image" />
           </div>
         </div>
         <div class="col-12 col-md-6 q-pl-md">
@@ -22,11 +18,7 @@
           </p>
 
           <div class="row q-col-gutter-md">
-            <div
-              class="col-12 col-sm-6"
-              v-for="(item, index) in marketingItems"
-              :key="index"
-            >
+            <div class="col-12 col-sm-6" v-for="(item, index) in marketingItems" :key="index">
               <div class="marketing-item">
                 <q-icon :name="item.icon" color="purple" size="32px" class="q-mb-sm" />
                 <h4 class="text-weight-bold q-mb-xs">{{ item.title }}</h4>
@@ -141,9 +133,11 @@ export default defineComponent({
   0% {
     transform: scale(1) rotate(0deg);
   }
+
   50% {
     transform: scale(1.05) rotate(3deg);
   }
+
   100% {
     transform: scale(1) rotate(0deg);
   }
