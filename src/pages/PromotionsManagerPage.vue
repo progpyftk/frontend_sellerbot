@@ -20,6 +20,23 @@
               <q-btn unelevated color="blue-grey-9" text-color="white" icon="refresh" label="Atualizar Campanhas"
                 @click="() => loadPromotions(false, true)" :loading="loading" />
             </div>
+            <div class="row q-gutter-sm">
+              <q-btn unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Todas"
+                @click="openActivateAllDialog" :disable="loading || isAnyPromoProcessing || totalElegiveis == 0" />
+
+              <q-btn unelevated color="blue-grey-9" text-color="white" icon="refresh" label="Atualizar Campanhas"
+                @click="() => loadPromotions(false, true)" :loading="loading" />
+            </div>
+            <div class="row q-gutter-sm">
+              <q-btn unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Todas"
+                @click="openActivateAllDialog" :disable="loading || isAnyPromoProcessing || totalElegiveis == 0" />
+
+              <q-btn outline color="blue-grey-4" text-color="blue-grey-9" icon="receipt_long" label="Ver Logs"
+                @click="showLogsDialog = true" />
+
+              <q-btn unelevated color="blue-grey-9" text-color="white" icon="refresh" label="Atualizar Campanhas"
+                @click="() => loadPromotions(false, true)" :loading="loading" />
+            </div>
           </div>
         </q-card-section>
 
@@ -49,7 +66,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-weight-bold text-subtitle1">{{ accountData.account_nickname
-                    }}</q-item-label>
+                  }}</q-item-label>
                   <q-item-label caption class="text-grey-7">MLB: {{ accountData.account_id }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
@@ -223,6 +240,91 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="showActivateAllDialog" persistent>
+      <q-card style="width: 550px; max-width: 95vw;">
+        <q-card-section class="row items-center bg-orange-8 text-white border-bottom">
+          <q-icon name="bolt" size="md" class="q-mr-sm" />
+          <div class="text-h6 text-weight-bold">Ativação em Massa</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md">
+          <div class="text-body1 text-blue-grey-9 q-mb-md">
+            Você enviará <strong class="text-orange-9">{{ totalElegiveis }} campanhas</strong> elegíveis de todas as
+            contas
+            para o robô.
+          </div>
+
+          <div class="bg-grey-1 q-pa-md rounded-borders custom-shadow q-mb-md">
+            <div class="text-weight-bold text-blue-grey-9 q-mb-sm">Defina a trava GLOBAL de segurança:</div>
+            <q-input v-model.number="maxDiscountGlobal" type="number" label="Desconto Máximo Permitido" outlined dense
+              bg-color="white" color="orange-8" class="text-weight-bold" min="1" max="99" suffix="% OFF">
+            </q-input>
+          </div>
+          <q-banner rounded class="bg-amber-1 text-amber-10" dense>
+            Isso vai criar várias tarefas em segundo plano simultaneamente.
+          </q-banner>
+        </q-card-section>
+
+        <q-card-actions align="right" class="bg-grey-1 q-pa-md border-top">
+          <q-btn flat label="Cancelar" color="blue-grey-6" v-close-popup />
+          <q-btn unelevated label="Iniciar Robôs" color="orange-8" class="text-weight-bold q-px-md"
+            @click="confirmActivateAll" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="showLogsDialog">
+      <q-card style="width: 800px; max-width: 95vw; height: 80vh;" class="column">
+        <q-card-section class="row items-center bg-blue-grey-9 text-white col-auto">
+          <q-icon name="receipt_long" size="md" class="q-mr-sm" />
+          <div class="text-h6 text-weight-bold">Logs de Ativação</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="col scroll bg-grey-2 q-pa-md">
+          <div v-for="acc in accountsPromotions" :key="'log-' + acc.account_id">
+            <div v-for="promo in acc.promotions" :key="'log-' + acc.account_id + '-' + promo.id">
+
+              <q-card v-if="promo.execution_logs && promo.execution_logs.length > 0" class="q-mb-md shadow-1">
+                <q-card-section class="bg-grey-3 q-py-sm">
+                  <div class="text-weight-bold text-blue-grey-9">
+                    {{ acc.account_nickname }} - {{ promo.name || promo.id }}
+                  </div>
+                  <div class="text-caption text-grey-7">
+                    Rodou em: {{ formatDate(promo.last_activated_at) }} | Trava: {{ promo.max_discount_pct_used }}%
+                  </div>
+                </q-card-section>
+
+                <q-list separator dense class="bg-white">
+                  <q-item v-for="(log, i) in promo.execution_logs" :key="i">
+                    <q-item-section avatar style="min-width: 30px;">
+                      <q-icon
+                        :name="log.type === 'positive' ? 'check_circle' : (log.type === 'info' ? 'shield' : 'warning')"
+                        :color="log.type === 'positive' ? 'green' : (log.type === 'info' ? 'blue-grey' : 'red')"
+                        size="xs" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-caption font-mono" :class="{ 'text-grey-6': log.type === 'info' }">
+                        {{ log.msg }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-card>
+
+            </div>
+          </div>
+
+          <div v-if="!hasAnyLogs" class="text-center text-grey-6 q-pa-xl text-h6">
+            Nenhum log de ativação encontrado nas contas conectadas.
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -362,6 +464,94 @@ const confirmActivation = async () => {
     $q.loading.hide()
   }
 }
+
+// VARIÁVEIS DO ATIVAR TODAS
+const showActivateAllDialog = ref(false)
+const maxDiscountGlobal = ref(15)
+
+// Computed para saber se tem pelo menos 1 promoção com candidato para liberar o botão
+const totalElegiveis = computed(() => {
+  if (!accountsPromotions.value) return 0;
+  let count = 0;
+  accountsPromotions.value.forEach(account => {
+    account.promotions.forEach(promo => {
+      // Só conta se tiver candidatos e não estiver processando
+      if ((promo.candidate_count > 0 || promo.type === 'SELLER_CAMPAIGN') && !promo.is_processing) {
+        count++;
+      }
+    });
+  });
+  return count;
+})
+
+const openActivateAllDialog = () => {
+  showActivateAllDialog.value = true
+}
+
+const confirmActivateAll = async () => {
+  if (!maxDiscountGlobal.value || maxDiscountGlobal.value <= 0 || maxDiscountGlobal.value > 99) {
+    $q.notify({ type: 'warning', message: 'Desconto inválido.', position: 'top' })
+    return
+  }
+
+  // 1. Monta a lista de tudo que vai ser enviado (Ignora as que já estão processando)
+  const promosToActivate = []
+  accountsPromotions.value.forEach(account => {
+    account.promotions.forEach(promo => {
+      if ((promo.candidate_count > 0 || promo.type === 'SELLER_CAMPAIGN') && !promo.is_processing) {
+        promosToActivate.push({
+          account_id: account.account_id,
+          promotion_id: promo.id,
+          promotion_type: promo.type
+        })
+
+        // Já muda a UI pra mostrar o loading imediatamente
+        promo.is_processing = true
+      }
+    });
+  });
+
+  if (promosToActivate.length === 0) return;
+
+  try {
+    $q.loading.show({ message: 'Distribuindo tarefas para o robô...' })
+
+    // 2. Chama o NOVO endpoint
+    await MercadoLivreService.activateAllPromotions({
+      max_discount_pct: maxDiscountGlobal.value,
+      promotions: promosToActivate
+    })
+
+    showActivateAllDialog.value = false
+    startPolling() // Inicia o radar do frontend para atualizar a tabela
+
+    $q.notify({
+      type: 'positive',
+      icon: 'smart_toy',
+      message: 'Ativação em massa iniciada! Acompanhe o andamento na tabela.',
+      position: 'top',
+      timeout: 4000
+    })
+
+  } catch (error) {
+    console.error(error)
+    $q.notify({ type: 'negative', message: 'Falha ao iniciar robôs.', position: 'top' })
+    // Se der erro de rede, destrava a UI na mão
+    loadPromotions(true, true)
+  } finally {
+    $q.loading.hide()
+  }
+}
+
+const showLogsDialog = ref(false)
+
+// Computed para descobrir rapidamente se existe pelo menos 1 log no sistema para não mostrar tela vazia
+const hasAnyLogs = computed(() => {
+  if (!accountsPromotions.value) return false;
+  return accountsPromotions.value.some(acc =>
+    acc.promotions.some(promo => promo.execution_logs && promo.execution_logs.length > 0)
+  )
+})
 
 // ============================================================================
 // HELPERS DE FORMATAÇÃO

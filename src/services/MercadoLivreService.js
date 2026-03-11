@@ -36,5 +36,9 @@ export default {
 
   activatePromotions(payload) {
     return api.post('/mercadolivre/promotions/', payload)
+  },
+
+  activateAllPromotions(payload) {
+    return api.post('/mercadolivre/promotions/activate-all/', payload)
   }
 }
