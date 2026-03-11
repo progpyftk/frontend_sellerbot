@@ -18,7 +18,7 @@
             </div>
             <div class="row q-gutter-sm">
               <q-btn unelevated color="blue-grey-9" text-color="white" icon="refresh" label="Atualizar Campanhas"
-                @click="() => loadPromotions(false)" :loading="loading" />
+                @click="() => loadPromotions(false, true)" :loading="loading" />
             </div>
           </div>
         </q-card-section>
@@ -49,7 +49,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-weight-bold text-subtitle1">{{ accountData.account_nickname
-                  }}</q-item-label>
+                    }}</q-item-label>
                   <q-item-label caption class="text-grey-7">MLB: {{ accountData.account_id }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
