@@ -1,12 +1,15 @@
 // src/boot/axiosInterceptors.js
-import { getAccessToken, getRefreshToken, clearTokens } from "src/services/tokenService";
+import { getAccessToken, getRefreshToken, setAccessToken, clearTokens } from "src/services/tokenService";
 import { api } from "./axios";
 
 export const setupInterceptors = (store) => {
   api.interceptors.request.use(
     (config) => {
       const token = getAccessToken();
-      if (token) config.headers.Authorization = `Bearer ${token}`;
+      if (token) {
+        // O segredo do Axios moderno: usar o método .set()
+        config.headers.set('Authorization', `Bearer ${token}`);
+      }
       return config;
     },
     (error) => Promise.reject(error)
@@ -33,22 +36,33 @@ export const setupInterceptors = (store) => {
             });
 
             const newAccessToken = response.data.access;
-            // Se o backend também retornou um refresh token novo, pega ele. Senão, mantém o velho.
-            const newRefreshToken = response.data.refresh || refreshToken;
 
-            // ESTA É A MÁGICA: Atualiza o store do Pinia! A tela reage instantaneamente!
-            store.updateTokensState(newAccessToken, newRefreshToken);
+            // 1. Salva no localStorage
+            setAccessToken(newAccessToken);
 
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            // 2. Atualiza o state global do Pinia para a UI não piscar
+            if (store && typeof store.updateTokensState === 'function') {
+                store.updateTokensState(newAccessToken, refreshToken);
+            } else {
+                api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+            }
+
+            // 3. Refaz a requisição original que falhou usando o .set()
+            originalRequest.headers.set('Authorization', `Bearer ${newAccessToken}`);
+
             return api(originalRequest);
-
           } catch (refreshError) {
             console.error("Refresh falhou, deslogando...");
-            store.logoutUser(); // Desloga via Store para limpar tudo e redirecionar
+            if (store && typeof store.logoutUser === 'function') {
+                store.logoutUser();
+            } else {
+                clearTokens();
+                window.location.href = "/login";
+            }
             return Promise.reject(refreshError);
           }
         } else {
-          store.logoutUser();
+          if (store && typeof store.logoutUser === 'function') store.logoutUser();
           return Promise.reject(error);
         }
       }
