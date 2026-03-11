@@ -16,17 +16,7 @@
                 </div>
               </div>
             </div>
-            <div class="row q-gutter-sm">
-              <q-btn unelevated color="blue-grey-9" text-color="white" icon="refresh" label="Atualizar Campanhas"
-                @click="() => loadPromotions(false, true)" :loading="loading" />
-            </div>
-            <div class="row q-gutter-sm">
-              <q-btn unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Todas"
-                @click="openActivateAllDialog" :disable="loading || isAnyPromoProcessing || totalElegiveis == 0" />
 
-              <q-btn unelevated color="blue-grey-9" text-color="white" icon="refresh" label="Atualizar Campanhas"
-                @click="() => loadPromotions(false, true)" :loading="loading" />
-            </div>
             <div class="row q-gutter-sm">
               <q-btn unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Todas"
                 @click="openActivateAllDialog" :disable="loading || isAnyPromoProcessing || totalElegiveis == 0" />
@@ -41,6 +31,24 @@
         </q-card-section>
 
         <q-card-section class="q-pa-lg">
+
+          <q-banner v-if="isAnyPromoProcessing" rounded
+            class="bg-orange-1 text-orange-10 q-mb-lg border-bottom custom-shadow">
+            <template v-slot:avatar>
+              <q-spinner-gears color="orange-8" size="3em" />
+            </template>
+            <div class="text-weight-bold text-subtitle1">Robôs trabalhando em segundo plano...</div>
+            <div class="text-body2">
+              <strong>{{ processingCount }} campanha(s)</strong> estão sendo analisadas e ativadas neste momento.
+              Acompanhe o andamento clicando nos logs.
+            </div>
+            <template v-slot:action>
+              <q-btn unelevated color="orange-8" text-color="white" label="Acompanhar Logs" icon="receipt_long"
+                @click="showLogsDialog = true" />
+            </template>
+          </q-banner>
+
+
 
           <div v-if="loading" class="text-center q-pa-xl">
             <q-spinner-dots color="orange-8" size="3em" />
@@ -66,7 +74,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-weight-bold text-subtitle1">{{ accountData.account_nickname
-                  }}</q-item-label>
+                    }}</q-item-label>
                   <q-item-label caption class="text-grey-7">MLB: {{ accountData.account_id }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
@@ -329,7 +337,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import { useQuasar } from 'quasar'
 
@@ -338,14 +346,34 @@ const loading = ref(false)
 const accountsPromotions = ref([])
 let pollInterval = null // Guarda o ID do temporizador do Polling
 
-const isAnyPromoProcessing = computed(() => {
-  if (!accountsPromotions.value) return false
+const isAnyPromoProcessing = computed(() => processingCount.value > 0);
 
-  // Varre todas as contas e todas as promoções buscando algum 'is_processing' true
-  return accountsPromotions.value.some(account =>
-    account.promotions.some(promo => promo.is_processing)
-  )
-})
+// Conta EXATAMENTE quantos robôs estão rodando
+const processingCount = computed(() => {
+  if (!accountsPromotions.value) return 0;
+  let count = 0;
+  accountsPromotions.value.forEach(account => {
+    account.promotions.forEach(promo => {
+      if (promo.is_processing) count++;
+    });
+  });
+  return count;
+});
+
+// 👇 NOVO: O "Alarme" que avisa quando tudo acabar!
+watch(isAnyPromoProcessing, (newVal, oldVal) => {
+  // Só comemora se oldVal era estritamente 'true' (ou seja, estava processando DE FATO na frente do usuário)
+  // e se o newVal for 'false'
+  if (oldVal === true && newVal === false) {
+    $q.notify({
+      type: 'positive',
+      icon: 'celebration',
+      message: '🎉 Todos os robôs finalizaram suas tarefas com sucesso!',
+      position: 'top',
+      timeout: 8000
+    });
+  }
+});
 
 // ESTADO DO DIALOG
 const showActivationDialog = ref(false)
@@ -494,7 +522,7 @@ const confirmActivateAll = async () => {
     return
   }
 
-  // 1. Monta a lista de tudo que vai ser enviado (Ignora as que já estão processando)
+  // 1. Apenas monta a lista (sem alterar o estado visual da tela ainda)
   const promosToActivate = []
   accountsPromotions.value.forEach(account => {
     account.promotions.forEach(promo => {
@@ -504,9 +532,6 @@ const confirmActivateAll = async () => {
           promotion_id: promo.id,
           promotion_type: promo.type
         })
-
-        // Já muda a UI pra mostrar o loading imediatamente
-        promo.is_processing = true
       }
     });
   });
@@ -516,13 +541,25 @@ const confirmActivateAll = async () => {
   try {
     $q.loading.show({ message: 'Distribuindo tarefas para o robô...' })
 
-    // 2. Chama o NOVO endpoint
+    // 2. Chama a API
     await MercadoLivreService.activateAllPromotions({
       max_discount_pct: maxDiscountGlobal.value,
       promotions: promosToActivate
     })
 
     showActivateAllDialog.value = false
+
+    // 3. AGORA SIM! Deu sucesso, marcamos todas as linhas selecionadas como 'Processando'
+    accountsPromotions.value.forEach(account => {
+      account.promotions.forEach(promo => {
+        // Checa se essa promo específica estava na lista de envio
+        const wasSent = promosToActivate.some(p => p.promotion_id === promo.id && p.account_id === account.account_id)
+        if (wasSent) {
+          promo.is_processing = true;
+        }
+      });
+    });
+
     startPolling() // Inicia o radar do frontend para atualizar a tabela
 
     $q.notify({
@@ -536,7 +573,7 @@ const confirmActivateAll = async () => {
   } catch (error) {
     console.error(error)
     $q.notify({ type: 'negative', message: 'Falha ao iniciar robôs.', position: 'top' })
-    // Se der erro de rede, destrava a UI na mão
+    // Se der erro de rede, recarrega limpo
     loadPromotions(true, true)
   } finally {
     $q.loading.hide()
