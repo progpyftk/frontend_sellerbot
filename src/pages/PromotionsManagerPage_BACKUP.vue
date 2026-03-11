@@ -18,37 +18,37 @@
             </div>
 
             <div class="row q-gutter-sm">
-              <q-btn outline color="blue-grey-4" text-color="blue-grey-9" icon="refresh" label="Atualizar"
-                @click="() => loadPromotions(false, true)" :loading="loading" />
+              <q-btn unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Todas"
+                @click="openActivateAllDialog" :disable="loading || isAnyPromoProcessing || totalElegiveis == 0" />
 
               <q-btn outline color="blue-grey-4" text-color="blue-grey-9" icon="receipt_long" label="Ver Logs"
                 @click="showLogsDialog = true" />
 
-              <q-btn unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Todas"
-                @click="openActivateAllDialog" :disable="loading || isAnyPromoProcessing || totalElegiveis == 0" />
+              <q-btn unelevated color="blue-grey-9" text-color="white" icon="refresh" label="Atualizar Campanhas"
+                @click="() => loadPromotions(false, true)" :loading="loading" />
             </div>
           </div>
         </q-card-section>
 
         <q-card-section class="q-pa-lg">
 
-          <transition name="q-transition--slide-down">
-            <q-banner v-if="isAnyPromoProcessing" rounded
-              class="bg-orange-1 text-orange-10 q-mb-lg border-bottom custom-shadow">
-              <template v-slot:avatar>
-                <q-spinner-gears color="orange-8" size="3em" />
-              </template>
-              <div class="text-weight-bold text-subtitle1">Robôs trabalhando em segundo plano...</div>
-              <div class="text-body2">
-                <strong>{{ processingCount }} campanha(s)</strong> estão sendo analisadas e ativadas neste momento.
-                Acompanhe o andamento clicando nos logs.
-              </div>
-              <template v-slot:action>
-                <q-btn unelevated color="orange-8" text-color="white" label="Acompanhar Logs" icon="receipt_long"
-                  @click="showLogsDialog = true" />
-              </template>
-            </q-banner>
-          </transition>
+          <q-banner v-if="isAnyPromoProcessing" rounded
+            class="bg-orange-1 text-orange-10 q-mb-lg border-bottom custom-shadow">
+            <template v-slot:avatar>
+              <q-spinner-gears color="orange-8" size="3em" />
+            </template>
+            <div class="text-weight-bold text-subtitle1">Robôs trabalhando em segundo plano...</div>
+            <div class="text-body2">
+              <strong>{{ processingCount }} campanha(s)</strong> estão sendo analisadas e ativadas neste momento.
+              Acompanhe o andamento clicando nos logs.
+            </div>
+            <template v-slot:action>
+              <q-btn unelevated color="orange-8" text-color="white" label="Acompanhar Logs" icon="receipt_long"
+                @click="showLogsDialog = true" />
+            </template>
+          </q-banner>
+
+
 
           <div v-if="loading" class="text-center q-pa-xl">
             <q-spinner-dots color="orange-8" size="3em" />
@@ -74,7 +74,7 @@
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-weight-bold text-subtitle1">{{ accountData.account_nickname
-                  }}</q-item-label>
+                    }}</q-item-label>
                   <q-item-label caption class="text-grey-7">MLB: {{ accountData.account_id }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
@@ -98,6 +98,7 @@
 
                   <template v-slot:body="props">
                     <q-tr :props="props" class="hover-row">
+
                       <q-td key="type" :props="props" style="width: 120px;">
                         <q-chip square size="sm" class="text-weight-bold" :color="getTypeMeta(props.row.type).color"
                           :text-color="getTypeMeta(props.row.type).textColor">
@@ -157,6 +158,7 @@
                           <div class="text-caption text-weight-bold text-blue-grey-8">
                             Total: {{ (props.row.candidate_count || 0) + (props.row.active_count || 0) }} anúncios
                           </div>
+
                           <div class="row justify-center q-gutter-x-sm">
                             <q-chip outline square color="blue-grey-6" size="sm" class="text-weight-bold q-ma-none"
                               title="Elegíveis para entrar">
@@ -173,15 +175,19 @@
                       </q-td>
 
                       <q-td key="actions" :props="props" align="right">
+
                         <q-btn v-if="props.row.is_processing" unelevated color="orange-1" text-color="orange-9"
                           label="Processando" size="sm" class="text-weight-bold custom-shadow" disable>
                           <q-spinner-box color="orange-9" size="xs" class="q-ml-sm" />
                         </q-btn>
-                        <q-btn v-else outline color="orange-8" icon="bolt" label="Ativar" size="sm"
-                          class="text-weight-bold bg-white transition-scale"
+
+                        <q-btn v-else unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Itens"
+                          size="sm" class="text-weight-bold shadow-1 transition-scale"
                           @click="openActivationDialog(accountData, props.row)" :disable="isAnyPromoProcessing"
                           :title="isAnyPromoProcessing ? 'Aguarde o processamento atual finalizar' : 'Ativar esta promoção'" />
+
                       </q-td>
+
                     </q-tr>
                   </template>
                 </q-table>
@@ -193,10 +199,11 @@
     </div>
 
     <q-dialog v-model="showActivationDialog" persistent>
-      <q-card style="width: 500px; max-width: 95vw;">
+      <q-card style="width: 550px; max-width: 95vw;">
+
         <q-card-section class="row items-center bg-orange-1 text-orange-9 border-bottom">
           <q-icon name="security" size="md" class="q-mr-sm" />
-          <div class="text-h6 text-weight-bold">Ativar Promoção Única</div>
+          <div class="text-h6 text-weight-bold">Protetor de Margem</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
@@ -212,17 +219,25 @@
           <div class="bg-grey-1 q-pa-md rounded-borders custom-shadow q-mb-md">
             <div class="text-weight-bold text-blue-grey-9 q-mb-sm">Defina sua trava de segurança:</div>
             <div class="text-caption text-grey-7 q-mb-md">
-              O Mercado Livre exige descontos específicos para cada anúncio. O Sellerbot ativará automaticamente apenas
-              os
-              itens cujo desconto exigido seja <b>menor ou igual</b> ao valor abaixo.
+              O Mercado Livre exige descontos específicos para cada anúncio. O Sellerbot só ativará automaticamente os
+              itens
+              cujo desconto exigido seja <b>menor ou igual</b> ao valor que você definir abaixo.
             </div>
+
             <q-input v-model.number="maxDiscount" type="number" label="Desconto Máximo Permitido" outlined dense
-              bg-color="white" color="orange-8" class="text-weight-bold text-center" min="1" max="99" suffix="% OFF">
+              bg-color="white" color="orange-8" class="text-weight-bold" min="1" max="99" suffix="% OFF">
               <template v-slot:prepend>
                 <q-icon name="trending_down" color="orange-8" />
               </template>
             </q-input>
           </div>
+
+          <q-banner rounded class="bg-amber-1 text-amber-10" dense>
+            <template v-slot:avatar>
+              <q-icon name="smart_toy" color="amber-9" />
+            </template>
+            O robô fará a análise em segundo plano. Ele ativará apenas os itens que respeitarem sua regra de lucro.
+          </q-banner>
         </q-card-section>
 
         <q-card-actions align="right" class="bg-grey-1 q-pa-md border-top">
@@ -234,7 +249,7 @@
     </q-dialog>
 
     <q-dialog v-model="showActivateAllDialog" persistent>
-      <q-card style="width: 500px; max-width: 95vw;">
+      <q-card style="width: 550px; max-width: 95vw;">
         <q-card-section class="row items-center bg-orange-8 text-white border-bottom">
           <q-icon name="bolt" size="md" class="q-mr-sm" />
           <div class="text-h6 text-weight-bold">Ativação em Massa</div>
@@ -251,26 +266,17 @@
 
           <div class="bg-grey-1 q-pa-md rounded-borders custom-shadow q-mb-md">
             <div class="text-weight-bold text-blue-grey-9 q-mb-sm">Defina a trava GLOBAL de segurança:</div>
-            <div class="text-caption text-grey-7 q-mb-md">
-              Essa regra será aplicada para todos os anúncios, de todas as contas, em todas as promoções selecionadas.
-            </div>
             <q-input v-model.number="maxDiscountGlobal" type="number" label="Desconto Máximo Permitido" outlined dense
-              bg-color="white" color="orange-8" class="text-weight-bold text-center" min="1" max="99" suffix="% OFF">
-              <template v-slot:prepend>
-                <q-icon name="trending_down" color="orange-8" />
-              </template>
+              bg-color="white" color="orange-8" class="text-weight-bold" min="1" max="99" suffix="% OFF">
             </q-input>
           </div>
           <q-banner rounded class="bg-amber-1 text-amber-10" dense>
-            <template v-slot:avatar>
-              <q-icon name="speed" color="amber-9" />
-            </template>
-            Isso vai criar várias tarefas simultâneas para finalizar o processo rapidamente.
+            Isso vai criar várias tarefas em segundo plano simultaneamente.
           </q-banner>
         </q-card-section>
 
         <q-card-actions align="right" class="bg-grey-1 q-pa-md border-top">
-          <q-btn flat label="Cancelar" color="blue-grey-6" v-close-popup class="text-weight-medium" />
+          <q-btn flat label="Cancelar" color="blue-grey-6" v-close-popup />
           <q-btn unelevated label="Iniciar Robôs" color="orange-8" class="text-weight-bold q-px-md"
             @click="confirmActivateAll" />
         </q-card-actions>
@@ -281,66 +287,47 @@
       <q-card style="width: 800px; max-width: 95vw; height: 80vh;" class="column">
         <q-card-section class="row items-center bg-blue-grey-9 text-white col-auto">
           <q-icon name="receipt_long" size="md" class="q-mr-sm" />
-          <div class="text-h6 text-weight-bold">Histórico de Execuções</div>
+          <div class="text-h6 text-weight-bold">Logs de Ativação</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
         <q-card-section class="col scroll bg-grey-2 q-pa-md">
-          <div v-if="hasAnyLogs">
-            <q-list class="rounded-borders" separator>
-              <template v-for="acc in accountsPromotions" :key="'log-acc-' + acc.account_id">
-                <template v-for="promo in acc.promotions" :key="'log-promo-' + promo.id">
+          <div v-for="acc in accountsPromotions" :key="'log-' + acc.account_id">
+            <div v-for="promo in acc.promotions" :key="'log-' + acc.account_id + '-' + promo.id">
 
-                  <q-expansion-item v-if="promo.execution_logs && promo.execution_logs.length > 0" group="logs"
-                    icon="history" header-class="bg-white text-blue-grey-9" expand-icon-class="text-blue-grey-5"
-                    class="q-mb-sm shadow-1 rounded-borders overflow-hidden">
-                    <template v-slot:header>
-                      <q-item-section>
-                        <q-item-label class="text-weight-bold">{{ acc.account_nickname }} - {{ promo.name || promo.id
-                        }}</q-item-label>
-                        <q-item-label caption>Rodou em: {{ formatDate(promo.last_activated_at, true) }} | Trava: {{
-                          promo.max_discount_pct_used }}%</q-item-label>
-                      </q-item-section>
-                      <q-item-section side>
-                        <q-chip :color="promo.last_activated_count > 0 ? 'green-1' : 'grey-2'"
-                          :text-color="promo.last_activated_count > 0 ? 'green-9' : 'grey-7'" size="sm" square
-                          class="text-weight-bold">
-                          {{ promo.last_activated_count }} ativados
-                        </q-chip>
-                      </q-item-section>
-                    </template>
+              <q-card v-if="promo.execution_logs && promo.execution_logs.length > 0" class="q-mb-md shadow-1">
+                <q-card-section class="bg-grey-3 q-py-sm">
+                  <div class="text-weight-bold text-blue-grey-9">
+                    {{ acc.account_nickname }} - {{ promo.name || promo.id }}
+                  </div>
+                  <div class="text-caption text-grey-7">
+                    Rodou em: {{ formatDate(promo.last_activated_at) }} | Trava: {{ promo.max_discount_pct_used }}%
+                  </div>
+                </q-card-section>
 
-                    <q-card class="bg-grey-1">
-                      <q-card-section class="q-pa-none">
-                        <q-list separator dense>
-                          <q-item v-for="(log, i) in promo.execution_logs" :key="i" class="q-py-sm">
-                            <q-item-section avatar style="min-width: 30px;">
-                              <q-icon
-                                :name="log.type === 'positive' ? 'check_circle' : (log.type === 'info' ? 'shield' : 'warning')"
-                                :color="log.type === 'positive' ? 'green' : (log.type === 'info' ? 'blue-grey-4' : 'red')"
-                                size="xs" />
-                            </q-item-section>
-                            <q-item-section>
-                              <q-item-label class="text-caption font-mono"
-                                :class="{ 'text-grey-7': log.type === 'info', 'text-weight-medium text-green-9': log.type === 'positive' }">
-                                {{ log.msg }}
-                              </q-item-label>
-                            </q-item-section>
-                          </q-item>
-                        </q-list>
-                      </q-card-section>
-                    </q-card>
-                  </q-expansion-item>
-                </template>
-              </template>
-            </q-list>
+                <q-list separator dense class="bg-white">
+                  <q-item v-for="(log, i) in promo.execution_logs" :key="i">
+                    <q-item-section avatar style="min-width: 30px;">
+                      <q-icon
+                        :name="log.type === 'positive' ? 'check_circle' : (log.type === 'info' ? 'shield' : 'warning')"
+                        :color="log.type === 'positive' ? 'green' : (log.type === 'info' ? 'blue-grey' : 'red')"
+                        size="xs" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-caption font-mono" :class="{ 'text-grey-6': log.type === 'info' }">
+                        {{ log.msg }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-card>
+
+            </div>
           </div>
 
-          <div v-else class="text-center text-grey-6 q-pa-xl">
-            <q-icon name="inventory_2" size="4em" color="grey-4" class="q-mb-md" />
-            <div class="text-h6">Nenhum histórico encontrado</div>
-            <p>Os logs aparecerão aqui assim que o robô finalizar a primeira execução.</p>
+          <div v-if="!hasAnyLogs" class="text-center text-grey-6 q-pa-xl text-h6">
+            Nenhum log de ativação encontrado nas contas conectadas.
           </div>
         </q-card-section>
       </q-card>
@@ -357,9 +344,11 @@ import { useQuasar } from 'quasar'
 const $q = useQuasar()
 const loading = ref(false)
 const accountsPromotions = ref([])
-let pollInterval = null
+let pollInterval = null // Guarda o ID do temporizador do Polling
 
-// COMPUTED PARA SABER SE ALGO ESTÁ PROCESSANDO
+const isAnyPromoProcessing = computed(() => processingCount.value > 0);
+
+// Conta EXATAMENTE quantos robôs estão rodando
 const processingCount = computed(() => {
   if (!accountsPromotions.value) return 0;
   let count = 0;
@@ -371,10 +360,10 @@ const processingCount = computed(() => {
   return count;
 });
 
-const isAnyPromoProcessing = computed(() => processingCount.value > 0);
-
-// WATCH PARA NOTIFICAR QUANDO TERMINAR
+// 👇 NOVO: O "Alarme" que avisa quando tudo acabar!
 watch(isAnyPromoProcessing, (newVal, oldVal) => {
+  // Só comemora se oldVal era estritamente 'true' (ou seja, estava processando DE FATO na frente do usuário)
+  // e se o newVal for 'false'
   if (oldVal === true && newVal === false) {
     $q.notify({
       type: 'positive',
@@ -386,37 +375,15 @@ watch(isAnyPromoProcessing, (newVal, oldVal) => {
   }
 });
 
-// ESTADOS DOS MODAIS
+// ESTADO DO DIALOG
 const showActivationDialog = ref(false)
 const selectedPromo = ref(null)
 const selectedAccount = ref(null)
 const maxDiscount = ref(15)
 
-const showActivateAllDialog = ref(false)
-const maxDiscountGlobal = ref(15)
-const showLogsDialog = ref(false)
 
-const totalElegiveis = computed(() => {
-  if (!accountsPromotions.value) return 0;
-  let count = 0;
-  accountsPromotions.value.forEach(account => {
-    account.promotions.forEach(promo => {
-      if ((promo.candidate_count > 0 || promo.type === 'SELLER_CAMPAIGN') && !promo.is_processing) {
-        count++;
-      }
-    });
-  });
-  return count;
-})
 
-const hasAnyLogs = computed(() => {
-  if (!accountsPromotions.value) return false;
-  return accountsPromotions.value.some(acc =>
-    acc.promotions.some(promo => promo.execution_logs && promo.execution_logs.length > 0)
-  )
-})
-
-// TABELA - COLUNAS
+// TABELA
 const columns = [
   { name: 'type', align: 'left', label: 'TIPO' },
   { name: 'name', align: 'left', label: 'CAMPANHA / NOME' },
@@ -432,6 +399,7 @@ const columns = [
 const loadPromotions = async (silent = false, forceRefresh = false) => {
   if (!silent) loading.value = true
   try {
+    // Passa o force_refresh para o seu service axios
     const params = forceRefresh ? { force_refresh: true } : {}
     const response = await MercadoLivreService.getPromotions(params)
 
@@ -456,6 +424,7 @@ const loadPromotions = async (silent = false, forceRefresh = false) => {
 
 const startPolling = () => {
   if (!pollInterval) {
+    // A cada 10 segundos, atualiza a tela silenciosamente
     pollInterval = setInterval(() => {
       loadPromotions(true)
     }, 10000)
@@ -469,12 +438,13 @@ const stopPolling = () => {
   }
 }
 
+// Limpa o temporizador se o usuário mudar de página no sistema
 onBeforeUnmount(() => {
   stopPolling()
 })
 
 // ============================================================================
-// ATIVAÇÃO ÚNICA
+// LÓGICA DO MODAL (ATIVAÇÃO DIRETA)
 // ============================================================================
 const openActivationDialog = (account, promo) => {
   selectedAccount.value = account
@@ -500,16 +470,17 @@ const confirmActivation = async () => {
 
     showActivationDialog.value = false
 
+    // Altera a UI instantaneamente para mostrar o botão de spinner antes do próximo polling
     if (selectedPromo.value) {
       selectedPromo.value.is_processing = true
     }
 
-    startPolling()
+    startPolling() // Garante que a tela vai ficar vigiando o backend
 
     $q.notify({
       type: 'positive',
       icon: 'smart_toy',
-      message: 'Robô iniciado! A ativação está rodando em segundo plano.',
+      message: 'Robô iniciado! A ativação está rodando em segundo plano. Pode continuar usando o sistema.',
       position: 'top',
       timeout: 4000
     })
@@ -522,9 +493,25 @@ const confirmActivation = async () => {
   }
 }
 
-// ============================================================================
-// ATIVAÇÃO EM MASSA
-// ============================================================================
+// VARIÁVEIS DO ATIVAR TODAS
+const showActivateAllDialog = ref(false)
+const maxDiscountGlobal = ref(15)
+
+// Computed para saber se tem pelo menos 1 promoção com candidato para liberar o botão
+const totalElegiveis = computed(() => {
+  if (!accountsPromotions.value) return 0;
+  let count = 0;
+  accountsPromotions.value.forEach(account => {
+    account.promotions.forEach(promo => {
+      // Só conta se tiver candidatos e não estiver processando
+      if ((promo.candidate_count > 0 || promo.type === 'SELLER_CAMPAIGN') && !promo.is_processing) {
+        count++;
+      }
+    });
+  });
+  return count;
+})
+
 const openActivateAllDialog = () => {
   showActivateAllDialog.value = true
 }
@@ -535,6 +522,7 @@ const confirmActivateAll = async () => {
     return
   }
 
+  // 1. Apenas monta a lista (sem alterar o estado visual da tela ainda)
   const promosToActivate = []
   accountsPromotions.value.forEach(account => {
     account.promotions.forEach(promo => {
@@ -553,6 +541,7 @@ const confirmActivateAll = async () => {
   try {
     $q.loading.show({ message: 'Distribuindo tarefas para o robô...' })
 
+    // 2. Chama a API
     await MercadoLivreService.activateAllPromotions({
       max_discount_pct: maxDiscountGlobal.value,
       promotions: promosToActivate
@@ -560,8 +549,10 @@ const confirmActivateAll = async () => {
 
     showActivateAllDialog.value = false
 
+    // 3. AGORA SIM! Deu sucesso, marcamos todas as linhas selecionadas como 'Processando'
     accountsPromotions.value.forEach(account => {
       account.promotions.forEach(promo => {
+        // Checa se essa promo específica estava na lista de envio
         const wasSent = promosToActivate.some(p => p.promotion_id === promo.id && p.account_id === account.account_id)
         if (wasSent) {
           promo.is_processing = true;
@@ -569,7 +560,7 @@ const confirmActivateAll = async () => {
       });
     });
 
-    startPolling()
+    startPolling() // Inicia o radar do frontend para atualizar a tabela
 
     $q.notify({
       type: 'positive',
@@ -582,14 +573,25 @@ const confirmActivateAll = async () => {
   } catch (error) {
     console.error(error)
     $q.notify({ type: 'negative', message: 'Falha ao iniciar robôs.', position: 'top' })
+    // Se der erro de rede, recarrega limpo
     loadPromotions(true, true)
   } finally {
     $q.loading.hide()
   }
 }
 
+const showLogsDialog = ref(false)
+
+// Computed para descobrir rapidamente se existe pelo menos 1 log no sistema para não mostrar tela vazia
+const hasAnyLogs = computed(() => {
+  if (!accountsPromotions.value) return false;
+  return accountsPromotions.value.some(acc =>
+    acc.promotions.some(promo => promo.execution_logs && promo.execution_logs.length > 0)
+  )
+})
+
 // ============================================================================
-// HELPERS
+// HELPERS DE FORMATAÇÃO
 // ============================================================================
 const getTypeMeta = (type) => {
   const map = {
@@ -601,12 +603,10 @@ const getTypeMeta = (type) => {
   return map[type] || { label: type || 'Outros', color: 'grey-2', textColor: 'grey-8' }
 }
 
-const formatDate = (isoString, includeSeconds = false) => {
+const formatDate = (isoString) => {
   if (!isoString) return ''
   const d = new Date(isoString)
-  const options = { hour: '2-digit', minute: '2-digit' }
-  if (includeSeconds) options.second = '2-digit'
-  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', options)
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
 onMounted(() => {
@@ -626,6 +626,10 @@ onMounted(() => {
 .custom-shadow {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
   border: 1px solid #f0f0f0;
+}
+
+.letter-spacing-1 {
+  letter-spacing: 0.5px;
 }
 
 .font-mono {
