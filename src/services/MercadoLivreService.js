@@ -40,5 +40,22 @@ export default {
 
   activateAllPromotions(payload) {
     return api.post('/mercadolivre/promotions/activate-all/', payload)
+  },
+
+  // ==========================================
+  // VENDAS (ORDERS)
+  // ==========================================
+  listOrders(params) {
+    return api.get('/mercadolivre/orders/', { params })
+  },
+
+  getOrder(orderId) {
+    return api.get(`/mercadolivre/orders/${orderId}/`)
+  },
+
+  getOrderFacets() {
+    // Caso você crie um facet para orders no backend futuramente.
+    // Se não tiver, pode comentar essa linha e usar os dados estáticos no front.
+    return api.get('/mercadolivre/orders/facets/')
   }
 }

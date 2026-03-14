@@ -287,54 +287,65 @@
         </q-card-section>
 
         <q-card-section class="col scroll bg-grey-2 q-pa-md">
-          <div v-if="hasAnyLogs">
-            <q-list class="rounded-borders" separator>
-              <template v-for="acc in accountsPromotions" :key="'log-acc-' + acc.account_id">
-                <template v-for="promo in acc.promotions" :key="'log-promo-' + promo.id">
+          <div v-if="groupedLogs.length > 0">
 
-                  <q-expansion-item v-if="promo.execution_logs && promo.execution_logs.length > 0" group="logs"
-                    icon="history" header-class="bg-white text-blue-grey-9" expand-icon-class="text-blue-grey-5"
-                    class="q-mb-sm shadow-1 rounded-borders overflow-hidden">
-                    <template v-slot:header>
-                      <q-item-section>
-                        <q-item-label class="text-weight-bold">{{ acc.account_nickname }} - {{ promo.name || promo.id
-                        }}</q-item-label>
-                        <q-item-label caption>Rodou em: {{ formatDate(promo.last_activated_at, true) }} | Trava: {{
-                          promo.max_discount_pct_used }}%</q-item-label>
-                      </q-item-section>
-                      <q-item-section side>
-                        <q-chip :color="promo.last_activated_count > 0 ? 'green-1' : 'grey-2'"
-                          :text-color="promo.last_activated_count > 0 ? 'green-9' : 'grey-7'" size="sm" square
-                          class="text-weight-bold">
-                          {{ promo.last_activated_count }} ativados
-                        </q-chip>
-                      </q-item-section>
-                    </template>
+            <div v-for="group in groupedLogs" :key="group.date" class="q-mb-lg">
 
-                    <q-card class="bg-grey-1">
-                      <q-card-section class="q-pa-none">
-                        <q-list separator dense>
-                          <q-item v-for="(log, i) in promo.execution_logs" :key="i" class="q-py-sm">
-                            <q-item-section avatar style="min-width: 30px;">
-                              <q-icon
-                                :name="log.type === 'positive' ? 'check_circle' : (log.type === 'info' ? 'shield' : 'warning')"
-                                :color="log.type === 'positive' ? 'green' : (log.type === 'info' ? 'blue-grey-4' : 'red')"
-                                size="xs" />
-                            </q-item-section>
-                            <q-item-section>
-                              <q-item-label class="text-caption font-mono"
-                                :class="{ 'text-grey-7': log.type === 'info', 'text-weight-medium text-green-9': log.type === 'positive' }">
-                                {{ log.msg }}
-                              </q-item-label>
-                            </q-item-section>
-                          </q-item>
-                        </q-list>
-                      </q-card-section>
-                    </q-card>
-                  </q-expansion-item>
-                </template>
-              </template>
-            </q-list>
+              <div class="text-subtitle2 text-blue-grey-8 q-mb-sm q-ml-xs text-weight-bold row items-center">
+                <q-icon name="calendar_month" size="sm" class="q-mr-sm" />
+                Data: {{ group.date }}
+              </div>
+
+              <q-list class="rounded-borders" separator>
+                <q-expansion-item v-for="promo in group.logs" :key="'log-promo-' + promo.account_id + '-' + promo.id"
+                  group="logs" icon="schedule" header-class="bg-white text-blue-grey-9"
+                  expand-icon-class="text-blue-grey-5" class="q-mb-sm shadow-1 rounded-borders overflow-hidden">
+                  <template v-slot:header>
+                    <q-item-section avatar style="min-width: 40px; padding-right: 0;">
+                      <div class="text-caption text-weight-bold text-blue-grey-7">{{ promo.timeStr }}</div>
+                    </q-item-section>
+
+                    <q-item-section>
+                      <q-item-label class="text-weight-bold text-subtitle2">
+                        <span class="text-orange-9 q-mr-xs">[{{ promo.account_nickname }}]</span>
+                        {{ promo.name || promo.id }}
+                      </q-item-label>
+                      <q-item-label caption>Trava configurada: {{ promo.max_discount_pct_used }}%</q-item-label>
+                    </q-item-section>
+
+                    <q-item-section side>
+                      <q-chip :color="promo.last_activated_count > 0 ? 'green-1' : 'grey-2'"
+                        :text-color="promo.last_activated_count > 0 ? 'green-9' : 'grey-7'" size="sm" square
+                        class="text-weight-bold">
+                        {{ promo.last_activated_count }} ativados
+                      </q-chip>
+                    </q-item-section>
+                  </template>
+
+                  <q-card class="bg-grey-1">
+                    <q-card-section class="q-pa-none">
+                      <q-list separator dense>
+                        <q-item v-for="(log, i) in promo.execution_logs" :key="i" class="q-py-sm">
+                          <q-item-section avatar style="min-width: 30px;">
+                            <q-icon
+                              :name="log.type === 'positive' ? 'check_circle' : (log.type === 'info' ? 'shield' : 'warning')"
+                              :color="log.type === 'positive' ? 'green' : (log.type === 'info' ? 'blue-grey-4' : 'red')"
+                              size="xs" />
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label class="text-caption font-mono"
+                              :class="{ 'text-grey-7': log.type === 'info', 'text-weight-medium text-green-9': log.type === 'positive' }">
+                              {{ log.msg }}
+                            </q-item-label>
+                          </q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-card-section>
+                  </q-card>
+                </q-expansion-item>
+              </q-list>
+            </div>
+
           </div>
 
           <div v-else class="text-center text-grey-6 q-pa-xl">
@@ -345,6 +356,8 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+
 
   </q-page>
 </template>
@@ -415,6 +428,46 @@ const hasAnyLogs = computed(() => {
     acc.promotions.some(promo => promo.execution_logs && promo.execution_logs.length > 0)
   )
 })
+
+// Agrupa e ordena os logs por data e hora (do mais recente para o mais antigo)
+const groupedLogs = computed(() => {
+  if (!accountsPromotions.value) return [];
+
+  // 1. Achata todas as promoções com logs em uma única lista
+  let allLogs = [];
+  accountsPromotions.value.forEach(acc => {
+    acc.promotions.forEach(promo => {
+      if (promo.execution_logs && promo.execution_logs.length > 0 && promo.last_activated_at) {
+        const dateObj = new Date(promo.last_activated_at);
+        allLogs.push({
+          ...promo,
+          account_nickname: acc.account_nickname,
+          timestamp: dateObj.getTime(), // Para ordenação exata
+          dateStr: dateObj.toLocaleDateString('pt-BR'), // Ex: "11/03/2026"
+          timeStr: dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) // Ex: "10:22"
+        });
+      }
+    });
+  });
+
+  // 2. Ordena tudo, do mais recente para o mais antigo
+  allLogs.sort((a, b) => b.timestamp - a.timestamp);
+
+  // 3. Agrupa as datas
+  const groups = {};
+  allLogs.forEach(log => {
+    if (!groups[log.dateStr]) {
+      groups[log.dateStr] = [];
+    }
+    groups[log.dateStr].push(log);
+  });
+
+  // 4. Converte o objeto em um array formatado para o Vue renderizar
+  return Object.keys(groups).map(date => ({
+    date: date,
+    logs: groups[date]
+  }));
+});
 
 // TABELA - COLUNAS
 const columns = [
