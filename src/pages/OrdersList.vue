@@ -23,8 +23,10 @@
 
     <!-- ── FILTROS ───────────────────────────────────────── -->
     <div class="filters-bar">
+
+      <!-- Linha 1: filtros principais -->
       <div class="row q-col-gutter-sm items-center">
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
           <q-input v-model="filters.search" debounce="600" placeholder="Nº Pedido, comprador, SKU..."
             outlined dense bg-color="white" clearable color="teal-7" class="filter-input">
             <template #prepend><q-icon name="search" color="grey-5" size="18px" /></template>
@@ -39,32 +41,85 @@
         </div>
         <div class="col-6 col-md-2">
           <q-select v-model="filters.status" :options="orderStatusOptions" option-value="value"
-            option-label="label" label="Status" outlined dense bg-color="white" emit-value map-options
+            option-label="label" label="Status Pedido" outlined dense bg-color="white" emit-value map-options
             multiple clearable color="teal-7" class="filter-input">
             <template #prepend><q-icon name="flag" color="grey-5" size="16px" /></template>
           </q-select>
         </div>
         <div class="col-6 col-md-2">
           <q-select v-model="filters.shipment_status" :options="shipmentStatusOptions" option-value="value"
-            option-label="label" label="Envio" outlined dense bg-color="white" emit-value map-options
-            clearable color="teal-7" class="filter-input">
+            option-label="label" label="Status Envio" outlined dense bg-color="white" emit-value map-options
+            multiple clearable color="teal-7" class="filter-input">
             <template #prepend><q-icon name="local_shipping" color="grey-5" size="16px" /></template>
           </q-select>
         </div>
-        <div class="col-6 col-md-2 row q-gutter-x-xs items-center justify-end">
+        <div class="col-6 col-md-3 row q-gutter-x-xs items-center justify-end no-wrap">
+          <!-- Ordenação -->
+          <q-btn-dropdown flat dense color="grey-7" :label="currentSortLabel" icon="swap_vert" size="sm" no-icon-animation
+            style="max-width:130px;overflow:hidden">
+            <q-list dense style="min-width:200px">
+              <q-item v-for="opt in sortOptions" :key="opt.field + opt.desc" clickable v-close-popup @click="applySort(opt)">
+                <q-item-section>{{ opt.label }}</q-item-section>
+                <q-item-section side v-if="pagination.sortBy === opt.field && pagination.descending === opt.desc">
+                  <q-icon name="check" color="teal-7" size="14px" />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+          <div class="filter-divider" />
+          <!-- Filtros avançados toggle -->
+          <q-btn flat dense :color="showAdvanced ? 'teal-7' : 'grey-6'" icon="tune" @click="showAdvanced = !showAdvanced" size="sm">
+            <q-tooltip>{{ showAdvanced ? 'Ocultar filtros avançados' : 'Filtros avançados' }}</q-tooltip>
+            <q-badge v-if="advancedFilterCount > 0" color="teal-7" floating rounded style="font-size:9px">{{ advancedFilterCount }}</q-badge>
+          </q-btn>
           <q-btn flat dense color="grey-6" icon="filter_alt_off" @click="clearFilters" size="sm">
             <q-tooltip>Limpar filtros</q-tooltip>
           </q-btn>
-          <div class="filter-divider" />
+          <!-- Visões rápidas -->
           <q-btn-dropdown flat dense color="grey-7" label="Visões" icon="bolt" size="sm" no-icon-animation>
-            <q-list dense style="min-width:180px">
+            <q-list dense style="min-width:210px">
+              <q-item-label header class="text-caption text-grey-5 q-pb-xs">Expedição</q-item-label>
               <q-item clickable v-close-popup @click="setFilterHandling">
                 <q-item-section avatar><q-icon name="print" color="orange-7" size="16px" /></q-item-section>
                 <q-item-section>Aguardando Etiqueta</q-item-section>
               </q-item>
+              <q-item clickable v-close-popup @click="setFilterLabelPrint">
+                <q-item-section avatar><q-icon name="label" color="deep-orange-7" size="16px" /></q-item-section>
+                <q-item-section>Imprimir Etiqueta</q-item-section>
+              </q-item>
               <q-item clickable v-close-popup @click="setFilterReadyToShip">
                 <q-item-section avatar><q-icon name="inventory" color="teal-7" size="16px" /></q-item-section>
                 <q-item-section>Pronto para Coleta</q-item-section>
+              </q-item>
+              <q-separator />
+              <q-item-label header class="text-caption text-grey-5 q-pb-xs">Envio</q-item-label>
+              <q-item clickable v-close-popup @click="setFilterInTransit">
+                <q-item-section avatar><q-icon name="local_shipping" color="blue-7" size="16px" /></q-item-section>
+                <q-item-section>Em Trânsito</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setFilterDelivered">
+                <q-item-section avatar><q-icon name="check_circle" color="green-7" size="16px" /></q-item-section>
+                <q-item-section>Entregues</q-item-section>
+              </q-item>
+              <q-separator />
+              <q-item-label header class="text-caption text-grey-5 q-pb-xs">Logística</q-item-label>
+              <q-item clickable v-close-popup @click="setFilterFlex">
+                <q-item-section avatar><q-icon name="directions_bike" color="green-7" size="16px" /></q-item-section>
+                <q-item-section>Só Flex</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setFilterFull">
+                <q-item-section avatar><q-icon name="warehouse" color="orange-7" size="16px" /></q-item-section>
+                <q-item-section>Só Full</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setFilterAgencia">
+                <q-item-section avatar><q-icon name="store" color="purple-7" size="16px" /></q-item-section>
+                <q-item-section>Só Agência</q-item-section>
+              </q-item>
+              <q-separator />
+              <q-item-label header class="text-caption text-grey-5 q-pb-xs">Outros</q-item-label>
+              <q-item clickable v-close-popup @click="setFilterCatalog">
+                <q-item-section avatar><q-icon name="auto_awesome" color="indigo-7" size="16px" /></q-item-section>
+                <q-item-section>Catálogo</q-item-section>
               </q-item>
               <q-item clickable v-close-popup @click="setFilterCancelled">
                 <q-item-section avatar><q-icon name="cancel" color="red-7" size="16px" /></q-item-section>
@@ -74,14 +129,105 @@
           </q-btn-dropdown>
         </div>
       </div>
+
+      <!-- Linha 2: filtros avançados (toggle) -->
+      <div v-if="showAdvanced" class="row q-col-gutter-sm items-center q-mt-sm adv-filters-row">
+        <!-- Período -->
+        <div class="col-6 col-md-2">
+          <q-input v-model="filters.dateFrom" type="date" label="Data: de"
+            outlined dense bg-color="white" color="teal-7" class="filter-input" clearable stack-label>
+            <template #prepend><q-icon name="event" color="grey-5" size="16px" /></template>
+          </q-input>
+        </div>
+        <div class="col-6 col-md-2">
+          <q-input v-model="filters.dateTo" type="date" label="Data: até"
+            outlined dense bg-color="white" color="teal-7" class="filter-input" clearable stack-label>
+            <template #prepend><q-icon name="event" color="grey-5" size="16px" /></template>
+          </q-input>
+        </div>
+        <!-- Faixa de valor -->
+        <div class="col-6 col-md-2">
+          <q-input v-model.number="filters.priceMin" type="number" label="Valor: mínimo"
+            outlined dense bg-color="white" color="teal-7" class="filter-input" clearable prefix="R$" stack-label>
+          </q-input>
+        </div>
+        <div class="col-6 col-md-2">
+          <q-input v-model.number="filters.priceMax" type="number" label="Valor: máximo"
+            outlined dense bg-color="white" color="teal-7" class="filter-input" clearable prefix="R$" stack-label>
+          </q-input>
+        </div>
+        <!-- Logística -->
+        <div class="col-6 col-md-2">
+          <q-select v-model="filters.logistic_type" :options="logisticTypeOptions" option-value="value"
+            option-label="label" label="Logística" outlined dense bg-color="white" emit-value map-options
+            multiple clearable color="teal-7" class="filter-input">
+            <template #prepend><q-icon name="local_shipping" color="grey-5" size="16px" /></template>
+          </q-select>
+        </div>
+        <!-- Custo frete -->
+        <div class="col-6 col-md-2">
+          <q-select v-model="filters.cost_type" :options="costTypeOptions" option-value="value"
+            option-label="label" label="Custo Frete" outlined dense bg-color="white" emit-value map-options
+            multiple clearable color="teal-7" class="filter-input">
+            <template #prepend><q-icon name="payments" color="grey-5" size="16px" /></template>
+          </q-select>
+        </div>
+        <!-- Flags tri-state -->
+        <div class="col-12 col-md-auto row q-gutter-x-md items-center q-pl-xs q-pt-xs">
+          <div class="adv-flag-group">
+            <span class="adv-flag-label">Catálogo</span>
+            <q-btn-toggle v-model="filters.is_catalog" :options="triStateOpts" dense unelevated
+              toggle-color="teal-7" color="grey-2" text-color="grey-7" rounded size="xs" />
+          </div>
+          <div class="adv-flag-group">
+            <span class="adv-flag-label">Entregue</span>
+            <q-btn-toggle v-model="filters.fulfilled" :options="triStateOpts" dense unelevated
+              toggle-color="teal-7" color="grey-2" text-color="grey-7" rounded size="xs" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Chips dos filtros ativos -->
       <div v-if="hasActiveFilters" class="row items-center q-gutter-xs q-mt-sm">
         <span class="text-caption text-grey-6">Filtros:</span>
         <q-chip v-if="filters.search" dense removable color="teal-1" text-color="teal-8"
           @remove="filters.search = ''">"{{ filters.search }}"</q-chip>
+        <q-chip v-if="filters.account?.length" dense removable color="green-1" text-color="green-8"
+          @remove="filters.account = []">
+          <q-icon name="storefront" size="10px" class="q-mr-xs" />{{ filters.account.length }} conta(s)
+        </q-chip>
         <q-chip v-if="filters.status?.length" dense removable color="blue-1" text-color="blue-8"
-          @remove="filters.status = []">{{ filters.status.join(', ') }}</q-chip>
-        <q-chip v-if="filters.shipment_status" dense removable color="purple-1" text-color="purple-8"
-          @remove="filters.shipment_status = null">Envio: {{ filters.shipment_status }}</q-chip>
+          @remove="filters.status = []">
+          <q-icon name="flag" size="10px" class="q-mr-xs" />{{ filters.status.map(s => orderStatusOptions.find(o => o.value === s)?.label || s).join(', ') }}
+        </q-chip>
+        <q-chip v-if="filters.shipment_status?.length" dense removable color="purple-1" text-color="purple-8"
+          @remove="filters.shipment_status = []">
+          <q-icon name="local_shipping" size="10px" class="q-mr-xs" />{{ filters.shipment_status.map(s => shipmentStatusOptions.find(o => o.value === s)?.label || s).join(', ') }}
+        </q-chip>
+        <q-chip v-if="filters.logistic_type?.length" dense removable color="orange-1" text-color="orange-9"
+          @remove="filters.logistic_type = []">
+          <q-icon name="local_shipping" size="10px" class="q-mr-xs" />{{ filters.logistic_type.map(l => logisticTypeOptions.find(o => o.value === l)?.label || l).join(', ') }}
+        </q-chip>
+        <q-chip v-if="filters.cost_type?.length" dense removable color="yellow-2" text-color="yellow-10"
+          @remove="filters.cost_type = []">
+          <q-icon name="payments" size="10px" class="q-mr-xs" />{{ filters.cost_type.map(c => costTypeOptions.find(o => o.value === c)?.label || c).join(', ') }}
+        </q-chip>
+        <q-chip v-if="filters.dateFrom || filters.dateTo" dense removable color="indigo-1" text-color="indigo-8"
+          @remove="filters.dateFrom = null; filters.dateTo = null">
+          <q-icon name="event" size="10px" class="q-mr-xs" />{{ filters.dateFrom || '...' }} → {{ filters.dateTo || '...' }}
+        </q-chip>
+        <q-chip v-if="filters.priceMin || filters.priceMax" dense removable color="cyan-1" text-color="cyan-8"
+          @remove="filters.priceMin = null; filters.priceMax = null">
+          <q-icon name="attach_money" size="10px" class="q-mr-xs" />R${{ filters.priceMin ?? '0' }} → R${{ filters.priceMax ?? '∞' }}
+        </q-chip>
+        <q-chip v-if="filters.is_catalog != null" dense removable color="deep-purple-1" text-color="deep-purple-8"
+          @remove="filters.is_catalog = null">
+          <q-icon name="auto_awesome" size="10px" class="q-mr-xs" />{{ filters.is_catalog ? 'Catálogo' : 'Não catálogo' }}
+        </q-chip>
+        <q-chip v-if="filters.fulfilled != null" dense removable color="light-green-1" text-color="light-green-9"
+          @remove="filters.fulfilled = null">
+          <q-icon name="check_circle" size="10px" class="q-mr-xs" />{{ filters.fulfilled ? 'Entregue' : 'Não entregue' }}
+        </q-chip>
       </div>
     </div>
 
@@ -445,9 +591,9 @@
                         <template v-else-if="selectedOrder.shipment.cost_type === 'partially_free'">Frete subsidiado — comprador pagou {{ formatCurrency(selectedOrder.shipment.shipping_cost) }}</template>
                         <template v-else-if="selectedOrder.shipment.cost_type === 'charged'">Frete por conta do comprador</template>
                       </span>
-                      <div v-if="selectedOrder.shipment?.list_cost" class="freight-audit">
-                        <div class="audit-row"><span>ML cobrou</span><strong>{{ formatCurrency(selectedOrder.shipment.list_cost) }}</strong></div>
-                        <div class="audit-row"><span>Comprador pagou</span><strong>{{ formatCurrency(selectedOrder.shipment.shipping_cost || 0) }}</strong></div>
+                      <div v-if="getSellerShippingCost(selectedOrder) > 0 || selectedOrder.shipment?.list_cost" class="freight-audit">
+                        <div v-if="selectedOrder.shipment?.list_cost" class="audit-row"><span>Tabela ML</span><strong>{{ formatCurrency(selectedOrder.shipment.list_cost) }}</strong></div>
+                        <div v-if="(selectedOrder.shipment?.shipping_cost || 0) > 0" class="audit-row"><span>Comprador pagou</span><strong class="pos-t">{{ formatCurrency(selectedOrder.shipment.shipping_cost) }}</strong></div>
                         <div class="audit-row hl"><span>Seller paga</span><strong>{{ formatCurrency(getSellerShippingCost(selectedOrder)) }}</strong></div>
                       </div>
                     </template>
@@ -644,13 +790,13 @@
               </div>
 
               <div v-else class="receipt">
-                <div class="receipt-row">
-                  <span class="receipt-label">ML cobrou pelo serviço</span>
-                  <span class="receipt-value">{{ formatCurrency(logisticsOrder.shipment.list_cost) }}</span>
+                <div v-if="logisticsOrder.shipment.list_cost" class="receipt-row">
+                  <span class="receipt-label" style="color:#9aa0ac">Tabela ML (sem desconto)</span>
+                  <span class="receipt-value" style="color:#9aa0ac">{{ formatCurrency(logisticsOrder.shipment.list_cost) }}</span>
                 </div>
-                <div class="receipt-row sub-row">
+                <div v-if="(logisticsOrder.shipment.shipping_cost || 0) > 0" class="receipt-row sub-row">
                   <span class="receipt-label">Comprador pagou</span>
-                  <span class="receipt-value pos-t">{{ formatCurrency(logisticsOrder.shipment.shipping_cost || 0) }}</span>
+                  <span class="receipt-value pos-t">{{ formatCurrency(logisticsOrder.shipment.shipping_cost) }}</span>
                 </div>
                 <div class="receipt-sep thick" />
                 <div class="receipt-row total-row">
@@ -771,24 +917,96 @@ const columns = [
 // 2. FILTROS
 // ============================================================================
 const availableAccounts = ref([])
+const showAdvanced = ref(false)
+
 const filters = reactive({
-  search: '', account: [], status: [], shipment_status: null, logistic_type: null, dateFrom: null, dateTo: null
+  search: '',
+  account: [],
+  status: [],
+  shipment_status: [],
+  logistic_type: [],
+  cost_type: [],
+  dateFrom: null,
+  dateTo: null,
+  priceMin: null,
+  priceMax: null,
+  is_catalog: null,
+  fulfilled: null,
+  _substatus: null,   // filtro interno: 'ready_to_print' para smart view "Imprimir Etiqueta"
 })
+
 const hasActiveFilters = computed(() =>
-  filters.search || filters.account?.length || filters.status?.length || filters.shipment_status
+  filters.search ||
+  filters.account?.length ||
+  filters.status?.length ||
+  filters.shipment_status?.length ||
+  filters.logistic_type?.length ||
+  filters.cost_type?.length ||
+  filters.dateFrom || filters.dateTo ||
+  filters.priceMin || filters.priceMax ||
+  filters.is_catalog != null ||
+  filters.fulfilled != null
 )
+
+// Quantos filtros avançados estão ativos (para o badge do botão tune)
+const advancedFilterCount = computed(() => [
+  filters.logistic_type?.length,
+  filters.cost_type?.length,
+  filters.dateFrom || filters.dateTo ? 1 : 0,
+  filters.priceMin || filters.priceMax ? 1 : 0,
+  filters.is_catalog != null ? 1 : 0,
+  filters.fulfilled != null ? 1 : 0,
+].reduce((a, b) => a + (b ? 1 : 0), 0))
+
 const orderStatusOptions = [
   { label: 'Pago',             value: 'paid' },
-  { label: 'Aguardando Pagto', value: 'payment_required' },
-  { label: 'Cancelado',        value: 'cancelled' }
+  { label: 'Ag. Pagamento',    value: 'payment_required' },
+  { label: 'Confirmado',       value: 'confirmed' },
+  { label: 'Cancelado',        value: 'cancelled' },
 ]
 const shipmentStatusOptions = [
-  { label: 'Pendente',        value: 'pending' },
-  { label: 'Preparando',      value: 'handling' },
-  { label: 'Etiqueta Pronta', value: 'ready_to_ship' },
-  { label: 'Em Trânsito',     value: 'shipped' },
-  { label: 'Entregue',        value: 'delivered' }
+  { label: 'Pendente',              value: 'pending' },
+  { label: 'Preparando',            value: 'handling' },
+  { label: 'Pronto p/ Envio',       value: 'ready_to_ship' },
+  { label: 'Em Trânsito',           value: 'shipped' },
+  { label: 'Entregue',              value: 'delivered' },
+  { label: 'Não Entregue',          value: 'not_delivered' },
+  { label: 'Cancelado',             value: 'cancelled' },
 ]
+const logisticTypeOptions = [
+  { label: 'Full (Fulfillment)',  value: 'fulfillment' },
+  { label: 'Flex (Self-Service)', value: 'self_service' },
+  { label: 'Agência (XD)',        value: 'xd_drop_off' },
+  { label: 'Agência (Drop Off)',  value: 'drop_off' },
+  { label: 'Coleta (Cross Dock)', value: 'cross_docking' },
+]
+const costTypeOptions = [
+  { label: 'Grátis p/ comprador',  value: 'free' },
+  { label: 'Subsidiado',           value: 'partially_free' },
+  { label: 'Comprador paga',        value: 'charged' },
+]
+const triStateOpts = [
+  { label: 'Todos', value: null },
+  { label: 'Sim',   value: true },
+  { label: 'Não',   value: false },
+]
+const sortOptions = [
+  { label: 'Data ↓ (recentes)',   field: 'date_created',  desc: true  },
+  { label: 'Data ↑ (antigas)',    field: 'date_created',  desc: false },
+  { label: 'Valor ↓ (maior)',     field: 'total_amount',  desc: true  },
+  { label: 'Valor ↑ (menor)',     field: 'total_amount',  desc: false },
+  { label: 'Status',              field: 'status',        desc: false },
+  { label: 'Fechamento ↓',        field: 'date_closed',   desc: true  },
+]
+const currentSortLabel = computed(() => {
+  const opt = sortOptions.find(o => o.field === pagination.value.sortBy && o.desc === pagination.value.descending)
+  return opt?.label || 'Ordenar'
+})
+const applySort = (opt) => {
+  pagination.value.sortBy = opt.field
+  pagination.value.descending = opt.desc
+  refreshData()
+}
 
 const LOGISTIC_META = {
   fulfillment:   { label: 'Full',       icon: 'warehouse',       cls: 'log-full' },
@@ -830,12 +1048,25 @@ const accountOptions = computed(() => availableAccounts.value)
 // 3. SMART VIEWS
 // ============================================================================
 const resetFiltersState = () => Object.assign(filters, {
-  search: '', account: [], status: [], shipment_status: null, logistic_type: null, dateFrom: null, dateTo: null
+  search: '', account: [], status: [], shipment_status: [], logistic_type: [], cost_type: [],
+  dateFrom: null, dateTo: null, priceMin: null, priceMax: null, is_catalog: null, fulfilled: null,
+  _substatus: null,
 })
-const clearFilters         = () => resetFiltersState()
-const setFilterHandling    = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = 'handling' }
-const setFilterReadyToShip = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = 'ready_to_ship' }
-const setFilterCancelled   = () => { resetFiltersState(); filters.status = ['cancelled'] }
+const clearFilters          = () => resetFiltersState()
+// Expedição
+const setFilterHandling     = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['handling'] }
+const setFilterLabelPrint   = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['ready_to_ship']; filters._substatus = 'ready_to_print' }
+const setFilterReadyToShip  = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['ready_to_ship'] }
+// Envio
+const setFilterInTransit    = () => { resetFiltersState(); filters.shipment_status = ['shipped'] }
+const setFilterDelivered    = () => { resetFiltersState(); filters.shipment_status = ['delivered'] }
+// Logística
+const setFilterFlex         = () => { resetFiltersState(); filters.logistic_type = ['self_service'] }
+const setFilterFull         = () => { resetFiltersState(); filters.logistic_type = ['fulfillment'] }
+const setFilterAgencia      = () => { resetFiltersState(); filters.logistic_type = ['xd_drop_off', 'drop_off'] }
+// Outros
+const setFilterCatalog      = () => { resetFiltersState(); filters.is_catalog = true }
+const setFilterCancelled    = () => { resetFiltersState(); filters.status = ['cancelled'] }
 
 let filterTimer
 watch(filters, () => {
@@ -860,16 +1091,26 @@ const onRequest = async (props) => {
   const { page, rowsPerPage, sortBy, descending } = props.pagination
   loading.value = true
   try {
+    // Tratamento especial: imprimir etiqueta → substatus=ready_to_print
+    const hasLabelPrint = filters._substatus === 'ready_to_print'
+    const rawStatuses = filters.shipment_status || []
+
     const params = {
       page, page_size: rowsPerPage,
       ordering: descending ? `-${sortBy}` : sortBy,
       search:                  filters.search || undefined,
-      account:                 filters.account?.length  ? filters.account.join(',') : undefined,
-      status:                  filters.status?.length   ? filters.status.join(',')  : undefined,
-      shipment__status:        filters.shipment_status  || undefined,
-      shipment__logistic_type: filters.logistic_type    || undefined,
+      account:                 filters.account?.length         ? filters.account.join(',')         : undefined,
+      status:                  filters.status?.length          ? filters.status.join(',')          : undefined,
+      shipment__status:        rawStatuses.length              ? rawStatuses.join(',')              : undefined,
+      shipment__substatus:     hasLabelPrint                   ? 'ready_to_print'                  : undefined,
+      shipment__logistic_type: filters.logistic_type?.length   ? filters.logistic_type.join(',')   : undefined,
+      shipment__cost_type:     filters.cost_type?.length       ? filters.cost_type.join(',')       : undefined,
       date_created__gte:       filters.dateFrom ? `${filters.dateFrom}T00:00:00` : undefined,
       date_created__lte:       filters.dateTo   ? `${filters.dateTo}T23:59:59`   : undefined,
+      total_amount__gte:       filters.priceMin > 0            ? filters.priceMin                  : undefined,
+      total_amount__lte:       filters.priceMax > 0            ? filters.priceMax                  : undefined,
+      is_catalog:              filters.is_catalog != null      ? filters.is_catalog                : undefined,
+      fulfilled:               filters.fulfilled  != null      ? filters.fulfilled                 : undefined,
     }
     Object.keys(params).forEach(k => params[k] == null && delete params[k])
     const response = await MercadoLivreService.listOrders(params)
@@ -1144,6 +1385,9 @@ onMounted(() => { loadFacets(); refreshData() })
 .filters-bar { background: #fff; border-bottom: 1px solid #e8eaed; padding: 10px 24px; }
 .filter-input :deep(.q-field__control) { border-radius: 8px; }
 .filter-divider { width: 1px; height: 18px; background: #e0e0e0; }
+.adv-filters-row { border-top: 1px dashed #e8eaed; padding-top: 8px; }
+.adv-flag-group  { display: flex; flex-direction: column; gap: 4px; }
+.adv-flag-label  { font-size: 10px; font-weight: 600; color: #9aa0ac; text-transform: uppercase; letter-spacing: .4px; }
 
 /* ─── TABLE ──────────────────────────────────────── */
 .table-wrapper { padding: 16px 24px; }

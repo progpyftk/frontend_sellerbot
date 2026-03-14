@@ -48,6 +48,10 @@ const routes = [
     path: "/ml-redirect",
     component: () => import("pages/MLRedirect.vue"),
   },
+  {
+    path: "/tiny/callback",
+    component: () => import("pages/TinyRedirect.vue"),
+  },
   // Sempre deixe esta rota no final
   {
     path: "/:catchAll(.*)*",
