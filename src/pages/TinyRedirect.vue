@@ -64,7 +64,7 @@ onMounted(async () => {
   }
 
   try {
-    const { data } = await api.post('/erps/tiny/callback/', { code, state: cnpj })
+    const { data } = await api.post('/api/erps/tiny/callback/', { code, state: cnpj })
 
     if (data.success) {
       status.value = 'success'

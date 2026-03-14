@@ -37,7 +37,26 @@
 
                 <template v-slot:body-cell-cnpj="props">
                   <q-td :props="props">
-                    {{ formatCNPJ(props.row.cnpj) }}
+                    <span :class="props.row.cnpj ? '' : 'text-grey-5 text-italic'">
+                      {{ props.row.cnpj ? formatCNPJ(props.row.cnpj) : 'Clique para editar' }}
+                    </span>
+                    <q-popup-edit
+                      :model-value="props.row.cnpj || ''"
+                      @save="(val) => saveCnpj(props.row, val)"
+                      v-slot="scope"
+                      buttons
+                      label-set="Salvar"
+                      label-cancel="Cancelar"
+                    >
+                      <q-input
+                        v-model="scope.value"
+                        label="CNPJ (somente números)"
+                        dense autofocus
+                        mask="##.###.###/####-##"
+                        unmasked-value
+                        hint="Ex: 41641514000103"
+                      />
+                    </q-popup-edit>
                   </q-td>
                 </template>
 
@@ -372,6 +391,18 @@ const openTinySetup = (account) => {
   tinyDialog.value = true
 }
 
+const saveCnpj = async (account, cnpj) => {
+  const digits = (cnpj || '').replace(/\D/g, '')
+  try {
+    await api.patch(`/mercadolivre/accounts/${account.account_id}/cnpj/`, { cnpj: digits })
+    account.cnpj = digits
+    $q.notify({ message: 'CNPJ salvo!', color: 'positive', position: 'top', timeout: 2000 })
+  } catch (error) {
+    console.error('Erro ao salvar CNPJ:', error)
+    $q.notify({ message: 'Erro ao salvar CNPJ.', color: 'negative', position: 'top' })
+  }
+}
+
 const submitTinySetup = async () => {
   if (!tinyForm.value.client_id || !tinyForm.value.client_secret) {
     $q.notify({ message: 'Preencha Client ID e Client Secret.', color: 'warning', position: 'top' })
@@ -379,14 +410,13 @@ const submitTinySetup = async () => {
   }
   tinyConnecting.value = true
   try {
-    const { data } = await api.post('/erps/tiny/setup/', {
+    const { data } = await api.post('/api/erps/tiny/setup/', {
       cnpj:          tinyForm.value.cnpj,
       client_id:     tinyForm.value.client_id,
       client_secret: tinyForm.value.client_secret,
       redirect_uri:  TINY_REDIRECT_URI,
     })
     tinyDialog.value = false
-    // Redireciona o usuário para autorizar no Tiny
     window.location.href = data.auth_url
   } catch (error) {
     console.error('Erro ao configurar Tiny:', error)
@@ -400,7 +430,7 @@ const syncTinyCMV = async (account) => {
   if (!account.cnpj) return
   syncingCnpj.value = account.cnpj
   try {
-    const { data } = await api.post('/erps/tiny/sync-products/', { cnpj: account.cnpj })
+    const { data } = await api.post('/api/erps/tiny/sync-products/', { cnpj: account.cnpj })
     $q.notify({
       message: `Sync concluído: ${data.synced} produtos atualizados, ${data.skipped} sem SKU, ${data.errors} erros.`,
       color: data.errors > 0 ? 'warning' : 'positive',
