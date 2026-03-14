@@ -108,26 +108,55 @@
             <q-td key="produto" :props="props">
               <div class="cell-produto">
                 <div class="produto-main">
+
+                  <!-- Thumbnail: igual para pack e single; badge +N indica itens extras -->
                   <div class="thumb-wrap">
                     <img v-if="props.row.items?.[0]?.thumbnail" :src="props.row.items[0].thumbnail" class="thumb-img" />
                     <div v-else class="thumb-placeholder"><q-icon name="image" size="18px" color="grey-4" /></div>
-                    <div v-if="(props.row.items || []).length > 1" class="thumb-count">+{{ props.row.items.length - 1 }}</div>
-                  </div>
-                  <div class="produto-info">
-                    <div class="produto-title">{{ props.row.items?.[0]?.title || '—' }}</div>
-                    <div class="produto-ids">
-                      <span class="id-chip"><q-icon name="sell" size="9px" />{{ props.row.items?.[0]?.item_id_ml || '—' }}</span>
-                      <span v-if="props.row.items?.[0]?.seller_sku" class="id-chip sku">SKU {{ props.row.items[0].seller_sku }}</span>
+                    <div v-if="(props.row.items || []).length > 1" class="thumb-count">
+                      +{{ props.row.items.length - 1 }}
                     </div>
+                  </div>
+
+                  <div class="produto-info">
+                    <!-- PACK: lista resumida de itens -->
+                    <template v-if="props.row._isPack">
+                      <div class="pack-items-list">
+                        <div v-for="item in (props.row.items || [])" :key="item.item_id_ml + (item.variation_id||'')" class="pack-item-line">
+                          <span class="pack-item-qty">{{ item.quantity }}×</span>
+                          <span class="pack-item-title">{{ item.title }}</span>
+                          <span v-if="item.seller_sku" class="pack-item-sku">{{ item.seller_sku }}</span>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- SINGLE: título + ids -->
+                    <template v-else>
+                      <div class="produto-title">{{ props.row.items?.[0]?.title || '—' }}</div>
+                      <div class="produto-ids">
+                        <span class="id-chip"><q-icon name="sell" size="9px" />{{ props.row.items?.[0]?.item_id_ml || '—' }}</span>
+                        <span v-if="props.row.items?.[0]?.seller_sku" class="id-chip sku">SKU {{ props.row.items[0].seller_sku }}</span>
+                      </div>
+                    </template>
+
                     <div class="produto-meta">
                       <span class="account-chip"><q-icon name="storefront" size="9px" />{{ props.row.account?.account_nickname || '—' }}</span>
-                      <span v-if="props.row.pack_id" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />PACK</span>
+                      <span v-if="props.row._isPack" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />PACK · {{ (props.row.items||[]).length }} itens</span>
+                      <span v-else-if="props.row.pack_id" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />PACK</span>
                       <span v-if="props.row.is_catalog" class="ctx-badge catalog-badge"><q-icon name="auto_awesome" size="8px" />Catálogo</span>
                     </div>
                   </div>
                 </div>
                 <div class="pedido-sub">
-                  <span class="pedido-id" @click.stop="copyText(props.row.order_id)">
+                  <template v-if="props.row._isPack">
+                    <span class="pedido-id" @click.stop="copyText(props.row.pack_id)">
+                      pack #{{ props.row.pack_id }}<q-icon name="content_copy" size="9px" class="copy-icon" />
+                    </span>
+                    <span class="pack-sub-orders">
+                      {{ props.row._packOrders.map(o => '#' + o.order_id).join(' · ') }}
+                    </span>
+                  </template>
+                  <span v-else class="pedido-id" @click.stop="copyText(props.row.order_id)">
                     #{{ props.row.order_id }}<q-icon name="content_copy" size="9px" class="copy-icon" />
                   </span>
                 </div>
@@ -187,16 +216,16 @@
                 <template v-else>
                   <div class="mini-stepper">
                     <div v-for="(step, i) in STEPS_SELLER" :key="i"
-                      :class="['mini-dot', getMiniStepClassSeller(props.row.shipment.status, i)]">
+                      :class="['mini-dot', getMiniStepClassSeller(getEffectiveShipStatus(props.row.shipment), i)]">
                       <q-tooltip>{{ step.label }}</q-tooltip>
                     </div>
-                    <span class="mini-label">{{ getShipmentStatusLabel(props.row.shipment.status) }}</span>
+                    <span class="mini-label">{{ getShipmentStatusLabel(getEffectiveShipStatus(props.row.shipment)) }}</span>
                   </div>
                   <!-- Alerta de ação quando o seller precisa agir -->
-                  <div v-if="needsSellerAction(props.row.shipment.status)"
+                  <div v-if="needsSellerAction(getEffectiveShipStatus(props.row.shipment))"
                     class="action-alert">
                     <q-icon name="warning_amber" size="10px" />
-                    {{ getSellerActionLabel(props.row.shipment.status) }}
+                    {{ getSellerActionLabel(getEffectiveShipStatus(props.row.shipment)) }}
                   </div>
                 </template>
 
@@ -237,7 +266,7 @@
                   <div class="fee-breakdown-row taxa-row">
                     <span class="fee-breakdown-label">
                       <q-icon name="info_outline" size="9px" />Taxa fixa
-                      <q-tooltip class="bg-grey-9" style="max-width:200px">
+                      <q-tooltip class="bg-grey-9" style="max-width:220px">
                         ML cobra taxa fixa em certas categorias quando o preço unitário é abaixo de R${{ TAXA_FIXA_THRESHOLD }}.
                         Valor confirmado pelo sale_fee da API.
                       </q-tooltip>
@@ -302,14 +331,21 @@
           <div class="row items-start justify-between no-wrap">
             <div>
               <div class="dialog-eyebrow"><q-icon name="account_balance_wallet" size="13px" class="q-mr-xs" />Resumo Financeiro</div>
-              <div class="detail-order-id">#{{ selectedOrder.order_id }}</div>
+              <div class="detail-order-id">
+                <template v-if="selectedOrder._isPack">
+                  <q-icon name="inventory_2" size="14px" class="q-mr-xs" style="color:#6366f1" />pack #{{ selectedOrder.pack_id }}
+                </template>
+                <template v-else>#{{ selectedOrder.order_id }}</template>
+              </div>
               <div class="detail-meta">{{ formatDateFull(selectedOrder.date_created) }} · {{ selectedOrder.account?.account_nickname }}</div>
               <div class="row items-center q-gutter-x-xs q-mt-sm">
                 <span :class="['s-pill', getOrderStatusClass(selectedOrder.status)]">
                   <q-icon :name="getOrderStatusIcon(selectedOrder.status)" size="10px" />
                   {{ getOrderStatusLabel(selectedOrder.status) }}
                 </span>
-                <span v-if="selectedOrder.pack_id" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="9px" />PACK</span>
+                <span v-if="selectedOrder._isPack" class="ctx-badge pack-badge">
+                  <q-icon name="inventory_2" size="8px" />PACK · {{ (selectedOrder.items||[]).length }} itens
+                </span>
                 <span v-if="selectedOrder.is_catalog" class="ctx-badge catalog-badge"><q-icon name="auto_awesome" size="9px" />Catálogo</span>
               </div>
             </div>
@@ -343,7 +379,7 @@
                   <span style="width:56px;text-align:right">Tipo</span>
                   <span style="width:80px;text-align:right">Tarifa ML</span>
                 </div>
-                <div v-for="item in selectedOrder.items" :key="item.item_id_ml" class="items-row">
+                <div v-for="item in selectedOrder.items" :key="item.item_id_ml + (item.variation_id || '')" class="items-row">
                   <div class="item-thumb-sm">
                     <img v-if="item.thumbnail" :src="item.thumbnail" />
                     <q-icon v-else name="image" size="14px" color="grey-4" />
@@ -356,7 +392,9 @@
                   <span style="width:76px;text-align:right;font-size:12px">{{ formatCurrency(item.unit_price) }}</span>
                   <span style="width:56px;text-align:right;font-size:11px;color:#9aa0ac">{{ LISTING_TYPE_LABELS[item.listing_type_id] || '—' }}</span>
                   <div style="width:80px;text-align:right">
-                    <div class="fee-d">{{ formatCurrency(item.sale_fee) }}</div>
+                    <div class="fee-d">
+                      {{ formatCurrency(decomposeItemFee(item).totalFee) }}
+                    </div>
                     <div class="fee-d-sub">{{ decomposeItemFee(item).effectivePct.toFixed(1) }}%{{ decomposeItemFee(item).hasTaxaFixa ? ' +fx' : '' }}</div>
                   </div>
                 </div>
@@ -376,31 +414,57 @@
                   <span class="receipt-value ded-t">-{{ formatCurrency(selectedOrder.coupon_amount) }}</span>
                 </div>
                 <div class="receipt-sep" />
-                <div v-for="item in (selectedOrder.items || [])" :key="'rf-' + item.item_id_ml" class="receipt-row sub-row">
+                <div v-for="item in (selectedOrder.items || [])" :key="'rf-' + item.item_id_ml + (item.variation_id || '')" class="receipt-row sub-row">
                   <div class="receipt-label-g">
                     <span class="receipt-label">(-) Tarifa ML · {{ LISTING_TYPE_LABELS[item.listing_type_id] || item.listing_type_id }}</span>
-                    <span class="receipt-sub">{{ decomposeItemFee(item).effectivePct.toFixed(1) }}% efetivo<template v-if="decomposeItemFee(item).hasTaxaFixa"> ({{ formatCurrency(decomposeItemFee(item).commission) }} comissão + {{ formatCurrency(decomposeItemFee(item).taxaFixa) }} tx fixa)</template></span>
+                    <span class="receipt-sub">
+                      {{ decomposeItemFee(item).effectivePct.toFixed(1) }}% efetivo
+                      <template v-if="decomposeItemFee(item).hasTaxaFixa">
+                        ({{ formatCurrency(decomposeItemFee(item).commission) }} comissão + {{ formatCurrency(decomposeItemFee(item).taxaFixa) }} tx fixa)
+                      </template>
+                    </span>
                   </div>
-                  <span class="receipt-value ded-t">-{{ formatCurrency(decomposeItemFee(item).saleFee) }}</span>
+                  <span class="receipt-value ded-t">-{{ formatCurrency(decomposeItemFee(item).totalFee) }}</span>
                 </div>
                 <div class="receipt-sep" />
                 <div class="receipt-row sub-row">
                   <div class="receipt-label-g">
                     <span class="receipt-label">(-) Frete (ML Envios)</span>
-                    <span class="receipt-sub" v-if="selectedOrder.shipment?.cost_type">
-                      <template v-if="selectedOrder.shipment.cost_type === 'free'">Grátis p/ comprador — seller paga custo total</template>
-                      <template v-else-if="selectedOrder.shipment.cost_type === 'partially_free'">Subsidiado — comprador pagou {{ formatCurrency(selectedOrder.shipment.shipping_cost) }}</template>
-                      <template v-else-if="selectedOrder.shipment.cost_type === 'charged'">Integral — por conta do comprador</template>
-                    </span>
-                    <div v-if="selectedOrder.shipment?.list_cost" class="freight-audit">
-                      <div class="audit-row"><span>ML cobrou</span><strong>{{ formatCurrency(selectedOrder.shipment.list_cost) }}</strong></div>
-                      <div class="audit-row"><span>Comprador pagou</span><strong>{{ formatCurrency(selectedOrder.shipment.shipping_cost || 0) }}</strong></div>
-                      <div class="audit-row hl"><span>Seller paga</span><strong>{{ formatCurrency(getSellerShippingCost(selectedOrder)) }}</strong></div>
-                    </div>
+
+                    <!-- Flex: seller faz a entrega, sem custo de transportadora ML -->
+                    <template v-if="selectedOrder.shipment?.logistic_mode === 'self_service'">
+                      <span class="receipt-sub" style="color:#0d9488">
+                        <q-icon name="directions_bike" size="10px" /> Entrega Flex — sem custo de transportadora ML
+                      </span>
+                    </template>
+
+                    <!-- Outros: exibe descrição baseada no cost_type -->
+                    <template v-else>
+                      <span class="receipt-sub" v-if="selectedOrder.shipment?.cost_type">
+                        <template v-if="selectedOrder.shipment.cost_type === 'free'">Frete grátis p/ comprador — seller arca com o custo</template>
+                        <template v-else-if="selectedOrder.shipment.cost_type === 'partially_free'">Frete subsidiado — comprador pagou {{ formatCurrency(selectedOrder.shipment.shipping_cost) }}</template>
+                        <template v-else-if="selectedOrder.shipment.cost_type === 'charged'">Frete por conta do comprador</template>
+                      </span>
+                      <div v-if="selectedOrder.shipment?.list_cost" class="freight-audit">
+                        <div class="audit-row"><span>ML cobrou</span><strong>{{ formatCurrency(selectedOrder.shipment.list_cost) }}</strong></div>
+                        <div class="audit-row"><span>Comprador pagou</span><strong>{{ formatCurrency(selectedOrder.shipment.shipping_cost || 0) }}</strong></div>
+                        <div class="audit-row hl"><span>Seller paga</span><strong>{{ formatCurrency(getSellerShippingCost(selectedOrder)) }}</strong></div>
+                      </div>
+                    </template>
                   </div>
                   <span class="receipt-value" :class="getSellerShippingCost(selectedOrder) > 0 ? 'ded-t' : 'free-t'">
                     {{ getSellerShippingCost(selectedOrder) > 0 ? '-' + formatCurrency(getSellerShippingCost(selectedOrder)) : 'Grátis' }}
                   </span>
+                </div>
+                <!-- Repasse Flex: ML credita ao seller o frete pago pelo comprador -->
+                <div v-if="Number(selectedOrder.fee_breakdown?.flex_credit || 0) > 0" class="receipt-row sub-row">
+                  <div class="receipt-label-g">
+                    <span class="receipt-label">(+) Repasse Flex</span>
+                    <span class="receipt-sub" style="color:#0d9488">
+                      <q-icon name="directions_bike" size="10px" /> Frete pago pelo comprador — ML repassa ao seller
+                    </span>
+                  </div>
+                  <span class="receipt-value pos-t">+{{ formatCurrency(selectedOrder.fee_breakdown.flex_credit) }}</span>
                 </div>
                 <div class="receipt-sep thick" />
                 <div class="receipt-row total-row">
@@ -471,12 +535,12 @@
           <div class="detail-body" v-if="logisticsOrder.shipment">
 
             <!-- Próxima ação (apenas seller-managed + status pendente de ação) -->
-            <div v-if="logisticsOrder.shipment.logistic_type !== 'fulfillment' && needsSellerAction(logisticsOrder.shipment.status)"
+            <div v-if="logisticsOrder.shipment.logistic_type !== 'fulfillment' && needsSellerAction(getEffectiveShipStatus(logisticsOrder.shipment))"
               class="action-callout">
               <div class="action-callout-icon"><q-icon name="warning_amber" size="20px" /></div>
               <div>
                 <div class="action-callout-title">Ação necessária</div>
-                <div class="action-callout-desc">{{ getSellerActionDescription(logisticsOrder.shipment.status) }}</div>
+                <div class="action-callout-desc">{{ getSellerActionDescription(getEffectiveShipStatus(logisticsOrder.shipment)) }}</div>
               </div>
             </div>
 
@@ -510,14 +574,14 @@
               <div class="section-title"><q-icon name="route" size="14px" class="q-mr-xs" />Acompanhamento do Envio</div>
               <div class="timeline">
                 <div v-for="(step, i) in STEPS_SELLER" :key="i"
-                  :class="['timeline-item', getTimelineClassSeller(logisticsOrder.shipment.status, i)]">
+                  :class="['timeline-item', getTimelineClassSeller(getEffectiveShipStatus(logisticsOrder.shipment), i)]">
                   <div class="tl-dot-col">
                     <div class="tl-dot"><q-icon :name="step.icon" size="12px" /></div>
                     <div v-if="i < STEPS_SELLER.length - 1" class="tl-line" />
                   </div>
                   <div class="tl-content">
                     <div class="tl-label">{{ step.label }}</div>
-                    <div v-if="step.action && isCurrentStep(logisticsOrder.shipment.status, i)" class="tl-action">
+                    <div v-if="step.action && isCurrentStep(getEffectiveShipStatus(logisticsOrder.shipment), i)" class="tl-action">
                       <q-icon name="touch_app" size="11px" />{{ step.action }}
                     </div>
                     <div v-else class="tl-desc">{{ step.desc }}</div>
@@ -569,7 +633,17 @@
             <!-- Custo do Frete -->
             <div class="detail-section">
               <div class="section-title"><q-icon name="payments" size="14px" class="q-mr-xs" />Custo do Frete</div>
-              <div class="receipt">
+
+              <!-- Flex: seller entrega, não há custo de transportadora -->
+              <div v-if="logisticsOrder.shipment.logistic_mode === 'self_service'" class="flex-freight-note">
+                <q-icon name="directions_bike" size="16px" class="q-mr-sm" color="teal-6" />
+                <div>
+                  <div class="flex-freight-title">Entrega Flex — sem custo de frete ML</div>
+                  <div class="flex-freight-desc">Você mesmo realiza a entrega. O ML não cobra serviço de transportadora neste modo.</div>
+                </div>
+              </div>
+
+              <div v-else class="receipt">
                 <div class="receipt-row">
                   <span class="receipt-label">ML cobrou pelo serviço</span>
                   <span class="receipt-value">{{ formatCurrency(logisticsOrder.shipment.list_cost) }}</span>
@@ -619,6 +693,52 @@ import MercadoLivreService from 'src/services/MercadoLivreService'
 import { useQuasar, copyToClipboard, date } from 'quasar'
 
 const $q = useQuasar()
+
+// ============================================================================
+// 0. PACK GROUPING
+// Múltiplos sub-orders com mesmo pack_id são exibidos como uma linha única.
+// O row resultante tem _isPack=true e _packOrders com os sub-orders originais.
+// ============================================================================
+const groupPackOrders = (rawRows) => {
+  const result = []
+  const packMap = {}
+  for (const row of rawRows) {
+    if (!row.pack_id) {
+      result.push(row)
+      continue
+    }
+    if (!packMap[row.pack_id]) {
+      // Cria o pack row baseado no primeiro sub-order
+      const packRow = {
+        ...row,
+        _isPack: true,
+        _packOrders: [row],
+        // total_amount será somado; começa com o do primeiro order
+      }
+      packMap[row.pack_id] = packRow
+      result.push(packRow)
+    } else {
+      const pack = packMap[row.pack_id]
+      pack._packOrders.push(row)
+      // Soma totais
+      pack.total_amount = (Number(pack.total_amount) + Number(row.total_amount || 0)).toFixed(2)
+      // Agrega itens
+      if (row.items?.length) pack.items = [...(pack.items || []), ...row.items]
+      // Usa o shipment do primeiro sub-order que tiver um
+      if (!pack.shipment && row.shipment) pack.shipment = row.shipment
+      // Agrega fee_breakdown (shipping só existe em um sub-order — o que tem shipment)
+      if (row.fee_breakdown) {
+        const fb = pack.fee_breakdown
+        pack.fee_breakdown = {
+          total_sale_fee:       (Number(fb?.total_sale_fee      || 0) + Number(row.fee_breakdown.total_sale_fee      || 0)),
+          seller_shipping_cost: (Number(fb?.seller_shipping_cost|| 0) + Number(row.fee_breakdown.seller_shipping_cost|| 0)),
+          net_received:         (Number(fb?.net_received        || 0) + Number(row.fee_breakdown.net_received        || 0)),
+        }
+      }
+    }
+  }
+  return result
+}
 
 // ============================================================================
 // 1. ESTADO
@@ -692,7 +812,7 @@ const STEPS_FULL = [
 const STEPS_SELLER = [
   { label: 'Aguardando',        icon: 'hourglass_empty', keys: ['pending'],
     desc: 'Pagamento confirmado, prepare o produto', action: null, dateKey: null },
-  { label: 'Imprimir Etiqueta', icon: 'print',           keys: ['handling'],
+  { label: 'Imprimir Etiqueta', icon: 'print',           keys: ['handling', 'ready_to_print'],
     desc: 'Etiqueta disponível para impressão',
     action: 'Acesse o ML e imprima a etiqueta de envio', dateKey: null },
   { label: 'Pronto p/ Coleta',  icon: 'inventory',       keys: ['ready_to_ship'],
@@ -753,7 +873,7 @@ const onRequest = async (props) => {
     }
     Object.keys(params).forEach(k => params[k] == null && delete params[k])
     const response = await MercadoLivreService.listOrders(params)
-    orders.value                = response.data.results || []
+    orders.value                = groupPackOrders(response.data.results || [])
     pagination.value.rowsNumber = response.data.count   || 0
     pagination.value.page       = page
     pagination.value.rowsPerPage = rowsPerPage
@@ -769,12 +889,25 @@ const onRequest = async (props) => {
 // 5. DIALOGS
 // ============================================================================
 const ensurePayments = async (row) => {
-  if (row.payments) return
   detailLoading.value = true
   try {
-    const { data } = await MercadoLivreService.getOrder(row.order_id)
-    row.payments = data.payments
-    if (!row.items?.length) row.items = data.items
+    if (row._isPack) {
+      // Para PACK: carrega pagamentos de todos os sub-orders
+      const allPayments = []
+      for (const sub of row._packOrders) {
+        if (!sub.payments) {
+          const { data } = await MercadoLivreService.getOrder(sub.order_id)
+          sub.payments = data.payments
+        }
+        allPayments.push(...(sub.payments || []))
+      }
+      row.payments = allPayments
+    } else {
+      if (row.payments) return
+      const { data } = await MercadoLivreService.getOrder(row.order_id)
+      row.payments = data.payments
+      if (!row.items?.length) row.items = data.items
+    }
   } catch (e) { console.error(e) }
   finally { detailLoading.value = false }
 }
@@ -829,43 +962,53 @@ const LISTING_COMMISSION_RATE = {
 }
 const TAXA_FIXA_THRESHOLD = 79
 
+// Decompõe a tarifa de um item para exibir comissão + taxa fixa no detalhe.
+// Usa item.total_fee (já = sale_fee × qty, calculado pelo backend).
 const decomposeItemFee = (item) => {
-  const saleFee   = Number(item.sale_fee   || 0)
+  const totalFee  = Number(item.total_fee || 0)
   const unitPrice = Number(item.unit_price || 0)
   const qty       = Number(item.quantity   || 1)
   const rate      = LISTING_COMMISSION_RATE[item.listing_type_id] ?? 0.165
   const commissionExpected = unitPrice * qty * rate
-  const taxaFixa   = Math.max(0, saleFee - commissionExpected)
+  const taxaFixa    = Math.max(0, totalFee - commissionExpected)
   const hasTaxaFixa = taxaFixa > 1 && unitPrice < TAXA_FIXA_THRESHOLD
   return {
-    saleFee,
-    commission:   hasTaxaFixa ? commissionExpected : saleFee,
+    totalFee,
+    commission:   hasTaxaFixa ? commissionExpected : totalFee,
     taxaFixa:     hasTaxaFixa ? taxaFixa : 0,
-    effectivePct: unitPrice > 0 ? (saleFee / (unitPrice * qty)) * 100 : 0,
+    effectivePct: unitPrice > 0 ? (totalFee / (unitPrice * qty)) * 100 : 0,
     hasTaxaFixa,
     listingLabel: LISTING_TYPE_LABELS[item.listing_type_id] || item.listing_type_id || '—',
   }
 }
 
+// Retorna os totais financeiros da order/pack usando fee_breakdown do backend.
 const getOrderFeeBreakdown = (row) => {
-  const items = row.items || []
-  let totalSaleFee = 0, totalCommission = 0, totalTaxaFixa = 0, anyTaxaFixa = false
-  if (items.length) {
-    for (const item of items) {
-      const d = decomposeItemFee(item)
-      totalSaleFee   += d.saleFee
-      totalCommission += d.commission
-      totalTaxaFixa  += d.taxaFixa
-      if (d.hasTaxaFixa) anyTaxaFixa = true
+  const fb = row.fee_breakdown
+  if (fb) {
+    const b = Number(row.total_amount || 0)
+    const fee = Number(fb.total_sale_fee || 0)
+    return {
+      totalSaleFee:    fee,
+      totalCommission: fee,
+      totalTaxaFixa:   0,
+      anyTaxaFixa:     false,
+      effectivePct:    b > 0 ? (fee / b) * 100 : 0,
     }
-  } else { totalSaleFee = Number(row.total_fee || 0); totalCommission = totalSaleFee }
+  }
+  // fallback: sem fee_breakdown, soma item.total_fee
+  const items = row.items || []
+  const totalSaleFee = items.reduce((s, i) => s + Number(i.total_fee || 0), 0)
   const b = Number(row.total_amount || 0)
-  return { totalSaleFee, totalCommission, totalTaxaFixa, anyTaxaFixa, effectivePct: b > 0 ? (totalSaleFee / b) * 100 : 0 }
+  return { totalSaleFee, totalCommission: totalSaleFee, totalTaxaFixa: 0, anyTaxaFixa: false,
+    effectivePct: b > 0 ? (totalSaleFee / b) * 100 : 0 }
 }
 
 const getSellerShippingCost = (row) => Number(row.shipment?.seller_shipping_cost || 0)
-const getNetMargin = (row) =>
-  Number(row.total_amount || 0) - getOrderFeeBreakdown(row).totalSaleFee - getSellerShippingCost(row)
+const getNetMargin = (row) => {
+  if (row.fee_breakdown) return Number(row.fee_breakdown.net_received || 0)
+  return Number(row.total_amount || 0) - getOrderFeeBreakdown(row).totalSaleFee - getSellerShippingCost(row)
+}
 const calculateMarginPct = (row) => {
   const t = Number(row.total_amount || 0)
   return t === 0 ? 0 : Math.round((getNetMargin(row) / t) * 100)
@@ -882,8 +1025,9 @@ const getOrderStatusClass = (s) =>
   ({ paid: 'pill-green', payment_required: 'pill-orange', cancelled: 'pill-red', confirmed: 'pill-blue' }[s] || 'pill-grey')
 
 const getShipmentStatusLabel = (s) =>
-  ({ pending: 'Pendente', handling: 'Preparando', ready_to_ship: 'Etiqueta Pronta',
-     shipped: 'Em Trânsito', delivered: 'Entregue', not_delivered: 'Não Entregue', cancelled: 'Cancelado' }[s] || s || 'S/ Envio')
+  ({ pending: 'Pendente', handling: 'Preparando', ready_to_print: 'Imprimir Etiqueta',
+     ready_to_ship: 'Pronto p/ Coleta', shipped: 'Em Trânsito',
+     delivered: 'Entregue', not_delivered: 'Não Entregue', cancelled: 'Cancelado' }[s] || s || 'S/ Envio')
 
 const getShipmentStatusLabelFull = (s) =>
   ({ pending: 'Aguard. Envio', handling: 'Aguard. Envio', ready_to_ship: 'Aguard. Envio',
@@ -899,13 +1043,24 @@ const getShipmentIcon = (s) =>
 const getLogisticClass = (lt) => LOGISTIC_META[lt]?.cls || 'log-default'
 const getLogisticIcon  = (lt) => LOGISTIC_META[lt]?.icon || 'local_shipping'
 
+// Status efetivo: combina status + substatus para diferenciar etapas
+// Ex: ready_to_ship + substatus ready_to_print → etiqueta ainda não impressa
+const getEffectiveShipStatus = (shipment) => {
+  if (!shipment) return null
+  if (shipment.status === 'ready_to_ship' && shipment.substatus === 'ready_to_print')
+    return 'ready_to_print'
+  return shipment.status
+}
+
 // Seller precisa agir?
-const needsSellerAction = (status) => status === 'handling' || status === 'ready_to_ship'
-const getSellerActionLabel = (status) =>
-  ({ handling: 'Imprimir etiqueta!', ready_to_ship: 'Aguardando coleta' }[status] || '')
-const getSellerActionDescription = (status) =>
+const needsSellerAction = (effStatus) =>
+  effStatus === 'handling' || effStatus === 'ready_to_print' || effStatus === 'ready_to_ship'
+const getSellerActionLabel = (effStatus) =>
+  ({ handling: 'Imprimir etiqueta!', ready_to_print: 'Imprimir etiqueta!', ready_to_ship: 'Aguardando coleta' }[effStatus] || '')
+const getSellerActionDescription = (effStatus) =>
   ({ handling: 'A etiqueta está disponível no painel do ML. Imprima e cole no pacote antes de enviar.',
-     ready_to_ship: 'O produto está pronto. Aguarde a coleta ou leve o pacote até a agência/ponto de entrega.' }[status] || '')
+     ready_to_print: 'A etiqueta está disponível no painel do ML. Imprima e cole no pacote antes de enviar.',
+     ready_to_ship: 'O produto está pronto. Aguarde a coleta ou leve o pacote até a agência/ponto de entrega.' }[effStatus] || '')
 
 // Mini stepper table — Full (3 estados)
 const getMiniStepClassFull = (status, i) => {
@@ -916,11 +1071,11 @@ const getMiniStepClassFull = (status, i) => {
   if (i === cur) return 'mini-active'
   return 'mini-inactive'
 }
-// Mini stepper table — Seller (5 estados)
-const getMiniStepClassSeller = (status, i) => {
-  const order = { pending: 0, handling: 1, ready_to_ship: 2, shipped: 3, delivered: 4 }
-  const cur = order[status] ?? -1
-  if (status === 'not_delivered' || status === 'cancelled') return i === 0 ? 'mini-cancelled' : 'mini-inactive'
+// Mini stepper table — Seller (5 estados) — recebe status efetivo
+const getMiniStepClassSeller = (effStatus, i) => {
+  const order = { pending: 0, handling: 1, ready_to_print: 1, ready_to_ship: 2, shipped: 3, delivered: 4 }
+  const cur = order[effStatus] ?? -1
+  if (effStatus === 'not_delivered' || effStatus === 'cancelled') return i === 0 ? 'mini-cancelled' : 'mini-inactive'
   if (i < cur)  return 'mini-done'
   if (i === cur) return 'mini-active'
   return 'mini-inactive'
@@ -933,9 +1088,9 @@ const getStepIndexFull = (status) => {
   if (status === 'delivered') return 2
   return -1
 }
-const getStepIndexSeller = (status) => {
-  const o = { pending: 0, handling: 1, ready_to_ship: 2, shipped: 3, delivered: 4 }
-  return o[status] ?? -1
+const getStepIndexSeller = (effStatus) => {
+  const o = { pending: 0, handling: 1, ready_to_print: 1, ready_to_ship: 2, shipped: 3, delivered: 4 }
+  return o[effStatus] ?? -1
 }
 const getTimelineClassFull = (status, i) => {
   const cur = getStepIndexFull(status)
@@ -1009,6 +1164,17 @@ onMounted(() => { loadFacets(); refreshData() })
 /* ─── CELL: PRODUTO ──────────────────────────────── */
 .cell-produto  { min-width: 230px; }
 .produto-main  { display: flex; align-items: flex-start; gap: 10px; }
+
+/* PACK items list in produto cell */
+.pack-items-list  { display: flex; flex-direction: column; gap: 3px; }
+.pack-item-line   { display: flex; align-items: center; gap: 4px; font-size: 11px; line-height: 1.3; }
+.pack-item-qty    { color: #6366f1; font-weight: 700; font-size: 10px; flex-shrink: 0; }
+.pack-item-title  { color: #1a1f36; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+.pack-item-sku    { color: #9aa0ac; font-size: 9px; flex-shrink: 0; }
+
+/* PACK sub-orders below the main ID */
+.pack-sub-orders  { font-size: 9px; color: #b0b8c4; margin-top: 2px; letter-spacing: 0; }
+
 .thumb-wrap    { position: relative; flex-shrink: 0; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; border: 1px solid #e8eaed; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
 .thumb-img     { width: 100%; height: 100%; object-fit: cover; }
 .thumb-count   { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,.55); color: white; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px 0 0 0; }
@@ -1162,6 +1328,15 @@ onMounted(() => { loadFacets(); refreshData() })
 .audit-row     { display: flex; justify-content: space-between; font-size: 10px; color: #718096; }
 .audit-row.hl  { color: #e53e3e; font-weight: 600; }
 .audit-row strong { font-weight: 600; }
+
+/* ─── FLEX FREIGHT NOTE ─────────────────────────── */
+.flex-freight-note {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 4px;
+}
+.flex-freight-title { font-size: 12px; font-weight: 700; color: #0f766e; }
+.flex-freight-desc  { font-size: 11px; color: #5eead4; margin-top: 2px; line-height: 1.4; color: #0d9488; }
 
 /* ─── ACTION CALLOUT (logistics dialog) ─────────── */
 .action-callout {
