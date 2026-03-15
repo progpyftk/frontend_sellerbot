@@ -460,6 +460,22 @@
               </div>
             </q-td>
 
+            <!-- ⑩ Lucro (c/ CMV) ─────────────────────── -->
+            <q-td key="lucro" :props="props" align="right">
+              <div class="cell-liquido" v-if="props.row.net_after_cmv != null">
+                <div :class="['liquido-main', props.row.net_after_cmv >= 0 ? 'pos' : 'neg']">
+                  {{ formatCurrency(props.row.net_after_cmv) }}
+                </div>
+                <div :class="['margin-pill', props.row.net_after_cmv >= 0 ? 'margin-pos' : 'margin-neg']">
+                  {{ calcLucroPct(props.row) }}% margem
+                </div>
+                <div class="liquido-hint">
+                  CMV: {{ formatCurrency(props.row.total_cmv) }}
+                </div>
+              </div>
+              <div v-else class="text-caption text-grey-5">S/ CMV</div>
+            </q-td>
+
           </q-tr>
         </template>
 
@@ -624,6 +640,27 @@
                     </span>
                   </div>
                 </div>
+                <template v-if="selectedOrder.total_cmv != null">
+                  <div class="receipt-row sub-row">
+                    <div class="receipt-label-g">
+                      <span class="receipt-label">(-) CMV (custo mercadoria)</span>
+                      <span class="receipt-sub">Custo médio do Tiny ERP por SKU</span>
+                    </div>
+                    <span class="receipt-value ded-t">-{{ formatCurrency(selectedOrder.total_cmv) }}</span>
+                  </div>
+                  <div class="receipt-sep thick" />
+                  <div class="receipt-row total-row">
+                    <span class="receipt-label-bold">(=) LUCRO REAL</span>
+                    <div class="receipt-val-g">
+                      <span :class="['receipt-total', selectedOrder.net_after_cmv >= 0 ? 'pos-t' : 'neg-t']">
+                        {{ formatCurrency(selectedOrder.net_after_cmv) }}
+                      </span>
+                      <span :class="['margin-pill', selectedOrder.net_after_cmv >= 0 ? 'margin-pos' : 'margin-neg']">
+                        {{ calcLucroPct(selectedOrder) }}% margem
+                      </span>
+                    </div>
+                  </div>
+                </template>
                 <template v-if="getPaymentMethodLabel(selectedOrder)">
                   <div class="receipt-sep" />
                   <div class="receipt-row">
@@ -911,6 +948,7 @@ const columns = [
   { name: 'tarifa',       label: 'TARIFA ML',          field: 'total_fee',     align: 'right', style: 'min-width:90px' },
   { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px' },
   { name: 'liquido',      label: 'LÍQUIDO',            field: 'net',           align: 'right', style: 'min-width:105px' },
+  { name: 'lucro',        label: 'LUCRO (c/ CMV)',      field: 'net_after_cmv', align: 'right', style: 'min-width:105px' },
 ]
 
 // ============================================================================
@@ -1253,6 +1291,11 @@ const getNetMargin = (row) => {
 const calculateMarginPct = (row) => {
   const t = Number(row.total_amount || 0)
   return t === 0 ? 0 : Math.round((getNetMargin(row) / t) * 100)
+}
+const calcLucroPct = (row) => {
+  const t = Number(row.total_amount || 0)
+  if (t === 0 || row.net_after_cmv == null) return 0
+  return Math.round((Number(row.net_after_cmv) / t) * 100)
 }
 
 // ============================================================================

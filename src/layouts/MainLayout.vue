@@ -109,6 +109,7 @@ const menuSections = [
       { label: "Detalhe do Anúncio", icon: "mdi-chart-bar", route: "item-details" },
 
       { label: "Vendas e Envios", icon: "local_mall", route: "orders" },
+      { label: "Produtos (CMV)", icon: "inventory_2", route: "products" },
     ],
   },
   {
