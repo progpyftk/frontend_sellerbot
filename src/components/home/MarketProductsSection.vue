@@ -1,156 +1,212 @@
-<!-- src/components/home/MarketProductsSection.vue -->
 <template>
-  <section class="market-products-section q-py-xl">
+  <section class="shopee-section" id="shopee">
     <div class="content-wrapper">
-      <div class="row items-start">
+      <div class="row items-center q-col-gutter-xl">
+
+        <!-- Texto lado esquerdo -->
         <div class="col-12 col-md-6">
-          <div class="image-container">
-            <div class="circle-backdrop"></div>
-            <img alt="Market Products" class="feature-image" />
-          </div>
-        </div>
-        <div class="col-12 col-md-6 q-pl-md">
-          <p class="text-purple q-mb-xs">Grow your Business</p>
-          <h2 class="text-h3 q-mb-md">Market Your Products</h2>
-          <p class="q-mb-lg text-grey-8">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quos quidem tibi
-            studiose et diligenter tractandos.
+          <div class="sec-eyebrow">Shopee</div>
+          <h2 class="sec-title">
+            Expanda para a Shopee<br />
+            <span class="sec-accent">com quem já sabe o caminho</span>
+          </h2>
+          <p class="sec-sub">
+            A Shopee cresce rapidamente no Brasil e representa uma oportunidade real
+            de diversificar suas vendas. A Krivos cuida de todo o processo, do
+            onboarding até a gestão contínua da sua operação, sem abandonar o Mercado Livre.
           </p>
 
-          <div class="row q-col-gutter-md">
-            <div class="col-12 col-sm-6" v-for="(item, index) in marketingItems" :key="index">
-              <div class="marketing-item">
-                <q-icon :name="item.icon" color="purple" size="32px" class="q-mb-sm" />
-                <h4 class="text-weight-bold q-mb-xs">{{ item.title }}</h4>
-                <p class="text-grey-8">{{ item.description }}</p>
+          <div class="items-grid">
+            <div v-for="item in items" :key="item.title" class="item-row">
+              <div class="item-icon" :style="{ background: 'rgba(249,115,22,.1)' }">
+                <q-icon :name="item.icon" size="22px" style="color:#f97316" />
+              </div>
+              <div>
+                <div class="item-title">{{ item.title }}</div>
+                <div class="item-desc">{{ item.desc }}</div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Visual lado direito -->
+        <div class="col-12 col-md-6">
+          <div class="visual-block">
+            <div class="img-frame">
+              <div class="img-badge shopee-badge">
+                <span class="badge-dot-orange" />
+                Shopee + ML
+              </div>
+              <img
+                src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=1200&q=80&auto=format&fit=crop"
+                alt="E-commerce multi-canal — Shopee e Mercado Livre"
+                class="shopee-img"
+              />
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>
 </template>
 
 <script>
-import { defineComponent } from "vue";
-
+import { defineComponent } from 'vue'
 export default defineComponent({
-  name: "MarketProductsSection",
-  data() {
+  name: 'MarketProductsSection',
+  data () {
     return {
-      marketingItems: [
+      items: [
         {
-          icon: "sell",
-          title: "Bundles & upsells",
-          description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed videbimus.",
+          icon: 'storefront',
+          title: 'Onboarding completo',
+          desc: 'Criação e configuração da loja, portfólio inicial e primeiras vendas acompanhadas.',
         },
         {
-          icon: "mail",
-          title: "Email marketing",
-          description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed videbimus.",
+          icon: 'campaign',
+          title: 'Gestão de campanhas',
+          desc: 'Participação em campanhas da Shopee, precificação estratégica e promoções.',
         },
         {
-          icon: "discount",
-          title: "Discount codes",
-          description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed videbimus.",
+          icon: 'sync_alt',
+          title: 'Sincronização de estoque',
+          desc: 'Integração de estoque entre Mercado Livre e Shopee para evitar rupturas.',
         },
         {
-          icon: "loyalty",
-          title: "Lead magnets",
-          description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed videbimus.",
+          icon: 'insights',
+          title: 'Performance e métricas',
+          desc: 'Acompanhamento semanal dos resultados com relatórios de ROI.',
         },
-      ],
-    };
-  },
-});
+      ]
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>
-.market-products-section {
-  background-color: white;
-  position: relative;
-  overflow: hidden;
-  font-family: "Roboto", sans-serif;
+.shopee-section {
+  background: #fff;
+  padding: 96px 20px;
 }
 
-.text-purple {
-  color: #8e44ad;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
+.content-wrapper { max-width: 1280px; margin: 0 auto; }
 
-.text-h3 {
-  font-size: 2.5rem;
+.sec-eyebrow {
+  font-size: .75rem;
   font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #f97316;
+  margin-bottom: 14px;
+}
+
+.sec-title {
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 16px;
   line-height: 1.2;
+  letter-spacing: -.5px;
 }
 
-.marketing-item {
-  margin-bottom: 1rem;
+.sec-accent { color: #0d9488; }
 
-  h4 {
-    font-size: 1.1rem;
-    margin-bottom: 0.25rem;
-  }
-
-  p {
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
+.sec-sub {
+  font-size: .97rem;
+  color: #64748b;
+  line-height: 1.7;
+  margin: 0 0 36px;
 }
 
-.image-container {
-  position: relative;
-  width: 100%;
-  height: 500px;
+.items-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.item-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.item-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 3px;
+}
+
+.item-desc {
+  font-size: .86rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Visual */
+.visual-block {
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.circle-backdrop {
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  background-color: #f3e5f5;
-  border-radius: 50%;
-  animation: pulse 4s infinite ease-in-out;
-}
-
-.feature-image {
+.img-frame {
   position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 16px 56px rgba(15,23,42,.1);
+  width: 100%;
+  max-width: 520px;
+}
+
+.img-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
   z-index: 2;
-  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .75rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  letter-spacing: .4px;
+}
+
+.shopee-badge {
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  color: #fff;
+}
+
+.badge-dot-orange {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.8);
+}
+
+.shopee-img {
+  display: block;
+  width: 100%;
   height: auto;
+  min-height: 280px;
+  object-fit: cover;
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1) rotate(0deg);
-  }
-
-  50% {
-    transform: scale(1.05) rotate(3deg);
-  }
-
-  100% {
-    transform: scale(1) rotate(0deg);
-  }
-}
-
-@media (max-width: 600px) {
-  .image-container {
-    height: 300px;
-  }
-
-  .circle-backdrop {
-    width: 250px;
-    height: 250px;
-  }
+@media (max-width: 768px) {
+  .img-frame { max-width: 100%; }
 }
 </style>

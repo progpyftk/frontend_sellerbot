@@ -1,32 +1,19 @@
-<!-- src/components/home/LevelUpSkillsSection.vue -->
 <template>
-  <section class="level-up-skills-section q-py-xl">
+  <section class="howto-section">
     <div class="content-wrapper">
-      <div class="text-center q-mb-xl">
-        <p class="text-purple q-mb-sm">Free resources to</p>
-        <h2 class="text-h2 q-mb-lg">Level-up your selling skills</h2>
-      </div>
+      <div class="sec-eyebrow">Simples de usar</div>
+      <h2 class="sec-title">Comece a operar em minutos</h2>
+      <p class="sec-sub">Sem configuração complexa. Conecte sua conta e o SellerBot cuida do resto.</p>
 
-      <div class="row q-col-gutter-md">
-        <div class="col-12 col-md-4" v-for="(resource, index) in resources" :key="index">
-          <q-card flat bordered class="resource-card">
-            <q-card-section>
-              <div class="row q-mb-sm">
-                <q-chip v-for="tag in resource.tags" :key="tag" color="grey-3" text-color="grey-8" dense>
-                  {{ tag }}
-                </q-chip>
-              </div>
-              <h3 class="text-h6 q-mb-md resource-title">{{ resource.title }}</h3>
-              <div class="row items-center justify-between">
-                <q-btn flat color="purple" label="Read More →" class="read-more-btn" />
-                <div class="row items-center">
-                  <q-icon name="favorite_border" color="grey" size="sm" />
-                  <span class="q-ml-sm text-grey">{{ resource.likes }}</span>
-                </div>
-              </div>
-            </q-card-section>
-            <q-img :src="resource.image" :ratio="16 / 9" />
-          </q-card>
+      <div class="steps">
+        <div v-for="(step, i) in steps" :key="step.title" class="step">
+          <div class="step-num">{{ i + 1 }}</div>
+          <div class="step-connector" v-if="i < steps.length - 1" />
+          <div class="step-icon-wrap">
+            <q-icon :name="step.icon" size="28px" color="teal-7" />
+          </div>
+          <h3 class="step-title">{{ step.title }}</h3>
+          <p class="step-desc">{{ step.desc }}</p>
         </div>
       </div>
     </div>
@@ -34,78 +21,123 @@
 </template>
 
 <script>
-import { defineComponent } from "vue";
-
+import { defineComponent } from 'vue'
 export default defineComponent({
-  name: "LevelUpSkillsSection",
-  data() {
+  name: 'LevelUpSkillsSection',
+  data () {
     return {
-      resources: [
+      steps: [
         {
-          tags: ["Commerce", "Conversion", "Profit"],
-          title: "Increase conversion rates and learn how to manage abandoned carts",
-          likes: 112,
+          icon: 'link',
+          title: 'Conecte sua conta ML',
+          desc: 'Autorize o acesso ao Mercado Livre via OAuth em menos de 1 minuto. Sem senha, sem risco.',
         },
         {
-          tags: ["Orders", "Checkout", "Conversion"],
-          title: "How order bumps can help increasing your revenue and conversions",
-          likes: 319,
+          icon: 'sync',
+          title: 'Sincronize seus dados',
+          desc: 'Anúncios, pedidos, histórico de vendas — tudo sincronizado automaticamente.',
         },
         {
-          tags: ["Conversion", "Sales", "Products"],
-          title: "How a rich and well maintained catalogue easily converts customers",
-          likes: 519,
+          icon: 'dashboard',
+          title: 'Gerencie e lucre mais',
+          desc: 'Acesse o painel, tome decisões com dados reais e escale sua operação.',
         },
-      ],
-    };
-  },
-});
+      ]
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>
-.level-up-skills-section {
-  background-color: white;
-  position: relative;
-  padding-bottom: 100px; // Espaço para a onda
+.howto-section {
+  background: #f0fdf9;
+  padding: 96px 20px;
 }
 
-.text-purple {
-  color: #8e44ad;
-  font-size: 1rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
+.content-wrapper { max-width: 1100px; margin: 0 auto; }
 
-.text-h2 {
-  font-size: 2.5rem;
+.sec-eyebrow {
+  text-align: center;
+  font-size: .75rem;
   font-weight: 700;
-  line-height: 1.2;
-  color: #363636;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #0d9488;
+  margin-bottom: 14px;
 }
 
-.resource-card {
-  height: 100%;
+.sec-title {
+  text-align: center;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 14px;
+  letter-spacing: -.5px;
+}
+
+.sec-sub {
+  text-align: center;
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0 auto 72px;
+  max-width: 520px;
+  line-height: 1.7;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 48px;
+  position: relative;
+}
+
+.step {
   display: flex;
   flex-direction: column;
-  border-radius: 12px; // Cantos mais arredondados
+  align-items: center;
+  text-align: center;
+  position: relative;
 }
 
-.resource-title {
-  font-weight: 700;
+.step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0d9488;
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 0 0 6px rgba(13,148,136,.15);
+}
+
+.step-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: rgba(13,148,136,.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  border: 1.5px solid rgba(13,148,136,.2);
+}
+
+.step-title {
   font-size: 1.1rem;
-  line-height: 1.4;
-  font-family: "Arial", sans-serif; // Ajuste para uma fonte mais parecida com o original
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px;
 }
 
-.read-more-btn {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-@media (max-width: 600px) {
-  .text-h2 {
-    font-size: 2rem;
-  }
+.step-desc {
+  font-size: .88rem;
+  color: #64748b;
+  line-height: 1.65;
+  max-width: 240px;
+  margin: 0 auto;
 }
 </style>

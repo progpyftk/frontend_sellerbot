@@ -1,33 +1,23 @@
-<!-- src/components/home/CreatorsCommunitySection.vue -->
 <template>
-  <section class="creators-community-section q-py-xl">
+  <section class="testimonials-section">
     <div class="content-wrapper">
-      <div class="text-center q-mb-lg">
-        <p class="text-white q-mb-sm">A home for your business</p>
-        <h2 class="text-h2 text-white q-mb-md">Join your fellow creators</h2>
-        <p class="text-white q-mb-xl" style="max-width: 600px; margin: 0 auto">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quamquam te quidem
-          video minime esse deterritum. Quae cum dixisset, finem ille cum dolor.
-        </p>
-      </div>
+      <div class="sec-eyebrow">O que dizem nossos sellers</div>
+      <h2 class="sec-title">Quem usa, recomenda</h2>
+      <p class="sec-sub">Sellers de todo o Brasil já controlam suas operações com o SellerBot.</p>
 
-      <div class="row q-col-gutter-lg">
-        <div class="col-12 col-md-3" v-for="(creator, index) in creators" :key="index">
-          <q-card flat bordered class="creator-card">
-            <q-card-section>
-              <q-icon :name="creator.icon" color="purple" size="36px" class="q-mb-sm" />
-              <p class="q-mb-lg">{{ creator.quote }}</p>
-              <div class="row items-center">
-                <q-avatar size="40px" class="q-mr-sm">
-                  <img :src="creator.avatar" :alt="creator.name" />
-                </q-avatar>
-                <div>
-                  <p class="text-weight-bold q-mb-none">{{ creator.name }}</p>
-                  <p class="text-caption">{{ creator.title }}</p>
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
+      <div class="cards-grid">
+        <div v-for="t in testimonials" :key="t.name" class="tcard">
+          <div class="tcard-stars">
+            <q-icon v-for="n in 5" :key="n" name="star" size="14px" style="color:#f59e0b" />
+          </div>
+          <p class="tcard-quote">{{ t.quote }}</p>
+          <div class="tcard-author">
+            <div class="tcard-avatar">{{ t.initials }}</div>
+            <div>
+              <div class="tcard-name">{{ t.name }}</div>
+              <div class="tcard-role">{{ t.role }}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -35,88 +25,127 @@
 </template>
 
 <script>
-import { defineComponent } from "vue";
-
+import { defineComponent } from 'vue'
 export default defineComponent({
-  name: "CreatorsCommunitySection",
-  data() {
+  name: 'CreatorsCommunitySection',
+  data () {
     return {
-      creators: [
+      testimonials: [
         {
-          icon: "camera_alt",
-          quote:
-            '"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quamquam te quidem video minime esse deterritum. Quae cum dixisset, finem ille. Eum tum adesse."',
-          name: "Sandra Müller",
-          title: "Founder @Livetalk",
-          avatar: "https://randomuser.me/api/portraits/women/65.jpg",
+          quote: '"Antes eu não sabia quanto lucrava em cada venda. O SellerBot me mostrou que várias categorias estavam no negativo depois do CMV. Salvou meu negócio."',
+          name: 'Ricardo Alves',
+          role: 'Seller full-time — Eletrônicos',
+          initials: 'RA',
         },
         {
-          icon: "explore",
-          quote:
-            '"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quamquam te quidem video minime esse deterritum. Quae cum dixisset, finem ille."',
-          name: "Eddy Williams",
-          title: "Founder @Vonmo",
-          avatar: "https://randomuser.me/api/portraits/men/79.jpg",
+          quote: '"Altero preço de 300 anúncios em 30 segundos. O que eu fazia em 2 horas hoje faço antes do café."',
+          name: 'Patrícia Mendes',
+          role: 'Loja MogiVitta — Casa & Jardim',
+          initials: 'PM',
         },
         {
-          icon: "article",
-          quote:
-            '"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quamquam te quidem video minime esse deterritum. Quae cum dixisset, finem ille. Eum tum adesse, cum dolor omnis absit"',
-          name: "Navad Prasad",
-          title: "Founder @Brookers",
-          avatar: "https://randomuser.me/api/portraits/men/55.jpg",
+          quote: '"A integração com o Tiny ERP fechou o ciclo. O CMV já entra automático, o lucro real aparece ali na tela. Produto essencial."',
+          name: 'Fábio Corrêa',
+          role: 'Operação multi-conta — Ferramentas',
+          initials: 'FC',
         },
         {
-          icon: "chat",
-          quote:
-            '"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quamquam te quidem video minime esse deterritum."',
-          name: "Christina Chu",
-          title: "Founder @Bitbreaker",
-          avatar: "https://randomuser.me/api/portraits/women/37.jpg",
+          quote: '"O painel financeiro de cada pedido é incrível. Vejo comissão, frete, CMV e o líquido — tudo detalhado como o ML nunca mostrou."',
+          name: 'Ana Luísa Rocha',
+          role: 'Seller desde 2019 — Beleza & Saúde',
+          initials: 'AL',
         },
-      ],
-    };
-  },
-});
+      ]
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>
-.creators-community-section {
-  background-color: #8e44ad;
-  color: white;
-  font-family: "Roboto", sans-serif;
+.testimonials-section {
+  background: linear-gradient(135deg, #0f172a 0%, #134e4a 100%);
+  padding: 96px 20px;
 }
 
-.text-h2 {
-  font-size: 2.5rem;
+.content-wrapper { max-width: 1200px; margin: 0 auto; }
+
+.sec-eyebrow {
+  text-align: center;
+  font-size: .75rem;
   font-weight: 700;
-  line-height: 1.2;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #5eead4;
+  margin-bottom: 14px;
 }
 
-.creator-card {
-  height: 100%;
-  background-color: white;
-  border-radius: 8px;
+.sec-title {
+  text-align: center;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0 0 14px;
+  letter-spacing: -.5px;
+}
 
-  .q-card__section {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
+.sec-sub {
+  text-align: center;
+  font-size: 1rem;
+  color: #94a3b8;
+  margin: 0 auto 64px;
+  max-width: 480px;
+  line-height: 1.7;
+}
 
-  p {
-    color: #363636;
-  }
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
 
-  .text-caption {
-    color: #666;
+.tcard {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  backdrop-filter: blur(6px);
+  transition: background .25s, transform .25s;
+
+  &:hover {
+    background: rgba(255,255,255,.1);
+    transform: translateY(-4px);
   }
 }
 
-@media (max-width: 600px) {
-  .text- h2 {
-    font-size: 2rem;
-  }
+.tcard-stars { display: flex; gap: 2px; }
+
+.tcard-quote {
+  font-size: .9rem;
+  line-height: 1.65;
+  color: #cbd5e1;
+  margin: 0;
+  flex: 1;
 }
+
+.tcard-author { display: flex; align-items: center; gap: 12px; }
+
+.tcard-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .82rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.tcard-name { font-size: .88rem; font-weight: 700; color: #f1f5f9; }
+.tcard-role { font-size: .78rem; color: #64748b; margin-top: 2px; }
 </style>

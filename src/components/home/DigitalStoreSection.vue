@@ -1,175 +1,169 @@
-<!-- src/components/home/DigitalStore.vue -->
 <template>
-  <section class="digital-store-section q-py-xl">
+  <section class="services-section" id="services">
     <div class="content-wrapper">
-      <div class="row items-center">
-        <div class="col-12 text-center q-mb-lg">
-          <p class="text-purple q-mb-sm">Build your Business</p>
-          <h2 class="text-h3 q-mb-md">Create your Digital Store</h2>
-        </div>
-        <div class="col-12 col-md-8 offset-md-2">
-          <div class="store-image-container">
-            <div class="circle circle-5"></div>
-            <div class="circle circle-6"></div>
-            <img
-              src="https://vulk.cssninja.io/assets/illustrations/apps/commerce-app.png"
-              alt="Digital Store"
-              class="store-image"
-            />
-            <div class="feature simple-to-use">
-              <h4>Simple to use</h4>
-              <p>
-                Our app is very intuitive and simple to use, even for tech-savy users.
-              </p>
-            </div>
-            <div class="feature profit">
-              <h4>90% Profit</h4>
-              <p>We only take a small part of your earnings every month, for the best.</p>
-            </div>
-            <div class="feature secure">
-              <h4>Secure</h4>
-              <p>
-                Our payment gateways integrations are very reliable, secure and private.
-              </p>
-            </div>
+      <div class="sec-eyebrow">O que fazemos</div>
+      <h2 class="sec-title">Uma consultoria completa para sua operação</h2>
+      <p class="sec-sub">
+        Da estratégia à execução — a Krivos combina consultoria especializada com
+        tecnologia proprietária para transformar sua operação nos marketplaces.
+      </p>
+
+      <div class="services-grid">
+        <div v-for="f in features" :key="f.title" class="feat-card">
+          <div class="feat-icon-wrap" :style="{ background: f.bg }">
+            <q-icon :name="f.icon" size="28px" :style="{ color: f.color }" />
           </div>
+          <h3 class="feat-title">{{ f.title }}</h3>
+          <p class="feat-desc">{{ f.desc }}</p>
+          <ul class="feat-list">
+            <li v-for="item in f.items" :key="item">
+              <q-icon name="check_circle" size="14px" :style="{ color: f.color, marginRight: '6px', verticalAlign: 'middle' }" />
+              {{ item }}
+            </li>
+          </ul>
         </div>
       </div>
     </div>
-    <div class="circle circle-1"></div>
-    <div class="circle circle-2"></div>
-    <div class="circle circle-3"></div>
-    <div class="circle circle-4"></div>
   </section>
 </template>
 
 <script>
-import { defineComponent } from "vue";
-
+import { defineComponent } from 'vue'
 export default defineComponent({
-  name: "DigitalStore",
-});
+  name: 'DigitalStoreSection',
+  data () {
+    return {
+      features: [
+        {
+          icon: 'psychology',
+          title: 'Consultoria Estratégica',
+          desc: 'Diagnóstico completo da sua operação, identificação de gargalos e plano de ação para crescer com margem.',
+          bg: 'rgba(99,102,241,.1)',
+          color: '#6366f1',
+          items: ['Análise de portfólio', 'Precificação inteligente', 'Mapeamento de custos', 'Estratégia de marketplaces'],
+        },
+        {
+          icon: 'smart_toy',
+          title: 'SellerBot — Ferramenta Proprietária',
+          desc: 'Nossa plataforma exclusiva para gestão de anúncios, pedidos e financeiro no Mercado Livre.',
+          bg: 'rgba(13,148,136,.1)',
+          color: '#0d9488',
+          items: ['Sync automático ML', 'CMV por produto', 'Resumo financeiro real', 'Gestão de preços em massa'],
+        },
+        {
+          icon: 'shopping_bag',
+          title: 'Shopee Management',
+          desc: 'Expansão e gestão da sua operação na Shopee com acompanhamento especializado.',
+          bg: 'rgba(245,158,11,.1)',
+          color: '#f59e0b',
+          items: ['Onboarding Shopee', 'Gestão de anúncios', 'Performance tracking', 'Sync de estoque'],
+        },
+        {
+          icon: 'trending_up',
+          title: 'Gestão de Performance',
+          desc: 'Acompanhamento contínuo de métricas, ROI e resultado real da sua operação.',
+          bg: 'rgba(99,102,241,.1)',
+          color: '#6366f1',
+          items: ['KPIs da operação', 'Relatórios semanais', 'Lucro real por canal', 'Metas e crescimento'],
+        },
+      ]
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>
-.digital-store-section {
-  background-color: white;
-  position: relative;
-  overflow: hidden;
+.services-section {
+  background: #fff;
+  padding: 96px 20px;
 }
 
-.text-purple {
-  color: #8e44ad;
-}
+.content-wrapper { max-width: 1280px; margin: 0 auto; }
 
-.store-image-container {
-  position: relative;
+.sec-eyebrow {
   text-align: center;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #0d9488;
+  margin-bottom: 16px;
 }
 
-.store-image {
-  max-width: 100%;
-  height: auto;
-  position: relative;
-  z-index: 2;
+.sec-title {
+  text-align: center;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 16px;
+  letter-spacing: -.5px;
 }
 
-.feature {
-  position: absolute;
-  background: white;
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  max-width: 200px;
-  z-index: 3;
-
-  h4 {
-    font-size: 1.1rem;
-    margin-bottom: 5px;
-  }
-
-  p {
-    font-size: 0.9rem;
-    color: #666;
-  }
+.sec-sub {
+  text-align: center;
+  font-size: 1rem;
+  color: #64748b;
+  max-width: 580px;
+  margin: 0 auto 64px;
+  line-height: 1.7;
 }
 
-.simple-to-use {
-  left: 0;
-  top: 20%;
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 28px;
 }
 
-.profit {
-  right: 0;
-  top: 50%;
-}
+.feat-card {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 36px 32px;
+  transition: box-shadow .25s, transform .25s;
+  background: #fff;
 
-.secure {
-  left: 10%;
-  bottom: 10%;
-}
-
-@media (max-width: 600px) {
-  .feature {
-    position: static;
-    margin: 20px auto;
+  &:hover {
+    box-shadow: 0 12px 40px rgba(13,148,136,.1);
+    transform: translateY(-4px);
   }
 }
 
-.circle {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.1;
+.feat-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
-.circle-1 {
-  width: 300px;
-  height: 300px;
-  background-color: #8e44ad;
-  top: -150px;
-  left: -150px;
+.feat-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px;
 }
 
-.circle-2 {
-  width: 200px;
-  height: 200px;
-  background-color: #3498db;
-  top: 20%;
-  right: -100px;
+.feat-desc {
+  font-size: .9rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 18px;
 }
 
-.circle-3 {
-  width: 150px;
-  height: 150px;
-  background-color: #e74c3c;
-  bottom: 10%;
-  left: 5%;
-}
+.feat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 
-.circle-4 {
-  width: 100px;
-  height: 100px;
-  background-color: #2ecc71;
-  bottom: -50px;
-  right: 10%;
-}
-
-.circle-5 {
-  width: 400px;
-  height: 400px;
-  background-color: #f1c40f;
-  top: -50px;
-  left: -100px;
-  z-index: 1;
-}
-
-.circle-6 {
-  width: 300px;
-  height: 300px;
-  background-color: #1abc9c;
-  bottom: -50px;
-  right: -50px;
-  z-index: 1;
+  li {
+    font-size: .86rem;
+    color: #475569;
+    display: flex;
+    align-items: center;
+  }
 }
 </style>
-
