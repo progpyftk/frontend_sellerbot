@@ -21,219 +21,415 @@
       </div>
     </div>
 
-    <!-- ── FILTROS ───────────────────────────────────────── -->
-    <div class="filters-bar">
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- FILTROS                                               -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="fb">
 
-      <!-- Linha 1: filtros principais -->
-      <div class="row q-col-gutter-sm items-center">
-        <div class="col-12 col-md-3">
-          <q-input v-model="filters.search" debounce="600" placeholder="Nº Pedido, comprador, SKU..."
-            outlined dense bg-color="white" clearable color="teal-7" class="filter-input">
-            <template #prepend><q-icon name="search" color="grey-5" size="18px" /></template>
-          </q-input>
+      <!-- ── Toolbar: Busca + Ações ─────────────────────── -->
+      <div class="fb-toolbar">
+        <div class="fb-search" :class="{ focused: searchFocused, filled: !!filters.search }">
+          <q-icon name="search" size="18px" class="fb-search-icon" />
+          <input
+            v-model="filters.search"
+            class="fb-search-input"
+            placeholder="Buscar por título, SKU, nº pedido, comprador..."
+            @focus="searchFocused = true"
+            @blur="searchFocused = false"
+          />
+          <transition name="fade">
+            <button v-if="filters.search" class="fb-search-clear" @click="filters.search = ''">
+              <q-icon name="close" size="14px" />
+            </button>
+          </transition>
         </div>
-        <div class="col-6 col-md-2">
-          <q-select v-model="filters.account" :options="accountOptions" option-value="id" option-label="nickname"
-            label="Conta" outlined dense bg-color="white" emit-value map-options multiple clearable
-            color="teal-7" class="filter-input">
-            <template #prepend><q-icon name="storefront" color="grey-5" size="16px" /></template>
-          </q-select>
+
+        <div class="fb-toolbar-actions">
+
+          <!-- Grupo: Ordenar + Visões -->
+          <div class="fb-btn-group">
+            <q-btn-dropdown flat dense no-icon-animation unelevated
+              :label="currentSortLabel" icon="swap_vert"
+              class="fb-tbtn" color="grey-7" size="sm">
+              <q-list dense style="min-width:200px">
+                <q-item v-for="opt in sortOptions" :key="opt.field + opt.desc"
+                  clickable v-close-popup @click="applySort(opt)">
+                  <q-item-section>{{ opt.label }}</q-item-section>
+                  <q-item-section side v-if="pagination.sortBy === opt.field && pagination.descending === opt.desc">
+                    <q-icon name="check" color="teal-7" size="14px" />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+
+            <q-btn-dropdown flat dense no-icon-animation unelevated
+              icon="bolt" label="Visões"
+              class="fb-tbtn" color="grey-7" size="sm">
+              <q-list dense style="min-width:210px">
+                <q-item-label header class="fb-menu-header">Expedição</q-item-label>
+                <q-item clickable v-close-popup @click="setFilterHandling">
+                  <q-item-section avatar><q-icon name="print" color="orange-7" size="16px" /></q-item-section>
+                  <q-item-section>Aguardando Etiqueta</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="setFilterLabelPrint">
+                  <q-item-section avatar><q-icon name="label" color="deep-orange-7" size="16px" /></q-item-section>
+                  <q-item-section>Imprimir Etiqueta</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="setFilterReadyToShip">
+                  <q-item-section avatar><q-icon name="inventory" color="teal-7" size="16px" /></q-item-section>
+                  <q-item-section>Pronto para Coleta</q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item-label header class="fb-menu-header">Envio</q-item-label>
+                <q-item clickable v-close-popup @click="setFilterInTransit">
+                  <q-item-section avatar><q-icon name="local_shipping" color="blue-7" size="16px" /></q-item-section>
+                  <q-item-section>Em Trânsito</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="setFilterDelivered">
+                  <q-item-section avatar><q-icon name="check_circle" color="green-7" size="16px" /></q-item-section>
+                  <q-item-section>Entregues</q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item-label header class="fb-menu-header">Logística</q-item-label>
+                <q-item clickable v-close-popup @click="setFilterFlex">
+                  <q-item-section avatar><q-icon name="directions_bike" color="green-7" size="16px" /></q-item-section>
+                  <q-item-section>Só Flex</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="setFilterFull">
+                  <q-item-section avatar><q-icon name="warehouse" color="orange-7" size="16px" /></q-item-section>
+                  <q-item-section>Só Full</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="setFilterAgencia">
+                  <q-item-section avatar><q-icon name="store" color="purple-7" size="16px" /></q-item-section>
+                  <q-item-section>Só Agência</q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item-label header class="fb-menu-header">Outros</q-item-label>
+                <q-item clickable v-close-popup @click="setFilterCatalog">
+                  <q-item-section avatar><q-icon name="auto_awesome" color="indigo-7" size="16px" /></q-item-section>
+                  <q-item-section>Catálogo</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="setFilterCancelled">
+                  <q-item-section avatar><q-icon name="cancel" color="red-7" size="16px" /></q-item-section>
+                  <q-item-section>Cancelados</q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
+
+          <!-- Grupo: Filtros avançados -->
+          <div class="fb-btn-group">
+            <button :class="['fb-tbtn', advancedFilterCount > 0 && 'fb-tbtn--active']"
+              @click="showAdvanced = true">
+              <q-icon name="tune" size="15px" />
+              <span>Filtros</span>
+              <span v-if="advancedFilterCount > 0" class="fb-adv-badge">{{ advancedFilterCount }}</span>
+            </button>
+          </div>
+
+          <!-- Limpar -->
+          <transition name="fade">
+            <button v-if="hasActiveFilters" class="fb-clear-btn" @click="clearFilters">
+              <q-icon name="filter_alt_off" size="14px" />
+              <span>Limpar</span>
+            </button>
+          </transition>
+
         </div>
-        <div class="col-6 col-md-2">
-          <q-select v-model="filters.status" :options="orderStatusOptions" option-value="value"
-            option-label="label" label="Status Pedido" outlined dense bg-color="white" emit-value map-options
-            multiple clearable color="teal-7" class="filter-input">
-            <template #prepend><q-icon name="flag" color="grey-5" size="16px" /></template>
-          </q-select>
-        </div>
-        <div class="col-6 col-md-2">
-          <q-select v-model="filters.shipment_status" :options="shipmentStatusOptions" option-value="value"
-            option-label="label" label="Status Envio" outlined dense bg-color="white" emit-value map-options
-            multiple clearable color="teal-7" class="filter-input">
-            <template #prepend><q-icon name="local_shipping" color="grey-5" size="16px" /></template>
-          </q-select>
-        </div>
-        <div class="col-6 col-md-3 row q-gutter-x-xs items-center justify-end no-wrap">
-          <!-- Ordenação -->
-          <q-btn-dropdown flat dense color="grey-7" :label="currentSortLabel" icon="swap_vert" size="sm" no-icon-animation
-            style="max-width:130px;overflow:hidden">
-            <q-list dense style="min-width:200px">
-              <q-item v-for="opt in sortOptions" :key="opt.field + opt.desc" clickable v-close-popup @click="applySort(opt)">
-                <q-item-section>{{ opt.label }}</q-item-section>
-                <q-item-section side v-if="pagination.sortBy === opt.field && pagination.descending === opt.desc">
-                  <q-icon name="check" color="teal-7" size="14px" />
+      </div>
+
+      <!-- ── Filtros rápidos: comboboxes ─────────────────── -->
+      <div class="fb-filterbar">
+
+        <!-- Conta -->
+        <div class="fb-combo" :class="filters.account?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="storefront" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.account?.length">Conta</template>
+              <template v-else-if="filters.account.length === 1">{{ accountOptions.find(a=>a.id===filters.account[0])?.nickname || 'Conta' }}</template>
+              <template v-else>Conta <span class="fb-combo-multi">+{{ filters.account.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.account?.length" class="fb-combo-clear" @click.stop="filters.account = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:200px">
+              <q-item v-for="acc in accountOptions" :key="acc.id" clickable
+                :class="['fb-menu-item', filters.account?.includes(acc.id) && 'fb-menu-item--on']"
+                @click.stop="toggleAccountFilter(acc.id)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.account?.includes(acc.id)"
+                    @update:model-value="toggleAccountFilter(acc.id)"
+                    @click.stop color="teal-7" dense />
                 </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ acc.nickname }}</q-item-section>
               </q-item>
             </q-list>
-          </q-btn-dropdown>
-          <div class="filter-divider" />
-          <!-- Filtros avançados toggle -->
-          <q-btn flat dense :color="showAdvanced ? 'teal-7' : 'grey-6'" icon="tune" @click="showAdvanced = !showAdvanced" size="sm">
-            <q-tooltip>{{ showAdvanced ? 'Ocultar filtros avançados' : 'Filtros avançados' }}</q-tooltip>
-            <q-badge v-if="advancedFilterCount > 0" color="teal-7" floating rounded style="font-size:9px">{{ advancedFilterCount }}</q-badge>
-          </q-btn>
-          <q-btn flat dense color="grey-6" icon="filter_alt_off" @click="clearFilters" size="sm">
-            <q-tooltip>Limpar filtros</q-tooltip>
-          </q-btn>
-          <!-- Visões rápidas -->
-          <q-btn-dropdown flat dense color="grey-7" label="Visões" icon="bolt" size="sm" no-icon-animation>
-            <q-list dense style="min-width:210px">
-              <q-item-label header class="text-caption text-grey-5 q-pb-xs">Expedição</q-item-label>
-              <q-item clickable v-close-popup @click="setFilterHandling">
-                <q-item-section avatar><q-icon name="print" color="orange-7" size="16px" /></q-item-section>
-                <q-item-section>Aguardando Etiqueta</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setFilterLabelPrint">
-                <q-item-section avatar><q-icon name="label" color="deep-orange-7" size="16px" /></q-item-section>
-                <q-item-section>Imprimir Etiqueta</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setFilterReadyToShip">
-                <q-item-section avatar><q-icon name="inventory" color="teal-7" size="16px" /></q-item-section>
-                <q-item-section>Pronto para Coleta</q-item-section>
-              </q-item>
-              <q-separator />
-              <q-item-label header class="text-caption text-grey-5 q-pb-xs">Envio</q-item-label>
-              <q-item clickable v-close-popup @click="setFilterInTransit">
-                <q-item-section avatar><q-icon name="local_shipping" color="blue-7" size="16px" /></q-item-section>
-                <q-item-section>Em Trânsito</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setFilterDelivered">
-                <q-item-section avatar><q-icon name="check_circle" color="green-7" size="16px" /></q-item-section>
-                <q-item-section>Entregues</q-item-section>
-              </q-item>
-              <q-separator />
-              <q-item-label header class="text-caption text-grey-5 q-pb-xs">Logística</q-item-label>
-              <q-item clickable v-close-popup @click="setFilterFlex">
-                <q-item-section avatar><q-icon name="directions_bike" color="green-7" size="16px" /></q-item-section>
-                <q-item-section>Só Flex</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setFilterFull">
-                <q-item-section avatar><q-icon name="warehouse" color="orange-7" size="16px" /></q-item-section>
-                <q-item-section>Só Full</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setFilterAgencia">
-                <q-item-section avatar><q-icon name="store" color="purple-7" size="16px" /></q-item-section>
-                <q-item-section>Só Agência</q-item-section>
-              </q-item>
-              <q-separator />
-              <q-item-label header class="text-caption text-grey-5 q-pb-xs">Outros</q-item-label>
-              <q-item clickable v-close-popup @click="setFilterCatalog">
-                <q-item-section avatar><q-icon name="auto_awesome" color="indigo-7" size="16px" /></q-item-section>
-                <q-item-section>Catálogo</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setFilterCancelled">
-                <q-item-section avatar><q-icon name="cancel" color="red-7" size="16px" /></q-item-section>
-                <q-item-section>Cancelados</q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
+          </q-menu>
         </div>
-      </div>
 
-      <!-- Linha 2: filtros avançados (toggle) -->
-      <div v-if="showAdvanced" class="row q-col-gutter-sm items-center q-mt-sm adv-filters-row">
-        <!-- Período -->
-        <div class="col-6 col-md-2">
-          <q-input v-model="filters.dateFrom" type="date" label="Data: de"
-            outlined dense bg-color="white" color="teal-7" class="filter-input" clearable stack-label>
-            <template #prepend><q-icon name="event" color="grey-5" size="16px" /></template>
-          </q-input>
+        <!-- Status Pedido -->
+        <div class="fb-combo" :class="filters.status?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="receipt" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.status?.length">Pedido</template>
+              <template v-else-if="filters.status.length === 1">{{ orderStatusOptions.find(o=>o.value===filters.status[0])?.label || 'Pedido' }}</template>
+              <template v-else>Pedido <span class="fb-combo-multi">+{{ filters.status.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.status?.length" class="fb-combo-clear" @click.stop="filters.status = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:190px">
+              <q-item v-for="opt in orderStatusOptions" :key="opt.value" clickable
+                :class="['fb-menu-item', filters.status?.includes(opt.value) && 'fb-menu-item--on']"
+                @click.stop="toggleStatusFilter(opt.value)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.status?.includes(opt.value)"
+                    @update:model-value="toggleStatusFilter(opt.value)"
+                    @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
         </div>
-        <div class="col-6 col-md-2">
-          <q-input v-model="filters.dateTo" type="date" label="Data: até"
-            outlined dense bg-color="white" color="teal-7" class="filter-input" clearable stack-label>
-            <template #prepend><q-icon name="event" color="grey-5" size="16px" /></template>
-          </q-input>
+
+        <!-- Status Envio -->
+        <div class="fb-combo" :class="filters.shipment_status?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="local_shipping" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.shipment_status?.length">Envio</template>
+              <template v-else-if="filters.shipment_status.length === 1">{{ shipmentStatusOptions.find(o=>o.value===filters.shipment_status[0])?.label || 'Envio' }}</template>
+              <template v-else>Envio <span class="fb-combo-multi">+{{ filters.shipment_status.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.shipment_status?.length" class="fb-combo-clear" @click.stop="filters.shipment_status = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:200px">
+              <q-item v-for="opt in shipmentStatusOptions" :key="opt.value" clickable
+                :class="['fb-menu-item', filters.shipment_status?.includes(opt.value) && 'fb-menu-item--on']"
+                @click.stop="toggleShipmentFilter(opt.value)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.shipment_status?.includes(opt.value)"
+                    @update:model-value="toggleShipmentFilter(opt.value)"
+                    @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
         </div>
-        <!-- Faixa de valor -->
-        <div class="col-6 col-md-2">
-          <q-input v-model.number="filters.priceMin" type="number" label="Valor: mínimo"
-            outlined dense bg-color="white" color="teal-7" class="filter-input" clearable prefix="R$" stack-label>
-          </q-input>
-        </div>
-        <div class="col-6 col-md-2">
-          <q-input v-model.number="filters.priceMax" type="number" label="Valor: máximo"
-            outlined dense bg-color="white" color="teal-7" class="filter-input" clearable prefix="R$" stack-label>
-          </q-input>
-        </div>
+
         <!-- Logística -->
-        <div class="col-6 col-md-2">
-          <q-select v-model="filters.logistic_type" :options="logisticTypeOptions" option-value="value"
-            option-label="label" label="Logística" outlined dense bg-color="white" emit-value map-options
-            multiple clearable color="teal-7" class="filter-input">
-            <template #prepend><q-icon name="local_shipping" color="grey-5" size="16px" /></template>
-          </q-select>
+        <div class="fb-combo" :class="filters.logistic_type?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="route" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.logistic_type?.length">Logística</template>
+              <template v-else-if="filters.logistic_type.length === 1">{{ logisticTypeOptions.find(o=>o.value===filters.logistic_type[0])?.label || 'Logística' }}</template>
+              <template v-else>Logística <span class="fb-combo-multi">+{{ filters.logistic_type.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.logistic_type?.length" class="fb-combo-clear" @click.stop="filters.logistic_type = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:220px">
+              <q-item v-for="opt in logisticTypeOptions" :key="opt.value" clickable
+                :class="['fb-menu-item', filters.logistic_type?.includes(opt.value) && 'fb-menu-item--on']"
+                @click.stop="toggleLogisticFilter(opt.value)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.logistic_type?.includes(opt.value)"
+                    @update:model-value="toggleLogisticFilter(opt.value)"
+                    @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
         </div>
-        <!-- Custo frete -->
-        <div class="col-6 col-md-2">
-          <q-select v-model="filters.cost_type" :options="costTypeOptions" option-value="value"
-            option-label="label" label="Custo Frete" outlined dense bg-color="white" emit-value map-options
-            multiple clearable color="teal-7" class="filter-input">
-            <template #prepend><q-icon name="payments" color="grey-5" size="16px" /></template>
-          </q-select>
+
+        <!-- Frete -->
+        <div class="fb-combo" :class="filters.cost_type?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="payments" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.cost_type?.length">Frete</template>
+              <template v-else-if="filters.cost_type.length === 1">{{ costTypeOptions.find(o=>o.value===filters.cost_type[0])?.label || 'Frete' }}</template>
+              <template v-else>Frete <span class="fb-combo-multi">+{{ filters.cost_type.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.cost_type?.length" class="fb-combo-clear" @click.stop="filters.cost_type = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:200px">
+              <q-item v-for="opt in costTypeOptions" :key="opt.value" clickable
+                :class="['fb-menu-item', filters.cost_type?.includes(opt.value) && 'fb-menu-item--on']"
+                @click.stop="toggleCostTypeFilter(opt.value)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.cost_type?.includes(opt.value)"
+                    @update:model-value="toggleCostTypeFilter(opt.value)"
+                    @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
         </div>
-        <!-- Flags tri-state -->
-        <div class="col-12 col-md-auto row q-gutter-x-md items-center q-pl-xs q-pt-xs">
-          <div class="adv-flag-group">
-            <span class="adv-flag-label">Catálogo</span>
-            <q-btn-toggle v-model="filters.is_catalog" :options="triStateOpts" dense unelevated
-              toggle-color="teal-7" color="grey-2" text-color="grey-7" rounded size="xs" />
-          </div>
-          <div class="adv-flag-group">
-            <span class="adv-flag-label">Entregue</span>
-            <q-btn-toggle v-model="filters.fulfilled" :options="triStateOpts" dense unelevated
-              toggle-color="teal-7" color="grey-2" text-color="grey-7" rounded size="xs" />
-          </div>
-        </div>
+
       </div>
 
-      <!-- Chips dos filtros ativos -->
-      <div v-if="hasActiveFilters" class="row items-center q-gutter-xs q-mt-sm">
-        <span class="text-caption text-grey-6">Filtros:</span>
-        <q-chip v-if="filters.search" dense removable color="teal-1" text-color="teal-8"
-          @remove="filters.search = ''">"{{ filters.search }}"</q-chip>
-        <q-chip v-if="filters.account?.length" dense removable color="green-1" text-color="green-8"
-          @remove="filters.account = []">
-          <q-icon name="storefront" size="10px" class="q-mr-xs" />{{ filters.account.length }} conta(s)
-        </q-chip>
-        <q-chip v-if="filters.status?.length" dense removable color="blue-1" text-color="blue-8"
-          @remove="filters.status = []">
-          <q-icon name="flag" size="10px" class="q-mr-xs" />{{ filters.status.map(s => orderStatusOptions.find(o => o.value === s)?.label || s).join(', ') }}
-        </q-chip>
-        <q-chip v-if="filters.shipment_status?.length" dense removable color="purple-1" text-color="purple-8"
-          @remove="filters.shipment_status = []">
-          <q-icon name="local_shipping" size="10px" class="q-mr-xs" />{{ filters.shipment_status.map(s => shipmentStatusOptions.find(o => o.value === s)?.label || s).join(', ') }}
-        </q-chip>
-        <q-chip v-if="filters.logistic_type?.length" dense removable color="orange-1" text-color="orange-9"
-          @remove="filters.logistic_type = []">
-          <q-icon name="local_shipping" size="10px" class="q-mr-xs" />{{ filters.logistic_type.map(l => logisticTypeOptions.find(o => o.value === l)?.label || l).join(', ') }}
-        </q-chip>
-        <q-chip v-if="filters.cost_type?.length" dense removable color="yellow-2" text-color="yellow-10"
-          @remove="filters.cost_type = []">
-          <q-icon name="payments" size="10px" class="q-mr-xs" />{{ filters.cost_type.map(c => costTypeOptions.find(o => o.value === c)?.label || c).join(', ') }}
-        </q-chip>
-        <q-chip v-if="filters.dateFrom || filters.dateTo" dense removable color="indigo-1" text-color="indigo-8"
-          @remove="filters.dateFrom = null; filters.dateTo = null">
-          <q-icon name="event" size="10px" class="q-mr-xs" />{{ filters.dateFrom || '...' }} → {{ filters.dateTo || '...' }}
-        </q-chip>
-        <q-chip v-if="filters.priceMin || filters.priceMax" dense removable color="cyan-1" text-color="cyan-8"
-          @remove="filters.priceMin = null; filters.priceMax = null">
-          <q-icon name="attach_money" size="10px" class="q-mr-xs" />R${{ filters.priceMin ?? '0' }} → R${{ filters.priceMax ?? '∞' }}
-        </q-chip>
-        <q-chip v-if="filters.is_catalog != null" dense removable color="deep-purple-1" text-color="deep-purple-8"
-          @remove="filters.is_catalog = null">
-          <q-icon name="auto_awesome" size="10px" class="q-mr-xs" />{{ filters.is_catalog ? 'Catálogo' : 'Não catálogo' }}
-        </q-chip>
-        <q-chip v-if="filters.fulfilled != null" dense removable color="light-green-1" text-color="light-green-9"
-          @remove="filters.fulfilled = null">
-          <q-icon name="check_circle" size="10px" class="q-mr-xs" />{{ filters.fulfilled ? 'Entregue' : 'Não entregue' }}
-        </q-chip>
-      </div>
+      <!-- ── Índice de filtros ativos ───────────────────── -->
+      <transition name="fade">
+        <div v-if="hasActiveFilters" class="fb-index">
+
+          <div class="fb-index-header">
+            <div class="fb-index-title">
+              <q-icon name="filter_alt" size="14px" color="teal-7" />
+              <span>Filtrando</span>
+              <span class="fb-index-count">{{ advancedFilterCount + (filters.search ? 1 : 0) + (filters.account?.length ? 1 : 0) + (filters.status?.length ? 1 : 0) + (filters.shipment_status?.length ? 1 : 0) + (filters.logistic_type?.length ? 1 : 0) + (filters.cost_type?.length ? 1 : 0) }} grupos</span>
+            </div>
+            <button class="fb-index-clear" @click="clearFilters">
+              <q-icon name="close" size="11px" />Limpar tudo
+            </button>
+          </div>
+
+          <div class="fb-index-rows">
+
+            <div v-if="filters.search" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="search" size="12px" />Busca</div>
+              <div class="fb-index-pills">
+                <span class="fb-index-pill" @click="filters.search = ''">"{{ filters.search }}" <q-icon name="close" size="9px" /></span>
+              </div>
+            </div>
+
+            <div v-if="filters.account?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="storefront" size="12px" />Conta</div>
+              <div class="fb-index-pills">
+                <span v-for="id in filters.account" :key="id" class="fb-index-pill"
+                  @click="toggleAccountFilter(id)">
+                  {{ accountOptions.find(a=>a.id===id)?.nickname || id }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.status?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="receipt" size="12px" />Pedido</div>
+              <div class="fb-index-pills">
+                <span v-for="s in filters.status" :key="s" class="fb-index-pill"
+                  @click="toggleStatusFilter(s)">
+                  {{ orderStatusOptions.find(o=>o.value===s)?.label || s }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.shipment_status?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="local_shipping" size="12px" />Envio</div>
+              <div class="fb-index-pills">
+                <span v-for="s in filters.shipment_status" :key="s" class="fb-index-pill"
+                  @click="toggleShipmentFilter(s)">
+                  {{ shipmentStatusOptions.find(o=>o.value===s)?.label || s }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.logistic_type?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="route" size="12px" />Logística</div>
+              <div class="fb-index-pills">
+                <span v-for="l in filters.logistic_type" :key="l" class="fb-index-pill"
+                  @click="toggleLogisticFilter(l)">
+                  {{ logisticTypeOptions.find(o=>o.value===l)?.label || l }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.cost_type?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="payments" size="12px" />Frete</div>
+              <div class="fb-index-pills">
+                <span v-for="c in filters.cost_type" :key="c" class="fb-index-pill"
+                  @click="toggleCostTypeFilter(c)">
+                  {{ costTypeOptions.find(o=>o.value===c)?.label || c }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.dateFrom || filters.dateTo" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="calendar_month" size="12px" />Período</div>
+              <div class="fb-index-pills">
+                <span class="fb-index-pill" @click="filters.dateFrom = null; filters.dateTo = null">
+                  {{ filters.dateFrom || '...' }} → {{ filters.dateTo || '...' }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.priceMin || filters.priceMax" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="attach_money" size="12px" />Venda</div>
+              <div class="fb-index-pills">
+                <span class="fb-index-pill" @click="filters.priceMin = null; filters.priceMax = null">
+                  R${{ filters.priceMin ?? '0' }} → R${{ filters.priceMax ?? '∞' }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.marginMin != null || filters.marginMax != null" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="trending_up" size="12px" />Lucro</div>
+              <div class="fb-index-pills">
+                <span class="fb-index-pill fb-index-pill--teal"
+                  @click="filters.marginMin = null; filters.marginMax = null">
+                  R${{ filters.marginMin ?? '...' }} → R${{ filters.marginMax ?? '∞' }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.is_catalog != null" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="auto_awesome" size="12px" />Catálogo</div>
+              <div class="fb-index-pills">
+                <span class="fb-index-pill" @click="filters.is_catalog = null">
+                  {{ filters.is_catalog ? 'Sim' : 'Não' }} <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+            <div v-if="filters.fulfilled != null" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="check_circle" size="12px" />Entregue</div>
+              <div class="fb-index-pills">
+                <span class="fb-index-pill" @click="filters.fulfilled = null">
+                  {{ filters.fulfilled ? 'Sim' : 'Não' }} <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </transition>
+
     </div>
 
     <!-- ── TABELA ─────────────────────────────────────────── -->
     <div class="table-wrapper">
-      <q-table :rows="orders" :columns="columns" row-key="order_id" flat :loading="loading"
+      <q-table :rows="filteredOrders" :columns="columns" row-key="order_id" flat :loading="loading"
         v-model:pagination="pagination" @request="onRequest" binary-state-sort
         class="orders-table" no-data-label="Nenhuma venda encontrada."
         :rows-per-page-options="[10, 20, 50]">
@@ -456,7 +652,7 @@
                 <div :class="['margin-pill', getNetMargin(props.row) >= 0 ? 'margin-pos' : 'margin-neg']">
                   {{ calculateMarginPct(props.row) }}% margem
                 </div>
-                <div class="liquido-hint">s/ CMV</div>
+                <div class="liquido-hint">antes do CMV</div>
               </div>
             </q-td>
 
@@ -867,6 +1063,159 @@
       </div>
     </q-dialog>
 
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- DIALOG: FILTROS AVANÇADOS                             -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <q-dialog v-model="showAdvanced" position="right" full-height
+      transition-show="slide-left" transition-hide="slide-right">
+      <div class="fadv-panel">
+
+        <!-- Header -->
+        <div class="fadv-header">
+          <div class="fadv-header-left">
+            <div class="fadv-header-icon"><q-icon name="tune" size="18px" /></div>
+            <div>
+              <div class="fadv-header-title">Filtros Avançados</div>
+              <div class="fadv-header-sub" v-if="advancedFilterCount > 0">
+                {{ advancedFilterCount }} filtro{{ advancedFilterCount > 1 ? 's' : '' }} ativo{{ advancedFilterCount > 1 ? 's' : '' }}
+              </div>
+              <div class="fadv-header-sub" v-else>Nenhum filtro ativo</div>
+            </div>
+          </div>
+          <q-btn flat round dense icon="close" color="grey-6" size="sm" v-close-popup />
+        </div>
+
+        <!-- Body -->
+        <q-scroll-area style="height: calc(100vh - 130px);">
+          <div class="fadv-body">
+
+            <!-- Seção: Período -->
+            <div class="fadv-section">
+              <div class="fadv-section-title">
+                <q-icon name="calendar_month" size="15px" color="teal-7" />
+                Período
+              </div>
+              <div class="fadv-row">
+                <div class="fb-date-field" :class="filters.dateFrom && 'fb-date-field--filled'">
+                  <label class="fb-date-label">De</label>
+                  <input v-model="filters.dateFrom" type="date" class="fb-date-input" />
+                  <button v-if="filters.dateFrom" class="fb-date-clear" @click="filters.dateFrom = null">
+                    <q-icon name="close" size="11px" />
+                  </button>
+                </div>
+                <span class="fadv-range-sep">→</span>
+                <div class="fb-date-field" :class="filters.dateTo && 'fb-date-field--filled'">
+                  <label class="fb-date-label">Até</label>
+                  <input v-model="filters.dateTo" type="date" class="fb-date-input" />
+                  <button v-if="filters.dateTo" class="fb-date-clear" @click="filters.dateTo = null">
+                    <q-icon name="close" size="11px" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="fadv-divider" />
+
+            <!-- Seção: Valor da Venda -->
+            <div class="fadv-section">
+              <div class="fadv-section-title">
+                <q-icon name="attach_money" size="15px" color="teal-7" />
+                Valor da Venda
+              </div>
+              <div class="fadv-row">
+                <q-input v-model.number="filters.priceMin" type="number" label="Mínimo"
+                  outlined dense bg-color="white" color="teal-7" class="fadv-input"
+                  clearable prefix="R$" stack-label />
+                <span class="fadv-range-sep">→</span>
+                <q-input v-model.number="filters.priceMax" type="number" label="Máximo"
+                  outlined dense bg-color="white" color="teal-7" class="fadv-input"
+                  clearable prefix="R$" stack-label />
+              </div>
+            </div>
+
+            <div class="fadv-divider" />
+
+            <!-- Seção: Lucro Após CMV -->
+            <div class="fadv-section">
+              <div class="fadv-section-title">
+                <q-icon name="trending_up" size="15px" color="teal-7" />
+                Lucro (R$)
+                <q-btn-toggle v-model="marginFilterMode"
+                  :options="[{label:'Após CMV', value:'net_after_cmv'},{label:'Antes CMV', value:'net_received'}]"
+                  dense unelevated toggle-color="teal-7" color="grey-2" text-color="grey-7"
+                  rounded size="xs" class="q-ml-auto" />
+              </div>
+              <div class="fadv-row">
+                <q-input v-model.number="filters.marginMin" type="number" label="Mínimo R$"
+                  prefix="R$" outlined dense bg-color="white" color="teal-7" class="fadv-input" clearable stack-label />
+                <span class="fadv-range-sep">→</span>
+                <q-input v-model.number="filters.marginMax" type="number" label="Máximo R$"
+                  prefix="R$" outlined dense bg-color="white" color="teal-7" class="fadv-input" clearable stack-label />
+              </div>
+            </div>
+
+            <div class="fadv-divider" />
+
+            <!-- Seção: Flags -->
+            <div class="fadv-section">
+              <div class="fadv-section-title">
+                <q-icon name="flag" size="15px" color="teal-7" />
+                Flags
+              </div>
+              <div class="fadv-flags">
+                <q-item clickable class="fadv-flag-item"
+                  @click="filters.is_catalog = filters.is_catalog === true ? null : true">
+                  <q-item-section side>
+                    <q-checkbox :model-value="filters.is_catalog === true" color="teal-7" dense />
+                  </q-item-section>
+                  <q-item-section>
+                    <div class="fadv-flag-label">
+                      <div class="fadv-flag-icon fadv-flag-icon--indigo">
+                        <q-icon name="auto_awesome" size="14px" />
+                      </div>
+                      <div>
+                        <div class="fadv-flag-name">Catálogo</div>
+                        <div class="fadv-flag-desc">Somente vendas do catálogo ML</div>
+                      </div>
+                    </div>
+                  </q-item-section>
+                </q-item>
+
+                <q-item clickable class="fadv-flag-item"
+                  @click="filters.fulfilled = filters.fulfilled === true ? null : true">
+                  <q-item-section side>
+                    <q-checkbox :model-value="filters.fulfilled === true" color="teal-7" dense />
+                  </q-item-section>
+                  <q-item-section>
+                    <div class="fadv-flag-label">
+                      <div class="fadv-flag-icon fadv-flag-icon--green">
+                        <q-icon name="check_circle" size="14px" />
+                      </div>
+                      <div>
+                        <div class="fadv-flag-name">Entregue</div>
+                        <div class="fadv-flag-desc">Somente pedidos já entregues</div>
+                      </div>
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </div>
+            </div>
+
+          </div>
+        </q-scroll-area>
+
+        <!-- Footer -->
+        <div class="fadv-footer">
+          <q-btn flat no-caps icon="filter_alt_off" label="Limpar filtros"
+            color="red-5" @click="clearFilters" size="sm" />
+          <q-btn unelevated no-caps label="Fechar" color="teal-7"
+            v-close-popup size="sm" class="q-px-lg" />
+        </div>
+
+      </div>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -928,6 +1277,12 @@ const groupPackOrders = (rawRows) => {
 // ============================================================================
 const orders        = ref([])
 const loading       = ref(false)
+const searchFocused = ref(false)
+
+// Margem — server-side via net_received ou net_after_cmv gravados no banco
+const marginFilterMode = ref('net_after_cmv')   // 'net_received' | 'net_after_cmv'
+
+const filteredOrders = computed(() => orders.value)
 const financialOpen = ref(false)
 const logisticsOpen = ref(false)
 const selectedOrder = ref(null)   // para dialog financeiro
@@ -947,8 +1302,8 @@ const columns = [
   { name: 'venda',        label: 'BRUTO',              field: 'total_amount',  align: 'right', sortable: true, style: 'min-width:85px' },
   { name: 'tarifa',       label: 'TARIFA ML',          field: 'total_fee',     align: 'right', style: 'min-width:90px' },
   { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px' },
-  { name: 'liquido',      label: 'LÍQUIDO',            field: 'net',           align: 'right', style: 'min-width:105px' },
-  { name: 'lucro',        label: 'LUCRO (c/ CMV)',      field: 'net_after_cmv', align: 'right', style: 'min-width:105px' },
+  { name: 'liquido',      label: 'LUCRO ANTES DO CMV', field: 'net',           align: 'right', style: 'min-width:115px' },
+  { name: 'lucro',        label: 'LUCRO APÓS CMV',      field: 'net_after_cmv', align: 'right', style: 'min-width:115px' },
 ]
 
 // ============================================================================
@@ -968,6 +1323,8 @@ const filters = reactive({
   dateTo: null,
   priceMin: null,
   priceMax: null,
+  marginMin: null,
+  marginMax: null,
   is_catalog: null,
   fulfilled: null,
   _substatus: null,   // filtro interno: 'ready_to_print' para smart view "Imprimir Etiqueta"
@@ -982,6 +1339,7 @@ const hasActiveFilters = computed(() =>
   filters.cost_type?.length ||
   filters.dateFrom || filters.dateTo ||
   filters.priceMin || filters.priceMax ||
+  filters.marginMin != null || filters.marginMax != null ||
   filters.is_catalog != null ||
   filters.fulfilled != null
 )
@@ -992,6 +1350,7 @@ const advancedFilterCount = computed(() => [
   filters.cost_type?.length,
   filters.dateFrom || filters.dateTo ? 1 : 0,
   filters.priceMin || filters.priceMax ? 1 : 0,
+  filters.marginMin != null || filters.marginMax != null ? 1 : 0,
   filters.is_catalog != null ? 1 : 0,
   filters.fulfilled != null ? 1 : 0,
 ].reduce((a, b) => a + (b ? 1 : 0), 0))
@@ -1087,10 +1446,43 @@ const accountOptions = computed(() => availableAccounts.value)
 // ============================================================================
 const resetFiltersState = () => Object.assign(filters, {
   search: '', account: [], status: [], shipment_status: [], logistic_type: [], cost_type: [],
-  dateFrom: null, dateTo: null, priceMin: null, priceMax: null, is_catalog: null, fulfilled: null,
+  dateFrom: null, dateTo: null, priceMin: null, priceMax: null,
+  marginMin: null, marginMax: null, is_catalog: null, fulfilled: null,
   _substatus: null,
 })
-const clearFilters          = () => resetFiltersState()
+const clearFilters = () => { resetFiltersState(); marginFilterMode.value = 'net_after_cmv' }
+
+// Toggle individual de conta (chips rápidos)
+const toggleAccountFilter = (value) => {
+  const idx = filters.account.indexOf(value)
+  if (idx === -1) filters.account = [...filters.account, value]
+  else filters.account = filters.account.filter(v => v !== value)
+}
+// Toggle individual de tipo logístico
+const toggleLogisticFilter = (value) => {
+  const idx = filters.logistic_type.indexOf(value)
+  if (idx === -1) filters.logistic_type = [...filters.logistic_type, value]
+  else filters.logistic_type = filters.logistic_type.filter(v => v !== value)
+}
+// Toggle individual de custo de frete
+const toggleCostTypeFilter = (value) => {
+  const idx = filters.cost_type.indexOf(value)
+  if (idx === -1) filters.cost_type = [...filters.cost_type, value]
+  else filters.cost_type = filters.cost_type.filter(v => v !== value)
+}
+// Toggle individual de status pedido (chips rápidos)
+const toggleStatusFilter = (value) => {
+  const idx = filters.status.indexOf(value)
+  if (idx === -1) filters.status = [...filters.status, value]
+  else filters.status = filters.status.filter(v => v !== value)
+}
+// Toggle individual de status envio (chips rápidos)
+const toggleShipmentFilter = (value) => {
+  const idx = filters.shipment_status.indexOf(value)
+  if (idx === -1) filters.shipment_status = [...filters.shipment_status, value]
+  else filters.shipment_status = filters.shipment_status.filter(v => v !== value)
+}
+
 // Expedição
 const setFilterHandling     = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['handling'] }
 const setFilterLabelPrint   = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['ready_to_ship']; filters._substatus = 'ready_to_print' }
@@ -1110,8 +1502,9 @@ let filterTimer
 watch(filters, () => {
   clearTimeout(filterTimer)
   filterTimer = setTimeout(() => {
-    if (pagination.value.page !== 1) pagination.value.page = 1
-    else refreshData()
+    // Sempre força page=1 e chama onRequest diretamente —
+    // não depende do q-table disparar @request (ele não dispara em mudanças programáticas).
+    onRequest({ pagination: { ...pagination.value, page: 1 } })
   }, 400)
 }, { deep: true })
 
@@ -1147,6 +1540,8 @@ const onRequest = async (props) => {
       date_created__lte:       filters.dateTo   ? `${filters.dateTo}T23:59:59`   : undefined,
       total_amount__gte:       filters.priceMin > 0            ? filters.priceMin                  : undefined,
       total_amount__lte:       filters.priceMax > 0            ? filters.priceMax                  : undefined,
+      [`${marginFilterMode.value}__gte`]: filters.marginMin != null ? filters.marginMin            : undefined,
+      [`${marginFilterMode.value}__lte`]: filters.marginMax != null ? filters.marginMax            : undefined,
       is_catalog:              filters.is_catalog != null      ? filters.is_catalog                : undefined,
       fulfilled:               filters.fulfilled  != null      ? filters.fulfilled                 : undefined,
     }
@@ -1425,12 +1820,508 @@ onMounted(() => { loadFacets(); refreshData() })
 .header-count   { font-size: 12px; font-weight: 600; color: #00897b; background: #e0f2f1; border-radius: 12px; padding: 2px 10px; }
 
 /* ─── FILTROS ────────────────────────────────────── */
-.filters-bar { background: #fff; border-bottom: 1px solid #e8eaed; padding: 10px 24px; }
-.filter-input :deep(.q-field__control) { border-radius: 8px; }
-.filter-divider { width: 1px; height: 18px; background: #e0e0e0; }
-.adv-filters-row { border-top: 1px dashed #e8eaed; padding-top: 8px; }
-.adv-flag-group  { display: flex; flex-direction: column; gap: 4px; }
-.adv-flag-label  { font-size: 10px; font-weight: 600; color: #9aa0ac; text-transform: uppercase; letter-spacing: .4px; }
+.fb {
+  background: #fff;
+  border-bottom: 1px solid #e8edf3;
+  padding: 12px 24px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Toolbar ─────────────────────────────────────── */
+.fb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  background: #f5f7fa;
+  border: 1.5px solid #e8edf3;
+  border-radius: 10px;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+  min-width: 0;
+}
+.fb-search.focused,
+.fb-search.filled { background: #fff; }
+.fb-search.focused {
+  border-color: #00897b;
+  box-shadow: 0 0 0 3px rgba(0,137,123,.1);
+}
+.fb-search-icon { color: #c5ccd8; flex-shrink: 0; transition: color .18s; }
+.fb-search.focused .fb-search-icon { color: #00897b; }
+.fb-search-input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: 13.5px; color: #1a1f36; font-family: inherit; min-width: 0;
+}
+.fb-search-input::placeholder { color: #c5ccd8; }
+.fb-search-clear {
+  background: none; border: none; cursor: pointer; padding: 0;
+  color: #c5ccd8; display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.fb-search-clear:hover { background: #f0f2f7; color: #4a5568; }
+
+/* Toolbar actions */
+.fb-toolbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+.fb-btn-group {
+  display: flex;
+  align-items: center;
+  background: #f5f7fa;
+  border: 1.5px solid #e8edf3;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fb-tbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  padding: 0 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #606880;
+  background: transparent;
+  border: none;
+  border-right: 1.5px solid #e8edf3;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.fb-tbtn:last-child { border-right: none; }
+.fb-tbtn:hover { background: #edf0f7; color: #2d3748; }
+.fb-tbtn--active { background: #e0f2f1; color: #00695c; }
+.fb-tbtn--active:hover { background: #b2dfdb; }
+
+.fb-adv-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px;
+  background: #00897b; color: #fff;
+  border-radius: 10px; font-size: 10px; font-weight: 700;
+  padding: 0 4px; margin-left: 2px;
+}
+.fb-clear-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 36px; padding: 0 13px;
+  font-size: 12.5px; font-weight: 600; color: #e53e3e;
+  background: #fff5f5; border: 1.5px solid #fecaca; border-radius: 10px;
+  cursor: pointer; transition: all .15s; white-space: nowrap; font-family: inherit;
+}
+.fb-clear-btn:hover { background: #fecaca; border-color: #fc8181; }
+
+.fb-menu-header {
+  font-size: 9px !important; font-weight: 700 !important;
+  text-transform: uppercase; letter-spacing: .6px;
+  color: #9aa0ac !important; padding: 8px 14px 4px !important;
+}
+
+/* ── Filter bar (comboboxes) ─────────────────────── */
+.fb-filterbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Combo wrapper: botão + botão clear lado a lado */
+.fb-combo {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1.5px solid #e8edf3;
+  border-radius: 8px;
+  background: #f5f7fa;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+  overflow: hidden;
+}
+.fb-combo:hover { border-color: #c5cfe0; background: #edf0f7; }
+.fb-combo--on {
+  background: #e6f7f5;
+  border-color: #4db6ac;
+  box-shadow: 0 0 0 2px rgba(0,137,123,.08);
+}
+.fb-combo--on:hover { background: #cceee9; border-color: #26a69a; }
+
+.fb-combo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px 0 11px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #5a6478;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  min-width: 0;
+}
+.fb-combo--on .fb-combo-btn { color: #00695c; font-weight: 600; }
+
+.fb-combo-ico { color: inherit; opacity: .65; flex-shrink: 0; }
+.fb-combo-label { min-width: 0; }
+.fb-combo-multi {
+  font-size: 10.5px; font-weight: 700;
+  background: #00897b; color: #fff;
+  border-radius: 8px; padding: 1px 5px; margin-left: 2px;
+}
+.fb-combo--on .fb-combo-multi { background: #00695c; }
+.fb-combo-arrow { color: #b0b8c4; flex-shrink: 0; margin-left: 2px; }
+
+/* Botão × para limpar (dentro do combo) */
+.fb-combo-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(0,137,123,.2);
+  cursor: pointer;
+  color: #00897b;
+  padding: 0;
+  transition: background .13s, color .13s;
+  flex-shrink: 0;
+}
+.fb-combo-clear:hover { background: rgba(220,20,60,.1); color: #b91c1c; }
+
+/* Dropdown menu */
+.fb-menu {
+  border-radius: 10px !important;
+  box-shadow: 0 6px 24px rgba(0,0,0,.13) !important;
+  border: 1px solid #e2e8f0 !important;
+  overflow: hidden;
+}
+.fb-menu-item {
+  min-height: 38px !important;
+  padding: 6px 14px 6px 10px !important;
+  transition: background .12s !important;
+}
+.fb-menu-item:hover { background: #f5f7fa !important; }
+.fb-menu-item--on { background: #f0faf9 !important; }
+.fb-menu-item--on:hover { background: #e0f2f1 !important; }
+.fb-menu-item-label {
+  font-size: 13px !important;
+  color: #1a1f36 !important;
+  font-weight: 500 !important;
+}
+.fb-menu-item--on .fb-menu-item-label { color: #00695c !important; font-weight: 600 !important; }
+.fb-menu :deep(.q-item__section--side) { padding-right: 8px; min-width: 0; }
+.fb-menu :deep(.q-checkbox__bg) { border-radius: 5px !important; }
+
+/* ── Filter index ────────────────────────────────── */
+.fb-index {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fb-index-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: #fff;
+  border-bottom: 1px solid #f0f3f8;
+}
+.fb-index-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #374151;
+}
+.fb-index-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: #00897b;
+  background: #e0f2f1;
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+.fb-index-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9a3412;
+  background: #ffedd5;
+  border: 1px solid #fdba74;
+  border-radius: 20px;
+  padding: 2px 9px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .13s;
+}
+.fb-index-clear:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+.fb-index-rows { padding: 4px 0; }
+.fb-index-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 14px;
+  min-height: 32px;
+}
+.fb-index-row:not(:last-child) { border-bottom: 1px solid #f5f7fa; }
+.fb-index-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #9aa0ac;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  white-space: nowrap;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+.fb-index-pills {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.fb-index-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2px 9px 2px 9px;
+  cursor: pointer;
+  transition: all .13s;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.fb-index-pill:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+.fb-index-pill--teal { background: #f0fdfa; border-color: #99f6e4; color: #0f766e; }
+.fb-index-pill--teal:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+
+/* ── Advanced panel ──────────────────────────────── */
+.fb-adv {
+  background: #f5f7fb;
+  border: 1.5px solid #e4e9f2;
+  border-radius: 12px;
+  padding: 14px;
+}
+.fb-adv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.fb-adv-card {
+  background: #fff;
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.fb-adv-card-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #9faab8;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  border-bottom: 1px solid #f0f3f8;
+  padding-bottom: 8px;
+}
+.fb-adv-inputs { display: flex; align-items: center; gap: 6px; }
+.fb-adv-input  { flex: 1; min-width: 0; }
+.fb-adv-input :deep(.q-field__control) { background: #f8fafd; border-radius: 8px; }
+.fb-adv-sep { font-size: 14px; color: #c5ccd8; flex-shrink: 0; font-weight: 600; }
+
+.fb-mode-toggle { flex-shrink: 0; }
+.fb-mode-toggle :deep(.q-btn) { min-width: 28px !important; font-weight: 700 !important; font-size: 11px !important; }
+
+.fb-flags-row { display: flex; flex-direction: column; gap: 2px; }
+.fb-flag-check {
+  border-radius: 8px !important;
+  padding: 6px 8px !important;
+  min-height: 0 !important;
+  transition: background .13s !important;
+}
+.fb-flag-check:hover { background: #f5f7fa !important; }
+.fb-flag-check :deep(.q-item__section--side) { padding-right: 8px; min-width: 0; }
+.fb-flag-check-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500; color: #374151;
+}
+
+/* ── Date fields ─────────────────────────────────── */
+.fb-date-field {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.fb-date-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  pointer-events: none;
+}
+.fb-date-field--filled .fb-date-label { color: #00897b; }
+.fb-date-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 30px 0 10px;
+  border: 1.5px solid #e8edf3;
+  border-radius: 8px;
+  background: #f8fafd;
+  font-size: 12.5px;
+  color: #1a1f36;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  box-sizing: border-box;
+}
+.fb-date-input:focus {
+  border-color: #00897b;
+  box-shadow: 0 0 0 2px rgba(0,137,123,.1);
+  background: #fff;
+}
+.fb-date-field--filled .fb-date-input {
+  border-color: #4db6ac;
+  background: #fff;
+}
+.fb-date-clear {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  background: #e8edf3;
+  border: none;
+  border-radius: 50%;
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #6b7280;
+  transition: background .13s, color .13s;
+  padding: 0;
+}
+.fb-date-clear:hover { background: #fca5a5; color: #b91c1c; }
+
+/* ── Active bar → replaced by fb-index above ──────── */
+
+/* ── Transitions ─────────────────────────────────── */
+.slide-adv-enter-active, .slide-adv-leave-active {
+  transition: max-height .25s ease, opacity .25s ease;
+  overflow: hidden;
+}
+.slide-adv-enter-from, .slide-adv-leave-to { max-height: 0; opacity: 0; }
+.slide-adv-enter-to, .slide-adv-leave-from { max-height: 500px; opacity: 1; }
+.fade-enter-active, .fade-leave-active { transition: opacity .15s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.margin-range-sep { font-size: 12px; color: #b0b8c4; flex-shrink: 0; padding: 0 2px; }
+
+
+/* ─── DIALOG: FILTROS AVANÇADOS (fadv-*) ──────────── */
+.fadv-panel {
+  width: 380px;
+  max-width: 100vw;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.fadv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid #e8edf3;
+  flex-shrink: 0;
+}
+.fadv-header-left { display: flex; align-items: center; gap: 12px; }
+.fadv-header-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #00897b, #00acc1);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; flex-shrink: 0;
+}
+.fadv-header-title { font-size: 15px; font-weight: 700; color: #1a1f36; line-height: 1.2; }
+.fadv-header-sub   { font-size: 11px; color: #9aa0ac; margin-top: 1px; }
+.fadv-body { padding: 0; }
+.fadv-section {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.fadv-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.fadv-divider { height: 1px; background: #f0f3f8; margin: 0 20px; }
+.fadv-row { display: flex; align-items: flex-end; gap: 8px; }
+.fadv-input { flex: 1; min-width: 0; }
+.fadv-input :deep(.q-field__control) { border-radius: 8px; }
+.fadv-range-sep {
+  font-size: 16px; color: #c5ccd8; flex-shrink: 0;
+  font-weight: 600; padding-bottom: 8px;
+}
+.fadv-flags { display: flex; flex-direction: column; gap: 6px; }
+.fadv-flag-item {
+  border-radius: 10px !important;
+  border: 1.5px solid #f0f3f8 !important;
+  padding: 10px 12px !important;
+  min-height: 0 !important;
+  transition: border-color .15s, background .15s !important;
+}
+.fadv-flag-item:hover { background: #f8fafd !important; border-color: #c8d8e8 !important; }
+.fadv-flag-item :deep(.q-item__section--side) { padding-right: 10px; min-width: 0; }
+.fadv-flag-label { display: flex; align-items: center; gap: 10px; }
+.fadv-flag-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.fadv-flag-icon--indigo { background: #ede9fe; color: #5b21b6; }
+.fadv-flag-icon--green  { background: #dcfce7; color: #15803d;  }
+.fadv-flag-name { font-size: 13px; font-weight: 600; color: #1a1f36; }
+.fadv-flag-desc { font-size: 11px; color: #9aa0ac; margin-top: 1px; }
+.fadv-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #e8edf3;
+  flex-shrink: 0;
+  background: #fff;
+}
 
 /* ─── TABLE ──────────────────────────────────────── */
 .table-wrapper { padding: 16px 24px; }

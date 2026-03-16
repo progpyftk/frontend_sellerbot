@@ -188,6 +188,12 @@
                         <template v-slot:prepend><q-icon name="health_and_safety" size="xs" color="grey-6" /></template>
                         <template v-slot:append><span class="text-caption text-grey">%</span></template>
                       </q-input>
+                      <q-input v-model.number="filters.discountMin" type="number" label="Desconto Mínimo (%)" outlined
+                        dense bg-color="white" clearable debounce="600" @update:model-value="resetPagination"
+                        color="orange-8" hint="Ex: 15 → anúncios com ≥15% de desconto ativo">
+                        <template v-slot:prepend><q-icon name="local_offer" size="xs" color="orange-7" /></template>
+                        <template v-slot:append><span class="text-caption text-grey">%</span></template>
+                      </q-input>
                     </div>
                   </div>
                 </div>
@@ -257,11 +263,35 @@
           </q-card-section>
         </transition>
 
+        <!-- ── Barra de Ações em Massa ──────────────────────────── -->
+        <transition name="slide-fade">
+          <div v-if="selectedItems.length" class="bulk-bar q-px-lg q-py-sm row items-center q-gutter-sm">
+            <q-icon name="check_box" color="indigo-6" size="18px" />
+            <span class="text-weight-bold text-indigo-8">{{ selectedItems.length }} selecionado(s)</span>
+            <q-separator vertical inset class="q-mx-xs" />
+            <q-btn unelevated dense color="indigo-6" text-color="white" icon="attach_money"
+              label="Alterar Preço" size="sm" class="q-px-md" @click="showBulkPriceDialog = true" />
+            <q-btn unelevated dense color="orange-7" text-color="white" icon="local_offer"
+              label="Promoção" size="sm" class="q-px-md" @click="showBulkPromoDialog = true" />
+            <q-btn unelevated dense color="teal-7" text-color="white" icon="rocket_launch"
+              label="Tipo Anúncio" size="sm" class="q-px-md" @click="showBulkListingTypeDialog = true" />
+            <q-btn unelevated dense color="blue-grey-7" text-color="white" icon="storefront"
+              label="Atacado" size="sm" class="q-px-md" @click="showBulkWholesaleDialog = true" />
+            <q-space />
+            <q-btn flat dense color="grey-6" icon="close" label="Limpar seleção" size="sm"
+              @click="selectedItems = []" />
+          </div>
+        </transition>
+
         <q-table :rows="items" :columns="columns" row-key="item_id" flat :loading="loading"
           v-model:pagination="pagination" @request="onRequest" binary-state-sort
           class="sticky-header-table my-custom-table" no-data-label="Nenhum anúncio encontrado.">
           <template v-slot:header="props">
             <q-tr :props="props" class="bg-grey-2 text-grey-8 text-uppercase text-caption">
+              <q-th auto-width>
+                <q-checkbox :model-value="allSelected" :indeterminate="someSelected"
+                  @update:model-value="toggleAll" color="indigo-6" dense />
+              </q-th>
               <q-th auto-width />
               <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">
                 {{ col.label }}
@@ -270,7 +300,14 @@
           </template>
 
           <template v-slot:body="props">
-            <q-tr :props="props" :class="props.expand ? 'bg-indigo-1' : 'hover-row'" class="cursor-pointer">
+            <q-tr :props="props"
+              :class="[isSelected(props.row) ? 'bg-indigo-1' : (props.expand ? 'bg-indigo-1' : 'hover-row')]"
+              class="cursor-pointer">
+
+              <q-td auto-width>
+                <q-checkbox :model-value="isSelected(props.row)" @update:model-value="toggleSelect(props.row)"
+                  @click.stop color="indigo-6" dense />
+              </q-td>
 
               <q-td auto-width class="q-py-md">
                 <q-btn size="sm" flat round :color="props.expand ? 'indigo' : 'grey-6'"
@@ -646,6 +683,182 @@
       </q-card>
     </q-dialog>
 
+    <!-- ══ DIALOG 1: ALTERAR PREÇO EM MASSA ══════════════════════════════ -->
+    <q-dialog v-model="showBulkPriceDialog" persistent>
+      <q-card style="min-width:420px; max-width:95vw">
+        <q-card-section class="bg-indigo-6 text-white row items-center">
+          <q-icon name="attach_money" size="sm" class="q-mr-sm" />
+          <span class="text-h6">Alterar Preço em Massa</span>
+          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg column q-gutter-md">
+          <div class="text-caption text-grey-7">{{ selectedItems.length }} anúncio(s) selecionado(s)</div>
+
+          <q-btn-toggle v-model="bulkPriceForm.direction" spread unelevated
+            :options="[{label:'Aumentar',value:'increase',icon:'arrow_upward'},{label:'Diminuir',value:'decrease',icon:'arrow_downward'}]"
+            color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
+
+          <q-btn-toggle v-model="bulkPriceForm.type" spread unelevated
+            :options="[{label:'Percentual (%)',value:'pct'},{label:'Valor (R$)',value:'abs'}]"
+            color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
+
+          <q-input v-model.number="bulkPriceForm.value" type="number" outlined dense
+            :label="bulkPriceForm.type === 'pct' ? 'Percentual (%)' : 'Valor (R$)'"
+            :hint="bulkPriceForm.type === 'pct' ? 'Ex: 10 → aplica 10% de ajuste' : 'Ex: 5.00 → soma/subtrai R$ 5,00'"
+            color="indigo-6">
+            <template v-slot:prepend>
+              <q-icon :name="bulkPriceForm.type === 'pct' ? 'percent' : 'attach_money'" />
+            </template>
+          </q-input>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md q-pt-none">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Aplicar" color="indigo-6" :loading="bulkLoading"
+            :disable="!bulkPriceForm.value || bulkPriceForm.value <= 0"
+            @click="executeBulkPriceUpdate" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ══ DIALOG 2: GERENCIAR PROMOÇÕES ══════════════════════════════════ -->
+    <q-dialog v-model="showBulkPromoDialog" persistent>
+      <q-card style="min-width:460px; max-width:95vw">
+        <q-card-section class="bg-orange-7 text-white row items-center">
+          <q-icon name="local_offer" size="sm" class="q-mr-sm" />
+          <span class="text-h6">Gerenciar Promoções</span>
+          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg column q-gutter-md">
+          <div class="text-caption text-grey-7">{{ selectedItems.length }} anúncio(s) selecionado(s)</div>
+
+          <q-btn-toggle v-model="bulkPromoForm.action" spread unelevated
+            :options="[{label:'Desativar Promoção',value:'deactivate',icon:'remove_circle'},{label:'Ativar Promoção',value:'activate',icon:'add_circle'}]"
+            color="grey-3" text-color="grey-8" toggle-color="orange-7" toggle-text-color="white" />
+
+          <template v-if="bulkPromoForm.action === 'activate'">
+            <q-separator />
+            <div class="text-caption text-weight-bold text-grey-9">Configurar Desconto</div>
+
+            <q-btn-toggle v-model="bulkPromoForm.dealPriceType" spread unelevated
+              :options="[{label:'% de Desconto',value:'pct'},{label:'R$ de Desconto',value:'abs'}]"
+              color="grey-3" text-color="grey-8" toggle-color="orange-7" toggle-text-color="white" />
+
+            <q-input v-model.number="bulkPromoForm.dealPriceValue" type="number" outlined dense
+              :label="bulkPromoForm.dealPriceType === 'pct' ? 'Desconto (%)' : 'Desconto (R$)'"
+              :hint="bulkPromoForm.dealPriceType === 'pct' ? 'Ex: 15 → 15% off no preço atual' : 'Ex: 20 → R$ 20 off'"
+              color="orange-7">
+              <template v-slot:prepend>
+                <q-icon :name="bulkPromoForm.dealPriceType === 'pct' ? 'percent' : 'attach_money'" />
+              </template>
+            </q-input>
+
+            <q-input v-model="bulkPromoForm.finishDate" type="date" outlined dense label="Data de Término"
+              color="orange-7" :hint="`Máximo 14 dias. Hoje: ${new Date().toLocaleDateString('pt-BR')}`">
+              <template v-slot:prepend><q-icon name="event" /></template>
+            </q-input>
+          </template>
+
+          <q-banner v-if="bulkPromoForm.action === 'deactivate'" class="bg-red-1 text-red-9 rounded-borders">
+            <template v-slot:avatar><q-icon name="warning" color="red-7" /></template>
+            Remove a promoção PRICE_DISCOUNT ativa de todos os anúncios selecionados.
+          </q-banner>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md q-pt-none">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated :label="bulkPromoForm.action === 'deactivate' ? 'Desativar' : 'Ativar'"
+            color="orange-7" :loading="bulkLoading"
+            :disable="bulkPromoForm.action === 'activate' && (!bulkPromoForm.dealPriceValue || !bulkPromoForm.finishDate)"
+            @click="executeBulkPromo" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ══ DIALOG 3: ALTERAR TIPO DE ANÚNCIO ═════════════════════════════ -->
+    <q-dialog v-model="showBulkListingTypeDialog" persistent>
+      <q-card style="min-width:400px; max-width:95vw">
+        <q-card-section class="bg-teal-7 text-white row items-center">
+          <q-icon name="rocket_launch" size="sm" class="q-mr-sm" />
+          <span class="text-h6">Alterar Tipo de Anúncio</span>
+          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg column q-gutter-md">
+          <div class="text-caption text-grey-7">{{ selectedItems.length }} anúncio(s) selecionado(s)</div>
+
+          <q-btn-toggle v-model="bulkListingTypeForm.listing_type" spread unelevated
+            :options="[
+              {label:'Premium (gold_pro)',value:'gold_pro',icon:'workspace_premium'},
+              {label:'Clássico (gold_special)',value:'gold_special',icon:'article'}
+            ]"
+            color="grey-3" text-color="grey-8" toggle-color="teal-7" toggle-text-color="white" />
+
+          <q-banner class="bg-teal-1 text-teal-9 rounded-borders">
+            <template v-slot:avatar><q-icon name="info" color="teal-7" /></template>
+            <span v-if="bulkListingTypeForm.listing_type === 'gold_pro'">
+              <b>Premium</b>: maior visibilidade, tarifa mais alta. Recomendado para itens com 10+ vendas.
+            </span>
+            <span v-else>
+              <b>Clássico</b>: tarifa reduzida. Ideal para itens novos ou de menor volume.
+            </span>
+          </q-banner>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md q-pt-none">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Aplicar" color="teal-7" :loading="bulkLoading"
+            @click="executeBulkListingType" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ══ DIALOG 4: PREÇOS DE ATACADO ═══════════════════════════════════ -->
+    <q-dialog v-model="showBulkWholesaleDialog" persistent>
+      <q-card style="min-width:480px; max-width:95vw">
+        <q-card-section class="bg-blue-grey-7 text-white row items-center">
+          <q-icon name="storefront" size="sm" class="q-mr-sm" />
+          <span class="text-h6">Preços de Atacado (PxQ)</span>
+          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg column q-gutter-sm">
+          <div class="text-caption text-grey-7">{{ selectedItems.length }} anúncio(s) • Máx. 3 faixas • B2B</div>
+
+          <div v-for="(tier, i) in bulkWholesaleForm.tiers" :key="i"
+            class="row q-col-gutter-sm items-center bg-grey-1 q-pa-sm rounded-borders">
+            <div class="col-3">
+              <q-input v-model.number="tier.min_quantity" type="number" outlined dense
+                :label="`Faixa ${i+1}: Qtd`" color="blue-grey-7" />
+            </div>
+            <div class="col-4">
+              <q-btn-toggle v-model="tier.priceType" dense unelevated
+                :options="[{label:'%',value:'pct'},{label:'R$',value:'abs'}]"
+                color="grey-3" text-color="grey-8" toggle-color="blue-grey-7" toggle-text-color="white" />
+            </div>
+            <div class="col-5">
+              <q-input v-model.number="tier.value" type="number" outlined dense
+                :label="tier.priceType === 'pct' ? '% off' : 'Preço fixo'" color="blue-grey-7" />
+            </div>
+          </div>
+
+          <q-banner class="bg-blue-grey-1 text-blue-grey-9 rounded-borders q-mt-sm">
+            <template v-slot:avatar><q-icon name="info" color="blue-grey-6" /></template>
+            Disponível apenas para compradores B2B (Mercado Livre Business).
+            Faixas % são calculadas sobre o preço atual de cada anúncio.
+          </q-banner>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md q-pt-none">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Aplicar Atacado" color="blue-grey-7" :loading="bulkLoading"
+            @click="executeBulkWholesale" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -661,6 +874,36 @@ const $q = useQuasar()
 // ============================================================================
 const items = ref([])
 const loading = ref(false)
+
+// ── Seleção múltipla ──────────────────────────────────────────────────────
+const selectedItems = ref([])
+const allSelected = computed(() => items.value.length > 0 && selectedItems.value.length === items.value.length)
+const someSelected = computed(() => selectedItems.value.length > 0 && selectedItems.value.length < items.value.length)
+const isSelected = (row) => selectedItems.value.some(r => r.item_id === row.item_id)
+const toggleSelect = (row) => {
+  const idx = selectedItems.value.findIndex(r => r.item_id === row.item_id)
+  if (idx === -1) selectedItems.value = [...selectedItems.value, row]
+  else selectedItems.value = selectedItems.value.filter(r => r.item_id !== row.item_id)
+}
+const toggleAll = (val) => { selectedItems.value = val ? [...items.value] : [] }
+
+// ── Dialogs bulk ──────────────────────────────────────────────────────────
+const showBulkPriceDialog      = ref(false)
+const showBulkPromoDialog      = ref(false)
+const showBulkListingTypeDialog = ref(false)
+const showBulkWholesaleDialog  = ref(false)
+const bulkLoading = ref(false)
+
+const bulkPriceForm = reactive({ direction: 'increase', type: 'pct', value: null })
+const bulkPromoForm = reactive({ action: 'deactivate', dealPriceType: 'pct', dealPriceValue: null, finishDate: null })
+const bulkListingTypeForm = reactive({ listing_type: 'gold_pro' })
+const bulkWholesaleForm = reactive({
+  tiers: [
+    { min_quantity: 1,  priceType: 'abs', value: null },
+    { min_quantity: 5,  priceType: 'pct', value: 10   },
+    { min_quantity: 10, priceType: 'pct', value: 15   },
+  ]
+})
 
 const pagination = ref({
   sortBy: 'sold_quantity',
@@ -709,7 +952,8 @@ const filters = reactive({
   healthMin: null,
   healthMax: null,
   priceMin: null,
-  priceMax: null
+  priceMax: null,
+  discountMin: null
 })
 
 // Opções Estáticas
@@ -782,6 +1026,7 @@ const resetFiltersState = () => {
   filters.healthMax = null
   filters.priceMin = null
   filters.priceMax = null
+  filters.discountMin = null
 }
 
 const clearFilters = () => {
@@ -835,17 +1080,9 @@ const resetPagination = () => {
 let filterTimer
 watch(filters, () => {
   clearTimeout(filterTimer)
-
   filterTimer = setTimeout(() => {
-    // Se não estivermos na página 1, voltamos pra ela.
-    // O próprio QTable detecta a mudança de página e dispara a API pra nós.
-    if (pagination.value.page !== 1) {
-      pagination.value.page = 1
-    } else {
-      // Se já estivermos na página 1, disparamos a API manualmente
-      refreshData()
-    }
-  }, 400) // Aguarda o usuário parar de digitar/clicar por 400ms antes de ir no banco
+    onRequest({ pagination: { ...pagination.value, page: 1 } })
+  }, 400)
 }, { deep: true })
 
 // ============================================================================
@@ -892,7 +1129,8 @@ const onRequest = async (props) => {
       price_max: filters.priceMax,
       sold_quantity_min: filters.soldMin,
       performance_score_min: filters.healthMin,
-      performance_score_max: filters.healthMax
+      performance_score_max: filters.healthMax,
+      discount_pct_min: filters.discountMin
     }
 
     // Limpa chaves inválidas (null / undefined) para não sujar a URL
@@ -1094,6 +1332,92 @@ const openSpaceManagement = (row) => {
     })
 }
 
+// ── Helpers bulk ─────────────────────────────────────────────────────────
+const _itemsPayload = () => selectedItems.value.map(r => ({ item_id: r.item_id }))
+
+const _bulkFinish = (result, closeRef) => {
+  const ok = result.data?.success?.length || 0
+  const err = result.data?.errors?.length || 0
+  if (err === 0) {
+    $q.notify({ type: 'positive', message: `${ok} anúncio(s) atualizado(s) com sucesso!`, position: 'top' })
+  } else {
+    $q.notify({
+      type: err === ok + err ? 'negative' : 'warning',
+      message: `${ok} ok, ${err} erro(s). Veja o console.`,
+      position: 'top'
+    })
+    console.warn('[BulkErrors]', result.data?.errors)
+  }
+  closeRef.value = false
+  selectedItems.value = []
+  refreshData()
+}
+
+const executeBulkPriceUpdate = async () => {
+  bulkLoading.value = true
+  try {
+    const res = await MercadoLivreService.bulkPriceUpdate({
+      items: _itemsPayload(),
+      direction: bulkPriceForm.direction,
+      type: bulkPriceForm.type,
+      value: bulkPriceForm.value
+    })
+    _bulkFinish(res, showBulkPriceDialog)
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao alterar preços.' })
+  } finally { bulkLoading.value = false }
+}
+
+const executeBulkPromo = async () => {
+  bulkLoading.value = true
+  try {
+    let res
+    if (bulkPromoForm.action === 'deactivate') {
+      res = await MercadoLivreService.bulkPromoDeactivate({ items: _itemsPayload() })
+    } else {
+      res = await MercadoLivreService.bulkPromoActivate({
+        items: _itemsPayload(),
+        deal_price_type: bulkPromoForm.dealPriceType,
+        deal_price_value: bulkPromoForm.dealPriceValue,
+        finish_date: bulkPromoForm.finishDate ? `${bulkPromoForm.finishDate}T23:59:59` : null
+      })
+    }
+    _bulkFinish(res, showBulkPromoDialog)
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao gerenciar promoções.' })
+  } finally { bulkLoading.value = false }
+}
+
+const executeBulkListingType = async () => {
+  bulkLoading.value = true
+  try {
+    const res = await MercadoLivreService.bulkListingType({
+      items: _itemsPayload(),
+      listing_type_id: bulkListingTypeForm.listing_type
+    })
+    _bulkFinish(res, showBulkListingTypeDialog)
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao alterar tipo.' })
+  } finally { bulkLoading.value = false }
+}
+
+const executeBulkWholesale = async () => {
+  bulkLoading.value = true
+  try {
+    const res = await MercadoLivreService.bulkWholesale({
+      items: _itemsPayload(),
+      tiers: bulkWholesaleForm.tiers.map(t => ({
+        min_quantity: t.min_quantity,
+        price_type: t.priceType,
+        value: t.value
+      })).filter(t => t.value && t.min_quantity)
+    })
+    _bulkFinish(res, showBulkWholesaleDialog)
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao definir atacado.' })
+  } finally { bulkLoading.value = false }
+}
+
 const reactivateItem = (row) => {
   $q.dialog({
     title: 'Confirmar Reativação',
@@ -1129,6 +1453,12 @@ const reactivateItem = (row) => {
 </script>
 
 <style scoped>
+.bulk-bar {
+  background: #e8eaf6;
+  border-bottom: 1px solid #c5cae9;
+  border-top: 1px solid #c5cae9;
+}
+
 .my-custom-table :deep(tbody tr td) {
   min-height: 65px;
   height: auto;

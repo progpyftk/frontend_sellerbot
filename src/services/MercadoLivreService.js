@@ -30,6 +30,25 @@ export default {
     return api.put(`/mercadolivre/items/${itemId}/reactivate/`, { quantity })
   },
 
+  // ==========================================
+  // AÇÕES EM MASSA (BULK)
+  // ==========================================
+  bulkPriceUpdate(payload) {
+    return api.post('/mercadolivre/items/bulk-price-update/', payload)
+  },
+  bulkPromoDeactivate(payload) {
+    return api.post('/mercadolivre/items/bulk-promo-deactivate/', payload)
+  },
+  bulkPromoActivate(payload) {
+    return api.post('/mercadolivre/items/bulk-promo-activate/', payload)
+  },
+  bulkListingType(payload) {
+    return api.post('/mercadolivre/items/bulk-listing-type/', payload)
+  },
+  bulkWholesale(payload) {
+    return api.post('/mercadolivre/items/bulk-wholesale/', payload)
+  },
+
   getPromotions() {
     return api.get('/mercadolivre/promotions/')
   },
