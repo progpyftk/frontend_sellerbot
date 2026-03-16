@@ -22,6 +22,61 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════ -->
+    <!-- MINI DASHBOARD — HOJE                                 -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="today-bar">
+      <div class="today-bar-label">
+        <q-icon name="today" size="13px" class="q-mr-xs" />Hoje
+      </div>
+
+      <template v-if="todayLoading || !todayStats">
+        <div class="today-card today-card--skeleton" v-for="n in 3" :key="n" />
+      </template>
+
+      <template v-else>
+        <!-- Lucro pós CMV -->
+        <div class="today-card" :class="todayStats.net_after_cmv >= 0 ? 'today-card--pos' : 'today-card--neg'">
+          <div class="today-card-icon">
+            <q-icon name="trending_up" size="16px" />
+          </div>
+          <div class="today-card-body">
+            <div class="today-card-val">{{ formatCurrency(todayStats.net_after_cmv) }}</div>
+            <div class="today-card-label">Lucro pós CMV</div>
+            <div class="today-card-sub" v-if="todayStats.cmv_count < todayStats.count">
+              {{ todayStats.cmv_count }}/{{ todayStats.count }} vendas com CMV
+            </div>
+          </div>
+        </div>
+
+        <!-- Qtd de vendas -->
+        <div class="today-card today-card--neutral">
+          <div class="today-card-icon">
+            <q-icon name="receipt_long" size="16px" />
+          </div>
+          <div class="today-card-body">
+            <div class="today-card-val">{{ todayStats.count }}</div>
+            <div class="today-card-label">Vendas</div>
+            <div class="today-card-sub">{{ formatCurrency(todayStats.total_amount) }} bruto</div>
+          </div>
+        </div>
+
+        <!-- Lucro médio por venda -->
+        <div class="today-card" :class="todayStats.avg_net_after_cmv >= 0 ? 'today-card--pos' : 'today-card--neg'">
+          <div class="today-card-icon">
+            <q-icon name="equalizer" size="16px" />
+          </div>
+          <div class="today-card-body">
+            <div class="today-card-val">{{ formatCurrency(todayStats.avg_net_after_cmv) }}</div>
+            <div class="today-card-label">Lucro médio / venda</div>
+            <div class="today-card-sub" v-if="todayStats.cmv_count">
+              base: {{ todayStats.cmv_count }} venda{{ todayStats.cmv_count !== 1 ? 's' : '' }} c/ CMV
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
     <!-- FILTROS                                               -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="fb">
@@ -36,6 +91,7 @@
             placeholder="Buscar por título, SKU, nº pedido, comprador..."
             @focus="searchFocused = true"
             @blur="searchFocused = false"
+            @keydown.enter="buscar"
           />
           <transition name="fade">
             <button v-if="filters.search" class="fb-search-clear" @click="filters.search = ''">
@@ -126,6 +182,12 @@
               <span v-if="advancedFilterCount > 0" class="fb-adv-badge">{{ advancedFilterCount }}</span>
             </button>
           </div>
+
+          <!-- Buscar -->
+          <button class="fb-search-btn" @click="buscar">
+            <q-icon name="search" size="15px" />
+            <span>Buscar</span>
+          </button>
 
           <!-- Limpar -->
           <transition name="fade">
@@ -376,7 +438,7 @@
               <div class="fb-index-cat"><q-icon name="calendar_month" size="12px" />Período</div>
               <div class="fb-index-pills">
                 <span class="fb-index-pill" @click="filters.dateFrom = null; filters.dateTo = null">
-                  {{ filters.dateFrom || '...' }} → {{ filters.dateTo || '...' }}
+                  {{ filters.dateFrom ? filters.dateFrom.replace('T', ' ') : '...' }} → {{ filters.dateTo ? filters.dateTo.replace('T', ' ') : '...' }}
                   <q-icon name="close" size="9px" />
                 </span>
               </div>
@@ -432,7 +494,7 @@
       <q-table :rows="filteredOrders" :columns="columns" row-key="order_id" flat :loading="loading"
         v-model:pagination="pagination" @request="onRequest" binary-state-sort
         class="orders-table" no-data-label="Nenhuma venda encontrada."
-        :rows-per-page-options="[10, 20, 50]">
+        :rows-per-page-options="[20, 50, 100]">
 
         <template #header="props">
           <q-tr :props="props" class="orders-thead">
@@ -666,7 +728,7 @@
                   {{ calcLucroPct(props.row) }}% margem
                 </div>
                 <div class="liquido-hint">
-                  CMV: {{ formatCurrency(props.row.total_cmv) }}
+                  CMV: {{ formatCurrency(getOrderCmv(props.row)) }}
                 </div>
               </div>
               <div v-else class="text-caption text-grey-5">S/ CMV</div>
@@ -684,6 +746,9 @@
     <!-- ══════════════════════════════════════════════════ -->
     <q-dialog v-model="financialOpen" position="right" full-height :maximized="$q.screen.lt.md"
       transition-show="slide-left" transition-hide="slide-right">
+      <div v-if="!selectedOrder" class="detail-panel detail-panel--loading">
+        <q-spinner-dots color="teal" size="2.5em" />
+      </div>
       <div class="detail-panel" v-if="selectedOrder">
         <div class="detail-header">
           <div class="row items-start justify-between no-wrap">
@@ -794,6 +859,10 @@
                       <span class="receipt-sub" style="color:#0d9488">
                         <q-icon name="directions_bike" size="10px" /> Entrega Flex — sem custo de transportadora ML
                       </span>
+                      <div v-if="Number(selectedOrder.shipment?.shipping_cost || 0) > 0" class="freight-audit">
+                        <div class="audit-row"><span>Comprador pagou</span><strong class="pos-t">{{ formatCurrency(selectedOrder.shipment.shipping_cost) }}</strong></div>
+                        <div class="audit-row hl"><span>Seller paga</span><strong style="color:#0d9488">Grátis</strong></div>
+                      </div>
                     </template>
 
                     <!-- Outros: exibe descrição baseada no cost_type -->
@@ -815,14 +884,14 @@
                   </span>
                 </div>
                 <!-- Repasse Flex: ML credita ao seller o frete pago pelo comprador -->
-                <div v-if="Number(selectedOrder.fee_breakdown?.flex_credit || 0) > 0" class="receipt-row sub-row">
+                <div v-if="selectedOrder.shipment?.logistic_mode === 'self_service' && Number(selectedOrder.fee_breakdown?.flex_credit || selectedOrder.shipment?.shipping_cost || 0) > 0" class="receipt-row sub-row">
                   <div class="receipt-label-g">
                     <span class="receipt-label">(+) Repasse Flex</span>
                     <span class="receipt-sub" style="color:#0d9488">
                       <q-icon name="directions_bike" size="10px" /> Frete pago pelo comprador — ML repassa ao seller
                     </span>
                   </div>
-                  <span class="receipt-value pos-t">+{{ formatCurrency(selectedOrder.fee_breakdown.flex_credit) }}</span>
+                  <span class="receipt-value pos-t">+{{ formatCurrency(selectedOrder.fee_breakdown?.flex_credit || selectedOrder.shipment?.shipping_cost) }}</span>
                 </div>
                 <div class="receipt-sep thick" />
                 <div class="receipt-row total-row">
@@ -836,13 +905,34 @@
                     </span>
                   </div>
                 </div>
-                <template v-if="selectedOrder.total_cmv != null">
-                  <div class="receipt-row sub-row">
-                    <div class="receipt-label-g">
-                      <span class="receipt-label">(-) CMV (custo mercadoria)</span>
-                      <span class="receipt-sub">Custo médio do Tiny ERP por SKU</span>
+                <template v-if="selectedOrder.net_after_cmv != null">
+                  <!-- CMV por item (quando há cmv_unit_cost gravado no snapshot novo) -->
+                  <template v-for="item in (selectedOrder.items || [])" :key="'cmv-' + item.item_id_ml + (item.variation_id || '')">
+                    <div v-if="item.cmv_unit_cost != null" class="receipt-row sub-row">
+                      <div class="receipt-label-g">
+                        <span class="receipt-label">(-) CMV · {{ item.seller_sku || item.item_id_ml }}</span>
+                        <span class="receipt-sub">
+                          {{ formatCurrency(item.cmv_unit_cost) }}/un × {{ item.quantity }}
+                          <template v-if="(selectedOrder.items||[]).filter(i => i.cmv_unit_cost != null).length > 1">
+                            · {{ item.title?.substring(0, 30) }}{{ item.title?.length > 30 ? '…' : '' }}
+                          </template>
+                        </span>
+                      </div>
+                      <span class="receipt-value ded-t">-{{ formatCurrency(Number(item.cmv_unit_cost) * Number(item.quantity || 1)) }}</span>
                     </div>
-                    <span class="receipt-value ded-t">-{{ formatCurrency(selectedOrder.total_cmv) }}</span>
+                  </template>
+                  <!-- Total CMV -->
+                  <div class="receipt-row sub-row" :class="(selectedOrder.items||[]).filter(i => i.cmv_unit_cost != null).length > 1 ? 'cmv-total-row' : ''">
+                    <div class="receipt-label-g">
+                      <span class="receipt-label">(-) CMV Total</span>
+                      <span class="receipt-sub">
+                        Custo médio do Tiny ERP · snapshot na data da venda
+                        <template v-if="selectedOrder.total_cmv == null">
+                          <span style="color:#f59e0b"> · derivado</span>
+                        </template>
+                      </span>
+                    </div>
+                    <span class="receipt-value ded-t">-{{ formatCurrency(getOrderCmv(selectedOrder)) }}</span>
                   </div>
                   <div class="receipt-sep thick" />
                   <div class="receipt-row total-row">
@@ -1096,18 +1186,17 @@
                 <q-icon name="calendar_month" size="15px" color="teal-7" />
                 Período
               </div>
-              <div class="fadv-row">
+              <div class="fadv-row fadv-row--col">
                 <div class="fb-date-field" :class="filters.dateFrom && 'fb-date-field--filled'">
                   <label class="fb-date-label">De</label>
-                  <input v-model="filters.dateFrom" type="date" class="fb-date-input" />
+                  <input v-model="filters.dateFrom" type="datetime-local" class="fb-date-input fb-date-input--dt" />
                   <button v-if="filters.dateFrom" class="fb-date-clear" @click="filters.dateFrom = null">
                     <q-icon name="close" size="11px" />
                   </button>
                 </div>
-                <span class="fadv-range-sep">→</span>
                 <div class="fb-date-field" :class="filters.dateTo && 'fb-date-field--filled'">
                   <label class="fb-date-label">Até</label>
-                  <input v-model="filters.dateTo" type="date" class="fb-date-input" />
+                  <input v-model="filters.dateTo" type="datetime-local" class="fb-date-input fb-date-input--dt" />
                   <button v-if="filters.dateTo" class="fb-date-clear" @click="filters.dateTo = null">
                     <q-icon name="close" size="11px" />
                   </button>
@@ -1290,8 +1379,20 @@ const logisticsOrder = ref(null)  // para dialog logístico
 const detailLoading = ref(false)
 
 const pagination = ref({
-  sortBy: 'date_created', descending: true, page: 1, rowsPerPage: 20, rowsNumber: 0
+  sortBy: 'date_created', descending: true, page: 1, rowsPerPage: 50, rowsNumber: 0
 })
+
+// Mini-dashboard: resumo do dia
+const todayStats     = ref(null)
+const todayLoading   = ref(false)
+const fetchTodayStats = async () => {
+  todayLoading.value = true
+  try {
+    const { data } = await MercadoLivreService.getOrderTodaySummary()
+    todayStats.value = data
+  } catch (e) { console.error(e) }
+  finally { todayLoading.value = false }
+}
 
 const columns = [
   { name: 'produto',      label: 'PRODUTO / PEDIDO',   field: 'order_id',      align: 'left',  sortable: true, style: 'min-width:250px' },
@@ -1450,63 +1551,60 @@ const resetFiltersState = () => Object.assign(filters, {
   marginMin: null, marginMax: null, is_catalog: null, fulfilled: null,
   _substatus: null,
 })
-const clearFilters = () => { resetFiltersState(); marginFilterMode.value = 'net_after_cmv' }
+const clearFilters = () => { resetFiltersState(); marginFilterMode.value = 'net_after_cmv'; buscar() }
 
-// Toggle individual de conta (chips rápidos)
+const buscar = () => onRequest({ pagination: { ...pagination.value, page: 1 } })
+
+// Toggle individual de conta (chips rápidos — auto-busca ao clicar)
 const toggleAccountFilter = (value) => {
   const idx = filters.account.indexOf(value)
   if (idx === -1) filters.account = [...filters.account, value]
   else filters.account = filters.account.filter(v => v !== value)
+  buscar()
 }
 // Toggle individual de tipo logístico
 const toggleLogisticFilter = (value) => {
   const idx = filters.logistic_type.indexOf(value)
   if (idx === -1) filters.logistic_type = [...filters.logistic_type, value]
   else filters.logistic_type = filters.logistic_type.filter(v => v !== value)
+  buscar()
 }
 // Toggle individual de custo de frete
 const toggleCostTypeFilter = (value) => {
   const idx = filters.cost_type.indexOf(value)
   if (idx === -1) filters.cost_type = [...filters.cost_type, value]
   else filters.cost_type = filters.cost_type.filter(v => v !== value)
+  buscar()
 }
 // Toggle individual de status pedido (chips rápidos)
 const toggleStatusFilter = (value) => {
   const idx = filters.status.indexOf(value)
   if (idx === -1) filters.status = [...filters.status, value]
   else filters.status = filters.status.filter(v => v !== value)
+  buscar()
 }
 // Toggle individual de status envio (chips rápidos)
 const toggleShipmentFilter = (value) => {
   const idx = filters.shipment_status.indexOf(value)
   if (idx === -1) filters.shipment_status = [...filters.shipment_status, value]
   else filters.shipment_status = filters.shipment_status.filter(v => v !== value)
+  buscar()
 }
 
 // Expedição
-const setFilterHandling     = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['handling'] }
-const setFilterLabelPrint   = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['ready_to_ship']; filters._substatus = 'ready_to_print' }
-const setFilterReadyToShip  = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['ready_to_ship'] }
+const setFilterHandling     = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['handling']; buscar() }
+const setFilterLabelPrint   = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['ready_to_ship']; filters._substatus = 'ready_to_print'; buscar() }
+const setFilterReadyToShip  = () => { resetFiltersState(); filters.status = ['paid']; filters.shipment_status = ['ready_to_ship']; buscar() }
 // Envio
-const setFilterInTransit    = () => { resetFiltersState(); filters.shipment_status = ['shipped'] }
-const setFilterDelivered    = () => { resetFiltersState(); filters.shipment_status = ['delivered'] }
+const setFilterInTransit    = () => { resetFiltersState(); filters.shipment_status = ['shipped']; buscar() }
+const setFilterDelivered    = () => { resetFiltersState(); filters.shipment_status = ['delivered']; buscar() }
 // Logística
-const setFilterFlex         = () => { resetFiltersState(); filters.logistic_type = ['self_service'] }
-const setFilterFull         = () => { resetFiltersState(); filters.logistic_type = ['fulfillment'] }
-const setFilterAgencia      = () => { resetFiltersState(); filters.logistic_type = ['xd_drop_off', 'drop_off'] }
+const setFilterFlex         = () => { resetFiltersState(); filters.logistic_type = ['self_service']; buscar() }
+const setFilterFull         = () => { resetFiltersState(); filters.logistic_type = ['fulfillment']; buscar() }
+const setFilterAgencia      = () => { resetFiltersState(); filters.logistic_type = ['xd_drop_off', 'drop_off']; buscar() }
 // Outros
-const setFilterCatalog      = () => { resetFiltersState(); filters.is_catalog = true }
-const setFilterCancelled    = () => { resetFiltersState(); filters.status = ['cancelled'] }
-
-let filterTimer
-watch(filters, () => {
-  clearTimeout(filterTimer)
-  filterTimer = setTimeout(() => {
-    // Sempre força page=1 e chama onRequest diretamente —
-    // não depende do q-table disparar @request (ele não dispara em mudanças programáticas).
-    onRequest({ pagination: { ...pagination.value, page: 1 } })
-  }, 400)
-}, { deep: true })
+const setFilterCatalog      = () => { resetFiltersState(); filters.is_catalog = true; buscar() }
+const setFilterCancelled    = () => { resetFiltersState(); filters.status = ['cancelled']; buscar() }
 
 // ============================================================================
 // 4. DATA FETCHING
@@ -1517,10 +1615,11 @@ const loadFacets = async () => {
     availableAccounts.value = data.map(a => ({ id: a.account_id, nickname: a.account_nickname }))
   } catch (e) { console.error(e) }
 }
-const refreshData = () => onRequest({ pagination: pagination.value })
+const refreshData = () => { onRequest({ pagination: pagination.value }); fetchTodayStats() }
 const onRequest = async (props) => {
   const { page, rowsPerPage, sortBy, descending } = props.pagination
   loading.value = true
+  orders.value = []
   try {
     // Tratamento especial: imprimir etiqueta → substatus=ready_to_print
     const hasLabelPrint = filters._substatus === 'ready_to_print'
@@ -1536,8 +1635,8 @@ const onRequest = async (props) => {
       shipment__substatus:     hasLabelPrint                   ? 'ready_to_print'                  : undefined,
       shipment__logistic_type: filters.logistic_type?.length   ? filters.logistic_type.join(',')   : undefined,
       shipment__cost_type:     filters.cost_type?.length       ? filters.cost_type.join(',')       : undefined,
-      date_created__gte:       filters.dateFrom ? `${filters.dateFrom}T00:00:00` : undefined,
-      date_created__lte:       filters.dateTo   ? `${filters.dateTo}T23:59:59`   : undefined,
+      date_created__gte:       filters.dateFrom ? `${filters.dateFrom}:00` : undefined,
+      date_created__lte:       filters.dateTo   ? `${filters.dateTo}:00`   : undefined,
       total_amount__gte:       filters.priceMin > 0            ? filters.priceMin                  : undefined,
       total_amount__lte:       filters.priceMax > 0            ? filters.priceMax                  : undefined,
       [`${marginFilterMode.value}__gte`]: filters.marginMin != null ? filters.marginMin            : undefined,
@@ -1587,10 +1686,10 @@ const ensurePayments = async (row) => {
 }
 
 const openFinancial = async (row) => {
-  selectedOrder.value = row
-  financialOpen.value = true
+  selectedOrder.value = null   // limpa conteúdo anterior
+  financialOpen.value = true   // abre dialog (mostrará só o spinner)
   await ensurePayments(row)
-  selectedOrder.value = { ...row }
+  selectedOrder.value = { ...row }  // renderiza tudo de uma vez após carregar
 }
 
 const openLogistics = (row) => {
@@ -1657,28 +1756,55 @@ const decomposeItemFee = (item) => {
 }
 
 // Retorna os totais financeiros da order/pack usando fee_breakdown do backend.
+// Fallback para soma de item.total_fee quando o snapshot ainda não foi gravado (Order.total_fee null).
 const getOrderFeeBreakdown = (row) => {
-  const fb = row.fee_breakdown
-  if (fb) {
-    const b = Number(row.total_amount || 0)
-    const fee = Number(fb.total_sale_fee || 0)
-    return {
-      totalSaleFee:    fee,
-      totalCommission: fee,
-      totalTaxaFixa:   0,
-      anyTaxaFixa:     false,
-      effectivePct:    b > 0 ? (fee / b) * 100 : 0,
-    }
-  }
-  // fallback: sem fee_breakdown, soma item.total_fee
-  const items = row.items || []
-  const totalSaleFee = items.reduce((s, i) => s + Number(i.total_fee || 0), 0)
   const b = Number(row.total_amount || 0)
-  return { totalSaleFee, totalCommission: totalSaleFee, totalTaxaFixa: 0, anyTaxaFixa: false,
-    effectivePct: b > 0 ? (totalSaleFee / b) * 100 : 0 }
+  const fb = row.fee_breakdown
+  let fee = fb ? Number(fb.total_sale_fee || 0) : 0
+  if (!fee) {
+    // snapshot ausente ou zerado — soma diretamente dos itens (gerado pelo banco: sale_fee × qty)
+    fee = (row.items || []).reduce((s, i) => s + Number(i.total_fee || 0), 0)
+  }
+  return {
+    totalSaleFee:    fee,
+    totalCommission: fee,
+    totalTaxaFixa:   0,
+    anyTaxaFixa:     false,
+    effectivePct:    b > 0 ? (fee / b) * 100 : 0,
+  }
 }
 
-const getSellerShippingCost = (row) => Number(row.shipment?.seller_shipping_cost || 0)
+const getSellerShippingCost = (row) => {
+  // Primary: shipment serializer computes from net_cost (definitive ML API value)
+  const fromShipment = Number(row.shipment?.seller_shipping_cost || 0)
+  if (fromShipment > 0) return fromShipment
+  // Fallback 1: Order snapshot field
+  const fromFb = Number(row.fee_breakdown?.seller_shipping_cost || 0)
+  if (fromFb > 0) return fromFb
+  // Fallback 2: derive from net_received if available
+  // net_received = total_amount - sale_fee - seller_shipping + flex_credit
+  if (row.fee_breakdown?.net_received != null) {
+    const derived = Number(row.total_amount || 0)
+      - Number(row.fee_breakdown?.total_sale_fee || 0)
+      - Number(row.fee_breakdown.net_received)
+      + Number(row.fee_breakdown?.flex_credit || 0)
+    return Math.max(0, Math.round(derived * 100) / 100)
+  }
+  return 0
+}
+
+// Retorna o CMV total da order.
+// Preferência: campo total_cmv gravado no banco.
+// Fallback: deriva de net_received - net_after_cmv (quando migration 0022 gravou net_after_cmv
+// mas total_cmv ainda era null na época).
+const getOrderCmv = (row) => {
+  if (row.total_cmv != null) return Number(row.total_cmv)
+  const netReceived  = Number(row.fee_breakdown?.net_received ?? null)
+  const netAfterCmv  = row.net_after_cmv != null ? Number(row.net_after_cmv) : null
+  if (netAfterCmv !== null && row.fee_breakdown?.net_received != null)
+    return netReceived - netAfterCmv
+  return null
+}
 const getNetMargin = (row) => {
   if (row.fee_breakdown) return Number(row.fee_breakdown.net_received || 0)
   return Number(row.total_amount || 0) - getOrderFeeBreakdown(row).totalSaleFee - getSellerShippingCost(row)
@@ -1803,7 +1929,7 @@ const getPaymentMethodLabel = (row) => {
   return p.installments > 1 ? `${type} (${p.installments}×)` : type
 }
 
-onMounted(() => { loadFacets(); refreshData() })
+onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 </script>
 
 <style scoped>
@@ -1818,6 +1944,69 @@ onMounted(() => { loadFacets(); refreshData() })
 .header-eyebrow { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
 .header-title   { font-size: 17px; font-weight: 700; color: #1a1f36; }
 .header-count   { font-size: 12px; font-weight: 600; color: #00897b; background: #e0f2f1; border-radius: 12px; padding: 2px 10px; }
+
+/* ─── MINI DASHBOARD ────────────────────────────── */
+.today-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e8eaed;
+  flex-wrap: wrap;
+}
+.today-bar-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: #9aa0ac;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+.today-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 10px;
+  padding: 8px 14px;
+  min-width: 160px;
+  flex: 1;
+  max-width: 220px;
+  transition: box-shadow .15s;
+}
+.today-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.today-card--pos  { border-left: 3px solid #0d9488; }
+.today-card--neg  { border-left: 3px solid #ef4444; }
+.today-card--neutral { border-left: 3px solid #6366f1; }
+.today-card--skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  height: 58px;
+  border-radius: 10px;
+  flex: 1;
+  max-width: 220px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+.today-card-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: #f0f9f8;
+  display: flex; align-items: center; justify-content: center;
+  color: #0d9488;
+  flex-shrink: 0;
+}
+.today-card--neg .today-card-icon { background: #fef2f2; color: #ef4444; }
+.today-card--neutral .today-card-icon { background: #eef2ff; color: #6366f1; }
+.today-card-body { min-width: 0; }
+.today-card-val   { font-size: 15px; font-weight: 700; color: #1a1f36; line-height: 1.2; }
+.today-card-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: #9aa0ac; margin-top: 1px; }
+.today-card-sub   { font-size: 10px; color: #b0b7c3; margin-top: 1px; }
 
 /* ─── FILTROS ────────────────────────────────────── */
 .fb {
@@ -1910,6 +2099,15 @@ onMounted(() => { loadFacets(); refreshData() })
   border-radius: 10px; font-size: 10px; font-weight: 700;
   padding: 0 4px; margin-left: 2px;
 }
+.fb-search-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 36px; padding: 0 16px;
+  font-size: 12.5px; font-weight: 700; color: #fff;
+  background: #00897b; border: 1.5px solid #00897b; border-radius: 10px;
+  cursor: pointer; transition: all .15s; white-space: nowrap; font-family: inherit;
+}
+.fb-search-btn:hover { background: #00695c; border-color: #00695c; }
+
 .fb-clear-btn {
   display: inline-flex; align-items: center; gap: 5px;
   height: 36px; padding: 0 13px;
@@ -2288,6 +2486,8 @@ onMounted(() => { loadFacets(); refreshData() })
 }
 .fadv-divider { height: 1px; background: #f0f3f8; margin: 0 20px; }
 .fadv-row { display: flex; align-items: flex-end; gap: 8px; }
+.fadv-row--col { flex-direction: column; gap: 6px; }
+.fb-date-input--dt { font-size: 12px; padding-right: 10px; }
 .fadv-input { flex: 1; min-width: 0; }
 .fadv-input :deep(.q-field__control) { border-radius: 8px; }
 .fadv-range-sep {
@@ -2464,6 +2664,7 @@ onMounted(() => { loadFacets(); refreshData() })
 
 /* ─── DIALOG PANELS ──────────────────────────────── */
 .detail-panel { width: 600px; max-width: 100vw; height: 100vh; background: #fff; display: flex; flex-direction: column; }
+.detail-panel--loading { align-items: center; justify-content: center; }
 .detail-header { padding: 16px 22px 14px; border-bottom: 1px solid #e8eaed; flex-shrink: 0; }
 .dialog-eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9aa0ac; display: flex; align-items: center; margin-bottom: 4px; }
 .detail-order-id { font-family: 'Roboto Mono', monospace; font-size: 16px; font-weight: 700; color: #1a1f36; }
@@ -2498,6 +2699,7 @@ onMounted(() => { loadFacets(); refreshData() })
 .receipt-total      { font-size: 15px; font-weight: 700; }
 .receipt-sep        { border-top: 1px solid #e8eaed; margin: 2px 14px; }
 .receipt-sep.thick  { border-top: 2px solid #e8eaed; margin: 3px 14px; }
+.cmv-total-row { border-top: 1px dashed #e8eaed; margin-top: 2px; }
 .pos-t  { color: #276749; }
 .neg-t  { color: #c53030; }
 .ded-t  { color: #e53e3e; }

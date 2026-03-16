@@ -54,7 +54,16 @@ export const useStore = defineStore("main", {
       }
     },
 
-    logoutUser() {
+    async logoutUser() {
+      // Invalida o refresh token no servidor (blacklist)
+      if (this.refreshToken) {
+        try {
+          await api.post("/users/logout/", { refresh: this.refreshToken });
+        } catch (_) {
+          // Ignora erros — prossegue com limpeza local independente
+        }
+      }
+
       this.authToken = "";
       this.refreshToken = "";
       this.currentUser = null;

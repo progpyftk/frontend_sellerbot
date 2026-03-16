@@ -269,14 +269,12 @@
             <q-icon name="check_box" color="indigo-6" size="18px" />
             <span class="text-weight-bold text-indigo-8">{{ selectedItems.length }} selecionado(s)</span>
             <q-separator vertical inset class="q-mx-xs" />
-            <q-btn unelevated dense color="indigo-6" text-color="white" icon="attach_money"
-              label="Alterar Preço" size="sm" class="q-px-md" @click="showBulkPriceDialog = true" />
+            <q-btn unelevated dense color="indigo-6" text-color="white" icon="sell"
+              label="Preços" size="sm" class="q-px-md" @click="showBulkPriceDialog = true" />
             <q-btn unelevated dense color="orange-7" text-color="white" icon="local_offer"
               label="Promoção" size="sm" class="q-px-md" @click="showBulkPromoDialog = true" />
             <q-btn unelevated dense color="teal-7" text-color="white" icon="rocket_launch"
               label="Tipo Anúncio" size="sm" class="q-px-md" @click="showBulkListingTypeDialog = true" />
-            <q-btn unelevated dense color="blue-grey-7" text-color="white" icon="storefront"
-              label="Atacado" size="sm" class="q-px-md" @click="showBulkWholesaleDialog = true" />
             <q-space />
             <q-btn flat dense color="grey-6" icon="close" label="Limpar seleção" size="sm"
               @click="selectedItems = []" />
@@ -683,29 +681,46 @@
       </q-card>
     </q-dialog>
 
-    <!-- ══ DIALOG 1: ALTERAR PREÇO EM MASSA ══════════════════════════════ -->
+    <!-- ══ DIALOG 1: PREÇOS (AJUSTE · EXATO · ATACADO) ══════════════════ -->
     <q-dialog v-model="showBulkPriceDialog" persistent>
-      <q-card style="min-width:420px; max-width:95vw">
-        <q-card-section class="bg-indigo-6 text-white row items-center">
-          <q-icon name="attach_money" size="sm" class="q-mr-sm" />
-          <span class="text-h6">Alterar Preço em Massa</span>
+      <q-card style="min-width:500px; max-width:95vw">
+
+        <!-- Header -->
+        <q-card-section class="bg-indigo-6 text-white row items-center q-pb-sm">
+          <q-icon name="sell" size="sm" class="q-mr-sm" />
+          <span class="text-h6">Alterar Preços</span>
           <q-space /><q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-pa-lg column q-gutter-md">
-          <div class="text-caption text-grey-7">{{ selectedItems.length }} anúncio(s) selecionado(s)</div>
+        <!-- Seletor de modo -->
+        <q-card-section class="q-pt-md q-pb-none q-px-lg">
+          <q-btn-toggle v-model="bulkPriceForm.mode" spread unelevated no-caps
+            :options="[
+              { label: 'Ajuste',   value: 'adjust',    icon: 'tune'        },
+              { label: 'Exato',    value: 'exact',     icon: 'price_check' },
+              { label: 'Atacado',  value: 'wholesale', icon: 'storefront'  },
+            ]"
+            color="grey-2" text-color="grey-8"
+            toggle-color="indigo-6" toggle-text-color="white"
+            style="border-radius:8px; border: 1px solid #e8eaed" />
+          <div class="text-caption text-grey-6 q-mt-sm">{{ selectedItems.length }} anúncio(s) selecionado(s)</div>
+        </q-card-section>
 
+        <q-separator class="q-mt-md" />
+
+        <!-- ── Modo: Ajuste (% ou R$) ──────────────────────────────────── -->
+        <q-card-section v-if="bulkPriceForm.mode === 'adjust'" class="q-pa-lg column q-gutter-md">
           <q-btn-toggle v-model="bulkPriceForm.direction" spread unelevated
             :options="[{label:'Aumentar',value:'increase',icon:'arrow_upward'},{label:'Diminuir',value:'decrease',icon:'arrow_downward'}]"
             color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
 
           <q-btn-toggle v-model="bulkPriceForm.type" spread unelevated
-            :options="[{label:'Percentual (%)',value:'pct'},{label:'Valor (R$)',value:'abs'}]"
+            :options="[{label:'Percentual (%)',value:'pct'},{label:'Valor fixo (R$)',value:'abs'}]"
             color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
 
           <q-input v-model.number="bulkPriceForm.value" type="number" outlined dense
             :label="bulkPriceForm.type === 'pct' ? 'Percentual (%)' : 'Valor (R$)'"
-            :hint="bulkPriceForm.type === 'pct' ? 'Ex: 10 → aplica 10% de ajuste' : 'Ex: 5.00 → soma/subtrai R$ 5,00'"
+            :hint="bulkPriceForm.type === 'pct' ? 'Ex: 10 → ajusta em 10% o preço atual' : 'Ex: 5.00 → soma/subtrai R$ 5,00'"
             color="indigo-6">
             <template v-slot:prepend>
               <q-icon :name="bulkPriceForm.type === 'pct' ? 'percent' : 'attach_money'" />
@@ -713,12 +728,83 @@
           </q-input>
         </q-card-section>
 
+        <!-- ── Modo: Preço Exato ────────────────────────────────────────── -->
+        <q-card-section v-else-if="bulkPriceForm.mode === 'exact'" class="q-pa-lg column q-gutter-md">
+          <q-input v-model.number="bulkExactPriceForm.price" type="number" outlined dense
+            label="Novo preço exato (R$)" color="indigo-6" autofocus
+            hint="Este valor substituirá o preço atual de todos os anúncios selecionados">
+            <template v-slot:prepend><q-icon name="attach_money" /></template>
+          </q-input>
+
+          <!-- Preview -->
+          <div v-if="selectedItems.length" class="exact-price-preview">
+            <div class="exact-price-preview-header">
+              <span>Anúncio</span><span>Atual → Novo</span>
+            </div>
+            <div v-for="item in selectedItems.slice(0, 5)" :key="item.item_id" class="exact-price-preview-row">
+              <span class="exact-price-item-title">{{ item.title }}</span>
+              <span class="exact-price-arrow">
+                <span class="exact-price-old">R$ {{ Number(item.price || 0).toFixed(2) }}</span>
+                <q-icon name="arrow_forward" size="10px" color="grey-5" />
+                <span class="exact-price-new" :class="bulkExactPriceForm.price ? 'text-indigo-7' : 'text-grey-5'">
+                  {{ bulkExactPriceForm.price ? `R$ ${Number(bulkExactPriceForm.price).toFixed(2)}` : '—' }}
+                </span>
+              </span>
+            </div>
+            <div v-if="selectedItems.length > 5" class="text-caption text-grey-5 q-pa-xs">
+              + {{ selectedItems.length - 5 }} anúncio(s) não exibido(s)
+            </div>
+          </div>
+
+          <q-banner dense class="bg-indigo-1 text-indigo-9 rounded-borders">
+            <template v-slot:avatar><q-icon name="warning_amber" color="indigo-6" size="16px" /></template>
+            O preço atual de cada anúncio será <strong>substituído</strong> pelo valor informado.
+          </q-banner>
+        </q-card-section>
+
+        <!-- ── Modo: Atacado (PxQ) ─────────────────────────────────────── -->
+        <q-card-section v-else-if="bulkPriceForm.mode === 'wholesale'" class="q-pa-lg column q-gutter-sm">
+          <div class="text-caption text-grey-6 q-mb-xs">Máx. 3 faixas · Disponível apenas para compradores B2B</div>
+
+          <div v-for="(tier, i) in bulkWholesaleForm.tiers" :key="i"
+            class="row q-col-gutter-sm items-center bg-grey-1 q-pa-sm rounded-borders">
+            <div class="col-3">
+              <q-input v-model.number="tier.min_quantity" type="number" outlined dense
+                :label="`Faixa ${i+1}: Qtd mín.`" color="indigo-6" />
+            </div>
+            <div class="col-4">
+              <q-btn-toggle v-model="tier.priceType" dense unelevated
+                :options="[{label:'% off',value:'pct'},{label:'R$ fixo',value:'abs'}]"
+                color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
+            </div>
+            <div class="col-5">
+              <q-input v-model.number="tier.value" type="number" outlined dense
+                :label="tier.priceType === 'pct' ? 'Desconto %' : 'Preço fixo R$'" color="indigo-6" />
+            </div>
+          </div>
+
+          <q-banner dense class="bg-indigo-1 text-indigo-9 rounded-borders q-mt-xs">
+            <template v-slot:avatar><q-icon name="info" color="indigo-6" size="16px" /></template>
+            Faixas % são calculadas sobre o preço atual de cada anúncio.
+          </q-banner>
+        </q-card-section>
+
+        <!-- Ações -->
         <q-card-actions align="right" class="q-pa-md q-pt-none">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-          <q-btn unelevated label="Aplicar" color="indigo-6" :loading="bulkLoading"
+          <q-btn v-if="bulkPriceForm.mode === 'adjust'" unelevated label="Aplicar Ajuste" color="indigo-6"
+            :loading="bulkLoading"
             :disable="!bulkPriceForm.value || bulkPriceForm.value <= 0"
             @click="executeBulkPriceUpdate" />
+          <q-btn v-else-if="bulkPriceForm.mode === 'exact'" unelevated label="Aplicar Preço Exato" color="indigo-6"
+            :loading="bulkLoading"
+            :disable="!bulkExactPriceForm.price || bulkExactPriceForm.price <= 0"
+            @click="executeBulkExactPrice" />
+          <q-btn v-else-if="bulkPriceForm.mode === 'wholesale'" unelevated label="Aplicar Atacado" color="indigo-6"
+            :loading="bulkLoading"
+            @click="executeBulkWholesale" />
         </q-card-actions>
+
       </q-card>
     </q-dialog>
 
@@ -815,49 +901,6 @@
       </q-card>
     </q-dialog>
 
-    <!-- ══ DIALOG 4: PREÇOS DE ATACADO ═══════════════════════════════════ -->
-    <q-dialog v-model="showBulkWholesaleDialog" persistent>
-      <q-card style="min-width:480px; max-width:95vw">
-        <q-card-section class="bg-blue-grey-7 text-white row items-center">
-          <q-icon name="storefront" size="sm" class="q-mr-sm" />
-          <span class="text-h6">Preços de Atacado (PxQ)</span>
-          <q-space /><q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
-
-        <q-card-section class="q-pa-lg column q-gutter-sm">
-          <div class="text-caption text-grey-7">{{ selectedItems.length }} anúncio(s) • Máx. 3 faixas • B2B</div>
-
-          <div v-for="(tier, i) in bulkWholesaleForm.tiers" :key="i"
-            class="row q-col-gutter-sm items-center bg-grey-1 q-pa-sm rounded-borders">
-            <div class="col-3">
-              <q-input v-model.number="tier.min_quantity" type="number" outlined dense
-                :label="`Faixa ${i+1}: Qtd`" color="blue-grey-7" />
-            </div>
-            <div class="col-4">
-              <q-btn-toggle v-model="tier.priceType" dense unelevated
-                :options="[{label:'%',value:'pct'},{label:'R$',value:'abs'}]"
-                color="grey-3" text-color="grey-8" toggle-color="blue-grey-7" toggle-text-color="white" />
-            </div>
-            <div class="col-5">
-              <q-input v-model.number="tier.value" type="number" outlined dense
-                :label="tier.priceType === 'pct' ? '% off' : 'Preço fixo'" color="blue-grey-7" />
-            </div>
-          </div>
-
-          <q-banner class="bg-blue-grey-1 text-blue-grey-9 rounded-borders q-mt-sm">
-            <template v-slot:avatar><q-icon name="info" color="blue-grey-6" /></template>
-            Disponível apenas para compradores B2B (Mercado Livre Business).
-            Faixas % são calculadas sobre o preço atual de cada anúncio.
-          </q-banner>
-        </q-card-section>
-
-        <q-card-actions align="right" class="q-pa-md q-pt-none">
-          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-          <q-btn unelevated label="Aplicar Atacado" color="blue-grey-7" :loading="bulkLoading"
-            @click="executeBulkWholesale" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
 
   </q-page>
 </template>
@@ -888,13 +931,12 @@ const toggleSelect = (row) => {
 const toggleAll = (val) => { selectedItems.value = val ? [...items.value] : [] }
 
 // ── Dialogs bulk ──────────────────────────────────────────────────────────
-const showBulkPriceDialog      = ref(false)
-const showBulkPromoDialog      = ref(false)
+const showBulkPriceDialog       = ref(false)
+const showBulkPromoDialog       = ref(false)
 const showBulkListingTypeDialog = ref(false)
-const showBulkWholesaleDialog  = ref(false)
 const bulkLoading = ref(false)
 
-const bulkPriceForm = reactive({ direction: 'increase', type: 'pct', value: null })
+const bulkPriceForm = reactive({ mode: 'adjust', direction: 'increase', type: 'pct', value: null })
 const bulkPromoForm = reactive({ action: 'deactivate', dealPriceType: 'pct', dealPriceValue: null, finishDate: null })
 const bulkListingTypeForm = reactive({ listing_type: 'gold_pro' })
 const bulkWholesaleForm = reactive({
@@ -904,6 +946,7 @@ const bulkWholesaleForm = reactive({
     { min_quantity: 10, priceType: 'pct', value: 15   },
   ]
 })
+const bulkExactPriceForm = reactive({ price: null })
 
 const pagination = ref({
   sortBy: 'sold_quantity',
@@ -1412,9 +1455,23 @@ const executeBulkWholesale = async () => {
         value: t.value
       })).filter(t => t.value && t.min_quantity)
     })
-    _bulkFinish(res, showBulkWholesaleDialog)
+    _bulkFinish(res, showBulkPriceDialog)
   } catch (e) {
     $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao definir atacado.' })
+  } finally { bulkLoading.value = false }
+}
+
+const executeBulkExactPrice = async () => {
+  bulkLoading.value = true
+  try {
+    const res = await MercadoLivreService.bulkExactPrice({
+      items: _itemsPayload(),
+      price: bulkExactPriceForm.price,
+    })
+    _bulkFinish(res, showBulkPriceDialog)
+    bulkExactPriceForm.price = null
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao definir preço exato.' })
   } finally { bulkLoading.value = false }
 }
 
@@ -1458,6 +1515,13 @@ const reactivateItem = (row) => {
   border-bottom: 1px solid #c5cae9;
   border-top: 1px solid #c5cae9;
 }
+.exact-price-preview { border: 1px solid #ede7f6; border-radius: 8px; overflow: hidden; }
+.exact-price-preview-header { display: flex; justify-content: space-between; padding: 5px 10px; background: #ede7f6; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #7e57c2; letter-spacing: .4px; }
+.exact-price-preview-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; border-top: 1px solid #f3f0fb; font-size: 12px; }
+.exact-price-item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #424242; margin-right: 8px; }
+.exact-price-arrow { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.exact-price-old { color: #9e9e9e; text-decoration: line-through; font-size: 11px; }
+.exact-price-new { font-weight: 600; font-size: 12px; }
 
 .my-custom-table :deep(tbody tr td) {
   min-height: 65px;

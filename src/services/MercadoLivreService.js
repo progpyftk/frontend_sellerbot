@@ -48,6 +48,9 @@ export default {
   bulkWholesale(payload) {
     return api.post('/mercadolivre/items/bulk-wholesale/', payload)
   },
+  bulkExactPrice(payload) {
+    return api.post('/mercadolivre/items/bulk-exact-price/', payload)
+  },
 
   getPromotions() {
     return api.get('/mercadolivre/promotions/')
@@ -76,5 +79,9 @@ export default {
     // Caso você crie um facet para orders no backend futuramente.
     // Se não tiver, pode comentar essa linha e usar os dados estáticos no front.
     return api.get('/mercadolivre/orders/facets/')
-  }
+  },
+
+  getOrderTodaySummary() {
+    return api.get('/mercadolivre/orders/today-summary/')
+  },
 }
