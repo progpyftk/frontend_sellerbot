@@ -1,25 +1,39 @@
 <template>
   <section class="testimonials-section">
     <div class="content-wrapper">
-      <div class="sec-eyebrow">O que dizem nossos sellers</div>
-      <h2 class="sec-title">Quem usa, recomenda</h2>
-      <p class="sec-sub">Sellers de todo o Brasil já controlam suas operações com o SellerBot.</p>
 
-      <div class="cards-grid">
+      <div class="section-header">
+        <span class="eyebrow">Clientes</span>
+        <h2 class="section-title">O que dizem quem fez a transição</h2>
+        <p class="section-sub">
+          Empresas B2B que expandiram para o varejo online com a Krivos ao lado.
+        </p>
+      </div>
+
+      <div class="testimonials-grid">
         <div v-for="t in testimonials" :key="t.name" class="tcard">
           <div class="tcard-stars">
-            <q-icon v-for="n in 5" :key="n" name="star" size="14px" style="color:#f59e0b" />
+            <q-icon v-for="i in 5" :key="i" name="star" size="14px" color="amber-6" />
           </div>
-          <p class="tcard-quote">{{ t.quote }}</p>
+          <p class="tcard-quote">"{{ t.quote }}"</p>
           <div class="tcard-author">
             <div class="tcard-avatar">{{ t.initials }}</div>
             <div>
-              <div class="tcard-name">{{ t.name }}</div>
-              <div class="tcard-role">{{ t.role }}</div>
+              <strong>{{ t.name }}</strong>
+              <span>{{ t.role }}</span>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Números -->
+      <div class="results-strip">
+        <div v-for="r in results" :key="r.label" class="ritem">
+          <span class="rval">{{ r.value }}</span>
+          <span class="rlbl">{{ r.label }}</span>
+        </div>
+      </div>
+
     </div>
   </section>
 </template>
@@ -32,29 +46,35 @@ export default defineComponent({
     return {
       testimonials: [
         {
-          quote: '"Antes eu não sabia quanto lucrava em cada venda. O SellerBot me mostrou que várias categorias estavam no negativo depois do CMV. Salvou meu negócio."',
-          name: 'Ricardo Alves',
-          role: 'Seller full-time — Eletrônicos',
-          initials: 'RA',
+          quote: 'Éramos uma distribuidora que vendia só para revendedores. A Krivos nos estruturou do zero no Mercado Livre. Em 4 meses já faturávamos mais no B2C do que em alguns distribuidores.',
+          name: 'Carlos Eduardo',
+          role: 'Diretor Comercial — Distribuidora de Eletrônicos',
+          initials: 'CE',
         },
         {
-          quote: '"Altero preço de 300 anúncios em 30 segundos. O que eu fazia em 2 horas hoje faço antes do café."',
-          name: 'Patrícia Mendes',
-          role: 'Loja MogiVitta — Casa & Jardim',
-          initials: 'PM',
+          quote: 'Com o SellerBot descobri que 30% dos meus produtos estavam vendendo no prejuízo depois do Custo Médio do Produto. Hoje tenho controle total da margem e sei exatamente o lucro de cada pedido.',
+          name: 'Fernanda Lima',
+          role: 'Sócia-fundadora — Indústria Têxtil',
+          initials: 'FL',
         },
         {
-          quote: '"A integração com o Tiny ERP fechou o ciclo. O CMV já entra automático, o lucro real aparece ali na tela. Produto essencial."',
-          name: 'Fábio Corrêa',
-          role: 'Operação multi-conta — Ferramentas',
-          initials: 'FC',
+          quote: 'O diferencial da Krivos é o time dedicado. Não é consultoria que aparece uma vez por mês. É gente de verdade gerenciando a nossa operação como se fosse deles.',
+          name: 'Roberto Nunes',
+          role: 'CEO — Fabricante de Produtos para Casa',
+          initials: 'RN',
         },
         {
-          quote: '"O painel financeiro de cada pedido é incrível. Vejo comissão, frete, CMV e o líquido — tudo detalhado como o ML nunca mostrou."',
-          name: 'Ana Luísa Rocha',
-          role: 'Seller desde 2019 — Beleza & Saúde',
-          initials: 'AL',
+          quote: 'Entrar na Shopee parecia complicado. Com a Krivos, em 45 dias já tínhamos mais de 200 pedidos no mês. Suporte presente em todo o processo de onboarding.',
+          name: 'Aline Moreira',
+          role: 'Gerente de E-commerce — Atacadista de Beleza',
+          initials: 'AM',
         },
+      ],
+      results: [
+        { value: '4 meses', label: 'Tempo médio para operação estável' },
+        { value: 'ML + Shopee', label: 'Canais gerenciados em paralelo' },
+        { value: 'Dedicado', label: 'Time exclusivo por cliente' },
+        { value: 'Custo Médio', label: 'Margem monitorada por venda' },
       ]
     }
   }
@@ -63,89 +83,137 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .testimonials-section {
-  background: linear-gradient(135deg, #0f172a 0%, #134e4a 100%);
-  padding: 96px 20px;
+  background: linear-gradient(160deg, #0f172a 0%, #134e4a 60%, #0f172a 100%);
+  padding: 96px 0;
 }
 
-.content-wrapper { max-width: 1200px; margin: 0 auto; }
+.content-wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
 
-.sec-eyebrow {
+.section-header {
   text-align: center;
-  font-size: .75rem;
+  margin-bottom: 56px;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: .73rem;
   font-weight: 700;
-  letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: #5eead4;
-  margin-bottom: 14px;
+  letter-spacing: .8px;
+  color: #2dd4bf;
+  margin-bottom: 12px;
 }
 
-.sec-title {
-  text-align: center;
-  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+.section-title {
+  font-size: clamp(1.75rem, 3vw, 2.4rem);
   font-weight: 800;
   color: #f1f5f9;
   margin: 0 0 14px;
-  letter-spacing: -.5px;
+  letter-spacing: -.7px;
 }
 
-.sec-sub {
-  text-align: center;
+.section-sub {
   font-size: 1rem;
   color: #94a3b8;
-  margin: 0 auto 64px;
-  max-width: 480px;
   line-height: 1.7;
 }
 
-.cards-grid {
+.testimonials-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 20px;
+  margin-bottom: 64px;
 }
 
 .tcard {
-  background: rgba(255,255,255,.06);
+  background: rgba(255,255,255,.05);
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 16px;
-  padding: 28px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  backdrop-filter: blur(6px);
-  transition: background .25s, transform .25s;
+  padding: 28px;
+  transition: transform .25s, background .25s;
+  backdrop-filter: blur(8px);
 
   &:hover {
-    background: rgba(255,255,255,.1);
     transform: translateY(-4px);
+    background: rgba(255,255,255,.08);
   }
 }
 
-.tcard-stars { display: flex; gap: 2px; }
+.tcard-stars { display: flex; gap: 2px; margin-bottom: 16px; }
 
 .tcard-quote {
   font-size: .9rem;
-  line-height: 1.65;
   color: #cbd5e1;
-  margin: 0;
-  flex: 1;
+  line-height: 1.7;
+  margin: 0 0 24px;
+  font-style: italic;
 }
 
-.tcard-author { display: flex; align-items: center; gap: 12px; }
+.tcard-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 .tcard-avatar {
   width: 40px;
   height: 40px;
-  min-width: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0d9488, #14b8a6);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: .82rem;
-  font-weight: 700;
+  font-size: .8rem;
+  font-weight: 800;
   color: #fff;
+  flex-shrink: 0;
 }
 
-.tcard-name { font-size: .88rem; font-weight: 700; color: #f1f5f9; }
-.tcard-role { font-size: .78rem; color: #64748b; margin-top: 2px; }
+.tcard-author strong {
+  display: block;
+  font-size: .9rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.tcard-author span {
+  font-size: .78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Results strip */
+.results-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 32px;
+  padding: 40px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+}
+
+.ritem { display: flex; flex-direction: column; gap: 5px; align-items: center; text-align: center; }
+
+.rval {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #2dd4bf;
+}
+
+.rlbl {
+  font-size: .72rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+@media (max-width: 600px) {
+  .testimonials-section { padding: 64px 0; }
+  .results-strip { padding: 24px 16px; gap: 20px; }
+}
 </style>

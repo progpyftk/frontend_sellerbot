@@ -34,16 +34,16 @@
       </template>
 
       <template v-else>
-        <!-- Lucro pós CMV -->
-        <div class="today-card" :class="todayStats.net_after_cmv >= 0 ? 'today-card--pos' : 'today-card--neg'">
+        <!-- Lucro pós Custo Médio do Produto -->
+        <div class="today-card" :class="todayStats.lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg'">
           <div class="today-card-icon">
             <q-icon name="trending_up" size="16px" />
           </div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.net_after_cmv) }}</div>
-            <div class="today-card-label">Lucro pós CMV</div>
-            <div class="today-card-sub" v-if="todayStats.cmv_count < todayStats.count">
-              {{ todayStats.cmv_count }}/{{ todayStats.count }} vendas com CMV
+            <div class="today-card-val">{{ formatCurrency(todayStats.lucro_apos_cmp) }}</div>
+            <div class="today-card-label">Lucro pós Custo Médio</div>
+            <div class="today-card-sub" v-if="todayStats.cmp_count < todayStats.count">
+              {{ todayStats.cmp_count }}/{{ todayStats.count }} vendas com custo
             </div>
           </div>
         </div>
@@ -61,15 +61,15 @@
         </div>
 
         <!-- Lucro médio por venda -->
-        <div class="today-card" :class="todayStats.avg_net_after_cmv >= 0 ? 'today-card--pos' : 'today-card--neg'">
+        <div class="today-card" :class="todayStats.avg_lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg'">
           <div class="today-card-icon">
             <q-icon name="equalizer" size="16px" />
           </div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.avg_net_after_cmv) }}</div>
+            <div class="today-card-val">{{ formatCurrency(todayStats.avg_lucro_apos_cmp) }}</div>
             <div class="today-card-label">Lucro médio / venda</div>
-            <div class="today-card-sub" v-if="todayStats.cmv_count">
-              base: {{ todayStats.cmv_count }} venda{{ todayStats.cmv_count !== 1 ? 's' : '' }} c/ CMV
+            <div class="today-card-sub" v-if="todayStats.cmp_count">
+              base: {{ todayStats.cmp_count }} venda{{ todayStats.cmp_count !== 1 ? 's' : '' }} c/ custo
             </div>
           </div>
         </div>
@@ -645,8 +645,13 @@
             <!-- ⑥ Bruto ──────────────────────────────── -->
             <q-td key="venda" :props="props" align="right">
               <div class="cell-amount">
-                <div class="amount-main">{{ formatCurrency(props.row.total_amount) }}</div>
-                <div v-if="(props.row.items || []).length" class="amount-sub">
+                <div class="amount-main">{{ formatCurrency(getBrutoAmount(props.row)) }}</div>
+                <div v-if="getFlexCredit(props.row) > 0" class="flex-credit-hint">
+                  <q-icon name="directions_bike" size="9px" />
+                  venda {{ formatCurrency(props.row.total_amount) }}
+                  +{{ formatCurrency(getFlexCredit(props.row)) }} flex
+                </div>
+                <div v-else-if="(props.row.items || []).length" class="amount-sub">
                   {{ props.row.items.length }} item{{ props.row.items.length > 1 ? 's' : '' }}
                   · {{ props.row.items[0]?.quantity }}×
                 </div>
@@ -684,7 +689,21 @@
             <!-- ⑧ Frete ──────────────────────────────── -->
             <q-td key="frete" :props="props" align="right">
               <div class="cell-frete">
-                <template v-if="getSellerShippingCost(props.row) > 0">
+                <!-- Flex: seller entrega por conta própria -->
+                <template v-if="props.row.shipment?.logistic_mode === 'self_service'">
+                  <div v-if="getSellerShippingCost(props.row) > 0" class="frete-main">
+                    -{{ formatCurrency(getSellerShippingCost(props.row)) }}
+                  </div>
+                  <div v-else class="frete-gratis"><q-icon name="check_circle" size="12px" />S/ custo</div>
+                  <div class="frete-sub flex-badge">
+                    <q-icon name="directions_bike" size="9px" />Flex
+                  </div>
+                  <div class="flex-repasse-hint">
+                    +{{ formatCurrency(getFlexCredit(props.row)) }} repasse
+                  </div>
+                </template>
+                <!-- ML Envios normal -->
+                <template v-else-if="getSellerShippingCost(props.row) > 0">
                   <div class="frete-main">-{{ formatCurrency(getSellerShippingCost(props.row)) }}</div>
                   <div class="frete-sub">
                     <span v-if="props.row.shipment?.cost_type === 'free'" class="frete-type free-flag">
@@ -714,24 +733,24 @@
                 <div :class="['margin-pill', getNetMargin(props.row) >= 0 ? 'margin-pos' : 'margin-neg']">
                   {{ calculateMarginPct(props.row) }}% margem
                 </div>
-                <div class="liquido-hint">antes do CMV</div>
+                <div class="liquido-hint">antes do Custo Médio</div>
               </div>
             </q-td>
 
-            <!-- ⑩ Lucro (c/ CMV) ─────────────────────── -->
+            <!-- ⑩ Lucro (c/ Custo Médio do Produto) ──── -->
             <q-td key="lucro" :props="props" align="right">
-              <div class="cell-liquido" v-if="props.row.net_after_cmv != null">
-                <div :class="['liquido-main', props.row.net_after_cmv >= 0 ? 'pos' : 'neg']">
-                  {{ formatCurrency(props.row.net_after_cmv) }}
+              <div class="cell-liquido" v-if="props.row.lucro_apos_cmp != null">
+                <div :class="['liquido-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
+                  {{ formatCurrency(props.row.lucro_apos_cmp) }}
                 </div>
-                <div :class="['margin-pill', props.row.net_after_cmv >= 0 ? 'margin-pos' : 'margin-neg']">
+                <div :class="['margin-pill', props.row.lucro_apos_cmp >= 0 ? 'margin-pos' : 'margin-neg']">
                   {{ calcLucroPct(props.row) }}% margem
                 </div>
                 <div class="liquido-hint">
-                  CMV: {{ formatCurrency(getOrderCmv(props.row)) }}
+                  Custo: {{ formatCurrency(getCustoMedioProduto(props.row)) }}
                 </div>
               </div>
-              <div v-else class="text-caption text-grey-5">S/ CMV</div>
+              <div v-else class="text-caption text-grey-5">S/ Custo</div>
             </q-td>
 
           </q-tr>
@@ -830,7 +849,15 @@
               <div class="receipt">
                 <div class="receipt-row">
                   <span class="receipt-label">(+) Venda Bruta</span>
-                  <span class="receipt-value pos-t">+{{ formatCurrency(selectedOrder.total_amount) }}</span>
+                  <span class="receipt-value pos-t">+{{ formatCurrency(getBrutoAmount(selectedOrder)) }}</span>
+                </div>
+                <div v-if="getFlexCredit(selectedOrder) > 0" class="receipt-row sub-row">
+                  <div class="receipt-label-g">
+                    <span class="receipt-label">Venda {{ formatCurrency(selectedOrder.total_amount) }}</span>
+                    <span class="receipt-sub" style="color:#0d9488">
+                      <q-icon name="directions_bike" size="10px" /> + {{ formatCurrency(getFlexCredit(selectedOrder)) }} repasse Flex incluído
+                    </span>
+                  </div>
                 </div>
                 <div v-if="(selectedOrder.coupon_amount || 0) > 0" class="receipt-row sub-row">
                   <span class="receipt-label">Cupom</span>
@@ -854,14 +881,22 @@
                   <div class="receipt-label-g">
                     <span class="receipt-label">(-) Frete (ML Envios)</span>
 
-                    <!-- Flex: seller faz a entrega, sem custo de transportadora ML -->
+                    <!-- Flex: seller faz entrega por conta própria -->
                     <template v-if="selectedOrder.shipment?.logistic_mode === 'self_service'">
                       <span class="receipt-sub" style="color:#0d9488">
-                        <q-icon name="directions_bike" size="10px" /> Entrega Flex — sem custo de transportadora ML
+                        <q-icon name="directions_bike" size="10px" /> Entrega Flex — seller entrega por conta própria
                       </span>
-                      <div v-if="Number(selectedOrder.shipment?.shipping_cost || 0) > 0" class="freight-audit">
-                        <div class="audit-row"><span>Comprador pagou</span><strong class="pos-t">{{ formatCurrency(selectedOrder.shipment.shipping_cost) }}</strong></div>
-                        <div class="audit-row hl"><span>Seller paga</span><strong style="color:#0d9488">Grátis</strong></div>
+                      <div class="freight-audit">
+                        <div v-if="Number(selectedOrder.shipment?.shipping_cost || 0) > 0" class="audit-row">
+                          <span>Comprador pagou</span>
+                          <strong class="pos-t">{{ formatCurrency(selectedOrder.shipment.shipping_cost) }}</strong>
+                        </div>
+                        <div class="audit-row hl">
+                          <span>Seller paga (envio próprio)</span>
+                          <strong :class="getSellerShippingCost(selectedOrder) > 0 ? '' : 'pos-t'">
+                            {{ getSellerShippingCost(selectedOrder) > 0 ? '-' + formatCurrency(getSellerShippingCost(selectedOrder)) : 'Não informado' }}
+                          </strong>
+                        </div>
                       </div>
                     </template>
 
@@ -884,18 +919,18 @@
                   </span>
                 </div>
                 <!-- Repasse Flex: ML credita ao seller o frete pago pelo comprador -->
-                <div v-if="selectedOrder.shipment?.logistic_mode === 'self_service' && Number(selectedOrder.fee_breakdown?.flex_credit || selectedOrder.shipment?.shipping_cost || 0) > 0" class="receipt-row sub-row">
+                <div v-if="selectedOrder.shipment?.logistic_mode === 'self_service' && getFlexCredit(selectedOrder) > 0" class="receipt-row sub-row">
                   <div class="receipt-label-g">
                     <span class="receipt-label">(+) Repasse Flex</span>
                     <span class="receipt-sub" style="color:#0d9488">
                       <q-icon name="directions_bike" size="10px" /> Frete pago pelo comprador — ML repassa ao seller
                     </span>
                   </div>
-                  <span class="receipt-value pos-t">+{{ formatCurrency(selectedOrder.fee_breakdown?.flex_credit || selectedOrder.shipment?.shipping_cost) }}</span>
+                  <span class="receipt-value pos-t">+{{ formatCurrency(getFlexCredit(selectedOrder)) }}</span>
                 </div>
                 <div class="receipt-sep thick" />
                 <div class="receipt-row total-row">
-                  <span class="receipt-label-bold">(=) Líquido (s/ CMV)</span>
+                  <span class="receipt-label-bold">(=) Líquido (s/ Custo Médio)</span>
                   <div class="receipt-val-g">
                     <span :class="['receipt-total', getNetMargin(selectedOrder) >= 0 ? 'pos-t' : 'neg-t']">
                       {{ formatCurrency(getNetMargin(selectedOrder)) }}
@@ -905,43 +940,43 @@
                     </span>
                   </div>
                 </div>
-                <template v-if="selectedOrder.net_after_cmv != null">
-                  <!-- CMV por item (quando há cmv_unit_cost gravado no snapshot novo) -->
-                  <template v-for="item in (selectedOrder.items || [])" :key="'cmv-' + item.item_id_ml + (item.variation_id || '')">
-                    <div v-if="item.cmv_unit_cost != null" class="receipt-row sub-row">
+                <template v-if="selectedOrder.lucro_apos_cmp != null">
+                  <!-- Custo Médio por item (quando há cmp_unit_cost gravado no snapshot) -->
+                  <template v-for="item in (selectedOrder.items || [])" :key="'cmp-' + item.item_id_ml + (item.variation_id || '')">
+                    <div v-if="item.cmp_unit_cost != null" class="receipt-row sub-row">
                       <div class="receipt-label-g">
-                        <span class="receipt-label">(-) CMV · {{ item.seller_sku || item.item_id_ml }}</span>
+                        <span class="receipt-label">(-) Custo Médio · {{ item.seller_sku || item.item_id_ml }}</span>
                         <span class="receipt-sub">
-                          {{ formatCurrency(item.cmv_unit_cost) }}/un × {{ item.quantity }}
-                          <template v-if="(selectedOrder.items||[]).filter(i => i.cmv_unit_cost != null).length > 1">
+                          {{ formatCurrency(item.cmp_unit_cost) }}/un × {{ item.quantity }}
+                          <template v-if="(selectedOrder.items||[]).filter(i => i.cmp_unit_cost != null).length > 1">
                             · {{ item.title?.substring(0, 30) }}{{ item.title?.length > 30 ? '…' : '' }}
                           </template>
                         </span>
                       </div>
-                      <span class="receipt-value ded-t">-{{ formatCurrency(Number(item.cmv_unit_cost) * Number(item.quantity || 1)) }}</span>
+                      <span class="receipt-value ded-t">-{{ formatCurrency(Number(item.cmp_unit_cost) * Number(item.quantity || 1)) }}</span>
                     </div>
                   </template>
-                  <!-- Total CMV -->
-                  <div class="receipt-row sub-row" :class="(selectedOrder.items||[]).filter(i => i.cmv_unit_cost != null).length > 1 ? 'cmv-total-row' : ''">
+                  <!-- Total Custo Médio do Produto -->
+                  <div class="receipt-row sub-row" :class="(selectedOrder.items||[]).filter(i => i.cmp_unit_cost != null).length > 1 ? 'cmv-total-row' : ''">
                     <div class="receipt-label-g">
-                      <span class="receipt-label">(-) CMV Total</span>
+                      <span class="receipt-label">(-) Custo Médio do Produto</span>
                       <span class="receipt-sub">
                         Custo médio do Tiny ERP · snapshot na data da venda
-                        <template v-if="selectedOrder.total_cmv == null">
+                        <template v-if="selectedOrder.custo_medio_produto == null">
                           <span style="color:#f59e0b"> · derivado</span>
                         </template>
                       </span>
                     </div>
-                    <span class="receipt-value ded-t">-{{ formatCurrency(getOrderCmv(selectedOrder)) }}</span>
+                    <span class="receipt-value ded-t">-{{ formatCurrency(getCustoMedioProduto(selectedOrder)) }}</span>
                   </div>
                   <div class="receipt-sep thick" />
                   <div class="receipt-row total-row">
                     <span class="receipt-label-bold">(=) LUCRO REAL</span>
                     <div class="receipt-val-g">
-                      <span :class="['receipt-total', selectedOrder.net_after_cmv >= 0 ? 'pos-t' : 'neg-t']">
-                        {{ formatCurrency(selectedOrder.net_after_cmv) }}
+                      <span :class="['receipt-total', selectedOrder.lucro_apos_cmp >= 0 ? 'pos-t' : 'neg-t']">
+                        {{ formatCurrency(selectedOrder.lucro_apos_cmp) }}
                       </span>
-                      <span :class="['margin-pill', selectedOrder.net_after_cmv >= 0 ? 'margin-pos' : 'margin-neg']">
+                      <span :class="['margin-pill', selectedOrder.lucro_apos_cmp >= 0 ? 'margin-pos' : 'margin-neg']">
                         {{ calcLucroPct(selectedOrder) }}% margem
                       </span>
                     </div>
@@ -1225,13 +1260,13 @@
 
             <div class="fadv-divider" />
 
-            <!-- Seção: Lucro Após CMV -->
+            <!-- Seção: Lucro Após Custo Médio do Produto -->
             <div class="fadv-section">
               <div class="fadv-section-title">
                 <q-icon name="trending_up" size="15px" color="teal-7" />
                 Lucro (R$)
                 <q-btn-toggle v-model="marginFilterMode"
-                  :options="[{label:'Após CMV', value:'net_after_cmv'},{label:'Antes CMV', value:'net_received'}]"
+                  :options="[{label:'Após Custo Médio', value:'lucro_apos_cmp'},{label:'Antes Custo Médio', value:'net_received'}]"
                   dense unelevated toggle-color="teal-7" color="grey-2" text-color="grey-7"
                   rounded size="xs" class="q-ml-auto" />
               </div>
@@ -1368,8 +1403,8 @@ const orders        = ref([])
 const loading       = ref(false)
 const searchFocused = ref(false)
 
-// Margem — server-side via net_received ou net_after_cmv gravados no banco
-const marginFilterMode = ref('net_after_cmv')   // 'net_received' | 'net_after_cmv'
+// Margem — server-side via net_received ou lucro_apos_cmp gravados no banco
+const marginFilterMode = ref('lucro_apos_cmp')   // 'net_received' | 'lucro_apos_cmp'
 
 const filteredOrders = computed(() => orders.value)
 const financialOpen = ref(false)
@@ -1403,8 +1438,8 @@ const columns = [
   { name: 'venda',        label: 'BRUTO',              field: 'total_amount',  align: 'right', sortable: true, style: 'min-width:85px' },
   { name: 'tarifa',       label: 'TARIFA ML',          field: 'total_fee',     align: 'right', style: 'min-width:90px' },
   { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px' },
-  { name: 'liquido',      label: 'LUCRO ANTES DO CMV', field: 'net',           align: 'right', style: 'min-width:115px' },
-  { name: 'lucro',        label: 'LUCRO APÓS CMV',      field: 'net_after_cmv', align: 'right', style: 'min-width:115px' },
+  { name: 'liquido',      label: 'LUCRO ANTES DO CUSTO', field: 'net',           align: 'right', style: 'min-width:115px' },
+  { name: 'lucro',        label: 'LUCRO APÓS CUSTO',     field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px' },
 ]
 
 // ============================================================================
@@ -1551,7 +1586,7 @@ const resetFiltersState = () => Object.assign(filters, {
   marginMin: null, marginMax: null, is_catalog: null, fulfilled: null,
   _substatus: null,
 })
-const clearFilters = () => { resetFiltersState(); marginFilterMode.value = 'net_after_cmv'; buscar() }
+const clearFilters = () => { resetFiltersState(); marginFilterMode.value = 'lucro_apos_cmp'; buscar() }
 
 const buscar = () => onRequest({ pagination: { ...pagination.value, page: 1 } })
 
@@ -1774,6 +1809,24 @@ const getOrderFeeBreakdown = (row) => {
   }
 }
 
+// Retorna o flex_credit (repasse ML ao seller pelo frete pago pelo comprador em entregas Flex).
+// Prioridade: fee_breakdown.flex_credit (gravado no sync) → shipment.flex_credit → shipment.shipping_cost
+const getFlexCredit = (row) => {
+  const fromFb = Number(row.fee_breakdown?.flex_credit || 0)
+  if (fromFb > 0) return fromFb
+  const fromShipment = Number(row.shipment?.flex_credit || 0)
+  if (fromShipment > 0) return fromShipment
+  // Último fallback: se é Flex, o shipping_cost do comprador = repasse ao seller
+  if (row.shipment?.logistic_mode === 'self_service')
+    return Number(row.shipment?.shipping_cost || 0)
+  return 0
+}
+
+// Bruto real: total_amount + repasse Flex (quando aplicável)
+const getBrutoAmount = (row) => {
+  return Number(row.total_amount || 0) + getFlexCredit(row)
+}
+
 const getSellerShippingCost = (row) => {
   // Primary: shipment serializer computes from net_cost (definitive ML API value)
   const fromShipment = Number(row.shipment?.seller_shipping_cost || 0)
@@ -1793,16 +1846,16 @@ const getSellerShippingCost = (row) => {
   return 0
 }
 
-// Retorna o CMV total da order.
-// Preferência: campo total_cmv gravado no banco.
-// Fallback: deriva de net_received - net_after_cmv (quando migration 0022 gravou net_after_cmv
-// mas total_cmv ainda era null na época).
-const getOrderCmv = (row) => {
-  if (row.total_cmv != null) return Number(row.total_cmv)
-  const netReceived  = Number(row.fee_breakdown?.net_received ?? null)
-  const netAfterCmv  = row.net_after_cmv != null ? Number(row.net_after_cmv) : null
-  if (netAfterCmv !== null && row.fee_breakdown?.net_received != null)
-    return netReceived - netAfterCmv
+// Retorna o Custo Médio do Produto total da order.
+// Preferência: campo custo_medio_produto gravado no banco.
+// Fallback: deriva de net_received - lucro_apos_cmp (quando migration 0022 gravou lucro_apos_cmp
+// mas custo_medio_produto ainda era null na época).
+const getCustoMedioProduto = (row) => {
+  if (row.custo_medio_produto != null) return Number(row.custo_medio_produto)
+  const netReceived   = Number(row.fee_breakdown?.net_received ?? null)
+  const lucroAposCmp  = row.lucro_apos_cmp != null ? Number(row.lucro_apos_cmp) : null
+  if (lucroAposCmp !== null && row.fee_breakdown?.net_received != null)
+    return netReceived - lucroAposCmp
   return null
 }
 const getNetMargin = (row) => {
@@ -1815,8 +1868,8 @@ const calculateMarginPct = (row) => {
 }
 const calcLucroPct = (row) => {
   const t = Number(row.total_amount || 0)
-  if (t === 0 || row.net_after_cmv == null) return 0
-  return Math.round((Number(row.net_after_cmv) / t) * 100)
+  if (t === 0 || row.lucro_apos_cmp == null) return 0
+  return Math.round((Number(row.lucro_apos_cmp) / t) * 100)
 }
 
 // ============================================================================
@@ -2618,6 +2671,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .amount-main  { font-size: 14px; font-weight: 700; color: #1a1f36; }
 .amount-sub   { font-size: 10px; color: #9aa0ac; margin-top: 2px; }
 .coupon-chip  { display: inline-flex; align-items: center; gap: 2px; margin-top: 3px; font-size: 9px; font-weight: 600; color: #c05621; background: #fffaf0; border-radius: 4px; padding: 1px 5px; }
+.flex-credit-hint { font-size: 9px; color: #0d9488; margin-top: 2px; display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
 
 .cell-fee     { text-align: right; }
 .fee-main     { font-size: 13px; font-weight: 700; color: #e53e3e; }
@@ -2637,6 +2691,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .partial-flag  { background: #fff3e0; color: #e65100; }
 .frete-audit   { font-size: 9px; color: #b0bec5; margin-top: 2px; }
 .frete-gratis  { font-size: 12px; font-weight: 700; color: #38a169; display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
+.flex-badge    { color: #0d9488; font-weight: 700; }
+.flex-repasse-hint { font-size: 9px; color: #0d9488; margin-top: 2px; font-weight: 600; }
 
 .cell-liquido  { text-align: right; }
 .liquido-main  { font-size: 15px; font-weight: 700; }

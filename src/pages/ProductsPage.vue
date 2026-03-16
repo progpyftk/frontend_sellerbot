@@ -10,14 +10,14 @@
               <q-icon name="inventory_2" size="40px" class="q-mr-md" />
               <div>
                 <div class="text-subtitle2">Custos de Mercadoria</div>
-                <div class="text-h6 text-weight-bold">Produtos (CMV)</div>
+                <div class="text-h6 text-weight-bold">Produtos — Custo Médio</div>
               </div>
             </div>
             <q-btn
               color="white"
               text-color="teal"
               icon="sync"
-              label="Sincronizar CMV"
+              label="Sincronizar Custo Médio"
               unelevated
               :loading="syncing"
               :disable="!selectedCnpj"
@@ -127,7 +127,7 @@
               </q-td>
             </template>
 
-            <!-- Custo médio (CMV real) -->
+            <!-- Custo Médio do Produto -->
             <template v-slot:body-cell-avg_cost_price="props">
               <q-td :props="props" class="text-right">
                 <span
@@ -154,7 +154,7 @@
                 <q-icon name="inventory_2" size="4em" class="q-mb-md" />
                 <div class="text-h6" v-if="!selectedCnpj">Selecione uma conta para ver os produtos</div>
                 <div class="text-h6" v-else-if="search">Nenhum produto encontrado para "{{ search }}"</div>
-                <div class="text-h6" v-else>Nenhum produto. Clique em "Sincronizar CMV" para importar.</div>
+                <div class="text-h6" v-else>Nenhum produto. Clique em "Sincronizar Custo Médio" para importar.</div>
               </div>
             </template>
 
@@ -191,7 +191,7 @@ const columns = [
   { name: 'sku',            label: 'SKU',               field: 'sku',            align: 'left',  sortable: false },
   { name: 'name',           label: 'Nome do Produto',   field: 'name',           align: 'left',  sortable: false },
   { name: 'cost_price',     label: 'Custo Cadastrado',  field: 'cost_price',     align: 'right', sortable: false },
-  { name: 'avg_cost_price', label: 'CMV (Custo Médio)', field: 'avg_cost_price', align: 'right', sortable: false },
+  { name: 'avg_cost_price', label: 'Custo Médio do Produto', field: 'avg_cost_price', align: 'right', sortable: false },
   { name: 'last_synced_at', label: 'Última Sync',       field: 'last_synced_at', align: 'left',  sortable: false },
 ]
 

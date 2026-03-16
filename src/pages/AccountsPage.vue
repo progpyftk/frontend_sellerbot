@@ -121,7 +121,7 @@
                       <q-tooltip>{{ props.row.is_tiny_connected ? 'Reconfigurar Tiny ERP' : 'Conectar Tiny ERP' }}</q-tooltip>
                     </q-btn>
 
-                    <!-- Sincronizar CMV (só se conectado) -->
+                    <!-- Sincronizar Custo Médio do Produto (só se conectado) -->
                     <q-btn
                       v-if="props.row.is_tiny_connected"
                       flat round dense
@@ -129,9 +129,9 @@
                       icon="sync"
                       size="sm"
                       :loading="syncingCnpj === props.row.cnpj"
-                      @click="syncTinyCMV(props.row)"
+                      @click="syncCustoMedioProduto(props.row)"
                     >
-                      <q-tooltip>Sincronizar CMV (Tiny → SellerBot)</q-tooltip>
+                      <q-tooltip>Sincronizar Custo Médio do Produto (Tiny → SellerBot)</q-tooltip>
                     </q-btn>
 
                     <!-- Excluir conta ML -->
@@ -426,7 +426,7 @@ const submitTinySetup = async () => {
   }
 }
 
-const syncTinyCMV = async (account) => {
+const syncCustoMedioProduto = async (account) => {
   if (!account.cnpj) return
   syncingCnpj.value = account.cnpj
   try {

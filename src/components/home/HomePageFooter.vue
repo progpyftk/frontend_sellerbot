@@ -2,210 +2,195 @@
   <footer class="sb-footer">
     <div class="footer-inner content-wrapper">
 
-      <!-- Topo: brand + links -->
-      <div class="footer-top">
-        <div class="footer-brand">
-          <div class="brand-logo">
-            <q-icon name="smart_toy" size="22px" style="color:#2dd4bf" />
-            <span>SellerBot</span>
-          </div>
-          <p class="brand-desc">
-            Gestão inteligente para sellers do<br />Mercado Livre. Simples, rápido e preciso.
-          </p>
-          <div class="brand-socials">
-            <a href="#" class="social-link" aria-label="Instagram">
-              <q-icon name="photo_camera" size="18px" />
-            </a>
-            <a href="#" class="social-link" aria-label="LinkedIn">
-              <q-icon name="work" size="18px" />
-            </a>
-            <a href="#" class="social-link" aria-label="Email">
-              <q-icon name="mail" size="18px" />
-            </a>
-          </div>
+      <!-- Brand column -->
+      <div class="footer-brand">
+        <div class="brand-logomark">K</div>
+        <div class="brand-text">
+          <span class="brand-name">Krivos</span>
+          <span class="brand-sub">Consultoria</span>
         </div>
-
-        <div class="footer-links-grid">
-          <div v-for="section in footerLinks" :key="section.title" class="links-col">
-            <div class="links-title">{{ section.title }}</div>
-            <ul>
-              <li v-for="link in section.links" :key="link.label">
-                <a :href="link.href">{{ link.label }}</a>
-              </li>
-            </ul>
-          </div>
+        <p class="brand-desc">
+          Consultoria e tecnologia para empresas que querem crescer no varejo digital
+          — do B2B ao B2C com método, dados e um time dedicado.
+        </p>
+        <div class="social-links">
+          <a href="https://instagram.com" target="_blank" class="slink" aria-label="Instagram">
+            <q-icon name="photo_camera" size="18px" />
+          </a>
+          <a href="https://linkedin.com" target="_blank" class="slink" aria-label="LinkedIn">
+            <q-icon name="work" size="18px" />
+          </a>
+          <a href="mailto:contato@krivos.com.br" class="slink" aria-label="E-mail">
+            <q-icon name="mail" size="18px" />
+          </a>
         </div>
       </div>
 
-      <div class="footer-sep" />
+      <!-- Links columns -->
+      <div class="footer-links-col">
+        <div class="fcol-title">Krivos</div>
+        <a href="#about">Quem somos</a>
+        <a href="#metodologia">Metodologia</a>
+        <a href="#plans">Modelos de parceria</a>
+        <a href="mailto:contato@krivos.com.br">Fale conosco</a>
+      </div>
 
-      <!-- Rodapé -->
-      <div class="footer-bottom">
-        <span>© {{ year }} SellerBot. Todos os direitos reservados.</span>
+      <div class="footer-links-col">
+        <div class="fcol-title">Ferramentas</div>
+        <a href="#sellerbot">SellerBot</a>
+        <a href="#services">Integração ML</a>
+        <a href="#shopee">Integração Shopee</a>
+        <a href="#services">Tiny ERP</a>
+      </div>
+
+      <div class="footer-links-col">
+        <div class="fcol-title">Acesso</div>
+        <router-link to="/login">Entrar no SellerBot</router-link>
+        <router-link to="/signup">Criar conta</router-link>
+        <a href="mailto:contato@krivos.com.br">Suporte</a>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <div class="content-wrapper footer-bottom-inner">
+        <span>© {{ new Date().getFullYear() }} Krivos Consultoria. Todos os direitos reservados.</span>
         <div class="footer-bottom-links">
+          <a href="#">Privacidade</a>
           <a href="#">Termos de uso</a>
-          <a href="#">Política de privacidade</a>
         </div>
       </div>
-
     </div>
   </footer>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
-export default defineComponent({
-  name: 'HomePageFooter',
-  data () {
-    return {
-      year: new Date().getFullYear(),
-      footerLinks: [
-        {
-          title: 'Produto',
-          links: [
-            { label: 'Funcionalidades', href: '#' },
-            { label: 'Planos e preços', href: '#' },
-            { label: 'Integrações', href: '#' },
-            { label: 'Novidades', href: '#' },
-          ],
-        },
-        {
-          title: 'Suporte',
-          links: [
-            { label: 'Central de ajuda', href: '#' },
-            { label: 'Contato', href: '#' },
-            { label: 'Status do sistema', href: '#' },
-          ],
-        },
-        {
-          title: 'Empresa',
-          links: [
-            { label: 'Sobre o SellerBot', href: '#' },
-            { label: 'Blog', href: '#' },
-            { label: 'Parceiros', href: '#' },
-          ],
-        },
-      ]
-    }
-  }
-})
+export default defineComponent({ name: 'HomePageFooter' })
 </script>
 
 <style lang="scss" scoped>
 .sb-footer {
   background: #0f172a;
-  color: #94a3b8;
-  padding: 72px 20px 40px;
+  border-top: 1px solid rgba(255,255,255,.07);
 }
 
-.content-wrapper { max-width: 1200px; margin: 0 auto; }
+.content-wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
 
-.footer-top {
-  display: flex;
-  flex-wrap: wrap;
+.footer-inner {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr 1fr;
   gap: 48px;
-  margin-bottom: 48px;
+  padding-top: 64px;
+  padding-bottom: 48px;
 }
 
-.footer-brand {
-  flex: 0 0 240px;
-}
+/* Brand */
+.footer-brand { display: flex; flex-direction: column; gap: 14px; }
 
-.brand-logo {
+.brand-logomark {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #fff;
+}
 
-  span {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: #f1f5f9;
-    letter-spacing: -.3px;
-  }
+.brand-text { display: flex; align-items: baseline; gap: 6px; }
+
+.brand-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.brand-sub {
+  font-size: .75rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .5px;
 }
 
 .brand-desc {
-  font-size: .86rem;
+  font-size: .85rem;
+  color: #475569;
   line-height: 1.65;
-  color: #64748b;
-  margin: 0 0 20px;
+  margin: 0;
+  max-width: 280px;
 }
 
-.brand-socials {
+.social-links {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
-.social-link {
+.slink {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: rgba(255,255,255,.06);
+  border-radius: 8px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #64748b;
   text-decoration: none;
-  transition: background .2s, color .2s;
+  transition: color .2s, background .2s;
 
-  &:hover {
-    background: rgba(13,148,136,.2);
-    color: #2dd4bf;
+  &:hover { color: #2dd4bf; background: rgba(45,212,191,.1); }
+}
+
+/* Link columns */
+.footer-links-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  a {
+    font-size: .86rem;
+    color: #64748b;
+    text-decoration: none;
+    transition: color .2s;
+    line-height: 1;
+    &:hover { color: #2dd4bf; }
   }
 }
 
-.footer-links-grid {
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  gap: 40px;
-}
-
-.links-col {
-  min-width: 120px;
-}
-
-.links-title {
-  font-size: .78rem;
+.fcol-title {
+  font-size: .73rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .8px;
+  letter-spacing: .7px;
   color: #f1f5f9;
-  margin-bottom: 14px;
+  margin-bottom: 6px;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-a {
-  color: #64748b;
-  text-decoration: none;
-  font-size: .87rem;
-  transition: color .2s;
-
-  &:hover { color: #2dd4bf; }
-}
-
-.footer-sep {
-  border: none;
-  border-top: 1px solid rgba(255,255,255,.07);
-  margin-bottom: 24px;
-}
-
+/* Bottom bar */
 .footer-bottom {
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding: 20px 0;
+}
+
+.footer-bottom-inner {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
-  font-size: .82rem;
+}
+
+.footer-bottom span {
+  font-size: .8rem;
   color: #475569;
 }
 
@@ -213,12 +198,21 @@ a {
   display: flex;
   gap: 20px;
 
-  a { color: #475569; font-size: .82rem; }
+  a {
+    font-size: .8rem;
+    color: #475569;
+    text-decoration: none;
+    &:hover { color: #2dd4bf; }
+  }
+}
+
+@media (max-width: 900px) {
+  .footer-inner { grid-template-columns: 1fr 1fr; }
+  .footer-brand { grid-column: 1 / -1; }
 }
 
 @media (max-width: 600px) {
-  .footer-top { flex-direction: column; }
-  .footer-brand { flex: 1; }
-  .footer-bottom { flex-direction: column; text-align: center; }
+  .footer-inner { grid-template-columns: 1fr; gap: 32px; padding-top: 48px; }
+  .footer-bottom-inner { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
 </style>
