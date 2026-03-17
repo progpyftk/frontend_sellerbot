@@ -1,190 +1,206 @@
 <template>
-  <q-page class="bg-grey-1">
-    <div class="q-pa-md q-gutter-md">
+  <q-page class="accounts-page">
 
-      <!-- ================================================================ -->
-      <!-- MERCADO LIVRE                                                     -->
-      <!-- ================================================================ -->
-      <q-card flat bordered class="bg-white">
-        <q-card-section class="bg-primary text-white">
-          <div class="row items-center justify-between q-col-gutter-md">
-            <div class="col-grow row items-center">
-              <img src="https://logospng.org/wp-content/uploads/mercado-livre.jpg" alt="MercadoLivre Logo"
-                style="width: 50px; height: 50px; object-fit: contain" class="q-mr-md" />
-              <div>
-                <div class="text-subtitle2">Gerenciamento de</div>
-                <div class="text-h6 text-weight-bold">Contas do MercadoLivre</div>
-              </div>
-            </div>
-            <div class="col-auto">
-              <q-btn color="white" text-color="primary" icon="add_circle" label="Adicionar Conta" @click="startMLAuth"
-                :loading="isAuthenticating" class="q-px-md" size="lg" unelevated>
-                <q-tooltip>Conectar nova conta do MercadoLivre</q-tooltip>
-              </q-btn>
-            </div>
-          </div>
-        </q-card-section>
-
-        <q-card-section>
-          <div v-if="loading" class="flex flex-center q-pa-xl">
-            <q-spinner color="primary" size="3em" />
-          </div>
-
-          <template v-else>
-            <div v-if="accounts.length > 0">
-              <q-table :rows="accounts" :columns="columns" row-key="account_id" flat bordered separator="cell"
-                :pagination="{ rowsPerPage: 10 }">
-
-                <template v-slot:body-cell-cnpj="props">
-                  <q-td :props="props">
-                    <span :class="props.row.cnpj ? '' : 'text-grey-5 text-italic'">
-                      {{ props.row.cnpj ? formatCNPJ(props.row.cnpj) : 'Clique para editar' }}
-                    </span>
-                    <q-popup-edit
-                      :model-value="props.row.cnpj || ''"
-                      @save="(val) => saveCnpj(props.row, val)"
-                      v-slot="scope"
-                      buttons
-                      label-set="Salvar"
-                      label-cancel="Cancelar"
-                    >
-                      <q-input
-                        v-model="scope.value"
-                        label="CNPJ (somente números)"
-                        dense autofocus
-                        mask="##.###.###/####-##"
-                        unmasked-value
-                        hint="Ex: 41641514000103"
-                      />
-                    </q-popup-edit>
-                  </q-td>
-                </template>
-
-                <template v-slot:body-cell-access_token="props">
-                  <q-td :props="props" class="text-no-wrap">
-                    {{ truncateToken(props.row.access_token) }}
-                    <q-btn flat round dense color="primary" icon="content_copy" size="sm"
-                      @click="copyToClipboard(props.row.access_token)">
-                      <q-tooltip>Copiar token completo</q-tooltip>
-                    </q-btn>
-                  </q-td>
-                </template>
-
-                <template v-slot:body-cell-refresh_token="props">
-                  <q-td :props="props" class="text-no-wrap">
-                    {{ truncateToken(props.row.refresh_token) }}
-                    <q-btn flat round dense color="primary" icon="content_copy" size="sm"
-                      @click="copyToClipboard(props.row.refresh_token)">
-                      <q-tooltip>Copiar token completo</q-tooltip>
-                    </q-btn>
-                  </q-td>
-                </template>
-
-                <template v-slot:body-cell-is_connected="props">
-                  <q-td :props="props">
-                    <q-chip :color="props.row.is_connected ? 'positive' : 'negative'" text-color="white" size="sm">
-                      {{ props.row.is_connected ? "Conectado" : "Desconectado" }}
-                    </q-chip>
-                  </q-td>
-                </template>
-
-                <template v-slot:body-cell-token_expires_at="props">
-                  <q-td :props="props">
-                    {{ formatDate(props.row.token_expires_at) }}
-                  </q-td>
-                </template>
-
-                <!-- Coluna Tiny ERP -->
-                <template v-slot:body-cell-tiny_status="props">
-                  <q-td :props="props" class="text-center">
-                    <q-chip
-                      :color="props.row.is_tiny_connected ? 'positive' : 'grey-4'"
-                      :text-color="props.row.is_tiny_connected ? 'white' : 'grey-7'"
-                      size="sm"
-                      icon="receipt_long"
-                    >
-                      {{ props.row.is_tiny_connected ? 'Conectado' : 'Não conectado' }}
-                    </q-chip>
-                  </q-td>
-                </template>
-
-                <template v-slot:body-cell-actions="props">
-                  <q-td :props="props" class="text-center q-gutter-xs">
-                    <!-- Conectar / Reconectar Tiny -->
-                    <q-btn
-                      flat round dense
-                      :color="props.row.is_tiny_connected ? 'grey' : 'orange'"
-                      icon="link"
-                      size="sm"
-                      @click="openTinySetup(props.row)"
-                    >
-                      <q-tooltip>{{ props.row.is_tiny_connected ? 'Reconfigurar Tiny ERP' : 'Conectar Tiny ERP' }}</q-tooltip>
-                    </q-btn>
-
-                    <!-- Sincronizar Custo Médio do Produto (só se conectado) -->
-                    <q-btn
-                      v-if="props.row.is_tiny_connected"
-                      flat round dense
-                      color="teal"
-                      icon="sync"
-                      size="sm"
-                      :loading="syncingCnpj === props.row.cnpj"
-                      @click="syncCustoMedioProduto(props.row)"
-                    >
-                      <q-tooltip>Sincronizar Custo Médio do Produto (Tiny → SellerBot)</q-tooltip>
-                    </q-btn>
-
-                    <!-- Excluir conta ML -->
-                    <q-btn flat round color="negative" icon="delete" size="sm" @click="confirmDelete(props.row)">
-                      <q-tooltip>Excluir conta ML</q-tooltip>
-                    </q-btn>
-                  </q-td>
-                </template>
-              </q-table>
-            </div>
-
-            <div v-else class="text-center q-pa-xl">
-              <q-icon name="account_circle" size="6em" color="grey-5" />
-              <p class="text-h6 q-mt-md">Nenhuma conta encontrada.</p>
-              <p class="text-subtitle1 q-mt-sm">Clique em "Adicionar Conta" para começar.</p>
-            </div>
-          </template>
-        </q-card-section>
-      </q-card>
-
+    <!-- ══════════════════════════════════════════════════════ HEADER -->
+    <div class="page-header">
+      <div class="header-left">
+        <div class="header-icon">
+          <img src="https://logospng.org/wp-content/uploads/mercado-livre.jpg" alt="ML"
+            style="width: 22px; height: 22px; object-fit: contain; border-radius: 4px" />
+        </div>
+        <div>
+          <div class="header-eyebrow">Gerenciamento</div>
+          <div class="header-title">Contas MercadoLivre</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <q-btn
+          unelevated color="teal-7"
+          icon="add_circle" label="Adicionar Conta"
+          @click="startMLAuth"
+          :loading="isAuthenticating"
+          size="sm"
+        >
+          <q-tooltip>Conectar nova conta do MercadoLivre</q-tooltip>
+        </q-btn>
+      </div>
     </div>
 
-    <!-- ================================================================ -->
-    <!-- DIALOG: Excluir conta ML                                          -->
-    <!-- ================================================================ -->
+    <!-- ══════════════════════════════════════════════════════ CONTENT -->
+    <div class="content-wrap">
+      <div class="table-wrap">
+
+        <div v-if="loading" class="flex flex-center q-pa-xl">
+          <q-spinner color="teal-7" size="3em" />
+        </div>
+
+        <template v-else>
+          <q-table
+            v-if="accounts.length > 0"
+            :rows="accounts"
+            :columns="columns"
+            row-key="account_id"
+            flat
+            :pagination="{ rowsPerPage: 10 }"
+            class="accounts-table"
+          >
+            <template v-slot:header-cell="props">
+              <q-th :props="props" class="th-cell">{{ props.col.label }}</q-th>
+            </template>
+
+            <template v-slot:body-cell-cnpj="props">
+              <q-td :props="props">
+                <span :class="props.row.cnpj ? 'td-val' : 'td-empty'">
+                  {{ props.row.cnpj ? formatCNPJ(props.row.cnpj) : 'Clique para editar' }}
+                </span>
+                <q-popup-edit
+                  :model-value="props.row.cnpj || ''"
+                  @save="(val) => saveCnpj(props.row, val)"
+                  v-slot="scope"
+                  buttons label-set="Salvar" label-cancel="Cancelar"
+                >
+                  <q-input
+                    v-model="scope.value"
+                    label="CNPJ (somente números)"
+                    dense autofocus
+                    mask="##.###.###/####-##"
+                    unmasked-value
+                    hint="Ex: 41641514000103"
+                  />
+                </q-popup-edit>
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-flex_delivery_cost="props">
+              <q-td :props="props" class="text-center">
+                <span class="td-val">R$ {{ Number(props.row.flex_delivery_cost || 12.50).toFixed(2) }}</span>
+                <q-popup-edit
+                  :model-value="String(props.row.flex_delivery_cost || 12.50)"
+                  @save="(val) => saveFlexDeliveryCost(props.row, val)"
+                  v-slot="scope"
+                  buttons label-set="Salvar" label-cancel="Cancelar"
+                >
+                  <q-input
+                    v-model="scope.value"
+                    label="Custo estimado de entrega Flex (R$)"
+                    type="number" step="0.01"
+                    dense autofocus hint="Ex: 12.50"
+                  />
+                </q-popup-edit>
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-access_token="props">
+              <q-td :props="props" class="text-no-wrap">
+                <span class="token-preview">{{ truncateToken(props.row.access_token) }}</span>
+                <q-btn flat round dense color="teal-7" icon="content_copy" size="sm"
+                  @click="copyToClipboard(props.row.access_token)">
+                  <q-tooltip>Copiar token completo</q-tooltip>
+                </q-btn>
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-refresh_token="props">
+              <q-td :props="props" class="text-no-wrap">
+                <span class="token-preview">{{ truncateToken(props.row.refresh_token) }}</span>
+                <q-btn flat round dense color="teal-7" icon="content_copy" size="sm"
+                  @click="copyToClipboard(props.row.refresh_token)">
+                  <q-tooltip>Copiar token completo</q-tooltip>
+                </q-btn>
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-is_connected="props">
+              <q-td :props="props">
+                <span :class="['status-chip', props.row.is_connected ? 'status-chip--pos' : 'status-chip--neg']">
+                  {{ props.row.is_connected ? "Conectado" : "Desconectado" }}
+                </span>
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-token_expires_at="props">
+              <q-td :props="props" class="td-muted">
+                {{ formatDate(props.row.token_expires_at) }}
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-tiny_status="props">
+              <q-td :props="props" class="text-center">
+                <span :class="['status-chip', props.row.is_tiny_connected ? 'status-chip--pos' : 'status-chip--neutral']">
+                  <q-icon name="receipt_long" size="12px" class="q-mr-xs" />
+                  {{ props.row.is_tiny_connected ? 'Conectado' : 'Não conectado' }}
+                </span>
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-actions="props">
+              <q-td :props="props" class="text-center q-gutter-xs">
+                <q-btn
+                  flat round dense size="sm"
+                  :color="props.row.is_tiny_connected ? 'grey-6' : 'amber-8'"
+                  icon="link"
+                  @click="openTinySetup(props.row)"
+                >
+                  <q-tooltip>{{ props.row.is_tiny_connected ? 'Reconfigurar Tiny ERP' : 'Conectar Tiny ERP' }}</q-tooltip>
+                </q-btn>
+
+                <q-btn
+                  v-if="props.row.is_tiny_connected"
+                  flat round dense size="sm" color="teal-7" icon="sync"
+                  :loading="syncingCnpj === props.row.cnpj"
+                  @click="syncCustoMedioProduto(props.row)"
+                >
+                  <q-tooltip>Sincronizar Custo Médio do Produto (Tiny → SellerBot)</q-tooltip>
+                </q-btn>
+
+                <q-btn flat round size="sm" color="negative" icon="delete"
+                  @click="confirmDelete(props.row)">
+                  <q-tooltip>Excluir conta ML</q-tooltip>
+                </q-btn>
+              </q-td>
+            </template>
+          </q-table>
+
+          <div v-else class="empty-state">
+            <q-icon name="account_circle" size="48px" style="color:#9aa0ac" />
+            <div style="font-size:15px; font-weight:600; color:#1a1f36">Nenhuma conta encontrada</div>
+            <div style="color:#9aa0ac; font-size:13px">Clique em "Adicionar Conta" para começar.</div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ DIALOG: Excluir -->
     <q-dialog v-model="deleteDialog">
-      <q-card>
-        <q-card-section class="row items-center">
+      <q-card style="min-width: 320px; border-radius: 12px">
+        <q-card-section class="row items-center q-pb-sm">
           <q-avatar icon="warning" color="negative" text-color="white" />
-          <span class="q-ml-sm">Tem certeza que deseja excluir esta conta?</span>
+          <span class="q-ml-sm" style="font-weight:600; color:#1a1f36">Excluir esta conta?</span>
+        </q-card-section>
+        <q-card-section class="q-pt-none" style="color:#9aa0ac; font-size:13px">
+          Esta ação é irreversível.
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="primary" v-close-popup />
-          <q-btn flat label="Excluir" color="negative" @click="deleteAccount" />
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Excluir" color="negative" @click="deleteAccount" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- ================================================================ -->
-    <!-- DIALOG: Setup Tiny ERP                                            -->
-    <!-- ================================================================ -->
+    <!-- ══════════════════════════════════════════════════════ DIALOG: Tiny ERP -->
     <q-dialog v-model="tinyDialog" persistent>
-      <q-card style="min-width: 420px">
-        <q-card-section class="row items-center bg-orange-1 q-pb-sm">
-          <q-avatar icon="receipt_long" color="orange" text-color="white" />
-          <div class="q-ml-md">
-            <div class="text-h6">Conectar Tiny ERP</div>
-            <div class="text-caption text-grey-7">
-              Conta ML: <strong>{{ tinyForm.account_nickname }}</strong>
-              — CNPJ: <strong>{{ formatCNPJ(tinyForm.cnpj) }}</strong>
+      <q-card style="min-width: 420px; border-radius: 12px">
+        <div class="dialog-header">
+          <div class="header-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24)">
+            <q-icon name="receipt_long" size="18px" />
+          </div>
+          <div>
+            <div style="font-size: 15px; font-weight: 700; color: #1a1f36">Conectar Tiny ERP</div>
+            <div style="font-size: 11px; color: #9aa0ac">
+              {{ tinyForm.account_nickname }} — {{ formatCNPJ(tinyForm.cnpj) }}
             </div>
           </div>
-        </q-card-section>
+        </div>
 
         <q-separator />
 
@@ -196,35 +212,30 @@
 
           <q-input
             v-model="tinyForm.client_id"
-            label="Client ID"
-            outlined dense
+            label="Client ID" outlined dense
             :rules="[val => !!val || 'Obrigatório']"
           />
           <q-input
             v-model="tinyForm.client_secret"
-            label="Client Secret"
-            outlined dense
-            type="password"
+            label="Client Secret" outlined dense type="password"
             :rules="[val => !!val || 'Obrigatório']"
           />
           <q-input
             :model-value="TINY_REDIRECT_URI"
-            label="URL de Redirecionamento (já configurada no Tiny)"
-            outlined dense
-            readonly
+            label="URL de Redirecionamento"
+            outlined dense readonly
             hint="Use exatamente esta URL ao cadastrar o app no Tiny"
           />
         </q-card-section>
 
         <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Cancelar" color="grey" v-close-popup />
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
           <q-btn
-            label="Conectar"
-            color="orange"
+            label="Conectar" unelevated
+            color="amber-8"
             icon="open_in_new"
             :loading="tinyConnecting"
             @click="submitTinySetup"
-            unelevated
           />
         </q-card-actions>
       </q-card>
@@ -281,6 +292,7 @@ const columns = [
   { name: 'refresh_token',    align: 'left',   label: 'Refresh Token',  field: 'refresh_token' },
   { name: 'is_connected',     align: 'center', label: 'ML Status',      field: 'is_connected' },
   { name: 'token_expires_at', align: 'left',   label: 'Token Expira em',field: 'token_expires_at' },
+  { name: 'flex_delivery_cost', align: 'center', label: 'Frete Flex (R$)', field: 'flex_delivery_cost' },
   { name: 'tiny_status',      align: 'center', label: 'Tiny ERP',       field: 'is_tiny_connected' },
   { name: 'actions',          align: 'center', label: 'Ações',          field: 'actions' },
 ]
@@ -391,6 +403,22 @@ const openTinySetup = (account) => {
   tinyDialog.value = true
 }
 
+const saveFlexDeliveryCost = async (account, value) => {
+  const cost = parseFloat(value)
+  if (isNaN(cost) || cost < 0) {
+    $q.notify({ message: 'Valor inválido.', color: 'warning', position: 'top' })
+    return
+  }
+  try {
+    await api.patch(`/mercadolivre/accounts/${account.account_id}/settings/`, { flex_delivery_cost: cost })
+    account.flex_delivery_cost = cost
+    $q.notify({ message: 'Frete Flex atualizado!', color: 'positive', position: 'top', timeout: 2000 })
+  } catch (error) {
+    console.error('Erro ao salvar frete Flex:', error)
+    $q.notify({ message: 'Erro ao salvar frete Flex.', color: 'negative', position: 'top' })
+  }
+}
+
 const saveCnpj = async (account, cnpj) => {
   const digits = (cnpj || '').replace(/\D/g, '')
   try {
@@ -456,3 +484,60 @@ onMounted(() => {
   getAccounts()
 })
 </script>
+
+<style scoped>
+.accounts-page { background: #f5f7fa; min-height: 100vh; }
+
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 16px; background: #fff;
+  border-bottom: 1.5px solid #e8edf3; gap: 16px; flex-wrap: wrap;
+}
+.header-left  { display: flex; align-items: center; gap: 12px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-icon  {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0d9488, #2dd4bf); color: #fff;
+  flex-shrink: 0;
+}
+.header-eyebrow { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.header-title   { font-size: 17px; font-weight: 700; color: #1a1f36; }
+
+.content-wrap { padding: 20px 24px; }
+
+.table-wrap {
+  background: #fff; border-radius: 10px;
+  border: 1.5px solid #e8edf3; overflow: hidden;
+}
+.accounts-table { background: transparent; }
+.th-cell {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: #9aa0ac; white-space: nowrap;
+  border-bottom: 1.5px solid #e8edf3;
+}
+
+.td-val   { color: #1a1f36; font-size: 13px; }
+.td-empty { color: #9aa0ac; font-style: italic; font-size: 13px; }
+.td-muted { color: #9aa0ac; font-size: 12px; }
+.token-preview { font-family: monospace; font-size: 12px; color: #9aa0ac; }
+
+.status-chip {
+  display: inline-flex; align-items: center;
+  font-size: 11px; font-weight: 600; border-radius: 12px;
+  padding: 2px 10px;
+}
+.status-chip--pos     { background: #dcfce7; color: #16a34a; }
+.status-chip--neg     { background: #fef2f2; color: #ef4444; }
+.status-chip--neutral { background: #f3f4f6; color: #6b7280; }
+
+.empty-state {
+  text-align: center; padding: 60px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+
+.dialog-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px;
+}
+</style>

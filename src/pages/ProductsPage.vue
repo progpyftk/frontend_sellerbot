@@ -1,167 +1,143 @@
 <template>
-  <q-page class="bg-grey-1">
-    <div class="q-pa-md">
-      <q-card flat bordered class="bg-white">
+  <q-page class="products-page">
 
-        <!-- Header -->
-        <q-card-section class="bg-teal text-white">
-          <div class="row items-center justify-between">
-            <div class="row items-center">
-              <q-icon name="inventory_2" size="40px" class="q-mr-md" />
-              <div>
-                <div class="text-subtitle2">Custos de Mercadoria</div>
-                <div class="text-h6 text-weight-bold">Produtos — Custo Médio</div>
-              </div>
-            </div>
-            <q-btn
-              color="white"
-              text-color="teal"
-              icon="sync"
-              label="Sincronizar Custo Médio"
-              unelevated
-              :loading="syncing"
-              :disable="!selectedCnpj"
-              @click="syncProducts"
-            >
-              <q-tooltip v-if="!selectedCnpj">Selecione uma conta primeiro</q-tooltip>
-            </q-btn>
-          </div>
-        </q-card-section>
+    <!-- ══════════════════════════════════════════════════════ HEADER -->
+    <div class="page-header">
+      <div class="header-left">
+        <div class="header-icon"><q-icon name="inventory_2" size="20px" /></div>
+        <div>
+          <div class="header-eyebrow">Custos de Mercadoria</div>
+          <div class="header-title">Produtos — Custo Médio</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <q-btn
+          unelevated
+          color="teal-7"
+          icon="sync"
+          label="Sincronizar Custo Médio"
+          :loading="syncing"
+          :disable="!selectedCnpj"
+          size="sm"
+          @click="syncProducts"
+        >
+          <q-tooltip v-if="!selectedCnpj">Selecione uma conta primeiro</q-tooltip>
+        </q-btn>
+      </div>
+    </div>
 
-        <!-- Filtros -->
-        <q-card-section class="q-pb-none">
-          <div class="row q-col-gutter-md items-end">
+    <!-- ══════════════════════════════════════════════════════ CONTENT -->
+    <div class="content-wrap">
 
-            <!-- Seletor de conta -->
-            <div class="col-12 col-sm-4">
-              <q-select
-                v-model="selectedAccount"
-                :options="accountOptions"
-                option-label="label"
-                label="Conta (CNPJ)"
-                outlined
-                dense
-                clearable
-                :loading="loadingAccounts"
-                :disable="loadingAccounts"
-                @update:model-value="onAccountChange"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="business" />
-                </template>
-                <template v-slot:option="scope">
-                  <q-item v-bind="scope.itemProps">
-                    <q-item-section>
-                      <q-item-label>{{ scope.opt.nickname }}</q-item-label>
-                      <q-item-label caption>{{ formatCNPJ(scope.opt.cnpj) }}</q-item-label>
-                    </q-item-section>
-                  </q-item>
-                </template>
-                <template v-slot:no-option>
-                  <q-item>
-                    <q-item-section class="text-grey-5">
-                      Nenhuma conta com Tiny conectado
-                    </q-item-section>
-                  </q-item>
-                </template>
-              </q-select>
-            </div>
+      <!-- Filtros -->
+      <div class="filter-row">
+        <q-select
+          v-model="selectedAccount"
+          :options="accountOptions"
+          option-label="label"
+          label="Conta (CNPJ)"
+          outlined dense clearable
+          :loading="loadingAccounts"
+          :disable="loadingAccounts"
+          style="min-width: 260px"
+          @update:model-value="onAccountChange"
+        >
+          <template v-slot:prepend><q-icon name="business" color="teal-7" /></template>
+          <template v-slot:option="scope">
+            <q-item v-bind="scope.itemProps">
+              <q-item-section>
+                <q-item-label>{{ scope.opt.nickname }}</q-item-label>
+                <q-item-label caption>{{ formatCNPJ(scope.opt.cnpj) }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </template>
+          <template v-slot:no-option>
+            <q-item>
+              <q-item-section class="text-grey-5">Nenhuma conta com Tiny conectado</q-item-section>
+            </q-item>
+          </template>
+        </q-select>
 
-            <!-- Busca -->
-            <div class="col-12 col-sm-5">
-              <q-input
-                v-model="search"
-                label="Buscar por SKU ou Nome"
-                outlined
-                dense
-                clearable
-                debounce="400"
-                @update:model-value="loadProducts()"
-              >
-                <template v-slot:prepend><q-icon name="search" /></template>
-              </q-input>
-            </div>
+        <q-input
+          v-model="search"
+          label="Buscar por SKU ou Nome"
+          outlined dense clearable debounce="400"
+          style="min-width: 240px; flex: 1"
+          @update:model-value="loadProducts()"
+        >
+          <template v-slot:prepend><q-icon name="search" color="teal-7" /></template>
+        </q-input>
 
-            <!-- Contador -->
-            <div class="col-12 col-sm-3 text-right text-grey-7 text-caption q-pb-sm">
-              <span v-if="totalCount !== null">
-                {{ totalCount.toLocaleString('pt-BR') }} produto(s) encontrado(s)
+        <div v-if="totalCount !== null" class="count-badge">
+          {{ totalCount.toLocaleString('pt-BR') }} produto(s)
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="table-wrap">
+        <q-table
+          :rows="products"
+          :columns="columns"
+          row-key="id"
+          flat
+          :loading="loading"
+          :rows-per-page-options="[0]"
+          class="products-table"
+        >
+          <template v-slot:header-cell="props">
+            <q-th :props="props" class="th-cell">{{ props.col.label }}</q-th>
+          </template>
+
+          <template v-slot:body-cell-sku="props">
+            <q-td :props="props">
+              <span class="text-mono text-weight-medium" style="color:#1a1f36">{{ props.row.sku }}</span>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-name="props">
+            <q-td :props="props">
+              <span style="color:#4b5263">{{ props.row.name || '—' }}</span>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-cost_price="props">
+            <q-td :props="props" class="text-right">
+              <span :style="props.row.cost_price > 0 ? 'color:#4b5263' : 'color:#ef4444'">
+                {{ formatCurrency(props.row.cost_price) }}
               </span>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-avg_cost_price="props">
+            <q-td :props="props" class="text-right">
+              <span
+                v-if="props.row.avg_cost_price !== null"
+                class="text-weight-bold"
+                :style="props.row.avg_cost_price > 0 ? 'color:#0d9488' : 'color:#ef4444'"
+              >
+                {{ formatCurrency(props.row.avg_cost_price) }}
+              </span>
+              <span v-else style="color:#9aa0ac">—</span>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-last_synced_at="props">
+            <q-td :props="props" style="color:#9aa0ac; font-size:12px">
+              {{ formatDate(props.row.last_synced_at) }}
+            </q-td>
+          </template>
+
+          <template v-slot:no-data>
+            <div class="empty-state">
+              <q-icon name="inventory_2" size="40px" style="color:#9aa0ac" />
+              <div v-if="!selectedCnpj">Selecione uma conta para ver os produtos</div>
+              <div v-else-if="search">Nenhum produto encontrado para "{{ search }}"</div>
+              <div v-else>Nenhum produto. Clique em "Sincronizar Custo Médio" para importar.</div>
             </div>
+          </template>
+        </q-table>
+      </div>
 
-          </div>
-        </q-card-section>
-
-        <!-- Tabela -->
-        <q-card-section>
-          <q-table
-            :rows="products"
-            :columns="columns"
-            row-key="id"
-            flat
-            bordered
-            separator="cell"
-            :loading="loading"
-            :rows-per-page-options="[0]"
-          >
-            <!-- SKU -->
-            <template v-slot:body-cell-sku="props">
-              <q-td :props="props">
-                <span class="text-weight-medium text-mono">{{ props.row.sku }}</span>
-              </q-td>
-            </template>
-
-            <!-- Nome -->
-            <template v-slot:body-cell-name="props">
-              <q-td :props="props">
-                <span class="text-grey-8">{{ props.row.name || '—' }}</span>
-              </q-td>
-            </template>
-
-            <!-- Custo cadastrado -->
-            <template v-slot:body-cell-cost_price="props">
-              <q-td :props="props" class="text-right">
-                <span :class="props.row.cost_price > 0 ? 'text-grey-8' : 'text-negative'">
-                  {{ formatCurrency(props.row.cost_price) }}
-                </span>
-              </q-td>
-            </template>
-
-            <!-- Custo Médio do Produto -->
-            <template v-slot:body-cell-avg_cost_price="props">
-              <q-td :props="props" class="text-right">
-                <span
-                  v-if="props.row.avg_cost_price !== null"
-                  class="text-weight-bold"
-                  :class="props.row.avg_cost_price > 0 ? 'text-teal-8' : 'text-negative'"
-                >
-                  {{ formatCurrency(props.row.avg_cost_price) }}
-                </span>
-                <span v-else class="text-grey-4">—</span>
-              </q-td>
-            </template>
-
-            <!-- Última sync -->
-            <template v-slot:body-cell-last_synced_at="props">
-              <q-td :props="props" class="text-caption text-grey-6">
-                {{ formatDate(props.row.last_synced_at) }}
-              </q-td>
-            </template>
-
-            <!-- Estado vazio -->
-            <template v-slot:no-data>
-              <div class="full-width column flex-center q-pa-xl text-grey-5">
-                <q-icon name="inventory_2" size="4em" class="q-mb-md" />
-                <div class="text-h6" v-if="!selectedCnpj">Selecione uma conta para ver os produtos</div>
-                <div class="text-h6" v-else-if="search">Nenhum produto encontrado para "{{ search }}"</div>
-                <div class="text-h6" v-else>Nenhum produto. Clique em "Sincronizar Custo Médio" para importar.</div>
-              </div>
-            </template>
-
-          </q-table>
-        </q-card-section>
-
-      </q-card>
     </div>
   </q-page>
 </template>
@@ -283,7 +259,51 @@ onMounted(loadMlAccounts)
 </script>
 
 <style scoped>
-.text-mono {
-  font-family: monospace;
+.products-page { background: #f5f7fa; min-height: 100vh; }
+
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 16px; background: #fff;
+  border-bottom: 1.5px solid #e8edf3; gap: 16px; flex-wrap: wrap;
 }
+.header-left  { display: flex; align-items: center; gap: 12px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-icon  {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0d9488, #2dd4bf); color: #fff;
+}
+.header-eyebrow { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.header-title   { font-size: 17px; font-weight: 700; color: #1a1f36; }
+
+.content-wrap { padding: 20px 24px; }
+
+.filter-row {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.count-badge {
+  font-size: 12px; font-weight: 600; color: #0d9488;
+  background: #e0f2f1; border-radius: 12px; padding: 3px 12px;
+  white-space: nowrap;
+}
+
+.table-wrap {
+  background: #fff; border-radius: 10px;
+  border: 1.5px solid #e8edf3; overflow: hidden;
+}
+.products-table { background: transparent; }
+.th-cell {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: #9aa0ac; white-space: nowrap;
+  border-bottom: 1.5px solid #e8edf3;
+}
+
+.empty-state {
+  text-align: center; padding: 60px 24px; color: #9aa0ac;
+  font-size: 14px; display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+}
+
+.text-mono { font-family: monospace; }
 </style>

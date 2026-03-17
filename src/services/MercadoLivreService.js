@@ -84,4 +84,38 @@ export default {
   getOrderTodaySummary() {
     return api.get('/mercadolivre/orders/today-summary/')
   },
+
+  // ==========================================
+  // PUBLICIDADE (ADS)
+  // ==========================================
+  getAdsOverview(params) {
+    return api.get('/mercadolivre/ads/overview/', { params })
+  },
+
+  getAdsDaily(params) {
+    return api.get('/mercadolivre/ads/daily/', { params })
+  },
+
+  getCampaignAds(campaignId) {
+    return api.get(`/mercadolivre/ads/campaigns/${campaignId}/ads/`)
+  },
+
+  getAdsItems(params) {
+    return api.get('/mercadolivre/ads/items/', { params })
+  },
+
+  // ==========================================
+  // DASHBOARD (DailySummary pré-computado)
+  // ==========================================
+  getDashboardDaily(params) {
+    return api.get('/mercadolivre/dashboard/daily/', { params })
+  },
+
+  computeDashboard(payload) {
+    return api.post('/mercadolivre/dashboard/compute/', payload)
+  },
+
+  getDashboardOperation(params) {
+    return api.get('/mercadolivre/dashboard/operation/', { params })
+  },
 }

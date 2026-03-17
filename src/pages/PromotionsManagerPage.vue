@@ -1,30 +1,28 @@
 <template>
-  <q-page class="bg-grey-2">
+  <q-page class="promos-page">
     <div class="q-pa-md">
       <q-card flat class="bg-white shadow-2 rounded-borders">
 
-        <q-card-section class="bg-white q-py-md q-px-lg border-bottom">
+        <q-card-section class="promos-page-header">
           <div class="row items-center justify-between">
             <div class="row items-center">
-              <div class="q-mr-md bg-orange-8 text-white q-pa-sm rounded-borders shadow-2">
-                <q-icon name="campaign" size="sm" />
+              <div class="header-icon-promos q-mr-md">
+                <q-icon name="local_offer" size="sm" />
               </div>
               <div>
-                <div class="text-caption text-grey-7 text-weight-medium text-uppercase">Crescimento & Vendas</div>
-                <div class="text-h6 text-blue-grey-9 text-weight-bold" style="line-height: 1.1;">
-                  Gerenciador de Promoções
-                </div>
+                <div class="header-eyebrow-promos">Crescimento & Vendas</div>
+                <div class="header-title-promos">Gerenciador de Promoções</div>
               </div>
             </div>
 
             <div class="row q-gutter-sm">
-              <q-btn outline color="blue-grey-4" text-color="blue-grey-9" icon="refresh" label="Atualizar"
+              <q-btn flat color="grey-7" icon="refresh" label="Atualizar"
                 @click="() => loadPromotions(false, true)" :loading="loading" />
 
-              <q-btn outline color="blue-grey-4" text-color="blue-grey-9" icon="receipt_long" label="Ver Logs"
+              <q-btn flat color="grey-7" icon="receipt_long" label="Ver Logs"
                 @click="showLogsDialog = true" />
 
-              <q-btn unelevated color="orange-8" text-color="white" icon="bolt" label="Ativar Todas"
+              <q-btn unelevated color="amber-8" text-color="white" icon="bolt" label="Ativar Todas"
                 @click="openActivateAllDialog" :disable="loading || isAnyPromoProcessing || totalElegiveis == 0" />
             </div>
           </div>
@@ -702,4 +700,15 @@ onMounted(() => {
   transform: translateY(-2px);
   filter: brightness(0.95);
 }
+
+/* ═══ Design system ══════════════════════════════════════════════════ */
+.promos-page { background: #f5f7fa; }
+.promos-page-header { background: #fff; padding: 16px 20px; border-bottom: 1.5px solid #e8edf3; }
+.header-icon-promos {
+  width: 34px; height: 34px; border-radius: 9px; display: flex;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #fff;
+}
+.header-eyebrow-promos { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.header-title-promos   { font-size: 16px; font-weight: 700; color: #1a1f36; }
 </style>

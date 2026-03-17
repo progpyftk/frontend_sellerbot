@@ -1,23 +1,21 @@
 <template>
-  <q-page class="bg-grey-2">
+  <q-page class="items-page">
     <div class="q-pa-md">
       <q-card flat class="bg-white shadow-2 rounded-borders">
 
-        <q-card-section class="bg-white q-py-md q-px-lg border-bottom">
+        <q-card-section class="items-page-header">
           <div class="row items-center justify-between">
             <div class="row items-center">
-              <div class="q-mr-md bg-indigo-6 text-white q-pa-sm rounded-borders shadow-2">
+              <div class="header-icon-items q-mr-md">
                 <q-icon name="inventory_2" size="sm" />
               </div>
               <div>
-                <div class="text-caption text-grey-7 text-weight-medium text-uppercase">Gestão de Vendas</div>
-                <div class="text-h6 text-grey-9 text-weight-bold" style="line-height: 1.1;">
-                  Gestão de Anúncios
-                </div>
+                <div class="header-eyebrow-items">Gestão de Vendas</div>
+                <div class="header-title-items">Gestão de Anúncios</div>
               </div>
             </div>
             <div class="row q-gutter-sm">
-              <q-btn unelevated color="indigo-6" text-color="white" icon="refresh" label="Atualizar"
+              <q-btn unelevated color="teal-7" text-color="white" icon="refresh" label="Atualizar"
                 @click="refreshData" :loading="loading" />
             </div>
           </div>
@@ -1626,4 +1624,15 @@ const reactivateItem = (row) => {
 .hover-underline:hover {
   text-decoration: underline;
 }
+
+/* ═══ Design system ══════════════════════════════════════════════════ */
+.items-page { background: #f5f7fa; }
+.items-page-header { background: #fff; padding: 16px 20px; border-bottom: 1.5px solid #e8edf3; }
+.header-icon-items {
+  width: 34px; height: 34px; border-radius: 9px; display: flex;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0d9488, #2dd4bf); color: #fff;
+}
+.header-eyebrow-items { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.header-title-items   { font-size: 16px; font-weight: 700; color: #1a1f36; }
 </style>

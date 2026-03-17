@@ -22,6 +22,10 @@ const routes = [
     component: () => import("layouts/MainLayout.vue"),
     children: [
       {
+        path: "",
+        redirect: { name: "dashboard" },
+      },
+      {
         path: "accounts",
         name: "accounts",
         component: () => import("pages/AccountsPage.vue"),
@@ -45,8 +49,26 @@ const routes = [
         name: 'products',
         component: () => import('pages/ProductsPage.vue')
       },
-
-
+      {
+        path: 'ads',
+        name: 'ads',
+        component: () => import('pages/AdsPage.vue')
+      },
+      {
+        path: 'dashboard',
+        name: 'dashboard',
+        component: () => import('pages/DashboardPage.vue')
+      },
+      {
+        path: 'item-details',
+        name: 'item-details',
+        component: () => import('pages/ItemDetailsPage.vue')
+      },
+      {
+        path: 'settings',
+        name: 'user-config',
+        component: () => import('pages/UserConfigPage.vue')
+      },
     ],
   },
   {

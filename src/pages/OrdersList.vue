@@ -646,10 +646,8 @@
             <q-td key="venda" :props="props" align="right">
               <div class="cell-amount">
                 <div class="amount-main">{{ formatCurrency(getBrutoAmount(props.row)) }}</div>
-                <div v-if="getFlexCredit(props.row) > 0" class="flex-credit-hint">
-                  <q-icon name="directions_bike" size="9px" />
-                  venda {{ formatCurrency(props.row.total_amount) }}
-                  +{{ formatCurrency(getFlexCredit(props.row)) }} flex
+                <div v-if="props.row.shipment?.logistic_type === 'self_service'" class="flex-credit-hint">
+                  <q-icon name="directions_bike" size="9px" /> Flex
                 </div>
                 <div v-else-if="(props.row.items || []).length" class="amount-sub">
                   {{ props.row.items.length }} item{{ props.row.items.length > 1 ? 's' : '' }}
@@ -690,7 +688,7 @@
             <q-td key="frete" :props="props" align="right">
               <div class="cell-frete">
                 <!-- Flex: seller entrega por conta própria -->
-                <template v-if="props.row.shipment?.logistic_mode === 'self_service'">
+                <template v-if="props.row.shipment?.logistic_type === 'self_service'">
                   <div v-if="getSellerShippingCost(props.row) > 0" class="frete-main">
                     -{{ formatCurrency(getSellerShippingCost(props.row)) }}
                   </div>
@@ -847,18 +845,29 @@
             <div class="detail-section">
               <div class="section-title"><q-icon name="receipt" size="14px" class="q-mr-xs" />Apuração</div>
               <div class="receipt">
-                <div class="receipt-row">
-                  <span class="receipt-label">(+) Venda Bruta</span>
-                  <span class="receipt-value pos-t">+{{ formatCurrency(getBrutoAmount(selectedOrder)) }}</span>
-                </div>
-                <div v-if="getFlexCredit(selectedOrder) > 0" class="receipt-row sub-row">
-                  <div class="receipt-label-g">
-                    <span class="receipt-label">Venda {{ formatCurrency(selectedOrder.total_amount) }}</span>
-                    <span class="receipt-sub" style="color:#0d9488">
-                      <q-icon name="directions_bike" size="10px" /> + {{ formatCurrency(getFlexCredit(selectedOrder)) }} repasse Flex incluído
-                    </span>
+                <!-- Flex: venda e repasse mostrados separadamente para clareza -->
+                <template v-if="selectedOrder.shipment?.logistic_type === 'self_service'">
+                  <div class="receipt-row">
+                    <span class="receipt-label">(+) Venda produto</span>
+                    <span class="receipt-value pos-t">+{{ formatCurrency(selectedOrder.total_amount) }}</span>
                   </div>
-                </div>
+                  <div class="receipt-row sub-row">
+                    <div class="receipt-label-g">
+                      <span class="receipt-label">(+) Repasse Flex ML</span>
+                      <span class="receipt-sub" style="color:#0d9488">
+                        <q-icon name="directions_bike" size="10px" /> Frete pago pelo comprador — ML repassa ao seller
+                      </span>
+                    </div>
+                    <span class="receipt-value pos-t">+{{ formatCurrency(getFlexCredit(selectedOrder)) }}</span>
+                  </div>
+                </template>
+                <!-- Não-Flex: linha única de venda bruta -->
+                <template v-else>
+                  <div class="receipt-row">
+                    <span class="receipt-label">(+) Venda Bruta</span>
+                    <span class="receipt-value pos-t">+{{ formatCurrency(selectedOrder.total_amount) }}</span>
+                  </div>
+                </template>
                 <div v-if="(selectedOrder.coupon_amount || 0) > 0" class="receipt-row sub-row">
                   <span class="receipt-label">Cupom</span>
                   <span class="receipt-value ded-t">-{{ formatCurrency(selectedOrder.coupon_amount) }}</span>
@@ -881,21 +890,15 @@
                   <div class="receipt-label-g">
                     <span class="receipt-label">(-) Frete (ML Envios)</span>
 
-                    <!-- Flex: seller faz entrega por conta própria -->
-                    <template v-if="selectedOrder.shipment?.logistic_mode === 'self_service'">
-                      <span class="receipt-sub" style="color:#0d9488">
-                        <q-icon name="directions_bike" size="10px" /> Entrega Flex — seller entrega por conta própria
+                    <!-- Flex: seller contrata entrega por conta própria -->
+                    <template v-if="selectedOrder.shipment?.logistic_type === 'self_service'">
+                      <span class="receipt-sub" style="color:#f59e0b">
+                        <q-icon name="directions_bike" size="10px" /> Entrega Flex — seller paga transportadora
                       </span>
                       <div class="freight-audit">
-                        <div v-if="Number(selectedOrder.shipment?.shipping_cost || 0) > 0" class="audit-row">
-                          <span>Comprador pagou</span>
-                          <strong class="pos-t">{{ formatCurrency(selectedOrder.shipment.shipping_cost) }}</strong>
-                        </div>
                         <div class="audit-row hl">
-                          <span>Seller paga (envio próprio)</span>
-                          <strong :class="getSellerShippingCost(selectedOrder) > 0 ? '' : 'pos-t'">
-                            {{ getSellerShippingCost(selectedOrder) > 0 ? '-' + formatCurrency(getSellerShippingCost(selectedOrder)) : 'Não informado' }}
-                          </strong>
+                          <span>Estimativa entrega própria</span>
+                          <strong>{{ formatCurrency(getFlexDeliveryCost(selectedOrder)) }}</strong>
                         </div>
                       </div>
                     </template>
@@ -914,19 +917,12 @@
                       </div>
                     </template>
                   </div>
-                  <span class="receipt-value" :class="getSellerShippingCost(selectedOrder) > 0 ? 'ded-t' : 'free-t'">
+                  <span v-if="selectedOrder.shipment?.logistic_type === 'self_service'" class="receipt-value ded-t">
+                    -{{ formatCurrency(getFlexDeliveryCost(selectedOrder)) }}
+                  </span>
+                  <span v-else class="receipt-value" :class="getSellerShippingCost(selectedOrder) > 0 ? 'ded-t' : 'free-t'">
                     {{ getSellerShippingCost(selectedOrder) > 0 ? '-' + formatCurrency(getSellerShippingCost(selectedOrder)) : 'Grátis' }}
                   </span>
-                </div>
-                <!-- Repasse Flex: ML credita ao seller o frete pago pelo comprador -->
-                <div v-if="selectedOrder.shipment?.logistic_mode === 'self_service' && getFlexCredit(selectedOrder) > 0" class="receipt-row sub-row">
-                  <div class="receipt-label-g">
-                    <span class="receipt-label">(+) Repasse Flex</span>
-                    <span class="receipt-sub" style="color:#0d9488">
-                      <q-icon name="directions_bike" size="10px" /> Frete pago pelo comprador — ML repassa ao seller
-                    </span>
-                  </div>
-                  <span class="receipt-value pos-t">+{{ formatCurrency(getFlexCredit(selectedOrder)) }}</span>
                 </div>
                 <div class="receipt-sep thick" />
                 <div class="receipt-row total-row">
@@ -1139,7 +1135,7 @@
               <div class="section-title"><q-icon name="payments" size="14px" class="q-mr-xs" />Custo do Frete</div>
 
               <!-- Flex: seller entrega, não há custo de transportadora -->
-              <div v-if="logisticsOrder.shipment.logistic_mode === 'self_service'" class="flex-freight-note">
+              <div v-if="logisticsOrder.shipment.logistic_type === 'self_service'" class="flex-freight-note">
                 <q-icon name="directions_bike" size="16px" class="q-mr-sm" color="teal-6" />
                 <div>
                   <div class="flex-freight-title">Entrega Flex — sem custo de frete ML</div>
@@ -1390,6 +1386,13 @@ const groupPackOrders = (rawRows) => {
           seller_shipping_cost: (Number(fb?.seller_shipping_cost|| 0) + Number(row.fee_breakdown.seller_shipping_cost|| 0)),
           net_received:         (Number(fb?.net_received        || 0) + Number(row.fee_breakdown.net_received        || 0)),
         }
+      }
+      // Agrega lucro e CMV (campos do Order-level, somados entre sub-orders do pack)
+      if (row.lucro_apos_cmp != null) {
+        pack.lucro_apos_cmp = (Number(pack.lucro_apos_cmp || 0) + Number(row.lucro_apos_cmp))
+      }
+      if (row.custo_medio_produto != null) {
+        pack.custo_medio_produto = (Number(pack.custo_medio_produto || 0) + Number(row.custo_medio_produto))
       }
     }
   }
@@ -1817,14 +1820,23 @@ const getFlexCredit = (row) => {
   const fromShipment = Number(row.shipment?.flex_credit || 0)
   if (fromShipment > 0) return fromShipment
   // Último fallback: se é Flex, o shipping_cost do comprador = repasse ao seller
-  if (row.shipment?.logistic_mode === 'self_service')
+  if (row.shipment?.logistic_type === 'self_service')
     return Number(row.shipment?.shipping_cost || 0)
   return 0
 }
 
-// Bruto real: total_amount + repasse Flex (quando aplicável)
+// Bruto: valor da venda (sem somar repasse Flex — o repasse é linha separada na apuração)
 const getBrutoAmount = (row) => {
-  return Number(row.total_amount || 0) + getFlexCredit(row)
+  return Number(row.total_amount || 0)
+}
+
+// Custo estimado de entrega Flex (snapshot gravado na venda)
+const getFlexDeliveryCost = (row) => {
+  const snapshot = row.flex_delivery_cost_snapshot ?? row.fee_breakdown?.flex_delivery_cost_snapshot
+  if (snapshot != null) return Number(snapshot)
+  // fallback: se é Flex mas ainda não tem snapshot (vendas antigas)
+  if (row.shipment?.logistic_type === 'self_service') return 12.50
+  return 0
 }
 
 const getSellerShippingCost = (row) => {
@@ -1863,7 +1875,7 @@ const getNetMargin = (row) => {
   return Number(row.total_amount || 0) - getOrderFeeBreakdown(row).totalSaleFee - getSellerShippingCost(row)
 }
 const calculateMarginPct = (row) => {
-  const t = Number(row.total_amount || 0)
+  const t = getBrutoAmount(row)
   return t === 0 ? 0 : Math.round((getNetMargin(row) / t) * 100)
 }
 const calcLucroPct = (row) => {
