@@ -65,6 +65,11 @@ const routes = [
         component: () => import('pages/ItemDetailsPage.vue')
       },
       {
+        path: 'sellerbot-ai',
+        name: 'sellerbot-ai',
+        component: () => import('pages/SellerBotAIPage.vue')
+      },
+      {
         path: 'settings',
         name: 'user-config',
         component: () => import('pages/UserConfigPage.vue')

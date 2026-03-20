@@ -22,7 +22,8 @@
           <!-- Dashboard — item fixo fora do aninhamento -->
           <router-link to="/app/dashboard" custom v-slot="{ isActive, navigate }">
             <button :class="['nav-item', 'nav-item--top', isActive && 'nav-item--active']" @click="navigate">
-              <span class="nav-icon-wrap" :style="isActive ? '' : '--icon-color:#2dd4bf;--icon-bg:rgba(45,212,191,.15)'">
+              <span class="nav-icon-wrap"
+                :style="isActive ? '' : '--icon-color:#2dd4bf;--icon-bg:rgba(45,212,191,.15)'">
                 <q-icon name="mdi-view-dashboard" size="15px" />
               </span>
               <span class="nav-label">Dashboard</span>
@@ -34,38 +35,30 @@
           <template v-for="(section, si) in menuSections" :key="si">
 
             <!-- Parent row (clicável para expandir/colapsar) -->
-            <button
-              :class="['nav-parent', expandedSections.includes(si) && 'nav-parent--open']"
-              @click="toggleSection(si)"
-            >
+            <button :class="['nav-parent', expandedSections.includes(si) && 'nav-parent--open']"
+              @click="toggleSection(si)">
               <span v-if="section.ml" class="nav-ml-badge">ML</span>
+              <span v-else-if="section.shopee" class="nav-shopee-badge">SHOPEE</span>
               <span v-else class="nav-section-dot" />
               <span class="nav-parent-label">{{ section.title }}</span>
-              <q-icon
-                name="expand_more"
-                size="14px"
-                :class="['nav-chevron', expandedSections.includes(si) && 'nav-chevron--open']"
-              />
+              <q-icon name="expand_more" size="14px"
+                :class="['nav-chevron', expandedSections.includes(si) && 'nav-chevron--open']" />
             </button>
 
             <!-- Itens aninhados (v-show p/ CSS transition funcionar) -->
             <div class="nav-children" :class="expandedSections.includes(si) && 'nav-children--open'">
-                <router-link
-                  v-for="item in section.items"
-                  :key="item.route"
-                  :to="{ name: item.route }"
-                  custom
-                  v-slot="{ isActive, navigate }"
-                >
-                  <button :class="['nav-item', isActive && 'nav-item--active']" @click="navigate">
-                    <span class="nav-tree-line" />
-                    <span class="nav-icon-wrap" :style="isActive ? '' : `--icon-color:${item.color};--icon-bg:${item.bg}`">
-                      <q-icon :name="item.icon" size="15px" />
-                    </span>
-                    <span class="nav-label">{{ item.label }}</span>
-                    <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
-                  </button>
-                </router-link>
+              <router-link v-for="item in section.items" :key="item.route" :to="{ name: item.route }" custom
+                v-slot="{ isActive, navigate }">
+                <button :class="['nav-item', isActive && 'nav-item--active']" @click="navigate">
+                  <span class="nav-tree-line" />
+                  <span class="nav-icon-wrap"
+                    :style="isActive ? '' : `--icon-color:${item.color};--icon-bg:${item.bg}`">
+                    <q-icon :name="item.icon" size="15px" />
+                  </span>
+                  <span class="nav-label">{{ item.label }}</span>
+                  <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
+                </button>
+              </router-link>
             </div>
 
             <div v-if="si < menuSections.length - 1" class="nav-sep" />
@@ -84,7 +77,7 @@
             <div class="sidebar-user-role">Administrador</div>
           </div>
           <q-btn flat round dense icon="logout" class="sidebar-logout" @click="handleLogout">
-            <q-tooltip anchor="top middle" self="bottom middle" :offset="[0,6]">Sair</q-tooltip>
+            <q-tooltip anchor="top middle" self="bottom middle" :offset="[0, 6]">Sair</q-tooltip>
           </q-btn>
         </div>
       </div>
@@ -159,9 +152,9 @@ import { ref, computed } from "vue"
 import { useStore } from "src/stores/store"
 import { useRouter } from "vue-router"
 
-const store       = useStore()
-const router      = useRouter()
-const drawer      = ref(true)
+const store = useStore()
+const router = useRouter()
+const drawer = ref(true)
 const currentUser = computed(() => store.currentUser)
 const defaultAvatar = "https://cdn.quasar.dev/img/boy-avatar.png"
 
@@ -170,20 +163,27 @@ const menuSections = [
     title: "Mercado Livre",
     ml: true,
     items: [
-      { label: "Vendas e Pedidos",   icon: "receipt_long",               route: "orders",       color: "#818cf8", bg: "rgba(129,140,248,.15)" },
-      { label: "Publicidade · Ads",  icon: "mdi-bullhorn",               route: "ads",          color: "#fb923c", bg: "rgba(251,146,60,.15)"  },
-      { label: "Meus Anúncios",      icon: "mdi-package-variant-closed", route: "items",        color: "#2dd4bf", bg: "rgba(45,212,191,.15)"  },
-      { label: "Promoções Ativas",   icon: "local_offer",                route: "promotions",   color: "#fbbf24", bg: "rgba(251,191,36,.15)"  },
-      { label: "Detalhe do Anúncio", icon: "mdi-chart-bar",              route: "item-details", color: "#818cf8", bg: "rgba(129,140,248,.15)" },
-      { label: "Minhas Contas",      icon: "mdi-store",                  route: "accounts",     color: "#2dd4bf", bg: "rgba(45,212,191,.15)"  },
+      { label: "Vendas e Pedidos", icon: "receipt_long", route: "orders", color: "#818cf8", bg: "rgba(129,140,248,.15)" },
+      { label: "Publicidade · Ads", icon: "mdi-bullhorn", route: "ads", color: "#fb923c", bg: "rgba(251,146,60,.15)" },
+      { label: "Meus Anúncios", icon: "mdi-package-variant-closed", route: "items", color: "#2dd4bf", bg: "rgba(45,212,191,.15)" },
+      { label: "Promoções Ativas", icon: "local_offer", route: "promotions", color: "#fbbf24", bg: "rgba(251,191,36,.15)" },
+      { label: "Detalhe do Anúncio", icon: "mdi-chart-bar", route: "item-details", color: "#818cf8", bg: "rgba(129,140,248,.15)" },
+    ],
+  },
+  {
+    title: "Inteligência",
+    ml: false,
+    items: [
+      { label: "SellerBot AI", icon: "psychology", route: "sellerbot-ai", color: "#a855f7", bg: "rgba(168,85,247,.15)" },
     ],
   },
   {
     title: "Sistema",
     ml: false,
     items: [
-      { label: "Custo dos Produtos", icon: "inventory_2",                route: "products",     color: "#34d399", bg: "rgba(52,211,153,.15)"  },
-      { label: "Configurações",      icon: "mdi-cog",                    route: "user-config",  color: "#94a3b8", bg: "rgba(148,163,184,.15)" },
+      { label: "Custo dos Produtos", icon: "inventory_2", route: "products", color: "#34d399", bg: "rgba(52,211,153,.15)" },
+      { label: "Minhas Contas", icon: "mdi-store", route: "accounts", color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
+      { label: "Configurações", icon: "mdi-cog", route: "user-config", color: "#94a3b8", bg: "rgba(148,163,184,.15)" },
     ],
   },
 ]
@@ -196,8 +196,8 @@ const toggleSection = (i) => {
   else expandedSections.value.push(i)
 }
 
-const handleLogout  = () => { store.logoutUser(); router.replace("/login") }
-const navigateTo    = (r) => currentUser.value ? router.push({ name: r }) : router.push("/login")
+const handleLogout = () => { store.logoutUser(); router.replace("/login") }
+const navigateTo = (r) => currentUser.value ? router.push({ name: r }) : router.push("/login")
 const redirectToLogin = () => router.push("/login")
 </script>
 
@@ -205,7 +205,7 @@ const redirectToLogin = () => router.push("/login")
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
 :deep(.sidebar) {
   background: linear-gradient(180deg, #0f172a 0%, #0d1526 100%) !important;
-  border-right: 1px solid rgba(255,255,255,.06) !important;
+  border-right: 1px solid rgba(255, 255, 255, .06) !important;
 }
 
 /* Brand */
@@ -226,7 +226,7 @@ const redirectToLogin = () => router.push("/login")
   justify-content: center;
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(13,148,136,.45);
+  box-shadow: 0 4px 14px rgba(13, 148, 136, .45);
 }
 
 .brand-name {
@@ -268,8 +268,14 @@ const redirectToLogin = () => router.push("/login")
   border-radius: 7px;
   transition: background .14s;
 }
-.nav-parent:hover { background: rgba(255,255,255,.04); }
-.nav-parent--open { background: transparent; }
+
+.nav-parent:hover {
+  background: rgba(255, 255, 255, .04);
+}
+
+.nav-parent--open {
+  background: transparent;
+}
 
 .nav-parent-label {
   flex: 1;
@@ -286,7 +292,10 @@ const redirectToLogin = () => router.push("/login")
   transition: transform .22s ease;
   flex-shrink: 0;
 }
-.nav-chevron--open { transform: rotate(180deg); }
+
+.nav-chevron--open {
+  transform: rotate(180deg);
+}
 
 /* Children — colapsável via max-height */
 .nav-children {
@@ -296,7 +305,7 @@ const redirectToLogin = () => router.push("/login")
   opacity: 0;
   /* Indentação + linha lateral estilo tree */
   margin-left: 14px;
-  border-left: 1.5px solid rgba(255,255,255,.07);
+  border-left: 1.5px solid rgba(255, 255, 255, .07);
   padding-left: 6px;
 }
 
@@ -306,7 +315,9 @@ const redirectToLogin = () => router.push("/login")
 }
 
 /* Remove a span inútil */
-.nav-tree-line { display: none; }
+.nav-tree-line {
+  display: none;
+}
 
 .nav-section-dot {
   width: 3px;
@@ -323,6 +334,21 @@ const redirectToLogin = () => router.push("/login")
   background: #FFE600;
   color: #1a1f36;
   font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  border-radius: 4px;
+  padding: 1px 4px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.nav-shopee-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #EE4D2D;
+  color: #fff;
+  font-size: 7px;
   font-weight: 900;
   letter-spacing: .04em;
   border-radius: 4px;
@@ -348,11 +374,11 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .nav-item:hover:not(.nav-item--active) {
-  background: rgba(255,255,255,.05);
+  background: rgba(255, 255, 255, .05);
 }
 
 .nav-item--active {
-  background: linear-gradient(90deg, rgba(13,148,136,.22) 0%, rgba(13,148,136,.08) 100%);
+  background: linear-gradient(90deg, rgba(13, 148, 136, .22) 0%, rgba(13, 148, 136, .08) 100%);
 }
 
 .nav-item--active::before {
@@ -375,18 +401,18 @@ const redirectToLogin = () => router.push("/login")
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--icon-bg, rgba(255,255,255,.06));
+  background: var(--icon-bg, rgba(255, 255, 255, .06));
   color: var(--icon-color, #64748b);
   transition: background .15s, color .15s;
 }
 
 .nav-item--active .nav-icon-wrap {
-  background: rgba(13,148,136,.30);
+  background: rgba(13, 148, 136, .30);
   color: #2dd4bf;
 }
 
 .nav-item:hover:not(.nav-item--active) .nav-icon-wrap {
-  background: rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, .08);
 }
 
 /* Label */
@@ -423,7 +449,7 @@ const redirectToLogin = () => router.push("/login")
 
 .nav-sep {
   height: 1px;
-  background: rgba(255,255,255,.05);
+  background: rgba(255, 255, 255, .05);
   margin: 8px 8px;
 }
 
@@ -433,7 +459,7 @@ const redirectToLogin = () => router.push("/login")
   bottom: 0;
   left: 0;
   right: 0;
-  border-top: 1px solid rgba(255,255,255,.06);
+  border-top: 1px solid rgba(255, 255, 255, .06);
 }
 
 .sidebar-user {
@@ -444,11 +470,14 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .sidebar-avatar {
-  border: 1.5px solid rgba(45,212,191,.4);
+  border: 1.5px solid rgba(45, 212, 191, .4);
   flex-shrink: 0;
 }
 
-.sidebar-user-info { flex: 1; min-width: 0; }
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+}
 
 .sidebar-user-name {
   font-size: 12.5px;
@@ -469,6 +498,7 @@ const redirectToLogin = () => router.push("/login")
   color: #334155 !important;
   transition: color .15s !important;
 }
+
 .sidebar-logout:hover {
   color: #ef4444 !important;
 }
@@ -476,7 +506,7 @@ const redirectToLogin = () => router.push("/login")
 /* ── Header ───────────────────────────────────────────────────────────────── */
 .app-header {
   background: linear-gradient(90deg, #0f172a 0%, #0d1a2e 100%) !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 2px 12px rgba(0,0,0,.25) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .06), 0 2px 12px rgba(0, 0, 0, .25) !important;
 }
 
 .app-toolbar {
@@ -497,8 +527,9 @@ const redirectToLogin = () => router.push("/login")
   cursor: pointer;
   transition: background .14s, color .14s;
 }
+
 .menu-toggle:hover {
-  background: rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, .08);
   color: #2dd4bf;
 }
 
@@ -509,13 +540,25 @@ const redirectToLogin = () => router.push("/login")
   letter-spacing: -.5px;
   user-select: none;
 }
-.header-wordmark-seller { color: #f1f5f9; }
-.header-wordmark-bot    { color: #2dd4bf; }
+
+.header-wordmark-seller {
+  color: #f1f5f9;
+}
+
+.header-wordmark-bot {
+  color: #2dd4bf;
+}
 
 /* User chip */
-.header-user-chip { display: flex; align-items: center; }
+.header-user-chip {
+  display: flex;
+  align-items: center;
+}
 
-.user-chip-btn { border-radius: 20px !important; padding: 0 !important; }
+.user-chip-btn {
+  border-radius: 20px !important;
+  padding: 0 !important;
+}
 
 .user-chip-inner {
   display: flex;
@@ -523,14 +566,15 @@ const redirectToLogin = () => router.push("/login")
   gap: 6px;
   padding: 5px 12px;
   border-radius: 20px;
-  border: 1.5px solid rgba(255,255,255,.1);
-  background: rgba(255,255,255,.06);
+  border: 1.5px solid rgba(255, 255, 255, .1);
+  background: rgba(255, 255, 255, .06);
   transition: border-color .14s, background .14s;
   cursor: pointer;
 }
+
 .user-chip-inner:hover {
-  border-color: rgba(45,212,191,.5);
-  background: rgba(45,212,191,.08);
+  border-color: rgba(45, 212, 191, .5);
+  background: rgba(45, 212, 191, .08);
 }
 
 .chip-name {
@@ -543,10 +587,16 @@ const redirectToLogin = () => router.push("/login")
   text-overflow: ellipsis;
 }
 
-.chip-chevron { color: #475569; }
+.chip-chevron {
+  color: #475569;
+}
 
 /* Dropdown */
-.user-dd { min-width: 220px; border-radius: 12px; overflow: hidden; }
+.user-dd {
+  min-width: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+}
 
 .dd-header {
   display: flex;
@@ -557,12 +607,31 @@ const redirectToLogin = () => router.push("/login")
   border-bottom: 1px solid #e2e8f0;
 }
 
-.dd-avatar { border: 2px solid #0d9488; }
-.dd-name   { font-size: 13px; font-weight: 700; color: #0f172a; }
-.dd-email  { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+.dd-avatar {
+  border: 2px solid #0d9488;
+}
 
-.dd-item   { font-size: 13px; color: #334155; min-height: 40px; }
-.dd-item--danger { color: #ef4444; }
+.dd-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dd-email {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.dd-item {
+  font-size: 13px;
+  color: #334155;
+  min-height: 40px;
+}
+
+.dd-item--danger {
+  color: #ef4444;
+}
 
 /* Login btn */
 .header-login-btn {
@@ -574,10 +643,15 @@ const redirectToLogin = () => router.push("/login")
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(13,148,136,.3);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, .3);
   transition: opacity .14s;
 }
-.header-login-btn:hover { opacity: .88; }
 
-:deep(.q-btn) { text-transform: none; }
+.header-login-btn:hover {
+  opacity: .88;
+}
+
+:deep(.q-btn) {
+  text-transform: none;
+}
 </style>
