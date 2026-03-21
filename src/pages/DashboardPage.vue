@@ -37,6 +37,46 @@
 
     <template v-else-if="data">
 
+      <!-- ══════════ HOJE EM DESTAQUE ══════════════════════════════════════ -->
+      <div v-if="todayData && activeDatePreset !== 'hoje'" class="today-banner">
+        <div class="today-label">
+          <span class="live-dot"></span>
+          Hoje
+        </div>
+        <div class="today-kpis">
+          <div class="today-kpi">
+            <div class="today-kpi-label">GMV do Dia</div>
+            <div class="today-kpi-val today-gmv">{{ fmt(todayData.operation?.gmv) }}</div>
+          </div>
+          <div class="today-sep">|</div>
+          <div class="today-kpi">
+            <div class="today-kpi-label">Pedidos</div>
+            <div class="today-kpi-val">{{ todayData.operation?.orders_count || 0 }}</div>
+          </div>
+          <div class="today-sep">|</div>
+          <div class="today-kpi">
+            <div class="today-kpi-label">Receita Líquida</div>
+            <div class="today-kpi-val">{{ fmt(todayData.operation?.net_revenue) }}</div>
+          </div>
+          <div class="today-sep">|</div>
+          <div class="today-kpi">
+            <div class="today-kpi-label">Lucro Após Ads</div>
+            <div class="today-kpi-val" :class="(todayData.operation?.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(todayData.operation?.lucro_liquido) }}</div>
+          </div>
+          <div class="today-sep">|</div>
+          <div class="today-kpi">
+            <div class="today-kpi-label">Ticket Médio</div>
+            <div class="today-kpi-val">{{ fmt(todayData.operation?.avg_ticket) }}</div>
+          </div>
+          <div class="today-sep">|</div>
+          <div class="today-kpi">
+            <div class="today-kpi-label">Unidades</div>
+            <div class="today-kpi-val">{{ todayData.operation?.units_sold || 0 }}</div>
+          </div>
+        </div>
+        <div class="today-note">Atualizado a cada sync de pedidos</div>
+      </div>
+
       <!-- ══════════ KPI CARDS ══════════════════════════════════════════════ -->
       <div class="kpi-grid">
 
@@ -50,9 +90,9 @@
             </q-icon>
           </div>
           <div class="kpi-value">{{ fmt(data.operation.gmv) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.gmv_pct)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.gmv_pct)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.gmv_pct) }} vs período anterior
+          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.gmv)">
+            <q-icon :name="deltaIcon(data.operation.vs_prev?.gmv)" size="12px" />
+            {{ deltaFmt(data.operation.vs_prev?.gmv) }} vs período anterior
           </div>
         </div>
 
@@ -67,9 +107,9 @@
             </q-icon>
           </div>
           <div class="kpi-value">{{ fmt(data.operation.net_revenue) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.net_revenue_pct)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.net_revenue_pct)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.net_revenue_pct) }} vs período anterior
+          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.net_revenue)">
+            <q-icon :name="deltaIcon(data.operation.vs_prev?.net_revenue)" size="12px" />
+            {{ deltaFmt(data.operation.vs_prev?.net_revenue) }} vs período anterior
           </div>
         </div>
 
@@ -84,9 +124,9 @@
           </div>
           <div class="kpi-value">{{ fmt(data.operation.gross_profit) }}</div>
           <div class="kpi-sub">Margem {{ pct(data.operation.gross_profit, data.operation.net_revenue) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.gross_profit_pct)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.gross_profit_pct)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.gross_profit_pct) }} vs período anterior
+          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.gross_profit)">
+            <q-icon :name="deltaIcon(data.operation.vs_prev?.gross_profit)" size="12px" />
+            {{ deltaFmt(data.operation.vs_prev?.gross_profit) }} vs período anterior
           </div>
         </div>
 
@@ -101,9 +141,9 @@
           </div>
           <div class="kpi-value kpi-highlight">{{ fmt(data.operation.lucro_liquido) }}</div>
           <div class="kpi-sub">Margem {{ pct(data.operation.lucro_liquido, data.operation.net_revenue) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.lucro_liquido_pct)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.lucro_liquido_pct)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.lucro_liquido_pct) }} vs período anterior
+          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.lucro_liquido)">
+            <q-icon :name="deltaIcon(data.operation.vs_prev?.lucro_liquido)" size="12px" />
+            {{ deltaFmt(data.operation.vs_prev?.lucro_liquido) }} vs período anterior
           </div>
         </div>
 
@@ -118,9 +158,9 @@
           </div>
           <div class="kpi-value kpi-warn">{{ fmt(data.operation.ads_cost) }}</div>
           <div class="kpi-sub">TACoS {{ pctRaw(data.operation.ads_cost, data.operation.gmv) }}</div>
-          <div class="kpi-delta" :class="deltaClass(-(data.operation.vs_prev?.ads_cost_pct || 0))">
-            <q-icon :name="deltaIcon(-(data.operation.vs_prev?.ads_cost_pct || 0))" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.ads_cost_pct) }} vs período anterior
+          <div class="kpi-delta" :class="deltaClass(-(data.operation.vs_prev?.ads_cost || 0))">
+            <q-icon :name="deltaIcon(-(data.operation.vs_prev?.ads_cost || 0))" size="12px" />
+            {{ deltaFmt(data.operation.vs_prev?.ads_cost) }} vs período anterior
           </div>
         </div>
 
@@ -134,10 +174,72 @@
             </q-icon>
           </div>
           <div class="kpi-value">{{ (data.operation.orders_count || 0).toLocaleString('pt-BR') }}</div>
-          <div class="kpi-sub">Ticket médio {{ fmt(data.operation.gmv / (data.operation.orders_count || 1)) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.orders_count_pct)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.orders_count_pct)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.orders_count_pct) }} vs período anterior
+          <div class="kpi-sub">Ticket médio {{ fmt(data.operation.avg_ticket) }}</div>
+          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.orders_count)">
+            <q-icon :name="deltaIcon(data.operation.vs_prev?.orders_count)" size="12px" />
+            {{ deltaFmt(data.operation.vs_prev?.orders_count) }} vs período anterior
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-units">
+          <div class="kpi-label">
+            Unidades Vendidas
+            <q-icon name="help_outline" size="12px" class="kpi-info">
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
+                Quantidade total de unidades vendidas. Pode ser maior que pedidos quando um pedido contém múltiplos itens.
+              </q-tooltip>
+            </q-icon>
+          </div>
+          <div class="kpi-value">{{ (data.operation.units_sold || 0).toLocaleString('pt-BR') }}</div>
+          <div class="kpi-sub">{{ data.operation.catalog_orders_count || 0 }} via catálogo · {{ data.operation.flex_orders_count || 0 }} Flex</div>
+        </div>
+
+        <div class="kpi-card kpi-roas">
+          <div class="kpi-label">
+            ROAS
+            <q-icon name="help_outline" size="12px" class="kpi-info">
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
+                Retorno sobre o investimento em Ads. ROAS = receita atribuída / gasto. ACoS = gasto / receita atribuída × 100.
+              </q-tooltip>
+            </q-icon>
+          </div>
+          <div class="kpi-value">{{ data.operation.roas ? data.operation.roas + 'x' : '—' }}</div>
+          <div class="kpi-sub">ACoS {{ data.operation.acos != null ? data.operation.acos + '%' : '—' }}</div>
+          <div class="kpi-delta" :class="deltaClass(-(data.operation.vs_prev?.tacos || 0))">
+            <q-icon :name="deltaIcon(-(data.operation.vs_prev?.tacos || 0))" size="12px" />
+            TACoS {{ deltaFmt(data.operation.vs_prev?.tacos) }} vs anterior
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-margin">
+          <div class="kpi-label">
+            Margem Líquida
+            <q-icon name="help_outline" size="12px" class="kpi-info">
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
+                Lucro Após Ads ÷ Receita Líquida. É a margem real depois de descontar todos os custos operacionais e de marketing.
+              </q-tooltip>
+            </q-icon>
+          </div>
+          <div class="kpi-value" :class="(data.operation.lucro_liquido_pct || 0) >= 0 ? 'kpi-highlight' : 'neg'">
+            {{ data.operation.lucro_liquido_pct != null ? data.operation.lucro_liquido_pct + '%' : '—' }}
+          </div>
+          <div class="kpi-sub">Margem bruta {{ data.operation.gross_margin_pct != null ? data.operation.gross_margin_pct + '%' : '—' }}</div>
+        </div>
+
+        <div class="kpi-card kpi-canc">
+          <div class="kpi-label">
+            Cancelamentos
+            <q-icon name="help_outline" size="12px" class="kpi-info">
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
+                Pedidos cancelados no período. Alta taxa de cancelamento pode indicar problemas de estoque ou qualidade do anúncio.
+              </q-tooltip>
+            </q-icon>
+          </div>
+          <div class="kpi-value" :class="(data.operation.canceled_count || 0) > 0 ? 'kpi-warn' : ''">
+            {{ data.operation.canceled_count || 0 }}
+          </div>
+          <div class="kpi-sub" v-if="data.operation.orders_count">
+            Taxa {{ pctRaw(data.operation.canceled_count, (data.operation.orders_count || 0) + (data.operation.canceled_count || 0)) }}
           </div>
         </div>
 
@@ -263,14 +365,13 @@
               <tfoot>
                 <tr class="total-row">
                   <td>TOTAL</td>
-                  <td class="right">{{ fmt(data.operation.gmv) }}</td>
-                  <td class="right">{{ fmt(data.operation.net_revenue) }}</td>
-                  <td class="right">{{ fmt(data.operation.gross_profit) }}</td>
-                  <td class="right warn">{{ fmt(data.operation.ads_cost) }}</td>
-                  <td class="right" :class="data.operation.lucro_liquido >= 0 ? 'pos' : 'neg'">{{
-                    fmt(data.operation.lucro_liquido) }}</td>
-                  <td class="right">{{ data.operation.orders_count }}</td>
-                  <td class="right">{{ pct(data.operation.lucro_liquido, data.operation.net_revenue) }}</td>
+                  <td class="right">{{ fmt(chartTotals.gmv) }}</td>
+                  <td class="right">{{ fmt(chartTotals.net_revenue) }}</td>
+                  <td class="right">{{ fmt(chartTotals.gross_profit) }}</td>
+                  <td class="right warn">{{ fmt(chartTotals.ads_cost) }}</td>
+                  <td class="right" :class="(chartTotals.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(chartTotals.lucro_liquido) }}</td>
+                  <td class="right">{{ chartTotals.orders_count }}</td>
+                  <td class="right">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -482,6 +583,7 @@ import MercadoLivreService from 'src/services/MercadoLivreService'
 // ── State ─────────────────────────────────────────────────────────────────
 const loading = ref(false)
 const data = ref(null)
+const todayData = ref(null)
 const hoveredIdx = ref(null)
 const activeTab = ref('evolucao')
 const activeMetrics = ref(['gmv', 'lucro_liquido'])
@@ -509,6 +611,7 @@ const chartMetrics = [
 ]
 
 const datePresets = [
+  { key: 'hoje', label: 'Hoje' },
   { key: '7d', label: '7d' },
   { key: '14d', label: '14d' },
   { key: '30d', label: '30d' },
@@ -521,6 +624,25 @@ const SVG_H = 220
 const PLOT = { x0: 58, x1: 895, y0: 12, y1: 195 }
 
 // ── Computed ──────────────────────────────────────────────────────────────
+const chartTotals = computed(() => {
+  if (!chartData.value.length) return {}
+  const sum = (key) => chartData.value.reduce((acc, d) => acc + (d[key] || 0), 0)
+  const gmv  = sum('gmv')
+  const netr = sum('net_revenue')
+  const gp   = sum('gross_profit')
+  const adsc = sum('ads_cost')
+  const ords = sum('orders_count')
+  const ll   = gp - adsc
+  return {
+    gmv:           Math.round(gmv   * 100) / 100,
+    net_revenue:   Math.round(netr  * 100) / 100,
+    gross_profit:  Math.round(gp    * 100) / 100,
+    ads_cost:      Math.round(adsc  * 100) / 100,
+    orders_count:  ords,
+    lucro_liquido: Math.round(ll    * 100) / 100,
+  }
+})
+
 const chartData = computed(() => {
   if (!data.value?.daily) return []
   return [...data.value.daily].sort((a, b) => a.date.localeCompare(b.date)).map(d => ({
@@ -629,11 +751,26 @@ async function load() {
   }
 }
 
+async function loadToday() {
+  const todayStr = fmtDate(today)
+  try {
+    const res = await MercadoLivreService.getDashboardOperation({ date_from: todayStr, date_to: todayStr })
+    todayData.value = res.data
+  } catch (e) {
+    console.error('Today data error', e)
+  }
+}
+
 function applyPreset(key) {
   activeDatePreset.value = key
-  const days = parseInt(key)
-  dateFrom.value = fmtDate(new Date(today - (days - 1) * 86400000))
-  dateTo.value = fmtDate(today)
+  if (key === 'hoje') {
+    dateFrom.value = fmtDate(today)
+    dateTo.value = fmtDate(today)
+  } else {
+    const days = parseInt(key)
+    dateFrom.value = fmtDate(new Date(today - (days - 1) * 86400000))
+    dateTo.value = fmtDate(today)
+  }
   load()
 }
 
@@ -681,7 +818,7 @@ function deltaIcon(v) {
   return v >= 0 ? 'arrow_upward' : 'arrow_downward'
 }
 
-onMounted(() => load())
+onMounted(() => { load(); loadToday() })
 </script>
 
 <style scoped>
@@ -1401,5 +1538,115 @@ onMounted(() => load())
   gap: 12px;
   padding: 80px 0;
   color: #475569;
+}
+
+/* ── Today banner ───────────────────────────────────────────────────────── */
+.today-banner {
+  background: linear-gradient(135deg, #0c1f2e, #091a23);
+  border: 1px solid #0d9488;
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.today-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2dd4bf;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  white-space: nowrap;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2dd4bf;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.today-kpis {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.today-sep {
+  color: #1e3a4a;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.today-kpi {
+  text-align: center;
+}
+
+.today-kpi-label {
+  font-size: 10px;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 2px;
+}
+
+.today-kpi-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.today-gmv { color: #818cf8; }
+.today-pos { color: #2dd4bf; }
+.today-neg { color: #ef4444; }
+
+.today-note {
+  font-size: 10px;
+  color: #334155;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── New KPI card accent lines ───────────────────────────────────────────── */
+.kpi-units::before {
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+}
+
+.kpi-roas::before {
+  background: linear-gradient(90deg, #0ea5e9, #06b6d4);
+}
+
+.kpi-margin::before {
+  background: linear-gradient(90deg, #2dd4bf, #34d399);
+}
+
+.kpi-canc::before {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.kpi-info {
+  cursor: help;
+  opacity: 0.5;
+  vertical-align: middle;
+}
+
+.kpi-tooltip-pop {
+  font-size: 12px;
+  background: #0f172a;
+  color: #cbd5e1;
 }
 </style>
