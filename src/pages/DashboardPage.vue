@@ -590,7 +590,14 @@ const activeMetrics = ref(['gmv', 'lucro_liquido'])
 const activeDatePreset = ref('30d')
 
 const today = new Date()
-const fmtDate = d => d.toISOString().slice(0, 10)
+// Usa data local (não UTC) para evitar problema de fuso horário
+// toISOString() retorna UTC, o que em UTC-3 pode dar o dia seguinte após 21h
+const fmtDate = d => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 const dateFrom = ref(fmtDate(new Date(today - 29 * 86400000)))
 const dateTo = ref(fmtDate(today))
 
