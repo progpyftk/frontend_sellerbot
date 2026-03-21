@@ -266,6 +266,12 @@
                 <span class="metric-btn-dot" :style="{ background: m.color }"></span>
                 {{ m.label }}
               </button>
+              <button :class="['metric-btn', 'metric-btn--normalize', normalizeChart && 'metric-btn--on']"
+                :style="normalizeChart ? 'background:#64748b20;color:#64748b;border-color:#64748b' : ''"
+                @click="normalizeChart = !normalizeChart">
+                <q-icon name="show_chart" size="11px" />
+                Normalizar
+              </button>
 
             </div>
           </div>
@@ -276,13 +282,13 @@
               @mousemove="onChartMouseMove" @mouseleave="hoveredIdx = null">
               <!-- Y grid lines -->
               <line v-for="(tick, i) in svgYTicks" :key="'g' + i" :x1="PLOT.x0" :y1="svgY(tick)" :x2="PLOT.x1"
-                :y2="svgY(tick)" stroke="#334155" stroke-width="0.5" />
+                :y2="svgY(tick)" stroke="#e8edf3" stroke-width="0.8" />
 
               <!-- Zig-zag de eixo truncado (mostra que Y não começa em 0) -->
-              <template v-if="chartYMin > 0">
+              <template v-if="chartYMin > 0 && !normalizeChart">
                 <polyline
                   :points="`${PLOT.x0 - 6},${PLOT.y1 + 4} ${PLOT.x0 - 2},${PLOT.y1 - 2} ${PLOT.x0 + 2},${PLOT.y1 + 4} ${PLOT.x0 + 6},${PLOT.y1 - 2}`"
-                  stroke="#475569" stroke-width="1.5" fill="none" />
+                  stroke="#d1d5db" stroke-width="1.5" fill="none" />
               </template>
 
               <!-- Area fills -->
@@ -296,22 +302,22 @@
 
               <!-- Hover vertical line -->
               <line v-if="hoveredIdx !== null" :x1="svgXAt(hoveredIdx)" y1="10" :x2="svgXAt(hoveredIdx)" :y2="PLOT.y1"
-                stroke="#475569" stroke-width="1" stroke-dasharray="4 3" />
+                stroke="#d1d5db" stroke-width="1" stroke-dasharray="4 3" />
 
               <!-- Dots on hover -->
               <template v-if="hoveredIdx !== null">
                 <circle v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'dot-' + m.key"
-                  :cx="svgXAt(hoveredIdx)" :cy="svgY(chartData[hoveredIdx]?.[m.key] || 0)" r="4" :fill="m.color"
-                  stroke="#1e293b" stroke-width="2" />
+                  :cx="svgXAt(hoveredIdx)" :cy="svgY(plotVal(m.key, chartData[hoveredIdx]?.[m.key] || 0))" r="4" :fill="m.color"
+                  stroke="#ffffff" stroke-width="2" />
               </template>
 
               <!-- X axis labels (every N days to avoid clutter) -->
               <text v-for="(d, i) in chartData" :key="'xl' + i" v-show="showXLabel(i)" :x="svgXAt(i)" :y="SVG_H - 2"
-                text-anchor="middle" font-size="9" fill="#475569">{{ d.dateLabel }}</text>
+                text-anchor="middle" font-size="9" fill="#9aa0ac">{{ d.dateLabel }}</text>
 
               <!-- Y axis labels -->
               <text v-for="(tick, i) in svgYTicks" :key="'yl' + i" :x="PLOT.x0 - 4" :y="svgY(tick) + 3"
-                text-anchor="end" font-size="9" fill="#475569">{{ fmtShort(tick) }}</text>
+                text-anchor="end" font-size="9" fill="#9aa0ac">{{ fmtTick(tick) }}</text>
             </svg>
 
             <!-- Floating tooltip -->
@@ -588,6 +594,7 @@ const hoveredIdx = ref(null)
 const activeTab = ref('evolucao')
 const activeMetrics = ref(['gmv', 'lucro_liquido'])
 const activeDatePreset = ref('30d')
+const normalizeChart = ref(false)
 
 const today = new Date()
 // Usa data local (não UTC) para evitar problema de fuso horário
@@ -627,8 +634,8 @@ const datePresets = [
 
 // ── SVG chart constants ────────────────────────────────────────────────────
 const SVG_W = 900
-const SVG_H = 220
-const PLOT = { x0: 58, x1: 895, y0: 12, y1: 195 }
+const SVG_H = 300
+const PLOT = { x0: 58, x1: 895, y0: 12, y1: 275 }
 
 // ── Computed ──────────────────────────────────────────────────────────────
 const chartTotals = computed(() => {
@@ -650,15 +657,26 @@ const chartTotals = computed(() => {
   }
 })
 
+const metricStats = computed(() => {
+  if (!chartData.value.length) return {}
+  const result = {}
+  for (const m of chartMetrics) {
+    const vals = chartData.value.map(d => d[m.key] || 0)
+    result[m.key] = { min: Math.min(...vals), max: Math.max(...vals) }
+  }
+  return result
+})
+
 const chartData = computed(() => {
   if (!data.value?.daily) return []
-  return [...data.value.daily].sort((a, b) => a.date.localeCompare(b.date)).map(d => ({
+  return [...data.value.daily].sort((a, b) => b.date.localeCompare(a.date)).map(d => ({
     ...d,
     dateLabel: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
   }))
 })
 
 const chartYMax = computed(() => {
+  if (normalizeChart.value) return 100
   if (!chartData.value.length) return 1
   let max = 0
   for (const d of chartData.value)
@@ -667,19 +685,15 @@ const chartYMax = computed(() => {
   return max || 1
 })
 
-// Y mínimo inteligente: começa em 85% do menor valor real (não em 0)
-// Isso evita que linhas fiquem espremidas na parte inferior do gráfico
 const chartYMin = computed(() => {
+  if (normalizeChart.value) return 0
   if (!chartData.value.length) return 0
   let min = Infinity
   for (const d of chartData.value)
     for (const key of activeMetrics.value)
       if ((d[key] || 0) > 0) min = Math.min(min, d[key])
   if (!isFinite(min)) return 0
-  // Deixa 15% de espaço abaixo do menor valor, mas nunca vai abaixo de 0
   const floor = Math.max(0, min * 0.85)
-  // Só aplica o floor se o range coberto for pelo menos 15% do max
-  // (evita distorção quando os valores estão muito próximos do zero)
   return (chartYMax.value - floor) / chartYMax.value > 0.15 ? floor : 0
 })
 
@@ -709,20 +723,28 @@ function svgXAt(i) {
   return PLOT.x0 + (i / (n - 1)) * (PLOT.x1 - PLOT.x0)
 }
 
+function plotVal(metric, rawValue) {
+  if (!normalizeChart.value) return rawValue || 0
+  const stats = metricStats.value[metric]
+  if (!stats) return 0
+  const span = stats.max - stats.min
+  if (span === 0) return 50
+  return ((rawValue || 0) - stats.min) / span * 100
+}
+
 function svgY(val) {
   const ratio = Math.min(1, Math.max(0, ((val || 0) - chartYMin.value) / chartYRange.value))
   return PLOT.y1 - ratio * (PLOT.y1 - PLOT.y0)
 }
 
 function svgPoints(metric) {
-  return chartData.value.map((d, i) => `${svgXAt(i)},${svgY(d[metric] || 0)}`).join(' ')
+  return chartData.value.map((d, i) => `${svgXAt(i)},${svgY(plotVal(metric, d[metric] || 0))}`).join(' ')
 }
 
 function svgAreaPath(metric) {
   const n = chartData.value.length
   if (!n) return ''
-  const pts = chartData.value.map((d, i) => `${svgXAt(i)},${svgY(d[metric] || 0)}`)
-  // Close the area at the bottom of the plot area (PLOT.y1 = baseline)
+  const pts = chartData.value.map((d, i) => `${svgXAt(i)},${svgY(plotVal(metric, d[metric] || 0))}`)
   return `M ${svgXAt(0)},${PLOT.y1} L ${pts.join(' L ')} L ${svgXAt(n - 1)},${PLOT.y1} Z`
 }
 
@@ -803,6 +825,11 @@ function fmtShort(v) {
   return `R$${Math.round(v)}`
 }
 
+function fmtTick(v) {
+  if (normalizeChart.value) return Math.round(v) + '%'
+  return fmtShort(v)
+}
+
 function pct(num, den) {
   if (!den || !num) return '—'
   return (num / den * 100).toFixed(1) + '%'
@@ -831,11 +858,11 @@ onMounted(() => { load(); loadToday() })
 <style scoped>
 /* ── Page ──────────────────────────────────────────────────────────────── */
 .dash-page {
-  background: #0f172a;
+  background: #f5f7fa;
   min-height: 100vh;
   padding: 24px;
-  color: #e2e8f0;
-  font-family: 'Inter', sans-serif;
+  color: #374151;
+  font-family: 'Inter', 'Roboto', sans-serif;
 }
 
 /* ── Header ────────────────────────────────────────────────────────────── */
@@ -846,6 +873,10 @@ onMounted(() => { load(); loadToday() })
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 24px;
+  background: #fff;
+  border: 1.5px solid #e8edf3;
+  border-radius: 14px;
+  padding: 14px 20px;
 }
 
 .header-left {
@@ -867,7 +898,7 @@ onMounted(() => { load(); loadToday() })
 
 .header-eyebrow {
   font-size: 11px;
-  color: #64748b;
+  color: #9aa0ac;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -875,7 +906,7 @@ onMounted(() => { load(); loadToday() })
 .header-title {
   font-size: 18px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #1a1f36;
 }
 
 .header-right {
@@ -890,9 +921,10 @@ onMounted(() => { load(); loadToday() })
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #1e293b;
+  background: #f5f7fa;
   border-radius: 10px;
   padding: 6px 10px;
+  border: 1.5px solid #e8edf3;
 }
 
 .date-preset-btn {
@@ -900,7 +932,7 @@ onMounted(() => { load(); loadToday() })
   border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
-  color: #94a3b8;
+  color: #6b7280;
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
@@ -913,8 +945,8 @@ onMounted(() => { load(); loadToday() })
 }
 
 .date-preset-btn:hover:not(.date-preset-btn--on) {
-  background: #334155;
-  color: #e2e8f0;
+  background: #e8edf3;
+  color: #374151;
 }
 
 .date-inputs {
@@ -925,13 +957,13 @@ onMounted(() => { load(); loadToday() })
 }
 
 .date-sep {
-  color: #475569;
+  color: #d1d5db;
   font-size: 12px;
 }
 
 .date-inp {
   font-size: 12px;
-  color: #cbd5e1;
+  color: #374151;
   min-width: 100px;
 }
 
@@ -945,23 +977,104 @@ onMounted(() => { load(); loadToday() })
 }
 
 .loading-text {
-  color: #64748b;
+  color: #9aa0ac;
   font-size: 14px;
+}
+
+/* ── Today banner ───────────────────────────────────────────────────────── */
+.today-banner {
+  background: linear-gradient(135deg, #f0fdf9, #e8faf6);
+  border: 1.5px solid #0d9488;
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.today-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0d9488;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  white-space: nowrap;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0d9488;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.today-kpis {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.today-sep {
+  color: #d1d5db;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.today-kpi {
+  text-align: center;
+}
+
+.today-kpi-label {
+  font-size: 10px;
+  color: #9aa0ac;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 2px;
+}
+
+.today-kpi-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1f36;
+}
+
+.today-gmv { color: #6366f1; }
+.today-pos { color: #0d9488; }
+.today-neg { color: #ef4444; }
+
+.today-note {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 /* ── KPI Grid ──────────────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 14px;
   margin-bottom: 24px;
 }
 
 .kpi-card {
-  background: #1e293b;
-  border-radius: 12px;
+  background: #ffffff;
+  border-radius: 14px;
   padding: 18px 20px;
-  border: 1px solid #334155;
+  border: 1.5px solid #e8edf3;
   position: relative;
   overflow: hidden;
   transition: transform .15s, box-shadow .15s;
@@ -969,7 +1082,7 @@ onMounted(() => { load(); loadToday() })
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+  box-shadow: 0 8px 24px rgba(13, 148, 136, .08);
 }
 
 .kpi-card::before {
@@ -981,47 +1094,35 @@ onMounted(() => { load(); loadToday() })
   height: 3px;
 }
 
-.kpi-gmv::before {
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-}
-
-.kpi-net::before {
-  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
-}
-
-.kpi-gp::before {
-  background: linear-gradient(90deg, #10b981, #34d399);
-}
-
-.kpi-ll::before {
-  background: linear-gradient(90deg, #0d9488, #2dd4bf);
-}
-
-.kpi-ads::before {
-  background: linear-gradient(90deg, #f59e0b, #fbbf24);
-}
-
-.kpi-orders::before {
-  background: linear-gradient(90deg, #ec4899, #f472b6);
-}
+.kpi-gmv::before    { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+.kpi-net::before    { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+.kpi-gp::before     { background: linear-gradient(90deg, #10b981, #34d399); }
+.kpi-ll::before     { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
+.kpi-ads::before    { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.kpi-orders::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
+.kpi-units::before  { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.kpi-roas::before   { background: linear-gradient(90deg, #0ea5e9, #06b6d4); }
+.kpi-margin::before { background: linear-gradient(90deg, #2dd4bf, #34d399); }
+.kpi-canc::before   { background: linear-gradient(90deg, #ef4444, #f87171); }
 
 .kpi-label {
   font-size: 11px;
-  color: #64748b;
+  color: #9aa0ac;
   text-transform: uppercase;
   letter-spacing: .7px;
   margin-bottom: 8px;
+  font-weight: 600;
 }
 
 .kpi-value {
   font-size: 24px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #1a1f36;
   line-height: 1.1;
 }
 
 .kpi-highlight {
-  color: #2dd4bf;
+  color: #0d9488;
 }
 
 .kpi-warn {
@@ -1034,7 +1135,7 @@ onMounted(() => { load(); loadToday() })
 
 .kpi-sub {
   font-size: 11px;
-  color: #64748b;
+  color: #9aa0ac;
   margin-top: 4px;
 }
 
@@ -1047,7 +1148,7 @@ onMounted(() => { load(); loadToday() })
 }
 
 .delta-pos {
-  color: #10b981;
+  color: #0d9488;
 }
 
 .delta-neg {
@@ -1055,18 +1156,28 @@ onMounted(() => { load(); loadToday() })
 }
 
 .delta-neutral {
-  color: #64748b;
+  color: #9aa0ac;
+}
+
+.kpi-info {
+  cursor: help;
+  opacity: 0.5;
+  vertical-align: middle;
+}
+
+.kpi-tooltip-pop {
+  font-size: 12px;
 }
 
 /* ── Tabs ──────────────────────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
   gap: 4px;
-  background: #1e293b;
+  background: #fff;
   border-radius: 10px;
   padding: 4px;
   margin-bottom: 20px;
-  border: 1px solid #334155;
+  border: 1.5px solid #e8edf3;
 }
 
 .tab-btn {
@@ -1074,7 +1185,7 @@ onMounted(() => { load(); loadToday() })
   border-radius: 7px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: #6b7280;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -1089,14 +1200,14 @@ onMounted(() => { load(); loadToday() })
 }
 
 .tab-btn:hover:not(.tab-btn--on) {
-  background: #334155;
-  color: #cbd5e1;
+  background: #f0f2f5;
+  color: #374151;
 }
 
 /* ── Chart ─────────────────────────────────────────────────────────────── */
 .chart-card {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #fff;
+  border: 1.5px solid #e8edf3;
   border-radius: 14px;
   padding: 20px;
   margin-bottom: 20px;
@@ -1114,7 +1225,7 @@ onMounted(() => { load(); loadToday() })
 .chart-title {
   font-size: 15px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1a1f36;
 }
 
 .chart-metric-toggles {
@@ -1129,9 +1240,9 @@ onMounted(() => { load(); loadToday() })
   gap: 5px;
   padding: 5px 12px;
   border-radius: 20px;
-  border: 1px solid #334155;
+  border: 1px solid #e8edf3;
   background: transparent;
-  color: #64748b;
+  color: #6b7280;
   cursor: pointer;
   font-size: 11px;
   font-weight: 500;
@@ -1139,8 +1250,8 @@ onMounted(() => { load(); loadToday() })
 }
 
 .metric-btn:hover:not(.metric-btn--on) {
-  border-color: #475569;
-  color: #94a3b8;
+  border-color: #9aa0ac;
+  color: #374151;
 }
 
 .metric-btn-dot {
@@ -1165,27 +1276,27 @@ onMounted(() => { load(); loadToday() })
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #475569;
+  color: #9aa0ac;
   font-size: 13px;
 }
 
 .line-chart-svg {
   display: block;
   width: 100%;
-  height: 220px;
+  height: 300px;
   cursor: crosshair;
 }
 
 .line-tooltip {
   position: absolute;
-  background: #0f172a;
+  background: #1a1f36;
   border: 1px solid #334155;
   border-radius: 10px;
   padding: 10px 14px;
   z-index: 20;
   min-width: 160px;
   pointer-events: none;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, .6);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
 }
 
 .tooltip-date {
@@ -1213,7 +1324,7 @@ onMounted(() => { load(); loadToday() })
 
 .tooltip-label {
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
   flex: 1;
 }
 
@@ -1225,8 +1336,8 @@ onMounted(() => { load(); loadToday() })
 
 /* ── Tables ────────────────────────────────────────────────────────────── */
 .table-card {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #fff;
+  border: 1.5px solid #e8edf3;
   border-radius: 14px;
   padding: 20px;
 }
@@ -1234,11 +1345,18 @@ onMounted(() => { load(); loadToday() })
 .table-title {
   font-size: 15px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1a1f36;
   margin-bottom: 16px;
 }
 
-.table-wrap,
+.table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 480px;
+  border-radius: 8px;
+  border: 1px solid #f0f2f5;
+}
+
 .acct-table-wrap {
   overflow-x: auto;
 }
@@ -1252,28 +1370,32 @@ onMounted(() => { load(); loadToday() })
 .data-table th {
   text-align: left;
   padding: 8px 12px;
-  color: #64748b;
+  color: #9aa0ac;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .6px;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1.5px solid #e8edf3;
   white-space: nowrap;
+  background: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .data-table td {
   padding: 8px 12px;
-  border-bottom: 1px solid #1e293b;
-  color: #cbd5e1;
+  border-bottom: 1px solid #f0f2f5;
+  color: #374151;
   white-space: nowrap;
 }
 
 .data-table tr:hover td {
-  background: #1a2744;
+  background: #f8fdfc;
 }
 
 .data-table tfoot td {
-  border-top: 1px solid #334155;
+  border-top: 1.5px solid #e8edf3;
   border-bottom: none;
 }
 
@@ -1288,16 +1410,16 @@ onMounted(() => { load(); loadToday() })
 
 .bold {
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1a1f36;
 }
 
 .muted {
-  color: #475569;
+  color: #9aa0ac;
   font-size: 11px;
 }
 
 .pos {
-  color: #10b981;
+  color: #0d9488;
   font-weight: 600;
 }
 
@@ -1312,12 +1434,14 @@ onMounted(() => { load(); loadToday() })
 
 .total-row td {
   font-weight: 700;
-  color: #f1f5f9;
-  background: #0f172a;
+  color: #1a1f36;
+  background: #f8f9fa;
+  position: sticky;
+  bottom: 0;
 }
 
 .rank {
-  color: #475569;
+  color: #9aa0ac;
   font-weight: 700;
   width: 30px;
 }
@@ -1335,7 +1459,7 @@ onMounted(() => { load(); loadToday() })
   height: 36px;
   object-fit: cover;
   border-radius: 6px;
-  border: 1px solid #334155;
+  border: 1px solid #e8edf3;
   flex-shrink: 0;
 }
 
@@ -1344,7 +1468,7 @@ onMounted(() => { load(); loadToday() })
 }
 
 .prod-title {
-  color: #cbd5e1;
+  color: #374151;
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1354,7 +1478,7 @@ onMounted(() => { load(); loadToday() })
 
 .prod-id {
   font-size: 10px;
-  color: #475569;
+  color: #9aa0ac;
 }
 
 /* Margin bar */
@@ -1375,7 +1499,7 @@ onMounted(() => { load(); loadToday() })
 /* ── CNPJ & Marketplace ────────────────────────────────────────────────── */
 .section-label {
   font-size: 12px;
-  color: #64748b;
+  color: #9aa0ac;
   text-transform: uppercase;
   letter-spacing: .8px;
   font-weight: 600;
@@ -1390,15 +1514,16 @@ onMounted(() => { load(); loadToday() })
 }
 
 .cnpj-card {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #fff;
+  border: 1.5px solid #e8edf3;
   border-radius: 12px;
   padding: 18px;
-  transition: transform .15s;
+  transition: transform .15s, box-shadow .15s;
 }
 
 .cnpj-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(13,148,136,.08);
 }
 
 .cnpj-header {
@@ -1408,13 +1533,13 @@ onMounted(() => { load(); loadToday() })
 .cnpj-name {
   font-size: 13px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1a1f36;
   font-family: monospace;
 }
 
 .cnpj-accounts {
   font-size: 11px;
-  color: #64748b;
+  color: #9aa0ac;
   margin-top: 2px;
 }
 
@@ -1430,7 +1555,7 @@ onMounted(() => { load(); loadToday() })
 
 .cnpj-kpi-label {
   font-size: 10px;
-  color: #64748b;
+  color: #9aa0ac;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
@@ -1438,12 +1563,12 @@ onMounted(() => { load(); loadToday() })
 .cnpj-kpi-val {
   font-size: 15px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #1a1f36;
 }
 
 .gmv-bar-wrap {
   position: relative;
-  background: #0f172a;
+  background: #f0f2f5;
   border-radius: 4px;
   height: 6px;
   overflow: hidden;
@@ -1461,7 +1586,7 @@ onMounted(() => { load(); loadToday() })
   right: 0;
   top: 8px;
   font-size: 10px;
-  color: #64748b;
+  color: #9aa0ac;
 }
 
 .mp-grid {
@@ -1471,8 +1596,8 @@ onMounted(() => { load(); loadToday() })
 }
 
 .mp-card {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #fff;
+  border: 1.5px solid #e8edf3;
   border-radius: 12px;
   padding: 16px;
 }
@@ -1482,7 +1607,7 @@ onMounted(() => { load(); loadToday() })
   align-items: center;
   font-size: 14px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1a1f36;
   margin-bottom: 12px;
 }
 
@@ -1499,14 +1624,14 @@ onMounted(() => { load(); loadToday() })
 
 .mp-kpi-label {
   font-size: 10px;
-  color: #64748b;
+  color: #9aa0ac;
   text-transform: uppercase;
 }
 
 .mp-kpi-val {
   font-size: 14px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #1a1f36;
 }
 
 /* Inline share bar */
@@ -1524,14 +1649,70 @@ onMounted(() => { load(); loadToday() })
   flex-shrink: 0;
 }
 
+/* ── Toggle group ───────────────────────────────────────────────────────── */
+.toggle-group {
+  display: flex;
+  gap: 4px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 3px;
+  border: 1.5px solid #e8edf3;
+}
+
+.tg-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: all .15s;
+}
+
+.tg-btn--on {
+  background: #0d9488;
+  color: white;
+}
+
+.sort-select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #e8edf3;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+
+.table-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ── Info box ───────────────────────────────────────────────────────────── */
 .info-box {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #f8f9fa;
+  border: 1.5px solid #e8edf3;
   border-radius: 8px;
   padding: 12px 16px;
   font-size: 12px;
-  color: #64748b;
+  color: #9aa0ac;
   display: flex;
   align-items: flex-start;
   gap: 6px;
@@ -1544,116 +1725,21 @@ onMounted(() => { load(); loadToday() })
   align-items: center;
   gap: 12px;
   padding: 80px 0;
-  color: #475569;
+  color: #9aa0ac;
 }
 
-/* ── Today banner ───────────────────────────────────────────────────────── */
-.today-banner {
-  background: linear-gradient(135deg, #0c1f2e, #091a23);
-  border: 1px solid #0d9488;
-  border-radius: 12px;
-  padding: 14px 20px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+/* ── Skeleton rows (not used currently, placeholder) ─────────────────────── */
+.skeleton-row {
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  margin-bottom: 8px;
 }
 
-.today-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #2dd4bf;
-  text-transform: uppercase;
-  letter-spacing: .8px;
-  white-space: nowrap;
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #2dd4bf;
-  animation: pulse-dot 2s ease-in-out infinite;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
-}
-
-.today-kpis {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  flex: 1;
-}
-
-.today-sep {
-  color: #1e3a4a;
-  font-size: 20px;
-  line-height: 1;
-}
-
-.today-kpi {
-  text-align: center;
-}
-
-.today-kpi-label {
-  font-size: 10px;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-  margin-bottom: 2px;
-}
-
-.today-kpi-val {
-  font-size: 15px;
-  font-weight: 700;
-  color: #f1f5f9;
-}
-
-.today-gmv { color: #818cf8; }
-.today-pos { color: #2dd4bf; }
-.today-neg { color: #ef4444; }
-
-.today-note {
-  font-size: 10px;
-  color: #334155;
-  margin-left: auto;
-  white-space: nowrap;
-}
-
-/* ── New KPI card accent lines ───────────────────────────────────────────── */
-.kpi-units::before {
-  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-}
-
-.kpi-roas::before {
-  background: linear-gradient(90deg, #0ea5e9, #06b6d4);
-}
-
-.kpi-margin::before {
-  background: linear-gradient(90deg, #2dd4bf, #34d399);
-}
-
-.kpi-canc::before {
-  background: linear-gradient(90deg, #ef4444, #f87171);
-}
-
-.kpi-info {
-  cursor: help;
-  opacity: 0.5;
-  vertical-align: middle;
-}
-
-.kpi-tooltip-pop {
-  font-size: 12px;
-  background: #0f172a;
-  color: #cbd5e1;
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 </style>
