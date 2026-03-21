@@ -310,20 +310,33 @@
               <line v-if="hoveredIdx !== null" :x1="svgXAt(hoveredIdx)" y1="10" :x2="svgXAt(hoveredIdx)" :y2="PLOT.y1"
                 stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3" />
 
+              <!-- Eixo direito: linha separadora (apenas quando ads está ativo) -->
+              <line v-if="adsActive" :x1="PLOT.x1" :y1="PLOT.y0" :x2="PLOT.x1" :y2="PLOT.y1"
+                stroke="#fde68a" stroke-width="1" stroke-dasharray="3 4" opacity="0.8" />
+
               <!-- Dots on hover -->
               <template v-if="hoveredIdx !== null">
                 <circle v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'dot-' + m.key"
-                  :cx="svgXAt(hoveredIdx)" :cy="svgY(plotVal(m.key, chartData[hoveredIdx]?.[m.key] || 0))" r="5" :fill="m.color"
+                  :cx="svgXAt(hoveredIdx)" :cy="svgYForMetric(m.key, chartData[hoveredIdx]?.[m.key] || 0)" r="5" :fill="m.color"
                   stroke="#ffffff" stroke-width="2.5" />
               </template>
 
-              <!-- X axis labels (every N days to avoid clutter) -->
-              <text v-for="(d, i) in chartData" :key="'xl' + i" v-show="showXLabel(i)" :x="svgXAt(i)" :y="SVG_H - 2"
-                text-anchor="middle" font-size="9" fill="#9aa0ac">{{ d.dateLabel }}</text>
+              <!-- X axis labels (every N days) -->
+              <text v-for="(d, i) in chartData" :key="'xl' + i" v-show="showXLabel(i)" :x="svgXAt(i)" :y="SVG_H - 1"
+                text-anchor="middle" font-size="10" fill="#9aa0ac">{{ d.dateLabel }}</text>
 
-              <!-- Y axis labels -->
-              <text v-for="(tick, i) in svgYTicks" :key="'yl' + i" :x="PLOT.x0 - 4" :y="svgY(tick) + 3"
-                text-anchor="end" font-size="9" fill="#9aa0ac">{{ fmtTick(tick) }}</text>
+              <!-- Y axis labels (esquerda) -->
+              <text v-for="(tick, i) in svgYTicks" :key="'yl' + i" :x="PLOT.x0 - 6" :y="svgY(tick) + 4"
+                text-anchor="end" font-size="10" fill="#64748b" font-weight="500">{{ fmtTick(tick) }}</text>
+
+              <!-- Y axis labels (direita — Ads) -->
+              <template v-if="adsActive">
+                <text v-for="(tick, i) in svgYTicksRight" :key="'yr' + i" :x="PLOT.x1 + 6" :y="svgYRight(tick) + 4"
+                  text-anchor="start" font-size="10" fill="#d97706" font-weight="500">{{ fmtShort(tick) }}</text>
+                <!-- Label "Ads →" no topo do eixo direito -->
+                <text :x="PLOT.x1 + 6" :y="PLOT.y0 - 2"
+                  text-anchor="start" font-size="9" fill="#f59e0b" font-weight="600" letter-spacing="0.5">ADS</text>
+              </template>
             </svg>
 
             <!-- Floating tooltip -->
@@ -643,7 +656,8 @@ const datePresets = [
 // ── SVG chart constants ────────────────────────────────────────────────────
 const SVG_W = 900
 const SVG_H = 300
-const PLOT = { x0: 58, x1: 895, y0: 12, y1: 275 }
+// x1 = 845 deixa 55px à direita para o eixo do Ads
+const PLOT = { x0: 62, x1: 845, y0: 14, y1: 272 }
 
 // ── Computed ──────────────────────────────────────────────────────────────
 const chartTotals = computed(() => {
@@ -708,12 +722,15 @@ const op = computed(() => {
   return data.value?.operation
 })
 
+// Eixo esquerdo — exclui ads_cost (que tem escala própria à direita)
+const LEFT_KEYS = ['gmv', 'net_revenue', 'gross_profit', 'lucro_liquido']
+
 const chartYMax = computed(() => {
   if (normalizeChart.value) return 100
   if (!chartData.value.length) return 1
   let max = 0
   for (const d of chartData.value)
-    for (const key of activeMetrics.value)
+    for (const key of activeMetrics.value.filter(k => LEFT_KEYS.includes(k)))
       max = Math.max(max, d[key] || 0)
   return max || 1
 })
@@ -723,7 +740,7 @@ const chartYMin = computed(() => {
   if (!chartData.value.length) return 0
   let min = Infinity
   for (const d of chartData.value)
-    for (const key of activeMetrics.value)
+    for (const key of activeMetrics.value.filter(k => LEFT_KEYS.includes(k)))
       if ((d[key] || 0) > 0) min = Math.min(min, d[key])
   if (!isFinite(min)) return 0
   const floor = Math.max(0, min * 0.85)
@@ -737,6 +754,24 @@ const svgYTicks = computed(() => {
   const max = chartYMax.value
   return [max, min + (max - min) * 0.75, min + (max - min) * 0.5, min + (max - min) * 0.25, min]
     .map(v => Math.round(v))
+})
+
+// Eixo direito — exclusivo para ads_cost
+const adsActive = computed(() => activeMetrics.value.includes('ads_cost') && !normalizeChart.value)
+
+const adsYMax = computed(() => {
+  if (!chartData.value.length) return 1
+  let max = 0
+  for (const d of chartData.value) max = Math.max(max, d.ads_cost || 0)
+  return max * 1.25 || 1  // 25% headroom
+})
+
+const adsYRange = computed(() => adsYMax.value || 1)
+
+const svgYTicksRight = computed(() => {
+  if (!adsActive.value) return []
+  const max = adsYMax.value
+  return [max, max * 0.75, max * 0.5, max * 0.25, 0].map(v => Math.round(v))
 })
 
 const tooltipStyle = computed(() => {
@@ -770,14 +805,25 @@ function svgY(val) {
   return PLOT.y1 - ratio * (PLOT.y1 - PLOT.y0)
 }
 
+function svgYRight(val) {
+  const ratio = Math.min(1, Math.max(0, (val || 0) / adsYRange.value))
+  return PLOT.y1 - ratio * (PLOT.y1 - PLOT.y0)
+}
+
+// Despacha para o eixo correto (esq vs dir) conforme a métrica
+function svgYForMetric(metric, rawVal) {
+  if (metric === 'ads_cost' && !normalizeChart.value) return svgYRight(rawVal || 0)
+  return svgY(plotVal(metric, rawVal))
+}
+
 function svgPoints(metric) {
-  return chartData.value.map((d, i) => `${svgXAt(i)},${svgY(plotVal(metric, d[metric] || 0))}`).join(' ')
+  return chartData.value.map((d, i) => `${svgXAt(i)},${svgYForMetric(metric, d[metric] || 0)}`).join(' ')
 }
 
 function svgAreaPath(metric) {
   const n = chartData.value.length
   if (!n) return ''
-  const pts = chartData.value.map((d, i) => `${svgXAt(i)},${svgY(plotVal(metric, d[metric] || 0))}`)
+  const pts = chartData.value.map((d, i) => `${svgXAt(i)},${svgYForMetric(metric, d[metric] || 0)}`)
   return `M ${svgXAt(0)},${PLOT.y1} L ${pts.join(' L ')} L ${svgXAt(n - 1)},${PLOT.y1} Z`
 }
 
@@ -848,7 +894,7 @@ function setTopGroupBy(val) { topGroupBy.value = val }
 
 // Curva suave (cubic bezier com midpoints) para o gráfico
 function smoothLine(metric) {
-  const pts = chartData.value.map((d, i) => [svgXAt(i), svgY(plotVal(metric, d[metric] || 0))])
+  const pts = chartData.value.map((d, i) => [svgXAt(i), svgYForMetric(metric, d[metric] || 0)])
   if (!pts.length) return ''
   if (pts.length === 1) return `M ${pts[0][0]},${pts[0][1]}`
   let path = `M ${pts[0][0]},${pts[0][1]}`
@@ -864,7 +910,7 @@ function smoothLine(metric) {
 function smoothArea(metric) {
   const n = chartData.value.length
   if (!n) return ''
-  const pts = chartData.value.map((d, i) => [svgXAt(i), svgY(plotVal(metric, d[metric] || 0))])
+  const pts = chartData.value.map((d, i) => [svgXAt(i), svgYForMetric(metric, d[metric] || 0)])
   let path = `M ${pts[0][0]},${PLOT.y1} L ${pts[0][0]},${pts[0][1]}`
   for (let i = 1; i < pts.length; i++) {
     const [x0, y0] = pts[i - 1]
