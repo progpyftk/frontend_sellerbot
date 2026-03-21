@@ -89,10 +89,10 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value">{{ fmt(data.operation.gmv) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.gmv)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.gmv)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.gmv) }} vs período anterior
+          <div class="kpi-value">{{ fmt(op?.gmv) }}</div>
+          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.gmv)">
+            <q-icon :name="deltaIcon(op?.vs_prev?.gmv)" size="12px" />
+            {{ deltaFmt(op?.vs_prev?.gmv) }} vs período anterior
           </div>
         </div>
 
@@ -106,10 +106,10 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value">{{ fmt(data.operation.net_revenue) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.net_revenue)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.net_revenue)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.net_revenue) }} vs período anterior
+          <div class="kpi-value">{{ fmt(op?.net_revenue) }}</div>
+          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.net_revenue)">
+            <q-icon :name="deltaIcon(op?.vs_prev?.net_revenue)" size="12px" />
+            {{ deltaFmt(op?.vs_prev?.net_revenue) }} vs período anterior
           </div>
         </div>
 
@@ -122,11 +122,11 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value">{{ fmt(data.operation.gross_profit) }}</div>
-          <div class="kpi-sub">Margem {{ pct(data.operation.gross_profit, data.operation.net_revenue) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.gross_profit)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.gross_profit)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.gross_profit) }} vs período anterior
+          <div class="kpi-value">{{ fmt(op?.gross_profit) }}</div>
+          <div class="kpi-sub">Margem {{ pct(op?.gross_profit, op?.net_revenue) }}</div>
+          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.gross_profit)">
+            <q-icon :name="deltaIcon(op?.vs_prev?.gross_profit)" size="12px" />
+            {{ deltaFmt(op?.vs_prev?.gross_profit) }} vs período anterior
           </div>
         </div>
 
@@ -139,11 +139,11 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value kpi-highlight">{{ fmt(data.operation.lucro_liquido) }}</div>
-          <div class="kpi-sub">Margem {{ pct(data.operation.lucro_liquido, data.operation.net_revenue) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.lucro_liquido)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.lucro_liquido)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.lucro_liquido) }} vs período anterior
+          <div class="kpi-value kpi-highlight">{{ fmt(op?.lucro_liquido) }}</div>
+          <div class="kpi-sub">Margem {{ pct(op?.lucro_liquido, op?.net_revenue) }}</div>
+          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.lucro_liquido)">
+            <q-icon :name="deltaIcon(op?.vs_prev?.lucro_liquido)" size="12px" />
+            {{ deltaFmt(op?.vs_prev?.lucro_liquido) }} vs período anterior
           </div>
         </div>
 
@@ -156,11 +156,11 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value kpi-warn">{{ fmt(data.operation.ads_cost) }}</div>
-          <div class="kpi-sub">TACoS {{ pctRaw(data.operation.ads_cost, data.operation.gmv) }}</div>
-          <div class="kpi-delta" :class="deltaClass(-(data.operation.vs_prev?.ads_cost || 0))">
-            <q-icon :name="deltaIcon(-(data.operation.vs_prev?.ads_cost || 0))" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.ads_cost) }} vs período anterior
+          <div class="kpi-value kpi-warn">{{ fmt(op?.ads_cost) }}</div>
+          <div class="kpi-sub">TACoS {{ pctRaw(op?.ads_cost, op?.gmv) }}</div>
+          <div class="kpi-delta" :class="deltaClass(-(op?.vs_prev?.ads_cost || 0))">
+            <q-icon :name="deltaIcon(-(op?.vs_prev?.ads_cost || 0))" size="12px" />
+            {{ deltaFmt(op?.vs_prev?.ads_cost) }} vs período anterior
           </div>
         </div>
 
@@ -173,11 +173,11 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value">{{ (data.operation.orders_count || 0).toLocaleString('pt-BR') }}</div>
-          <div class="kpi-sub">Ticket médio {{ fmt(data.operation.avg_ticket) }}</div>
-          <div class="kpi-delta" :class="deltaClass(data.operation.vs_prev?.orders_count)">
-            <q-icon :name="deltaIcon(data.operation.vs_prev?.orders_count)" size="12px" />
-            {{ deltaFmt(data.operation.vs_prev?.orders_count) }} vs período anterior
+          <div class="kpi-value">{{ (op?.orders_count || 0).toLocaleString('pt-BR') }}</div>
+          <div class="kpi-sub">Ticket médio {{ fmt(op?.avg_ticket) }}</div>
+          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.orders_count)">
+            <q-icon :name="deltaIcon(op?.vs_prev?.orders_count)" size="12px" />
+            {{ deltaFmt(op?.vs_prev?.orders_count) }} vs período anterior
           </div>
         </div>
 
@@ -190,8 +190,8 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value">{{ (data.operation.units_sold || 0).toLocaleString('pt-BR') }}</div>
-          <div class="kpi-sub">{{ data.operation.catalog_orders_count || 0 }} via catálogo · {{ data.operation.flex_orders_count || 0 }} Flex</div>
+          <div class="kpi-value">{{ (op?.units_sold || 0).toLocaleString('pt-BR') }}</div>
+          <div class="kpi-sub">{{ op?.catalog_orders_count || 0 }} via catálogo · {{ op?.flex_orders_count || 0 }} Flex</div>
         </div>
 
         <div class="kpi-card kpi-roas">
@@ -203,11 +203,11 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value">{{ data.operation.roas ? data.operation.roas + 'x' : '—' }}</div>
-          <div class="kpi-sub">ACoS {{ data.operation.acos != null ? data.operation.acos + '%' : '—' }}</div>
-          <div class="kpi-delta" :class="deltaClass(-(data.operation.vs_prev?.tacos || 0))">
-            <q-icon :name="deltaIcon(-(data.operation.vs_prev?.tacos || 0))" size="12px" />
-            TACoS {{ deltaFmt(data.operation.vs_prev?.tacos) }} vs anterior
+          <div class="kpi-value">{{ op?.roas ? op?.roas + 'x' : '—' }}</div>
+          <div class="kpi-sub">ACoS {{ op?.acos != null ? op?.acos + '%' : '—' }}</div>
+          <div class="kpi-delta" :class="deltaClass(-(op?.vs_prev?.tacos || 0))">
+            <q-icon :name="deltaIcon(-(op?.vs_prev?.tacos || 0))" size="12px" />
+            TACoS {{ deltaFmt(op?.vs_prev?.tacos) }} vs anterior
           </div>
         </div>
 
@@ -220,10 +220,10 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value" :class="(data.operation.lucro_liquido_pct || 0) >= 0 ? 'kpi-highlight' : 'neg'">
-            {{ data.operation.lucro_liquido_pct != null ? data.operation.lucro_liquido_pct + '%' : '—' }}
+          <div class="kpi-value" :class="(op?.lucro_liquido_pct || 0) >= 0 ? 'kpi-highlight' : 'neg'">
+            {{ op?.lucro_liquido_pct != null ? op?.lucro_liquido_pct + '%' : '—' }}
           </div>
-          <div class="kpi-sub">Margem bruta {{ data.operation.gross_margin_pct != null ? data.operation.gross_margin_pct + '%' : '—' }}</div>
+          <div class="kpi-sub">Margem bruta {{ op?.gross_margin_pct != null ? op?.gross_margin_pct + '%' : '—' }}</div>
         </div>
 
         <div class="kpi-card kpi-canc">
@@ -235,11 +235,11 @@
               </q-tooltip>
             </q-icon>
           </div>
-          <div class="kpi-value" :class="(data.operation.canceled_count || 0) > 0 ? 'kpi-warn' : ''">
-            {{ data.operation.canceled_count || 0 }}
+          <div class="kpi-value" :class="(op?.canceled_count || 0) > 0 ? 'kpi-warn' : ''">
+            {{ op?.canceled_count || 0 }}
           </div>
-          <div class="kpi-sub" v-if="data.operation.orders_count">
-            Taxa {{ pctRaw(data.operation.canceled_count, (data.operation.orders_count || 0) + (data.operation.canceled_count || 0)) }}
+          <div class="kpi-sub" v-if="op?.orders_count">
+            Taxa {{ pctRaw(op?.canceled_count, (op?.orders_count || 0) + (op?.canceled_count || 0)) }}
           </div>
         </div>
 
@@ -280,35 +280,41 @@
             <!-- SVG line chart -->
             <svg class="line-chart-svg" :viewBox="`0 0 ${SVG_W} ${SVG_H}`" preserveAspectRatio="none"
               @mousemove="onChartMouseMove" @mouseleave="hoveredIdx = null">
-              <!-- Y grid lines -->
+
+              <!-- Gradient defs -->
+              <defs>
+                <linearGradient v-for="m in chartMetrics" :key="'grad-' + m.key"
+                  :id="'grad-' + m.key" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" :stop-color="m.color" stop-opacity="0.22" />
+                  <stop offset="100%" :stop-color="m.color" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+
+              <!-- Y grid lines (dashed) -->
               <line v-for="(tick, i) in svgYTicks" :key="'g' + i" :x1="PLOT.x0" :y1="svgY(tick)" :x2="PLOT.x1"
-                :y2="svgY(tick)" stroke="#e8edf3" stroke-width="0.8" />
+                :y2="svgY(tick)" stroke="#e8edf3" stroke-width="1" stroke-dasharray="4 4" />
 
-              <!-- Zig-zag de eixo truncado (mostra que Y não começa em 0) -->
-              <template v-if="chartYMin > 0 && !normalizeChart">
-                <polyline
-                  :points="`${PLOT.x0 - 6},${PLOT.y1 + 4} ${PLOT.x0 - 2},${PLOT.y1 - 2} ${PLOT.x0 + 2},${PLOT.y1 + 4} ${PLOT.x0 + 6},${PLOT.y1 - 2}`"
-                  stroke="#d1d5db" stroke-width="1.5" fill="none" />
-              </template>
+              <!-- X axis baseline -->
+              <line :x1="PLOT.x0" :y1="PLOT.y1" :x2="PLOT.x1" :y2="PLOT.y1" stroke="#e0e5ed" stroke-width="1.5" />
 
-              <!-- Area fills -->
+              <!-- Area fills with gradient -->
               <path v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'area-' + m.key"
-                :d="svgAreaPath(m.key)" :fill="m.color" fill-opacity="0.07" />
+                :d="smoothArea(m.key)" :fill="`url(#grad-${m.key})`" />
 
-              <!-- Lines -->
-              <polyline v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'line-' + m.key"
-                :points="svgPoints(m.key)" :stroke="m.color" stroke-width="2" fill="none" stroke-linejoin="round"
-                stroke-linecap="round" />
+              <!-- Smooth lines -->
+              <path v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'line-' + m.key"
+                :d="smoothLine(m.key)" :stroke="m.color" stroke-width="2.5" fill="none"
+                stroke-linejoin="round" stroke-linecap="round" />
 
               <!-- Hover vertical line -->
               <line v-if="hoveredIdx !== null" :x1="svgXAt(hoveredIdx)" y1="10" :x2="svgXAt(hoveredIdx)" :y2="PLOT.y1"
-                stroke="#d1d5db" stroke-width="1" stroke-dasharray="4 3" />
+                stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3" />
 
               <!-- Dots on hover -->
               <template v-if="hoveredIdx !== null">
                 <circle v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'dot-' + m.key"
-                  :cx="svgXAt(hoveredIdx)" :cy="svgY(plotVal(m.key, chartData[hoveredIdx]?.[m.key] || 0))" r="4" :fill="m.color"
-                  stroke="#ffffff" stroke-width="2" />
+                  :cx="svgXAt(hoveredIdx)" :cy="svgY(plotVal(m.key, chartData[hoveredIdx]?.[m.key] || 0))" r="5" :fill="m.color"
+                  stroke="#ffffff" stroke-width="2.5" />
               </template>
 
               <!-- X axis labels (every N days to avoid clutter) -->
@@ -357,7 +363,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="d in chartData" :key="d.date">
+                <tr v-for="d in chartDataDesc" :key="d.date">
                   <td>{{ d.dateLabel }}</td>
                   <td class="right">{{ fmt(d.gmv) }}</td>
                   <td class="right">{{ fmt(d.net_revenue) }}</td>
@@ -553,12 +559,12 @@
           <div class="kpi-card">
             <div class="kpi-label">Pedidos Flex no Período</div>
             <div class="kpi-value">{{ (data.flex.orders_count || 0).toLocaleString('pt-BR') }}</div>
-            <div class="kpi-sub">{{ pctRaw(data.flex.orders_count, data.operation.orders_count) }} dos pedidos</div>
+            <div class="kpi-sub">{{ pctRaw(data.flex.orders_count, op?.orders_count) }} dos pedidos</div>
           </div>
           <div class="kpi-card kpi-warn-card">
             <div class="kpi-label">Custo Total Flex</div>
             <div class="kpi-value kpi-warn">{{ fmt(data.flex.shipping_cost_total) }}</div>
-            <div class="kpi-sub">{{ pctRaw(data.flex.shipping_cost_total, data.operation.gmv) }} do GMV</div>
+            <div class="kpi-sub">{{ pctRaw(data.flex.shipping_cost_total, op?.gmv) }} do GMV</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Custo Médio por Pedido Flex</div>
@@ -595,6 +601,8 @@ const activeTab = ref('evolucao')
 const activeMetrics = ref(['gmv', 'lucro_liquido'])
 const activeDatePreset = ref('30d')
 const normalizeChart = ref(false)
+const topGroupBy = ref('item')
+const topSortBy = ref('gross_profit')
 
 const today = new Date()
 // Usa data local (não UTC) para evitar problema de fuso horário
@@ -667,12 +675,37 @@ const metricStats = computed(() => {
   return result
 })
 
+// Ascendente (esquerda = mais antigo) — usado no gráfico
 const chartData = computed(() => {
   if (!data.value?.daily) return []
-  return [...data.value.daily].sort((a, b) => b.date.localeCompare(a.date)).map(d => ({
+  return [...data.value.daily].sort((a, b) => a.date.localeCompare(b.date)).map(d => ({
     ...d,
     dateLabel: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
   }))
+})
+
+// Descendente (mais recente primeiro) — usado na tabela
+const chartDataDesc = computed(() => [...chartData.value].reverse())
+
+// Fonte dos KPI cards: todayData (real-time) quando preset=hoje, senão data.operation
+const op = computed(() => {
+  if (activeDatePreset.value === 'hoje' && todayData.value) {
+    const d = todayData.value
+    const ll_pct = d.net_revenue ? +(d.lucro_liquido / d.net_revenue * 100).toFixed(2) : null
+    const gm_pct = d.net_revenue ? +(d.gross_profit / d.net_revenue * 100).toFixed(2) : null
+    return {
+      ...d,
+      lucro_liquido_pct: ll_pct,
+      gross_margin_pct: gm_pct,
+      roas: null,
+      acos: null,
+      catalog_orders_count: 0,
+      flex_orders_count: 0,
+      canceled_count: null,
+      vs_prev: null,
+    }
+  }
+  return data.value?.operation
 })
 
 const chartYMax = computed(() => {
@@ -809,6 +842,38 @@ function toggleMetric(key) {
   } else if (activeMetrics.value.length > 1) {
     activeMetrics.value = activeMetrics.value.filter(k => k !== key)
   }
+}
+
+function setTopGroupBy(val) { topGroupBy.value = val }
+
+// Curva suave (cubic bezier com midpoints) para o gráfico
+function smoothLine(metric) {
+  const pts = chartData.value.map((d, i) => [svgXAt(i), svgY(plotVal(metric, d[metric] || 0))])
+  if (!pts.length) return ''
+  if (pts.length === 1) return `M ${pts[0][0]},${pts[0][1]}`
+  let path = `M ${pts[0][0]},${pts[0][1]}`
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1]
+    const [x1, y1] = pts[i]
+    const mx = (x0 + x1) / 2
+    path += ` C ${mx},${y0} ${mx},${y1} ${x1},${y1}`
+  }
+  return path
+}
+
+function smoothArea(metric) {
+  const n = chartData.value.length
+  if (!n) return ''
+  const pts = chartData.value.map((d, i) => [svgXAt(i), svgY(plotVal(metric, d[metric] || 0))])
+  let path = `M ${pts[0][0]},${PLOT.y1} L ${pts[0][0]},${pts[0][1]}`
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1]
+    const [x1, y1] = pts[i]
+    const mx = (x0 + x1) / 2
+    path += ` C ${mx},${y0} ${mx},${y1} ${x1},${y1}`
+  }
+  path += ` L ${pts[n - 1][0]},${PLOT.y1} Z`
+  return path
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────
@@ -1207,9 +1272,10 @@ onMounted(() => { load(); loadToday() })
 .chart-card {
   background: #fff;
   border: 1.5px solid #e8edf3;
-  border-radius: 14px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px 20px 16px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
 }
 
 .chart-header {
@@ -1282,20 +1348,23 @@ onMounted(() => { load(); loadToday() })
 .line-chart-svg {
   display: block;
   width: 100%;
-  height: 300px;
+  height: 320px;
   cursor: crosshair;
+  background: linear-gradient(180deg, #fafbfd 0%, #ffffff 100%);
+  border-radius: 8px;
 }
 
 .line-tooltip {
   position: absolute;
-  background: #1a1f36;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 12px 16px;
   z-index: 20;
-  min-width: 160px;
+  min-width: 175px;
   pointer-events: none;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(4px);
 }
 
 .tooltip-date {
