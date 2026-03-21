@@ -60,6 +60,11 @@
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
+            <div class="today-kpi-label">Lucro Bruto</div>
+            <div class="today-kpi-val" :class="(todayData.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(todayData.gross_profit) }}</div>
+          </div>
+          <div class="today-sep">|</div>
+          <div class="today-kpi">
             <div class="today-kpi-label">Lucro Após Ads</div>
             <div class="today-kpi-val" :class="(todayData.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(todayData.lucro_liquido) }}</div>
           </div>
