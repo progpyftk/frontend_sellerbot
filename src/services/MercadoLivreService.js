@@ -118,4 +118,8 @@ export default {
   getDashboardOperation(params) {
     return api.get('/mercadolivre/dashboard/operation/', { params })
   },
+
+  getDashboardToday() {
+    return api.get('/mercadolivre/dashboard/today/')
+  },
 }

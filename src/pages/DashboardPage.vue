@@ -46,35 +46,35 @@
         <div class="today-kpis">
           <div class="today-kpi">
             <div class="today-kpi-label">GMV do Dia</div>
-            <div class="today-kpi-val today-gmv">{{ fmt(todayData.operation?.gmv) }}</div>
+            <div class="today-kpi-val today-gmv">{{ fmt(todayData.gmv) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Pedidos</div>
-            <div class="today-kpi-val">{{ todayData.operation?.orders_count || 0 }}</div>
+            <div class="today-kpi-val">{{ todayData.orders_count || 0 }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Receita Líquida</div>
-            <div class="today-kpi-val">{{ fmt(todayData.operation?.net_revenue) }}</div>
+            <div class="today-kpi-val">{{ fmt(todayData.net_revenue) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Lucro Após Ads</div>
-            <div class="today-kpi-val" :class="(todayData.operation?.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(todayData.operation?.lucro_liquido) }}</div>
+            <div class="today-kpi-val" :class="(todayData.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(todayData.lucro_liquido) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Ticket Médio</div>
-            <div class="today-kpi-val">{{ fmt(todayData.operation?.avg_ticket) }}</div>
+            <div class="today-kpi-val">{{ fmt(todayData.avg_ticket) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Unidades</div>
-            <div class="today-kpi-val">{{ todayData.operation?.units_sold || 0 }}</div>
+            <div class="today-kpi-val">{{ todayData.units_sold || 0 }}</div>
           </div>
         </div>
-        <div class="today-note">Atualizado a cada sync de pedidos</div>
+        <div class="today-note">Tempo real — leitura direta dos pedidos</div>
       </div>
 
       <!-- ══════════ KPI CARDS ══════════════════════════════════════════════ -->
@@ -781,10 +781,9 @@ async function load() {
 }
 
 async function loadToday() {
-  const todayStr = fmtDate(today)
   try {
-    const res = await MercadoLivreService.getDashboardOperation({ date_from: todayStr, date_to: todayStr })
-    todayData.value = res.data
+    const res = await MercadoLivreService.getDashboardToday()
+    todayData.value = res.data  // flat: { gmv, orders_count, units_sold, net_revenue, lucro_liquido, avg_ticket }
   } catch (e) {
     console.error('Today data error', e)
   }
