@@ -269,6 +269,37 @@
       </q-card>
     </q-dialog>
 
+    <!-- Connect Shopee Dialog -->
+    <q-dialog v-model="shopeeConnectDialog" persistent>
+      <q-card style="min-width: 440px; border-radius: 12px">
+        <div class="dialog-header">
+          <div class="header-icon" style="background: linear-gradient(135deg, #ff6600, #ee4d2d)">
+            <q-icon name="storefront" size="18px" />
+          </div>
+          <div>
+            <div style="font-size: 15px; font-weight: 700; color: #1a1f36">Conectar Loja Shopee</div>
+            <div style="font-size: 11px; color: #9aa0ac">Credenciais do App Interno (Seller In-house System)</div>
+          </div>
+        </div>
+        <q-separator />
+        <q-card-section class="q-gutter-md">
+          <q-banner class="bg-orange-1 text-orange-9 rounded-borders" dense>
+            <template v-slot:avatar><q-icon name="info" /></template>
+            Acesse <strong>Shopee Open Platform → My Apps</strong> e crie ou selecione seu App Interno para obter as credenciais.
+          </q-banner>
+          <q-input v-model="shopeeConnectForm.partner_id" label="Partner ID" outlined dense
+            :rules="[val => !!val || 'Obrigatório']" hint="Número do seu App Interno" />
+          <q-input v-model="shopeeConnectForm.partner_key" label="Partner Key" outlined dense type="password"
+            :rules="[val => !!val || 'Obrigatório']" hint="Chave secreta do App Interno" />
+        </q-card-section>
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn label="Conectar" unelevated color="deep-orange" icon="open_in_new"
+            :loading="connectingShopee" @click="submitShopeeConnect" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Tiny Dialog -->
     <q-dialog v-model="tinyDialog" persistent>
       <q-card style="min-width: 420px; border-radius: 12px">
@@ -340,6 +371,12 @@ const refreshingShopee = ref(null)
 const syncingShopee = ref(null)
 const deleteDialogShopee = ref(false)
 const shopeeAccountToDelete = ref(null)
+const shopeeConnectDialog = ref(false)
+const shopeeConnectForm = ref({ partner_id: '', partner_key: '' })
+
+const SHOPEE_REDIRECT_URI = isDevEnvironment
+  ? `${NGROK_URL}/shopee-redirect`
+  : 'https://sellerbot-frontend-367123809032.us-central1.run.app/shopee-redirect'
 
 // --- Tiny ---
 const tinyDialog = ref(false)
@@ -474,23 +511,29 @@ const getShopeeAccounts = async () => {
   }
 }
 
-const connectShopee = async () => {
+const connectShopee = () => {
+  shopeeConnectForm.value = { partner_id: '', partner_key: '' }
+  shopeeConnectDialog.value = true
+}
+
+const submitShopeeConnect = async () => {
+  const { partner_id, partner_key } = shopeeConnectForm.value
+  if (!partner_id || !partner_key) {
+    $q.notify({ message: 'Preencha Partner ID e Partner Key.', color: 'warning', position: 'top' })
+    return
+  }
   connectingShopee.value = true
   try {
-    const response = await api.get('/shopee/accounts/auth_url/')
-    if (response.data.auth_url) {
-      window.open(response.data.auth_url, '_blank', 'width=600,height=700')
-      // Polling para verificar conexão
-      setTimeout(async () => {
-        await getShopeeAccounts()
-        if (shopeeAccounts.value.length > 0) {
-          $q.notify({ message: 'Conta Shopee conectada!', color: 'positive' })
-        }
-      }, 3000)
-    }
+    const res = await api.get('/shopee/accounts/auth_url/', {
+      params: { partner_id, partner_key, redirect_url: SHOPEE_REDIRECT_URI }
+    })
+    sessionStorage.setItem('shopee_partner_id', partner_id)
+    sessionStorage.setItem('shopee_partner_key', partner_key)
+    shopeeConnectDialog.value = false
+    window.location.href = res.data.auth_url
   } catch (error) {
-    console.error('Erro ao conectar Shopee:', error)
-    $q.notify({ message: 'Erro ao conectar conta Shopee', color: 'negative' })
+    console.error('Erro ao gerar link Shopee:', error)
+    $q.notify({ message: 'Erro ao gerar link de autorização.', color: 'negative', position: 'top' })
   } finally {
     connectingShopee.value = false
   }
@@ -638,11 +681,21 @@ const syncCustoMedioProduto = async (account) => {
 
 onMounted(() => {
   const urlParams = new URLSearchParams(window.location.search)
+
+  // ML OAuth callback
   const code = urlParams.get('code')
   if (code) {
     handleAuthSuccess(code)
     window.history.replaceState({}, document.title, window.location.pathname)
   }
+
+  // Abrir aba correta se vier via ?tab=shopee
+  const tab = urlParams.get('tab')
+  if (tab === 'shopee') {
+    activeTab.value = 'shopee'
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+
   getMLAccounts()
   getShopeeAccounts()
 })

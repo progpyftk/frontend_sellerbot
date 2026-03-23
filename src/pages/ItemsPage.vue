@@ -1,239 +1,324 @@
 <template>
   <q-page class="items-page">
-    <div class="q-pa-md">
-      <q-card flat class="bg-white shadow-2 rounded-borders">
 
-        <q-card-section class="items-page-header">
-          <div class="row items-center justify-between">
-            <div class="row items-center">
-              <div class="header-icon-items q-mr-md">
-                <q-icon name="inventory_2" size="sm" />
-              </div>
-              <div>
-                <div class="header-eyebrow-items">Gestão de Vendas</div>
-                <div class="header-title-items">Gestão de Anúncios</div>
-              </div>
-            </div>
-            <div class="row q-gutter-sm">
-              <q-btn unelevated color="teal-7" text-color="white" icon="refresh" label="Atualizar"
-                @click="refreshData" :loading="loading" />
-            </div>
+    <!-- ── HEADER ──────────────────────────────────────────── -->
+    <div class="page-header">
+      <div class="row items-center justify-between no-wrap">
+        <div class="row items-center q-gutter-x-md">
+          <div class="header-icon">
+            <q-icon name="inventory_2" size="22px" />
           </div>
-        </q-card-section>
+          <div>
+            <div class="header-eyebrow">Mercado Livre</div>
+            <div class="header-title">Meus Anúncios</div>
+          </div>
+          <div v-if="pagination.rowsNumber" class="header-count">
+            {{ pagination.rowsNumber }} anúncios
+          </div>
+        </div>
+        <q-btn unelevated color="teal-7" icon="refresh" label="Atualizar"
+          @click="refreshData" :loading="loading" size="sm" class="q-px-md" />
+      </div>
+    </div>
 
 
-        <q-card-section class="q-pa-lg border-bottom">
 
-          <div class="row q-col-gutter-md items-center">
+    <!-- ── FILTROS ──────────────────────────────────────────── -->
+    <div class="fb">
 
-            <div class="col-12 col-md-4">
-              <q-input v-model="filters.search" debounce="600" placeholder="Buscar por Título, SKU ou MLB..." outlined
-                dense bg-color="white" clearable @update:model-value="resetPagination" class="shadow-1"
-                color="orange-8">
-                <template v-slot:prepend><q-icon name="search" color="orange-8" /></template>
-              </q-input>
-            </div>
+      <!-- Toolbar -->
+      <div class="fb-toolbar">
+        <div class="fb-search" :class="{ focused: searchFocused, filled: !!filters.search }">
+          <q-icon name="search" size="18px" class="fb-search-icon" />
+          <input
+            v-model="filters.search"
+            class="fb-search-input"
+            placeholder="Buscar por título, SKU ou MLB..."
+            @focus="searchFocused = true"
+            @blur="searchFocused = false"
+          />
+          <transition name="fade">
+            <button v-if="filters.search" class="fb-search-clear" @click="filters.search = ''">
+              <q-icon name="close" size="14px" />
+            </button>
+          </transition>
+        </div>
 
-            <div class="col-12 col-md-3">
-              <q-select v-model="filters.account" :options="accountOptions" option-value="id" option-label="nickname"
-                label="Conta do Seller" outlined dense bg-color="white" emit-value map-options multiple clearable
-                @update:model-value="resetPagination" class="shadow-1" color="orange-8">
-                <template v-slot:prepend><q-icon name="storefront" size="xs" color="blue-grey-8" /></template>
-                <template v-slot:selected-item="scope">
-                  <q-chip removable dense @remove="scope.removeAtIndex(scope.index)" outline color="blue-grey-8"
-                    class="q-ma-none q-mr-xs text-weight-medium bg-white">
-                    {{ scope.opt.nickname || scope.opt }}
-                  </q-chip>
-                </template>
-                <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
-                  <q-item v-bind="itemProps" @click="toggleOption(opt)">
-                    <q-item-section side><q-checkbox :model-value="selected" @update:model-value="toggleOption(opt)"
-                        color="orange-8" /></q-item-section>
-                    <q-item-section><q-item-label>{{ opt.nickname }}</q-item-label></q-item-section>
-                  </q-item>
-                </template>
-              </q-select>
-            </div>
-
-            <div class="col-12 col-md-3">
-              <q-select v-model="filters.logistic_type" :options="logisticOptions" option-value="value"
-                option-label="label" label="Logística Principal" outlined dense bg-color="white" emit-value map-options
-                multiple clearable @update:model-value="resetPagination" class="shadow-1" color="orange-8">
-                <template v-slot:prepend><q-icon name="local_shipping" size="xs" color="blue-grey-8" /></template>
-                <template v-slot:selected-item="scope">
-                  <q-chip removable dense @remove="scope.removeAtIndex(scope.index)" outline color="blue-grey-8"
-                    class="q-ma-none q-mr-xs text-weight-medium bg-white">
-                    {{ scope.opt.label || scope.opt }}
-                  </q-chip>
-                </template>
-                <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
-                  <q-item v-bind="itemProps" @click="toggleOption(opt)">
-                    <q-item-section side><q-checkbox :model-value="selected" @update:model-value="toggleOption(opt)"
-                        color="orange-8" /></q-item-section>
-                    <q-item-section><q-item-label>{{ opt.label }}</q-item-label></q-item-section>
-                  </q-item>
-                </template>
-              </q-select>
-            </div>
-
-            <div class="col-12 col-md-2">
-              <q-btn unelevated class="full-width text-weight-bold shadow-1 transition-scale"
-                :color="showAdvancedFilters ? 'orange-8' : 'white'"
-                :text-color="showAdvancedFilters ? 'white' : 'orange-9'"
-                :icon="showAdvancedFilters ? 'expand_less' : 'tune'"
-                :label="showAdvancedFilters ? 'Ocultar Filtros' : 'Filtros Avançados'"
-                @click="showAdvancedFilters = !showAdvancedFilters"
-                style="height: 40px; border: 1px solid var(--q-orange-8);" />
-            </div>
+        <div class="fb-toolbar-actions">
+          <div class="fb-btn-group">
+            <q-btn-dropdown flat dense no-icon-animation unelevated
+              :label="currentSortLabel" icon="swap_vert"
+              class="fb-tbtn" color="grey-7" size="sm">
+              <q-list dense style="min-width:200px">
+                <q-item v-for="opt in sortOptions" :key="opt.field + opt.desc"
+                  clickable v-close-popup @click="applySort(opt)">
+                  <q-item-section>{{ opt.label }}</q-item-section>
+                  <q-item-section side v-if="pagination.sortBy === opt.field && pagination.descending === opt.desc">
+                    <q-icon name="check" color="teal-7" size="14px" />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
           </div>
 
-          <q-slide-transition>
-            <div v-show="showAdvancedFilters" class="q-mt-lg">
-              <div class="row q-col-gutter-md">
-
-                <div class="col-12 col-md-4">
-                  <div class="bg-grey-1 q-pa-md rounded-borders custom-shadow h-100">
-                    <div class="text-caption text-weight-bold text-blue-grey-9 q-mb-md text-uppercase letter-spacing-1">
-                      Visibilidade & Status</div>
-                    <div class="column q-gutter-y-md">
-                      <q-select v-model="filters.status" :options="statusOptions" option-value="value"
-                        option-label="label" label="Status do Anúncio" outlined dense bg-color="white" emit-value
-                        map-options multiple clearable @update:model-value="resetPagination" color="orange-8">
-                        <template v-slot:selected-item="scope"><q-chip removable dense
-                            @remove="scope.removeAtIndex(scope.index)" outline color="blue-grey-8"
-                            class="q-ma-none q-mr-xs bg-white">{{ scope.opt.label || scope.opt }}</q-chip></template>
-                        <template v-slot:option="{ itemProps, opt, selected, toggleOption }"><q-item v-bind="itemProps"
-                            @click="toggleOption(opt)"><q-item-section side><q-checkbox :model-value="selected"
-                                @update:model-value="toggleOption(opt)"
-                                color="orange-8" /></q-item-section><q-item-section><q-item-label>{{ opt.label
-                                }}</q-item-label></q-item-section></q-item></template>
-                      </q-select>
-
-                      <q-select v-model="filters.listing_type" :options="listingTypeOptions" option-value="value"
-                        option-label="label" label="Tipo de Exposição" outlined dense bg-color="white" emit-value
-                        map-options multiple clearable @update:model-value="resetPagination" color="orange-8">
-                        <template v-slot:selected-item="scope"><q-chip removable dense
-                            @remove="scope.removeAtIndex(scope.index)" outline color="blue-grey-8"
-                            class="q-ma-none q-mr-xs bg-white">{{ scope.opt.label || scope.opt }}</q-chip></template>
-                        <template v-slot:option="{ itemProps, opt, selected, toggleOption }"><q-item v-bind="itemProps"
-                            @click="toggleOption(opt)"><q-item-section side><q-checkbox :model-value="selected"
-                                @update:model-value="toggleOption(opt)"
-                                color="orange-8" /></q-item-section><q-item-section><q-item-label>{{ opt.label
-                                }}</q-item-label></q-item-section></q-item></template>
-                      </q-select>
-
-                      <q-select v-model="filters.catalog_listing" :options="booleanOptions" option-value="value"
-                        option-label="label" label="Anúncio de Catálogo?" outlined dense bg-color="white" emit-value
-                        map-options clearable @update:model-value="resetPagination" color="orange-8">
-                        <template v-slot:prepend><q-icon name="menu_book" size="xs" color="grey-6" /></template>
-                      </q-select>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-12 col-md-4">
-                  <div class="bg-grey-1 q-pa-md rounded-borders custom-shadow h-100">
-                    <div class="text-caption text-weight-bold text-blue-grey-9 q-mb-md text-uppercase letter-spacing-1">
-                      Estoque &
-                      Envios</div>
-                    <div class="column q-gutter-y-md">
-                      <q-select v-model="filters.stockStatus" :options="stockOptions" option-value="value"
-                        option-label="label" label="Status do Estoque" outlined dense bg-color="white" emit-value
-                        map-options clearable @update:model-value="resetPagination" color="orange-8">
-                        <template v-slot:prepend><q-icon name="layers" size="xs" color="grey-6" /></template>
-                      </q-select>
-                      <q-select v-model="filters.free_shipping" :options="booleanOptions" option-value="value"
-                        option-label="label" label="Oferece Frete Grátis?" outlined dense bg-color="white" emit-value
-                        map-options clearable @update:model-value="resetPagination" color="orange-8">
-                        <template v-slot:prepend><q-icon name="local_mall" size="xs" color="grey-6" /></template>
-                      </q-select>
-                      <q-select v-model="filters.is_flex" :options="booleanOptions" option-value="value"
-                        option-label="label" label="Ativo no Flex?" outlined dense bg-color="white" emit-value
-                        map-options clearable @update:model-value="resetPagination" color="orange-8">
-                        <template v-slot:prepend><q-icon name="two_wheeler" size="xs" color="grey-6" /></template>
-                      </q-select>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-12 col-md-4">
-                  <div class="bg-grey-1 q-pa-md rounded-borders custom-shadow h-100">
-                    <div class="text-caption text-weight-bold text-blue-grey-9 q-mb-md text-uppercase letter-spacing-1">
-                      Performance & Preço</div>
-                    <div class="column q-gutter-y-md">
-                      <div class="row q-col-gutter-sm">
-                        <div class="col-6">
-                          <q-input v-model.number="filters.priceMin" type="number" label="Preço Mín (R$)" outlined dense
-                            bg-color="white" clearable debounce="600" @update:model-value="resetPagination"
-                            color="orange-8">
-                            <template v-slot:prepend><q-icon name="attach_money" size="xs" color="grey-6" /></template>
-                          </q-input>
-                        </div>
-                        <div class="col-6">
-                          <q-input v-model.number="filters.priceMax" type="number" label="Preço Máx (R$)" outlined dense
-                            bg-color="white" clearable debounce="600" @update:model-value="resetPagination"
-                            color="orange-8" />
-                        </div>
-                      </div>
-                      <q-input v-model.number="filters.soldMin" type="number" label="Vendas Acumuladas (Mín)" outlined
-                        dense bg-color="white" clearable debounce="600" @update:model-value="resetPagination"
-                        color="orange-8">
-                        <template v-slot:prepend><q-icon name="trending_up" size="xs" color="grey-6" /></template>
-                      </q-input>
-                      <q-input v-model.number="filters.healthMax" type="number" label="Qualidade MÁXIMA (%)" outlined
-                        dense bg-color="white" clearable debounce="600" @update:model-value="resetPagination"
-                        color="orange-8">
-                        <template v-slot:prepend><q-icon name="health_and_safety" size="xs" color="grey-6" /></template>
-                        <template v-slot:append><span class="text-caption text-grey">%</span></template>
-                      </q-input>
-                      <q-input v-model.number="filters.discountMin" type="number" label="Desconto Mínimo (%)" outlined
-                        dense bg-color="white" clearable debounce="600" @update:model-value="resetPagination"
-                        color="orange-8" hint="Ex: 15 → anúncios com ≥15% de desconto ativo">
-                        <template v-slot:prepend><q-icon name="local_offer" size="xs" color="orange-7" /></template>
-                        <template v-slot:append><span class="text-caption text-grey">%</span></template>
-                      </q-input>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </q-slide-transition>
-
-          <div class="row q-mt-xl items-center">
-            <div class="text-subtitle2 text-weight-bold text-blue-grey-9 q-mr-md">
-              Smart Views:
-            </div>
-
-            <div class="flex items-center wrap q-gutter-sm">
-              <q-btn outline rounded dense size="13px" class="q-px-md text-weight-medium smart-btn text-deep-orange-9"
-                icon="warning" label="Risco de Margem" @click="setFilterMarginRisk" />
-
-              <q-btn outline rounded dense size="13px" class="q-px-md text-weight-medium smart-btn text-orange-9"
-                icon="rocket_launch" label="Validado p/ Premium" @click="setFilterPremiumUpgrade" />
-
-              <q-btn outline rounded dense size="13px" class="q-px-md text-weight-medium smart-btn text-red-9"
-                icon="error_outline" label="Curva A / Baixa Saúde" @click="setFilterPoorHealthHighSales" />
-
-              <q-btn outline rounded dense size="13px" class="q-px-md text-weight-medium smart-btn text-orange-8"
-                icon="inventory_2" label="Full Sem Estoque" @click="setFilterFullNoStock" />
-
-              <q-btn outline rounded dense size="13px" class="q-px-md text-weight-medium smart-btn text-blue-grey-8"
-                icon="electric_moped" label="Oportunidade Flex" @click="setFilterOpportunityFlex" />
-            </div>
-
-            <q-space />
-
-            <q-btn flat dense color="grey-6" icon="filter_alt_off" label="Limpar Filtros" @click="clearFilters"
-              class="hover-underline text-weight-medium" />
+          <div class="fb-btn-group">
+            <button :class="['fb-tbtn', advancedFilterCount > 0 && 'fb-tbtn--active']"
+              @click="showAdvanced = true">
+              <q-icon name="tune" size="15px" />
+              <span>Filtros</span>
+              <span v-if="advancedFilterCount > 0" class="fb-adv-badge">{{ advancedFilterCount }}</span>
+            </button>
           </div>
 
-        </q-card-section>
+          <transition name="fade">
+            <button v-if="hasActiveFilters" class="fb-clear-btn" @click="clearFilters">
+              <q-icon name="filter_alt_off" size="14px" />
+              <span>Limpar</span>
+            </button>
+          </transition>
+        </div>
+      </div>
 
+      <!-- Filterbar -->
+      <div class="fb-filterbar">
+
+        <!-- Conta -->
+        <div class="fb-combo" :class="filters.account?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="storefront" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.account?.length">Conta</template>
+              <template v-else-if="filters.account.length === 1">{{ accountOptions.find(a=>a.id===filters.account[0])?.nickname || 'Conta' }}</template>
+              <template v-else>Conta <span class="fb-combo-multi">+{{ filters.account.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.account?.length" class="fb-combo-clear" @click.stop="filters.account = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:200px">
+              <q-item v-for="acc in accountOptions" :key="acc.id" clickable
+                :class="['fb-menu-item', filters.account?.includes(acc.id) && 'fb-menu-item--on']"
+                @click.stop="toggleAccountFilter(acc.id)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.account?.includes(acc.id)"
+                    @update:model-value="toggleAccountFilter(acc.id)" @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ acc.nickname }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </div>
+
+        <!-- Status -->
+        <div class="fb-combo" :class="filters.status?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="toggle_on" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.status?.length">Status</template>
+              <template v-else-if="filters.status.length === 1">{{ statusOptions.find(o=>o.value===filters.status[0])?.label || 'Status' }}</template>
+              <template v-else>Status <span class="fb-combo-multi">+{{ filters.status.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.status?.length" class="fb-combo-clear" @click.stop="filters.status = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:180px">
+              <q-item v-for="opt in statusOptions" :key="opt.value" clickable
+                :class="['fb-menu-item', filters.status?.includes(opt.value) && 'fb-menu-item--on']"
+                @click.stop="toggleStatusFilter(opt.value)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.status?.includes(opt.value)"
+                    @update:model-value="toggleStatusFilter(opt.value)" @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </div>
+
+        <!-- Logística -->
+        <div class="fb-combo" :class="filters.logistic_type?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="local_shipping" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.logistic_type?.length">Logística</template>
+              <template v-else-if="filters.logistic_type.length === 1">{{ logisticOptions.find(o=>o.value===filters.logistic_type[0])?.label || 'Logística' }}</template>
+              <template v-else>Logística <span class="fb-combo-multi">+{{ filters.logistic_type.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.logistic_type?.length" class="fb-combo-clear" @click.stop="filters.logistic_type = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:210px">
+              <q-item v-for="opt in logisticOptions" :key="opt.value" clickable
+                :class="['fb-menu-item', filters.logistic_type?.includes(opt.value) && 'fb-menu-item--on']"
+                @click.stop="toggleLogisticFilter(opt.value)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.logistic_type?.includes(opt.value)"
+                    @update:model-value="toggleLogisticFilter(opt.value)" @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </div>
+
+        <!-- Tipo de Anúncio -->
+        <div class="fb-combo" :class="filters.listing_type?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="rocket_launch" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.listing_type?.length">Tipo</template>
+              <template v-else-if="filters.listing_type.length === 1">{{ listingTypeOptions.find(o=>o.value===filters.listing_type[0])?.label || 'Tipo' }}</template>
+              <template v-else>Tipo <span class="fb-combo-multi">+{{ filters.listing_type.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.listing_type?.length" class="fb-combo-clear" @click.stop="filters.listing_type = []">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:220px">
+              <q-item v-for="opt in listingTypeOptions" :key="opt.value" clickable
+                :class="['fb-menu-item', filters.listing_type?.includes(opt.value) && 'fb-menu-item--on']"
+                @click.stop="toggleListingTypeFilter(opt.value)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.listing_type?.includes(opt.value)"
+                    @update:model-value="toggleListingTypeFilter(opt.value)" @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </div>
+
+      </div>
+
+      <!-- Filter index -->
+      <transition name="fade">
+        <div v-if="hasActiveFilters" class="fb-index">
+          <div class="fb-index-header">
+            <div class="fb-index-title">
+              <q-icon name="filter_alt" size="14px" color="teal-7" />
+              <span>Filtrando</span>
+              <span class="fb-index-count">
+                {{ [filters.search?1:0, filters.account?.length?1:0, filters.status?.length?1:0,
+                    filters.logistic_type?.length?1:0, filters.listing_type?.length?1:0,
+                    advancedFilterCount].reduce((a,b)=>a+b,0) }} grupos
+              </span>
+            </div>
+            <button class="fb-index-clear" @click="clearFilters">
+              <q-icon name="close" size="11px" />Limpar tudo
+            </button>
+          </div>
+          <div class="fb-index-rows">
+            <div v-if="filters.search" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="search" size="12px" />Busca</div>
+              <div class="fb-index-pills">
+                <span class="fb-index-pill" @click="filters.search = ''">"{{ filters.search }}" <q-icon name="close" size="9px" /></span>
+              </div>
+            </div>
+            <div v-if="filters.account?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="storefront" size="12px" />Conta</div>
+              <div class="fb-index-pills">
+                <span v-for="id in filters.account" :key="id" class="fb-index-pill" @click="toggleAccountFilter(id)">
+                  {{ accountOptions.find(a=>a.id===id)?.nickname || id }} <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+            <div v-if="filters.status?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="toggle_on" size="12px" />Status</div>
+              <div class="fb-index-pills">
+                <span v-for="s in filters.status" :key="s" class="fb-index-pill" @click="toggleStatusFilter(s)">
+                  {{ statusOptions.find(o=>o.value===s)?.label || s }} <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+            <div v-if="filters.logistic_type?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="local_shipping" size="12px" />Logística</div>
+              <div class="fb-index-pills">
+                <span v-for="l in filters.logistic_type" :key="l" class="fb-index-pill" @click="toggleLogisticFilter(l)">
+                  {{ logisticOptions.find(o=>o.value===l)?.label || l }} <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+            <div v-if="filters.listing_type?.length" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="rocket_launch" size="12px" />Tipo</div>
+              <div class="fb-index-pills">
+                <span v-for="t in filters.listing_type" :key="t" class="fb-index-pill" @click="toggleListingTypeFilter(t)">
+                  {{ listingTypeOptions.find(o=>o.value===t)?.label || t }} <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+            <div v-if="advancedFilterCount > 0" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="tune" size="12px" />Avançados</div>
+              <div class="fb-index-pills">
+                <span v-if="filters.stockStatus" class="fb-index-pill" @click="filters.stockStatus = null">
+                  Estoque: {{ stockOptions.find(o=>o.value===filters.stockStatus)?.label }} <q-icon name="close" size="9px" />
+                </span>
+                <span v-if="filters.free_shipping !== null" class="fb-index-pill" @click="filters.free_shipping = null">
+                  Frete Grátis: {{ filters.free_shipping ? 'Sim' : 'Não' }} <q-icon name="close" size="9px" />
+                </span>
+                <span v-if="filters.is_flex !== null" class="fb-index-pill" @click="filters.is_flex = null">
+                  Flex: {{ filters.is_flex ? 'Sim' : 'Não' }} <q-icon name="close" size="9px" />
+                </span>
+                <span v-if="filters.catalog_listing !== null" class="fb-index-pill" @click="filters.catalog_listing = null">
+                  Catálogo: {{ filters.catalog_listing ? 'Sim' : 'Não' }} <q-icon name="close" size="9px" />
+                </span>
+                <span v-if="filters.priceMin || filters.priceMax" class="fb-index-pill" @click="filters.priceMin=null; filters.priceMax=null">
+                  Preço: {{ filters.priceMin||'0' }} → {{ filters.priceMax||'∞' }} <q-icon name="close" size="9px" />
+                </span>
+                <span v-if="filters.soldMin" class="fb-index-pill" @click="filters.soldMin = null">
+                  Vendas ≥ {{ filters.soldMin }} <q-icon name="close" size="9px" />
+                </span>
+                <span v-if="filters.healthMin || filters.healthMax" class="fb-index-pill" @click="filters.healthMin=null; filters.healthMax=null">
+                  Qualidade: {{ filters.healthMin||'0' }}% → {{ filters.healthMax||'100' }}% <q-icon name="close" size="9px" />
+                </span>
+                <span v-if="filters.discountMin" class="fb-index-pill" @click="filters.discountMin = null">
+                  Desconto ≥ {{ filters.discountMin }}% <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+    </div>
+
+    <!-- ── SMART VIEWS ────────────────────────────────────────── -->
+    <div class="smart-views-bar">
+      <div class="sv-label">Smart Views</div>
+      <div class="sv-chips">
+        <button class="sv-chip sv-chip--red" @click="setFilterMarginRisk">
+          <q-icon name="warning" size="13px" />Risco de Margem
+        </button>
+        <button class="sv-chip sv-chip--orange" @click="setFilterPremiumUpgrade">
+          <q-icon name="rocket_launch" size="13px" />Validado p/ Premium
+        </button>
+        <button class="sv-chip sv-chip--red" @click="setFilterPoorHealthHighSales">
+          <q-icon name="error_outline" size="13px" />Curva A / Baixa Saúde
+        </button>
+        <button class="sv-chip sv-chip--amber" @click="setFilterFullNoStock">
+          <q-icon name="inventory_2" size="13px" />Full Sem Estoque
+        </button>
+        <button class="sv-chip sv-chip--slate" @click="setFilterOpportunityFlex">
+          <q-icon name="electric_moped" size="13px" />Oportunidade Flex
+        </button>
+      </div>
+      <button class="sv-clear" @click="clearFilters">
+        <q-icon name="filter_alt_off" size="13px" />Limpar
+      </button>
+    </div>
 
 
         <transition name="slide-fade">
-          <q-card-section v-if="showMagicLink" class="q-pa-md bg-orange-1 border-bottom">
+          <div v-if="showMagicLink" class="q-pa-md bg-orange-1" style="border-bottom:1px solid #ffe0b2">
             <div class="row items-center q-col-gutter-md">
               <div class="col-12 col-md-auto text-center">
                 <q-icon name="warning_amber" color="deep-orange" size="lg" />
@@ -258,7 +343,7 @@
                 </q-input>
               </div>
             </div>
-          </q-card-section>
+          </div>
         </transition>
 
         <!-- ── Barra de Ações em Massa ──────────────────────────── -->
@@ -573,8 +658,105 @@
 
           </template>
         </q-table>
+
+    <!-- ══ FILTROS AVANÇADOS (painel direito) ══════════════════════════════ -->
+    <q-dialog v-model="showAdvanced" position="right" :maximized="true" transition-show="slide-left" transition-hide="slide-right">
+      <q-card class="fadv-panel" style="width:360px;max-width:100vw;height:100vh">
+        <div class="fadv-header">
+          <span class="fadv-title">Filtros Avançados</span>
+          <button class="fadv-close" @click="showAdvanced = false"><q-icon name="close" size="18px" /></button>
+        </div>
+        <q-scroll-area style="height:calc(100vh - 110px)">
+          <div class="fadv-body">
+
+            <!-- Estoque -->
+            <div class="fadv-section">
+              <div class="fadv-section-label">Estoque</div>
+              <div class="fadv-options">
+                <label v-for="opt in stockOptions" :key="opt.value" class="fadv-radio"
+                  :class="filters.stockStatus === opt.value && 'fadv-radio--on'">
+                  <input type="radio" :value="opt.value" v-model="filters.stockStatus" />
+                  {{ opt.label }}
+                </label>
+              </div>
+            </div>
+
+            <!-- Frete Grátis -->
+            <div class="fadv-section">
+              <div class="fadv-section-label">Frete Grátis</div>
+              <div class="fadv-options">
+                <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
+                  :class="filters.free_shipping === opt.value && 'fadv-radio--on'">
+                  <input type="radio" :value="opt.value" v-model="filters.free_shipping" />
+                  {{ opt.label }}
+                </label>
+              </div>
+            </div>
+
+            <!-- Flex -->
+            <div class="fadv-section">
+              <div class="fadv-section-label">Flex</div>
+              <div class="fadv-options">
+                <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
+                  :class="filters.is_flex === opt.value && 'fadv-radio--on'">
+                  <input type="radio" :value="opt.value" v-model="filters.is_flex" />
+                  {{ opt.label }}
+                </label>
+              </div>
+            </div>
+
+            <!-- Catálogo -->
+            <div class="fadv-section">
+              <div class="fadv-section-label">Catálogo</div>
+              <div class="fadv-options">
+                <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
+                  :class="filters.catalog_listing === opt.value && 'fadv-radio--on'">
+                  <input type="radio" :value="opt.value" v-model="filters.catalog_listing" />
+                  {{ opt.label }}
+                </label>
+              </div>
+            </div>
+
+            <!-- Faixa de Preço -->
+            <div class="fadv-section">
+              <div class="fadv-section-label">Faixa de Preço (R$)</div>
+              <div class="fadv-range-row">
+                <input class="fadv-input" type="number" placeholder="Mín" v-model.number="filters.priceMin" />
+                <span class="fadv-range-sep">→</span>
+                <input class="fadv-input" type="number" placeholder="Máx" v-model.number="filters.priceMax" />
+              </div>
+            </div>
+
+            <!-- Vendas mínimas -->
+            <div class="fadv-section">
+              <div class="fadv-section-label">Vendas Mínimas</div>
+              <input class="fadv-input fadv-input--full" type="number" placeholder="Ex: 10" v-model.number="filters.soldMin" />
+            </div>
+
+            <!-- Qualidade -->
+            <div class="fadv-section">
+              <div class="fadv-section-label">Qualidade (%)</div>
+              <div class="fadv-range-row">
+                <input class="fadv-input" type="number" placeholder="Mín" v-model.number="filters.healthMin" />
+                <span class="fadv-range-sep">→</span>
+                <input class="fadv-input" type="number" placeholder="Máx" v-model.number="filters.healthMax" />
+              </div>
+            </div>
+
+            <!-- Desconto mínimo -->
+            <div class="fadv-section">
+              <div class="fadv-section-label">Desconto Mínimo (%)</div>
+              <input class="fadv-input fadv-input--full" type="number" placeholder="Ex: 15" v-model.number="filters.discountMin" />
+            </div>
+
+          </div>
+        </q-scroll-area>
+        <div class="fadv-footer">
+          <button class="fadv-btn-clear" @click="clearFilters; showAdvanced = false">Limpar tudo</button>
+          <button class="fadv-btn-apply" @click="showAdvanced = false">Aplicar</button>
+        </div>
       </q-card>
-    </div>
+    </q-dialog>
 
     <q-dialog v-model="showHealthDialog">
       <q-card style="width: 600px; max-width: 95vw;">
@@ -975,6 +1157,8 @@ const columns = [
 // 2. ESTADO E OPÇÕES DOS FILTROS
 // ============================================================================
 const showAdvancedFilters = ref(false)
+const searchFocused = ref(false)
+const showAdvanced = ref(false)
 const availableAccounts = ref([])
 const availableStatuses = ref([])
 const availableLogistics = ref([])
@@ -1046,6 +1230,69 @@ const logisticOptions = computed(() => {
 })
 
 const statusOptions = computed(() => availableStatuses.value.map(s => ({ label: STATUS_LABELS[s] || s, value: s })))
+
+const hasActiveFilters = computed(() =>
+  !!filters.search || filters.account?.length || filters.status?.length ||
+  filters.logistic_type?.length || filters.listing_type?.length ||
+  filters.stockStatus != null || filters.free_shipping != null ||
+  filters.is_flex != null || filters.catalog_listing != null ||
+  filters.priceMin || filters.priceMax || filters.soldMin ||
+  filters.healthMin || filters.healthMax || filters.discountMin
+)
+
+const advancedFilterCount = computed(() => [
+  filters.stockStatus != null,
+  filters.free_shipping != null,
+  filters.is_flex != null,
+  filters.catalog_listing != null,
+  !!(filters.priceMin || filters.priceMax),
+  !!filters.soldMin,
+  !!(filters.healthMin || filters.healthMax),
+  !!filters.discountMin
+].filter(Boolean).length)
+
+const sortOptions = [
+  { label: 'Título A→Z',          field: 'title',             desc: false },
+  { label: 'Título Z→A',          field: 'title',             desc: true  },
+  { label: 'Preço: menor → maior', field: 'price',            desc: false },
+  { label: 'Preço: maior → menor', field: 'price',            desc: true  },
+  { label: 'Mais vendidos',        field: 'sold_quantity',     desc: true  },
+  { label: 'Menos vendidos',       field: 'sold_quantity',     desc: false },
+  { label: 'Melhor qualidade',     field: 'performance_score', desc: true  },
+  { label: 'Pior qualidade',       field: 'performance_score', desc: false },
+]
+
+const currentSortLabel = computed(() => {
+  const opt = sortOptions.find(o => o.field === pagination.value.sortBy && o.desc === pagination.value.descending)
+  return opt ? opt.label : 'Ordenar'
+})
+
+const applySort = (opt) => {
+  pagination.value.sortBy = opt.field
+  pagination.value.descending = opt.desc
+  onRequest({ pagination: { ...pagination.value, page: 1 } })
+}
+
+const toggleAccountFilter = (id) => {
+  const idx = filters.account.indexOf(id)
+  if (idx === -1) filters.account.push(id)
+  else filters.account.splice(idx, 1)
+}
+const toggleStatusFilter = (val) => {
+  const idx = filters.status.indexOf(val)
+  if (idx === -1) filters.status.push(val)
+  else filters.status.splice(idx, 1)
+}
+const toggleLogisticFilter = (val) => {
+  const idx = filters.logistic_type.indexOf(val)
+  if (idx === -1) filters.logistic_type.push(val)
+  else filters.logistic_type.splice(idx, 1)
+}
+const toggleListingTypeFilter = (val) => {
+  const idx = filters.listing_type.indexOf(val)
+  if (idx === -1) filters.listing_type.push(val)
+  else filters.listing_type.splice(idx, 1)
+}
 
 // ============================================================================
 // 3. AÇÕES E MACROS DE FILTROS (CORRIGIDO PARA EVITAR PISCA-PISCA)
@@ -1627,12 +1874,224 @@ const reactivateItem = (row) => {
 
 /* ═══ Design system ══════════════════════════════════════════════════ */
 .items-page { background: #f5f7fa; }
-.items-page-header { background: #fff; padding: 16px 20px; border-bottom: 1.5px solid #e8edf3; }
-.header-icon-items {
-  width: 34px; height: 34px; border-radius: 9px; display: flex;
-  align-items: center; justify-content: center;
+
+/* ── Page header ── */
+.page-header {
+  background: #fff;
+  padding: 14px 20px;
+  border-bottom: 1.5px solid #e8edf3;
+}
+.header-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, #0d9488, #2dd4bf); color: #fff;
 }
-.header-eyebrow-items { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-.header-title-items   { font-size: 16px; font-weight: 700; color: #1a1f36; }
+.header-eyebrow { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.header-title   { font-size: 16px; font-weight: 700; color: #1a1f36; }
+.header-count   { font-size: 12px; color: #9aa0ac; background: #f0f2f5; border-radius: 20px; padding: 2px 10px; }
+
+/* ── Filter bar (fb) ── */
+.fb { background: #fff; border-bottom: 1px solid #e8edf3; }
+
+.fb-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px 0;
+  flex-wrap: wrap;
+}
+.fb-search {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; min-width: 180px; max-width: 340px;
+  height: 34px; border-radius: 8px;
+  border: 1.5px solid #e3e6eb; background: #f8f9fb;
+  padding: 0 10px;
+  transition: border-color .15s, background .15s;
+}
+.fb-search.focused, .fb-search.filled { border-color: #0d9488; background: #fff; }
+.fb-search-icon { color: #b0b7c3; flex-shrink: 0; }
+.fb-search-input {
+  flex: 1; border: none; background: transparent;
+  font-size: 13px; color: #1a1f36; outline: none;
+}
+.fb-search-clear {
+  background: none; border: none; cursor: pointer; color: #b0b7c3;
+  padding: 0; display: flex; align-items: center;
+}
+.fb-search-clear:hover { color: #1a1f36; }
+
+.fb-toolbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.fb-btn-group { display: flex; }
+
+.fb-tbtn {
+  display: flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px; border-radius: 7px;
+  border: 1.5px solid #e3e6eb; background: #fff;
+  font-size: 12px; font-weight: 500; color: #4b5563;
+  cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.fb-tbtn:hover { background: #f5f7fa; }
+.fb-tbtn--active { border-color: #0d9488; color: #0d9488; background: #f0faf9; }
+.fb-adv-badge {
+  background: #0d9488; color: #fff;
+  font-size: 10px; font-weight: 700; border-radius: 10px;
+  padding: 1px 5px; min-width: 16px; text-align: center;
+}
+.fb-clear-btn {
+  display: flex; align-items: center; gap: 4px;
+  height: 30px; padding: 0 10px; border-radius: 7px;
+  border: none; background: none; font-size: 12px;
+  color: #ef4444; cursor: pointer;
+  transition: background .15s;
+}
+.fb-clear-btn:hover { background: #fef2f2; }
+
+/* ── Filterbar (pill comboboxes) ── */
+.fb-filterbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px 10px; flex-wrap: wrap;
+}
+.fb-combo {
+  position: relative; display: flex; align-items: center;
+  border: 1.5px solid #e3e6eb; border-radius: 20px;
+  background: #fff; transition: border-color .15s;
+  overflow: visible;
+}
+.fb-combo:hover { border-color: #c8cdd6; }
+.fb-combo--on   { border-color: #0d9488; background: #f0faf9; }
+.fb-combo-btn {
+  display: flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 10px 0 9px;
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 500; color: #374151;
+  border-radius: 20px;
+}
+.fb-combo--on .fb-combo-btn { color: #0d9488; }
+.fb-combo-ico   { color: #9aa0ac; flex-shrink: 0; }
+.fb-combo--on .fb-combo-ico { color: #0d9488; }
+.fb-combo-label { white-space: nowrap; }
+.fb-combo-multi {
+  background: #0d9488; color: #fff; border-radius: 10px;
+  font-size: 10px; font-weight: 700; padding: 0 5px;
+}
+.fb-combo-arrow { color: #9aa0ac; transition: transform .15s; }
+.fb-combo-clear {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #0d9488; border: none; cursor: pointer;
+  color: #fff; margin-right: 5px; flex-shrink: 0;
+}
+.fb-combo-clear:hover { background: #0a7a72; }
+
+/* ── Filter menu ── */
+.fb-menu { border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,.1) !important; }
+.fb-menu-item { transition: background .1s; }
+.fb-menu-item--on { background: #f0faf9 !important; }
+.fb-menu-item-label { font-size: 13px; }
+
+/* ── Filter index ── */
+.fb-index { border-top: 1px solid #f0f2f5; padding: 8px 16px; background: #f8f9fb; }
+.fb-index-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.fb-index-title { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #6b7280; }
+.fb-index-count { background: #e5e7eb; border-radius: 10px; padding: 0 7px; font-size: 10px; }
+.fb-index-clear { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #ef4444; background: none; border: none; cursor: pointer; padding: 0; }
+.fb-index-rows { display: flex; flex-direction: column; gap: 4px; }
+.fb-index-row { display: flex; align-items: flex-start; gap: 8px; }
+.fb-index-cat { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #9aa0ac; text-transform: uppercase; letter-spacing: .4px; min-width: 70px; padding-top: 2px; }
+.fb-index-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.fb-index-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 12px;
+  background: #e0f2f0; color: #0d9488; font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: background .1s;
+}
+.fb-index-pill:hover { background: #ccebe8; }
+
+/* ── Smart Views bar ── */
+.smart-views-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: #fff; border-bottom: 1px solid #e8edf3;
+  overflow-x: auto;
+}
+.sv-label { font-size: 10px; font-weight: 700; color: #9aa0ac; text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0; }
+.sv-chips { display: flex; gap: 6px; flex-shrink: 0; }
+.sv-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 10px; border-radius: 14px;
+  border: 1.5px solid; background: #fff;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: all .15s; white-space: nowrap;
+}
+.sv-chip--red    { border-color: #fca5a5; color: #dc2626; }
+.sv-chip--red:hover    { background: #fef2f2; }
+.sv-chip--orange { border-color: #fcd34d; color: #d97706; }
+.sv-chip--orange:hover { background: #fffbeb; }
+.sv-chip--amber  { border-color: #fbbf24; color: #b45309; }
+.sv-chip--amber:hover  { background: #fef3c7; }
+.sv-chip--slate  { border-color: #cbd5e1; color: #475569; }
+.sv-chip--slate:hover  { background: #f1f5f9; }
+.sv-clear {
+  display: flex; align-items: center; gap: 4px;
+  margin-left: auto; flex-shrink: 0;
+  font-size: 11px; color: #9aa0ac;
+  background: none; border: none; cursor: pointer;
+}
+.sv-clear:hover { color: #ef4444; }
+
+/* ── Advanced filters panel ── */
+.fadv-panel { display: flex; flex-direction: column; border-radius: 0 !important; }
+.fadv-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid #e8edf3;
+  background: #fff;
+}
+.fadv-title { font-size: 15px; font-weight: 700; color: #1a1f36; }
+.fadv-close { background: none; border: none; cursor: pointer; color: #9aa0ac; display: flex; }
+.fadv-close:hover { color: #1a1f36; }
+.fadv-body { padding: 8px 0; }
+.fadv-section { padding: 12px 20px; border-bottom: 1px solid #f0f2f5; }
+.fadv-section-label { font-size: 11px; font-weight: 700; color: #9aa0ac; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.fadv-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.fadv-radio {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 16px;
+  border: 1.5px solid #e3e6eb; background: #fff;
+  font-size: 12px; font-weight: 500; color: #374151;
+  cursor: pointer; transition: all .15s;
+}
+.fadv-radio input { display: none; }
+.fadv-radio--on { border-color: #0d9488; background: #f0faf9; color: #0d9488; }
+.fadv-range-row { display: flex; align-items: center; gap: 8px; }
+.fadv-range-sep { color: #9aa0ac; font-size: 12px; }
+.fadv-input {
+  height: 34px; width: 100px; padding: 0 10px;
+  border: 1.5px solid #e3e6eb; border-radius: 8px;
+  font-size: 13px; color: #1a1f36; background: #f8f9fb;
+  outline: none; transition: border-color .15s;
+}
+.fadv-input:focus { border-color: #0d9488; background: #fff; }
+.fadv-input--full { width: 100%; box-sizing: border-box; }
+.fadv-footer {
+  display: flex; gap: 8px; padding: 14px 20px;
+  border-top: 1px solid #e8edf3; background: #fff;
+  margin-top: auto;
+}
+.fadv-btn-clear {
+  flex: 1; height: 36px; border-radius: 8px;
+  border: 1.5px solid #e3e6eb; background: #fff;
+  font-size: 13px; font-weight: 500; color: #374151;
+  cursor: pointer;
+}
+.fadv-btn-clear:hover { background: #f5f7fa; }
+.fadv-btn-apply {
+  flex: 2; height: 36px; border-radius: 8px;
+  border: none; background: #0d9488; color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .15s;
+}
+.fadv-btn-apply:hover { background: #0a7a72; }
+
+/* ── Fade transition ── */
+.fade-enter-active, .fade-leave-active { transition: opacity .2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

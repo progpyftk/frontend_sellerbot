@@ -81,6 +81,10 @@ const routes = [
     component: () => import("pages/MLRedirect.vue"),
   },
   {
+    path: "/shopee-redirect",
+    component: () => import("pages/ShopeeRedirect.vue"),
+  },
+  {
     path: "/tiny/callback",
     component: () => import("pages/TinyRedirect.vue"),
   },
