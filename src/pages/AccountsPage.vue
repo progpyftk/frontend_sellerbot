@@ -597,7 +597,7 @@ const deleteShopeeAccount = async () => {
 
 // ==================== Tiny ====================
 
-const openTinySetup = (account) => {
+const openTinySetup = async (account) => {
   if (!account.cnpj) {
     $q.notify({ message: 'Informe o CNPJ primeiro.', color: 'warning', position: 'top' })
     return
@@ -607,6 +607,13 @@ const openTinySetup = (account) => {
     cnpj: account.cnpj,
     client_id: '',
     client_secret: '',
+  }
+  // Pré-preenche client_id se já existir na conta Tiny
+  try {
+    const { data } = await api.get('/api/erps/tiny/status/', { params: { cnpj: account.cnpj } })
+    if (data.client_id) tinyForm.value.client_id = data.client_id
+  } catch {
+    // Conta Tiny ainda não existe — form fica em branco mesmo
   }
   tinyDialog.value = true
 }
