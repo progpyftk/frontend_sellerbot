@@ -1,5 +1,6 @@
 // src/boot/axiosInterceptors.js
 import { getAccessToken, getRefreshToken, setAccessToken, clearTokens } from "src/services/tokenService";
+import { useStore } from "src/stores/store";
 import { api } from "./axios";
 
 export const setupInterceptors = (store) => {
@@ -41,9 +42,10 @@ export const setupInterceptors = (store) => {
             setAccessToken(newAccessToken);
 
             // 2. Atualiza o state global do Pinia para a UI não piscar
-            if (store && typeof store.updateTokensState === 'function') {
-                store.updateTokensState(newAccessToken, refreshToken);
-            } else {
+            try {
+                const mainStore = useStore(store); // store = Pinia instance
+                mainStore.updateTokensState(newAccessToken, refreshToken);
+            } catch (_) {
                 api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
             }
 
@@ -53,16 +55,16 @@ export const setupInterceptors = (store) => {
             return api(originalRequest);
           } catch (refreshError) {
             console.error("Refresh falhou, deslogando...");
-            if (store && typeof store.logoutUser === 'function') {
-                store.logoutUser();
-            } else {
+            try {
+                useStore(store).logoutUser();
+            } catch (_) {
                 clearTokens();
                 window.location.href = "/login";
             }
             return Promise.reject(refreshError);
           }
         } else {
-          if (store && typeof store.logoutUser === 'function') store.logoutUser();
+          try { useStore(store).logoutUser(); } catch (_) { clearTokens(); window.location.href = "/login"; }
           return Promise.reject(error);
         }
       }

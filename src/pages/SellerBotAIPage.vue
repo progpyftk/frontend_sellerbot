@@ -206,6 +206,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import { useStore } from 'src/stores/store'
 import { api } from 'src/boot/axios'
+import { getAccessToken } from 'src/services/tokenService'
 import ChatChart from 'src/components/ChatChart.vue'
 import ChatTable from 'src/components/ChatTable.vue'
 
@@ -497,17 +498,20 @@ const sendMessage = async () => {
   // Helper: faz o fetch SSE; se receber 401 força refresh via axios (que tem o interceptor)
   // e retenta uma vez com o novo token.
   const doStreamFetch = async () => {
-    const makeRequest = (token) => fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ message: userMessage, model_id: selectedModel.value }),
-    })
+    const makeRequest = () => {
+      const token = getAccessToken() || store.authToken
+      return fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: userMessage, model_id: selectedModel.value }),
+      })
+    }
 
-    let res = await makeRequest(store.authToken)
+    let res = await makeRequest()
     if (res.status === 401) {
       // Dispara uma requisição via axios para acionar o interceptor de refresh
       try { await api.get('/sellerbot-ai/health/') } catch (_) { /* ignora */ }
-      res = await makeRequest(store.authToken)
+      res = await makeRequest()
     }
     return res
   }
