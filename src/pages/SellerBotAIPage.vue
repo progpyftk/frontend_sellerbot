@@ -494,19 +494,26 @@ const sendMessage = async () => {
   scrollToBottom()
   isLoading.value = true
 
-  try {
-    const token = store.authToken
-    const response = await fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
+  // Helper: faz o fetch SSE; se receber 401 força refresh via axios (que tem o interceptor)
+  // e retenta uma vez com o novo token.
+  const doStreamFetch = async () => {
+    const makeRequest = (token) => fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        message: userMessage,
-        model_id: selectedModel.value,
-      }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ message: userMessage, model_id: selectedModel.value }),
     })
+
+    let res = await makeRequest(store.authToken)
+    if (res.status === 401) {
+      // Dispara uma requisição via axios para acionar o interceptor de refresh
+      try { await api.get('/sellerbot-ai/health/') } catch (_) { /* ignora */ }
+      res = await makeRequest(store.authToken)
+    }
+    return res
+  }
+
+  try {
+    const response = await doStreamFetch()
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)

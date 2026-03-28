@@ -175,6 +175,7 @@ const menuSections = [
     ml: false,
     items: [
       { label: "SellerBot AI", icon: "psychology", route: "sellerbot-ai", color: "#a855f7", bg: "rgba(168,85,247,.15)" },
+      { label: "Análise de Anúncios", icon: "insights", route: "item-analytics", color: "#0d9488", bg: "rgba(13,148,136,.15)" },
     ],
   },
   {
@@ -183,6 +184,7 @@ const menuSections = [
     items: [
       { label: "Custo dos Produtos", icon: "inventory_2", route: "products", color: "#34d399", bg: "rgba(52,211,153,.15)" },
       { label: "Minhas Contas", icon: "mdi-store", route: "accounts", color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
+      { label: "Saúde do Sistema", icon: "monitor_heart", route: "system-health", color: "#38bdf8", bg: "rgba(56,189,248,.15)" },
       { label: "Configurações", icon: "mdi-cog", route: "user-config", color: "#94a3b8", bg: "rgba(148,163,184,.15)" },
     ],
   },

@@ -122,4 +122,19 @@ export default {
   getDashboardToday() {
     return api.get('/mercadolivre/dashboard/today/')
   },
+
+  // ==========================================
+  // ANÁLISE DE ANÚNCIOS (Item Analytics)
+  // ==========================================
+  getAnalyticsItems(params) {
+    return api.get('/mercadolivre/analytics/items/', { params })
+  },
+
+  getItemTimelineChart(itemId, params) {
+    return api.get(`/mercadolivre/analytics/items/${itemId}/chart/`, { params })
+  },
+
+  getItemCausalAnalysis(itemId, params) {
+    return api.get(`/mercadolivre/analytics/items/${itemId}/causal/`, { params })
+  },
 }

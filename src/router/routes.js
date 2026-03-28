@@ -70,9 +70,19 @@ const routes = [
         component: () => import('pages/SellerBotAIPage.vue')
       },
       {
+        path: 'item-analytics',
+        name: 'item-analytics',
+        component: () => import('pages/ItemAnalyticsPage.vue')
+      },
+      {
         path: 'settings',
         name: 'user-config',
         component: () => import('pages/UserConfigPage.vue')
+      },
+      {
+        path: 'health',
+        name: 'system-health',
+        component: () => import('pages/SystemHealthPage.vue')
       },
     ],
   },
