@@ -140,9 +140,11 @@
 
                 <!-- Após resposta: pill colapsável -->
                 <template v-else>
-                  <div class="log-summary" @click="msg.logsOpen = !msg.logsOpen">
-                    <q-icon name="account_tree" size="13px" />
-                    <span>{{ msg.logs.length }} etapa{{ msg.logs.length > 1 ? 's' : '' }}
+                  <div :class="['log-summary', msg.hasError ? 'log-summary--error' : '']" @click="msg.logsOpen = !msg.logsOpen">
+                    <q-icon :name="msg.hasError ? 'bug_report' : 'account_tree'" size="13px" />
+                    <span>
+                      <span v-if="msg.hasError">Erro · </span>
+                      {{ msg.logs.length }} etapa{{ msg.logs.length > 1 ? 's' : '' }}
                       <span v-if="msg.agent"> · {{ msg.agent }}</span>
                       <span v-if="msg.durationMs"> · {{ (msg.durationMs / 1000).toFixed(1) }}s</span>
                     </span>
@@ -612,6 +614,10 @@ const handleStreamEvent = (index, event) => {
 
     case 'error':
       msg.content = `❌ ${event.text}`
+      msg.durationMs = Date.now() - (msg.startedAt || Date.now())
+      msg.hasError = true
+      msg.logs.push({ type: 'error', text: event.text })
+      msg.logsOpen = true
       msg.loading = false
       break
 
@@ -1077,6 +1083,15 @@ onMounted(() => {
 .log-summary:hover {
   background: rgba(99, 102, 241, 0.13);
   color: #6366f1;
+}
+.log-summary--error {
+  background: rgba(239, 68, 68, 0.07);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+.log-summary--error:hover {
+  background: rgba(239, 68, 68, 0.13);
+  color: #dc2626;
 }
 
 .log-details {
