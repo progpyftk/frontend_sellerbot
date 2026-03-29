@@ -124,16 +124,41 @@
                 <q-badge v-if="msg.agent" outline color="grey-6" :label="msg.agent" class="q-ml-xs" />
               </div>
 
-              <!-- Live log panel (durante processamento) -->
+              <!-- Log panel: ao vivo durante loading, colapsável depois -->
               <div v-if="msg.logs && msg.logs.length > 0" class="live-log-panel">
-                <div
-                  v-for="(log, li) in msg.logs"
-                  :key="li"
-                  :class="['log-entry', `log-${log.type}`]"
-                >
-                  <q-icon :name="logIcon(log.type)" size="12px" />
-                  <span>{{ log.text }}</span>
-                </div>
+                <!-- Enquanto carregando: mostra ao vivo -->
+                <template v-if="msg.loading">
+                  <div
+                    v-for="(log, li) in msg.logs"
+                    :key="li"
+                    :class="['log-entry', `log-${log.type}`]"
+                  >
+                    <q-icon :name="logIcon(log.type)" size="12px" />
+                    <span>{{ log.text }}</span>
+                  </div>
+                </template>
+
+                <!-- Após resposta: pill colapsável -->
+                <template v-else>
+                  <div class="log-summary" @click="msg.logsOpen = !msg.logsOpen">
+                    <q-icon name="account_tree" size="13px" />
+                    <span>{{ msg.logs.length }} etapa{{ msg.logs.length > 1 ? 's' : '' }}
+                      <span v-if="msg.agent"> · {{ msg.agent }}</span>
+                      <span v-if="msg.durationMs"> · {{ (msg.durationMs / 1000).toFixed(1) }}s</span>
+                    </span>
+                    <q-icon :name="msg.logsOpen ? 'expand_less' : 'expand_more'" size="14px" class="q-ml-auto" />
+                  </div>
+                  <div v-if="msg.logsOpen" class="log-details">
+                    <div
+                      v-for="(log, li) in msg.logs"
+                      :key="li"
+                      :class="['log-entry', `log-${log.type}`]"
+                    >
+                      <q-icon :name="logIcon(log.type)" size="12px" />
+                      <span>{{ log.text }}</span>
+                    </div>
+                  </div>
+                </template>
               </div>
 
               <!-- Conteúdo da mensagem (texto + tabelas + gráficos) -->
@@ -489,6 +514,8 @@ const sendMessage = async () => {
     loading: true,
     loadingText: 'Iniciando...',
     logs: [],
+    logsOpen: false,
+    startedAt: Date.now(),
     agent: null,
   })
 
@@ -579,6 +606,7 @@ const handleStreamEvent = (index, event) => {
     case 'done':
       msg.content = event.response || ''
       msg.agent = event.agent || null
+      msg.durationMs = Date.now() - (msg.startedAt || Date.now())
       msg.loading = false
       break
 
@@ -1019,6 +1047,42 @@ onMounted(() => {
   border-radius: 8px;
   padding: 8px 12px;
   margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* Quando colapsado (só o pill), remove background e borda */
+.live-log-panel:has(.log-summary:only-child),
+.live-log-panel:has(.log-summary) {
+  background: transparent;
+  border-color: transparent;
+  padding: 2px 0;
+}
+
+.log-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.07);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  width: fit-content;
+  user-select: none;
+  transition: background 0.15s;
+}
+.log-summary:hover {
+  background: rgba(99, 102, 241, 0.13);
+  color: #6366f1;
+}
+
+.log-details {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-left: 2px solid rgba(99, 102, 241, 0.2);
   display: flex;
   flex-direction: column;
   gap: 4px;
