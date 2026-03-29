@@ -158,6 +158,7 @@
                     >
                       <q-icon :name="logIcon(log.type)" size="12px" />
                       <span>{{ log.text }}</span>
+                      <pre v-if="log.traceback" class="log-traceback">{{ log.traceback }}</pre>
                     </div>
                   </div>
                 </template>
@@ -616,7 +617,7 @@ const handleStreamEvent = (index, event) => {
       msg.content = `❌ ${event.text}`
       msg.durationMs = Date.now() - (msg.startedAt || Date.now())
       msg.hasError = true
-      msg.logs.push({ type: 'error', text: event.text })
+      msg.logs.push({ type: 'error', text: event.text, traceback: event.traceback || null })
       msg.logsOpen = true
       msg.loading = false
       break
@@ -1115,6 +1116,22 @@ onMounted(() => {
 .log-tool_call .q-icon { color: #f59e0b; }
 .log-tool_result .q-icon { color: #10b981; }
 .log-error .q-icon { color: #ef4444; }
+
+.log-traceback {
+  margin: 6px 0 0 18px;
+  padding: 8px 10px;
+  background: #1e1e2e;
+  color: #f38ba8;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  border-radius: 6px;
+  border-left: 3px solid #ef4444;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300px;
+  overflow-y: auto;
+}
 
 .message-text {
   background: #f3f4f6;
