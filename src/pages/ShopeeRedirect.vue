@@ -61,20 +61,14 @@ onMounted(async () => {
   const code = urlParams.get('code')
   const shop_id = urlParams.get('shop_id')
 
-  const partner_id = sessionStorage.getItem('shopee_partner_id')
-  const partner_key = sessionStorage.getItem('shopee_partner_key')
-
-  if (!code || !shop_id || !partner_id || !partner_key) {
+  if (!code || !shop_id) {
     state.value = 'error'
     errorMsg.value = 'Parâmetros de autorização incompletos. Tente conectar novamente.'
     return
   }
 
   try {
-    const res = await ShopeeService.callback({ partner_id, partner_key, code, shop_id })
-
-    sessionStorage.removeItem('shopee_partner_id')
-    sessionStorage.removeItem('shopee_partner_key')
+    const res = await ShopeeService.callback({ code, shop_id })
 
     shopName.value = res.data.shop_name || `Loja ${shop_id}`
     state.value = 'success'
