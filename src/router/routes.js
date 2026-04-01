@@ -50,6 +50,11 @@ const routes = [
         component: () => import('pages/ProductsPage.vue')
       },
       {
+        path: 'shopee/items',
+        name: 'shopee-items',
+        component: () => import('pages/ShopeeItemsPage.vue')
+      },
+      {
         path: 'ads',
         name: 'ads',
         component: () => import('pages/AdsPage.vue')

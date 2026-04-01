@@ -171,6 +171,13 @@ const menuSections = [
     ],
   },
   {
+    title: "Shopee",
+    shopee: true,
+    items: [
+      { label: "Meus Anúncios", icon: "mdi-storefront", route: "shopee-items", color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
+    ],
+  },
+  {
     title: "Inteligência",
     ml: false,
     items: [
