@@ -481,7 +481,8 @@
             <div class="expand-panel">
 
               <!-- Loading detalhe -->
-              <div v-if="detailLoading[props.row.item_id]" class="flex flex-center q-py-lg">
+              <div v-if="detailLoading[props.row.item_id] || (props.row.has_model && !itemDetails[props.row.item_id])"
+                class="flex flex-center q-py-lg">
                 <q-spinner color="deep-orange" size="28px" />
                 <span class="q-ml-sm text-caption text-grey-6">Carregando detalhes...</span>
               </div>
@@ -922,10 +923,10 @@ const toggleExpand = async (props) => {
   props.expand = !props.expand
   const itemId = props.row.item_id
   if (props.expand && !itemDetails.value[itemId]) {
-    detailLoading.value = { ...detailLoading.value, [itemId]: true }
+    detailLoading.value[itemId] = true
     try {
       const { data } = await api.get(`/shopee/items/${props.row.id}/`)
-      itemDetails.value = { ...itemDetails.value, [itemId]: data }
+      itemDetails.value[itemId] = data
       // Atualiza campos de analytics/imagens na linha da tabela
       const idx = items.value.findIndex(r => r.item_id === itemId)
       if (idx !== -1) {
@@ -934,7 +935,7 @@ const toggleExpand = async (props) => {
     } catch {
       $q.notify({ message: 'Erro ao carregar detalhes do item.', color: 'negative', position: 'top' })
     } finally {
-      detailLoading.value = { ...detailLoading.value, [itemId]: false }
+      detailLoading.value[itemId] = false
     }
   }
 }
