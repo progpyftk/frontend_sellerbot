@@ -3,24 +3,26 @@
 
     <!-- ══ HEADER ══════════════════════════════════════════════ -->
     <div class="page-header">
-      <div class="header-left">
-        <div class="header-icon">
-          <q-icon name="mdi-storefront" size="20px" />
+      <div class="row items-center justify-between no-wrap">
+        <div class="row items-center q-gutter-x-md">
+          <div class="header-icon">
+            <q-icon name="mdi-storefront" size="22px" />
+          </div>
+          <div>
+            <div class="header-eyebrow">Shopee</div>
+            <div class="header-title">Meus Anúncios</div>
+          </div>
+          <div v-if="pagination.rowsNumber" class="header-count">
+            {{ pagination.rowsNumber.toLocaleString('pt-BR') }} anúncios
+          </div>
         </div>
-        <div>
-          <div class="header-eyebrow">Shopee</div>
-          <div class="header-title">Meus Anúncios</div>
+        <div class="row items-center q-gutter-x-sm">
+          <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar"
+            :loading="syncing" :disable="!selectedAccountId" size="sm" class="q-px-md"
+            @click="syncItems">
+            <q-tooltip v-if="!selectedAccountId">Selecione uma conta primeiro</q-tooltip>
+          </q-btn>
         </div>
-        <div v-if="totalCount !== null" class="header-count">
-          {{ totalCount.toLocaleString('pt-BR') }} anúncios
-        </div>
-      </div>
-      <div class="header-right">
-        <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar"
-          :loading="syncing" :disable="!selectedAccount" size="sm"
-          @click="syncItems">
-          <q-tooltip v-if="!selectedAccount">Selecione uma conta primeiro</q-tooltip>
-        </q-btn>
       </div>
     </div>
 
@@ -32,7 +34,7 @@
         <div class="fb-search" :class="{ focused: searchFocused, filled: !!search }">
           <q-icon name="search" size="18px" class="fb-search-icon" />
           <input v-model="search" class="fb-search-input"
-            placeholder="Buscar por título ou SKU..."
+            placeholder="Buscar por título, SKU ou ID..."
             @focus="searchFocused = true" @blur="searchFocused = false"
             @input="onSearch" />
           <transition name="fade">
@@ -42,111 +44,239 @@
           </transition>
         </div>
 
+        <div class="fb-toolbar-actions">
+
+          <!-- Ordenação -->
+          <div class="fb-btn-group">
+            <q-btn-dropdown flat dense no-icon-animation unelevated
+              :label="currentSortLabel" icon="swap_vert"
+              class="fb-tbtn" color="grey-7" size="sm">
+              <q-list dense style="min-width:200px">
+                <q-item v-for="opt in sortOptions" :key="opt.value"
+                  clickable v-close-popup @click="applySort(opt.value)">
+                  <q-item-section>{{ opt.label }}</q-item-section>
+                  <q-item-section side v-if="currentSort === opt.value">
+                    <q-icon name="check" color="deep-orange" size="14px" />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Filterbar -->
+      <div class="fb-filterbar">
+
         <!-- Conta -->
-        <q-select v-model="selectedAccount" :options="accountOptions"
-          option-label="shop_name" option-value="id"
-          label="Conta" outlined dense clearable
-          :loading="loadingAccounts" style="min-width:200px"
-          @update:model-value="loadItems()">
-          <template v-slot:prepend><q-icon name="storefront" color="deep-orange" /></template>
-          <template v-slot:option="scope">
-            <q-item v-bind="scope.itemProps">
-              <q-item-section>
-                <q-item-label>{{ scope.opt.shop_name }}</q-item-label>
-                <q-item-label caption>ID: {{ scope.opt.shop_id }}</q-item-label>
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-select>
+        <div class="fb-combo" :class="selectedAccountId && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="storefront" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!selectedAccountId">Conta</template>
+              <template v-else>{{ accountOptions.find(a=>a.id===selectedAccountId)?.shop_name || 'Conta' }}</template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="selectedAccountId" class="fb-combo-clear" @click.stop="selectedAccountId = null; loadItems()">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:220px">
+              <q-item v-for="acc in accountOptions" :key="acc.id" clickable v-close-popup
+                :class="['fb-menu-item', selectedAccountId === acc.id && 'fb-menu-item--on']"
+                @click="selectedAccountId = acc.id; loadItems()">
+                <q-item-section>
+                  <q-item-label>{{ acc.shop_name }}</q-item-label>
+                  <q-item-label caption>ID: {{ acc.shop_id }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </div>
 
         <!-- Status -->
-        <div class="fb-btn-group">
-          <button v-for="s in statusOptions" :key="s.value"
-            :class="['fb-tbtn', filterStatus === s.value && 'fb-tbtn--active']"
-            @click="setStatus(s.value)">
-            <span :style="filterStatus === s.value ? `color:${s.color}` : ''">{{ s.label }}</span>
+        <div class="fb-combo" :class="filterStatus && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="toggle_on" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filterStatus">Status</template>
+              <template v-else>{{ statusOptions.find(o=>o.value===filterStatus)?.label || 'Status' }}</template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
           </button>
+          <button v-if="filterStatus" class="fb-combo-clear" @click.stop="filterStatus = null; loadItems()">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:180px">
+              <q-item v-for="opt in statusOptions" :key="opt.value" clickable v-close-popup
+                :class="['fb-menu-item', filterStatus === opt.value && 'fb-menu-item--on']"
+                @click="filterStatus = opt.value; loadItems()">
+                <q-item-section class="fb-menu-item-label">
+                  <span :style="`color:${opt.color};font-weight:600`">{{ opt.label }}</span>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
         </div>
+
+        <!-- Limpar filtros -->
+        <transition name="fade">
+          <button v-if="hasActiveFilters" class="fb-clear-btn" @click="clearFilters">
+            <q-icon name="filter_alt_off" size="14px" />
+            <span>Limpar</span>
+          </button>
+        </transition>
 
       </div>
     </div>
 
-    <!-- ══ CONTEÚDO ══════════════════════════════════════════════ -->
-    <div class="content-wrap">
+    <!-- ══ TABELA ══════════════════════════════════════════════ -->
+    <q-table
+      :rows="items"
+      :columns="columns"
+      row-key="item_id"
+      flat
+      :loading="loading"
+      v-model:pagination="pagination"
+      @request="onRequest"
+      binary-state-sort
+      class="sticky-header-table shopee-table"
+      no-data-label="Nenhum anúncio encontrado.">
 
-      <!-- Loading inicial -->
-      <div v-if="loading && items.length === 0" class="flex flex-center q-pa-xl">
-        <q-spinner color="deep-orange" size="3em" />
-      </div>
+      <template v-slot:header="props">
+        <q-tr :props="props" class="bg-grey-2 text-grey-8 text-uppercase text-caption">
+          <q-th auto-width />
+          <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">
+            {{ col.label }}
+          </q-th>
+        </q-tr>
+      </template>
 
-      <!-- Empty state -->
-      <div v-else-if="!loading && items.length === 0" class="empty-state">
-        <div class="shopee-empty-icon">
-          <q-icon name="mdi-storefront" size="48px" style="color:#EE4D2D;opacity:.3" />
-        </div>
-        <div v-if="!selectedAccount" style="font-size:15px;font-weight:600;color:#1a1f36">
-          Selecione uma conta para ver os anúncios
-        </div>
-        <div v-else>
-          <div style="font-size:15px;font-weight:600;color:#1a1f36">Nenhum anúncio encontrado</div>
-          <div style="color:#9aa0ac;font-size:13px">Clique em "Sincronizar" para importar seus anúncios da Shopee</div>
-        </div>
-      </div>
+      <template v-slot:body="props">
+        <q-tr :props="props" :class="[props.expand ? 'bg-orange-1' : 'hover-row']" class="cursor-pointer">
 
-      <!-- Grid de cards -->
-      <div v-else class="items-grid">
-        <div v-for="item in items" :key="item.id" class="item-card">
+          <!-- Expand -->
+          <q-td auto-width>
+            <q-btn size="sm" flat round :color="props.expand ? 'deep-orange' : 'grey-6'"
+              @click.stop="props.expand = !props.expand"
+              :icon="props.expand ? 'expand_less' : 'expand_more'" />
+          </q-td>
 
           <!-- Thumbnail -->
-          <div class="item-thumb">
-            <img v-if="item.thumbnail" :src="item.thumbnail" :alt="item.item_name"
-              class="thumb-img" @error="onImgError($event)" />
-            <div v-else class="thumb-placeholder">
-              <q-icon name="image_not_supported" size="28px" style="color:#ccc" />
-            </div>
-            <!-- Status badge -->
-            <div :class="['status-badge', `status-badge--${item.status?.toLowerCase()}`]">
-              {{ statusLabel(item.status) }}
-            </div>
-          </div>
-
-          <!-- Info -->
-          <div class="item-info">
-            <div class="item-name" :title="item.item_name">{{ item.item_name }}</div>
-            <div class="item-sku" v-if="item.item_sku">SKU: {{ item.item_sku }}</div>
-            <div class="item-id">ID: {{ item.item_id }}</div>
-
-            <div class="item-metrics">
-              <div class="metric">
-                <div class="metric-label">Preço</div>
-                <div class="metric-value metric-value--price">{{ formatCurrency(item.price) }}</div>
+          <q-td key="thumbnail" :props="props" style="width:70px">
+            <div class="relative-position">
+              <q-img :src="props.row.thumbnail || ''" style="height:50px;width:50px" fit="contain"
+                class="rounded-borders border-grey">
+                <template v-slot:error>
+                  <div class="absolute-full flex flex-center bg-grey-2">
+                    <q-icon name="image_not_supported" size="20px" color="grey-5" />
+                  </div>
+                </template>
+              </q-img>
+              <div class="absolute-bottom-right" style="transform:translate(20%,20%)">
+                <q-icon v-if="props.row.status === 'NORMAL'" name="check_circle" color="positive" size="16px"
+                  class="bg-white rounded-borders" />
+                <q-icon v-else-if="props.row.status === 'UNLIST'" name="pause_circle" color="orange" size="16px"
+                  class="bg-white rounded-borders" />
+                <q-icon v-else-if="props.row.status === 'BANNED'" name="cancel" color="negative" size="16px"
+                  class="bg-white rounded-borders" />
               </div>
-              <div class="metric">
-                <div class="metric-label">Estoque</div>
-                <div class="metric-value" :class="item.stock === 0 ? 'metric-value--zero' : ''">
-                  {{ item.stock }}
+            </div>
+          </q-td>
+
+          <!-- Nome + SKU + ID -->
+          <q-td key="item_name" :props="props" style="max-width:380px;white-space:normal">
+            <div class="column q-gutter-y-xs">
+              <div class="text-grey-9 text-weight-bold" style="font-size:13px;line-height:1.3">
+                {{ props.row.item_name }}
+              </div>
+              <div class="row items-center q-gutter-x-sm text-caption">
+                <span v-if="props.row.item_sku"
+                  class="bg-grey-3 text-grey-8 q-px-xs rounded-borders font-mono cursor-pointer"
+                  @click.stop="copyText(props.row.item_sku)">
+                  {{ props.row.item_sku }}
+                </span>
+                <span class="bg-grey-3 text-grey-8 q-px-xs rounded-borders font-mono cursor-pointer"
+                  @click.stop="copyText(props.row.item_id)" title="Copiar ID">
+                  {{ props.row.item_id }}
+                </span>
+                <span class="text-deep-orange-6 text-weight-bold">
+                  <q-icon name="storefront" size="10px" /> {{ props.row.shop_name }}
+                </span>
+              </div>
+            </div>
+          </q-td>
+
+          <!-- Preço -->
+          <q-td key="price" :props="props" align="right">
+            <div class="text-subtitle1 text-weight-bold text-grey-9">
+              {{ formatCurrency(props.row.price) }}
+            </div>
+          </q-td>
+
+          <!-- Estoque -->
+          <q-td key="stock" :props="props" align="center">
+            <div class="text-subtitle2 text-weight-bold"
+              :class="props.row.stock === 0 ? 'text-negative' : 'text-grey-9'">
+              {{ props.row.stock }}
+            </div>
+          </q-td>
+
+          <!-- Status -->
+          <q-td key="status" :props="props" align="center">
+            <q-badge :color="statusColor(props.row.status)" text-color="white"
+              class="text-weight-bold text-uppercase" style="font-size:10px">
+              {{ statusLabel(props.row.status) }}
+            </q-badge>
+          </q-td>
+
+          <!-- Sincronizado -->
+          <q-td key="last_synced_at" :props="props" align="right">
+            <span class="text-caption text-grey-5">{{ formatDate(props.row.last_synced_at) }}</span>
+          </q-td>
+
+        </q-tr>
+
+        <!-- Expand row -->
+        <q-tr v-show="props.expand" :props="props">
+          <q-td colspan="100%" class="q-pa-none">
+            <div class="bg-orange-1 q-pa-md">
+              <div class="row q-col-gutter-lg">
+                <div class="col-12 col-md-4">
+                  <div class="text-overline text-grey-7 q-mb-sm">Imagens</div>
+                  <div class="row q-gutter-xs">
+                    <q-img v-for="(img, i) in (props.row.images || []).slice(0,5)" :key="i"
+                      :src="img" style="width:64px;height:64px" fit="cover"
+                      class="rounded-borders border-grey" />
+                    <div v-if="!props.row.images?.length" class="text-caption text-grey-5">Sem imagens</div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="text-overline text-grey-7 q-mb-sm">Detalhes</div>
+                  <div class="row q-col-gutter-sm text-caption text-grey-8">
+                    <div class="col-12"><b>Item ID:</b> {{ props.row.item_id }}</div>
+                    <div class="col-12" v-if="props.row.item_sku"><b>SKU:</b> {{ props.row.item_sku }}</div>
+                    <div class="col-12"><b>Preço:</b> {{ formatCurrency(props.row.price) }}</div>
+                    <div class="col-12"><b>Estoque:</b> {{ props.row.stock }} un</div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4 flex items-start justify-end">
+                  <q-btn flat dense color="deep-orange" icon="open_in_new" label="Abrir na Shopee"
+                    :href="`https://shopee.com.br/product/${props.row.shop_id}/${props.row.item_id}`"
+                    target="_blank" type="a" size="sm" />
                 </div>
               </div>
             </div>
+          </q-td>
+        </q-tr>
 
-            <div class="item-footer">
-              <span class="item-shop">{{ item.shop_name }}</span>
-              <span class="item-sync">{{ formatDate(item.last_synced_at) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      </template>
 
-      <!-- Load more -->
-      <div v-if="hasMore && !loading" class="load-more-wrap">
-        <q-btn flat color="deep-orange" label="Carregar mais" :loading="loadingMore"
-          @click="loadMore" />
-      </div>
-      <div v-if="loading && items.length > 0" class="flex flex-center q-pa-md">
-        <q-spinner color="deep-orange" size="24px" />
-      </div>
+    </q-table>
 
-    </div>
   </q-page>
 </template>
 
@@ -159,128 +289,161 @@ import { DateTime } from 'luxon'
 const $q = useQuasar()
 
 // ── Estado ──────────────────────────────────────────────────
-const items          = ref([])
-const loading        = ref(false)
-const loadingMore    = ref(false)
-const loadingAccounts = ref(true)
-const syncing        = ref(false)
-const totalCount     = ref(null)
-const search         = ref('')
-const searchFocused  = ref(false)
-const filterStatus   = ref('NORMAL')
-const selectedAccount = ref(null)
-const accountOptions = ref([])
-const nextCursor     = ref(null)
-const hasMore        = ref(false)
-const PAGE_SIZE      = 40
+const items           = ref([])
+const loading         = ref(false)
+const syncing         = ref(false)
+const search          = ref('')
+const searchFocused   = ref(false)
+const filterStatus    = ref(null)
+const selectedAccountId = ref(null)
+const accountOptions  = ref([])
+const currentSort     = ref('-last_synced_at')
+
+const pagination = ref({
+  sortBy: null,
+  descending: false,
+  page: 1,
+  rowsPerPage: 40,
+  rowsNumber: 0,
+})
 
 let searchTimeout = null
 
-// ── Opções de status ─────────────────────────────────────────
-const statusOptions = [
-  { value: 'NORMAL', label: 'Ativos',    color: '#22c55e' },
-  { value: 'UNLIST', label: 'Pausados',  color: '#f59e0b' },
-  { value: 'BANNED', label: 'Banidos',   color: '#ef4444' },
-  { value: '',       label: 'Todos',     color: '#6b7280' },
+// ── Colunas da tabela ────────────────────────────────────────
+const columns = [
+  { name: 'thumbnail',     label: '',              field: 'thumbnail',     sortable: false, align: 'left' },
+  { name: 'item_name',     label: 'Anúncio',       field: 'item_name',     sortable: true,  align: 'left' },
+  { name: 'price',         label: 'Preço',         field: 'price',         sortable: true,  align: 'right' },
+  { name: 'stock',         label: 'Estoque',       field: 'stock',         sortable: true,  align: 'center' },
+  { name: 'status',        label: 'Status',        field: 'status',        sortable: false, align: 'center' },
+  { name: 'last_synced_at',label: 'Sincronizado',  field: 'last_synced_at',sortable: true,  align: 'right' },
 ]
 
+// ── Opções ───────────────────────────────────────────────────
+const statusOptions = [
+  { value: 'NORMAL',  label: 'Ativo',    color: '#22c55e' },
+  { value: 'UNLIST',  label: 'Pausado',  color: '#f59e0b' },
+  { value: 'BANNED',  label: 'Banido',   color: '#ef4444' },
+  { value: 'DELETED', label: 'Deletado', color: '#94a3b8' },
+]
+
+const sortOptions = [
+  { value: '-last_synced_at', label: 'Mais recente'   },
+  { value: 'item_name',       label: 'Nome A→Z'        },
+  { value: '-item_name',      label: 'Nome Z→A'        },
+  { value: '-price',          label: 'Maior preço'     },
+  { value: 'price',           label: 'Menor preço'     },
+  { value: '-stock',          label: 'Maior estoque'   },
+  { value: 'stock',           label: 'Menor estoque'   },
+]
+
+const currentSortLabel = computed(() =>
+  sortOptions.find(o => o.value === currentSort.value)?.label || 'Ordenar'
+)
+
+const hasActiveFilters = computed(() => !!search.value || !!filterStatus.value || !!selectedAccountId.value)
+
+// ── Helpers ──────────────────────────────────────────────────
 const statusLabel = (s) => {
   const map = { NORMAL: 'Ativo', UNLIST: 'Pausado', BANNED: 'Banido', DELETED: 'Deletado' }
   return map[s] || s || '—'
 }
 
-// ── Helpers ──────────────────────────────────────────────────
+const statusColor = (s) => {
+  const map = { NORMAL: 'positive', UNLIST: 'orange', BANNED: 'negative', DELETED: 'grey-6' }
+  return map[s] || 'grey-6'
+}
+
 const formatCurrency = (v) =>
   v != null ? Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'
 
 const formatDate = (v) =>
   v ? DateTime.fromISO(v).setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm') : '—'
 
-const onImgError = (e) => { e.target.style.display = 'none' }
+const copyText = (text) => {
+  navigator.clipboard.writeText(text)
+  $q.notify({ message: `Copiado: ${text}`, color: 'dark', position: 'top', timeout: 1500 })
+}
 
 // ── API ──────────────────────────────────────────────────────
 const loadAccounts = async () => {
-  loadingAccounts.value = true
   try {
     const { data } = await api.get('/shopee/accounts/')
     accountOptions.value = Array.isArray(data) ? data : (data.results || [])
-    if (accountOptions.value.length > 0) {
-      selectedAccount.value = accountOptions.value[0]
-      loadItems()
+    if (accountOptions.value.length === 1) {
+      selectedAccountId.value = accountOptions.value[0].id
     }
-  } catch (e) {
+    loadItems()
+  } catch {
     $q.notify({ message: 'Erro ao carregar contas Shopee.', color: 'negative', position: 'top' })
-  } finally {
-    loadingAccounts.value = false
   }
 }
 
-const buildParams = (cursor = null) => {
-  const p = { page_size: PAGE_SIZE }
-  if (selectedAccount.value) p.account = selectedAccount.value.id
-  if (filterStatus.value)    p.status  = filterStatus.value
-  if (search.value)          p.search  = search.value
-  if (cursor)                p.cursor  = cursor
+const buildParams = (pg = pagination.value) => {
+  const p = {
+    page: pg.page,
+    page_size: pg.rowsPerPage,
+    sort: currentSort.value,
+  }
+  if (selectedAccountId.value) p.account  = selectedAccountId.value
+  if (filterStatus.value)       p.status   = filterStatus.value
+  if (search.value)             p.search   = search.value
   return p
 }
 
-const loadItems = async () => {
+const loadItems = async (pg = null) => {
   loading.value = true
-  items.value   = []
-  nextCursor.value = null
-  hasMore.value    = false
+  if (pg) {
+    pagination.value.page = pg.page
+    pagination.value.rowsPerPage = pg.rowsPerPage
+  } else {
+    pagination.value.page = 1
+  }
   try {
     const { data } = await api.get('/shopee/items/', { params: buildParams() })
     const list = Array.isArray(data) ? data : (data.results || [])
-    items.value   = list
-    totalCount.value = data.count ?? list.length
-    nextCursor.value = data.next_cursor || null
-    hasMore.value    = !!data.next_cursor
-  } catch (e) {
+    items.value = list
+    pagination.value.rowsNumber = data.count ?? list.length
+  } catch {
     $q.notify({ message: 'Erro ao carregar anúncios.', color: 'negative', position: 'top' })
   } finally {
     loading.value = false
   }
 }
 
-const loadMore = async () => {
-  if (!nextCursor.value) return
-  loadingMore.value = true
-  try {
-    const { data } = await api.get('/shopee/items/', { params: buildParams(nextCursor.value) })
-    const list = Array.isArray(data) ? data : (data.results || [])
-    items.value.push(...list)
-    nextCursor.value = data.next_cursor || null
-    hasMore.value    = !!data.next_cursor
-  } catch (e) {
-    $q.notify({ message: 'Erro ao carregar mais.', color: 'negative', position: 'top' })
-  } finally {
-    loadingMore.value = false
-  }
+const onRequest = (props) => {
+  loadItems(props.pagination)
 }
 
 const onSearch = () => {
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(loadItems, 400)
+  searchTimeout = setTimeout(() => loadItems(), 400)
 }
 
-const setStatus = (v) => {
-  filterStatus.value = v
+const applySort = (val) => {
+  currentSort.value = val
+  loadItems()
+}
+
+const clearFilters = () => {
+  search.value        = ''
+  filterStatus.value  = null
+  selectedAccountId.value = null
   loadItems()
 }
 
 const syncItems = async () => {
-  if (!selectedAccount.value) return
+  if (!selectedAccountId.value) return
   syncing.value = true
   try {
-    const { data } = await api.post(`/shopee/accounts/${selectedAccount.value.id}/sync_items/`)
+    const { data } = await api.post(`/shopee/accounts/${selectedAccountId.value}/sync_items/`)
     $q.notify({
       message: `Sync concluído: ${data.stats?.synced ?? 0} anúncios sincronizados.`,
       color: 'positive', position: 'top', timeout: 4000,
     })
     loadItems()
   } catch (e) {
-    $q.notify({ message: 'Erro ao sincronizar anúncios.', color: 'negative', position: 'top' })
+    $q.notify({ message: `Erro ao sincronizar: ${e?.response?.data?.error || e.message}`, color: 'negative', position: 'top' })
   } finally {
     syncing.value = false
   }
@@ -294,12 +457,9 @@ onMounted(loadAccounts)
 
 /* ── Header ─────────────────────────────────────────────── */
 .page-header {
-  display: flex; align-items: center; justify-content: space-between;
   padding: 18px 24px 16px; background: #fff;
-  border-bottom: 1.5px solid #e8edf3; gap: 16px; flex-wrap: wrap;
+  border-bottom: 1.5px solid #e8edf3;
 }
-.header-left  { display: flex; align-items: center; gap: 12px; }
-.header-right { display: flex; align-items: center; gap: 10px; }
 .header-icon {
   width: 36px; height: 36px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
@@ -316,20 +476,22 @@ onMounted(loadAccounts)
 .fb { background: #fff; border-bottom: 1.5px solid #e8edf3; padding: 0 24px; }
 .fb-toolbar {
   display: flex; align-items: center; gap: 10px;
-  flex-wrap: wrap; padding: 10px 0;
+  flex-wrap: wrap; padding: 10px 0 6px;
 }
+.fb-toolbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
 .fb-search {
   display: flex; align-items: center; gap: 6px;
   background: #f5f7fa; border: 1.5px solid #e8edf3; border-radius: 8px;
-  padding: 0 10px; transition: border-color .15s; min-width: 220px; flex: 1; max-width: 360px;
+  padding: 0 10px; transition: border-color .15s; min-width: 240px; flex: 1; max-width: 400px;
 }
 .fb-search.focused { border-color: #EE4D2D; }
-.fb-search-icon { color: #9aa0ac; flex-shrink: 0; }
-.fb-search-input {
+.fb-search-icon   { color: #9aa0ac; flex-shrink: 0; }
+.fb-search-input  {
   border: none; background: transparent; outline: none;
   font-size: 13px; color: #1a1f36; flex: 1; padding: 7px 0;
 }
-.fb-search-clear {
+.fb-search-clear  {
   background: none; border: none; cursor: pointer; padding: 2px;
   color: #9aa0ac; display: flex; align-items: center;
 }
@@ -337,92 +499,66 @@ onMounted(loadAccounts)
   display: flex; border: 1.5px solid #e8edf3; border-radius: 8px; overflow: hidden;
 }
 .fb-tbtn {
-  background: #fff; border: none; cursor: pointer; padding: 6px 12px;
-  font-size: 12px; font-weight: 600; color: #6b7280;
-  transition: background .15s, color .15s; white-space: nowrap;
+  background: #fff !important; border: none; cursor: pointer; padding: 6px 12px;
+  font-size: 12px !important; font-weight: 600; color: #6b7280 !important;
+  transition: background .15s; white-space: nowrap;
 }
-.fb-tbtn:not(:last-child) { border-right: 1px solid #e8edf3; }
-.fb-tbtn--active { background: rgba(238,77,45,.07); color: #EE4D2D; }
-.fb-tbtn:hover:not(.fb-tbtn--active) { background: #f5f7fa; }
+.fb-tbtn:hover { background: #f5f7fa !important; }
+.fb-clear-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1.5px solid #fca5a5; border-radius: 8px; cursor: pointer;
+  padding: 5px 10px; font-size: 12px; font-weight: 600; color: #ef4444;
+  transition: background .15s;
+}
+.fb-clear-btn:hover { background: #fef2f2; }
 
-/* ── Content ─────────────────────────────────────────────── */
-.content-wrap { padding: 20px 24px; }
+/* Filterbar */
+.fb-filterbar {
+  display: flex; align-items: center; gap: 8px; padding: 6px 0 10px; flex-wrap: wrap;
+}
+.fb-combo {
+  position: relative; display: flex; align-items: center;
+  border: 1.5px solid #e8edf3; border-radius: 8px; overflow: hidden;
+  transition: border-color .15s; background: #fff;
+}
+.fb-combo--on { border-color: #EE4D2D; background: rgba(238,77,45,.04); }
+.fb-combo-btn {
+  display: flex; align-items: center; gap: 5px; background: none; border: none;
+  cursor: pointer; padding: 5px 10px; font-size: 12px; font-weight: 600; color: #374151;
+  white-space: nowrap;
+}
+.fb-combo--on .fb-combo-btn { color: #EE4D2D; }
+.fb-combo-ico   { color: #9aa0ac; flex-shrink: 0; }
+.fb-combo--on .fb-combo-ico { color: #EE4D2D; }
+.fb-combo-arrow { color: #c4c9d4; }
+.fb-combo-clear {
+  background: none; border: none; cursor: pointer;
+  padding: 0 6px 0 0; color: #c4c9d4; display: flex; align-items: center;
+}
+.fb-combo-clear:hover { color: #EE4D2D; }
+.fb-menu { border: 1.5px solid #e8edf3; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.fb-menu-item { border-radius: 0 !important; }
+.fb-menu-item--on { background: rgba(238,77,45,.06) !important; }
+.fb-menu-item-label { font-size: 13px; font-weight: 500; }
 
-.empty-state {
-  text-align: center; padding: 80px 24px; color: #9aa0ac;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
+/* ── Tabela ──────────────────────────────────────────────── */
+.shopee-table { background: #fff; }
+:deep(.shopee-table .q-table__top) { display: none; }
+:deep(.shopee-table thead tr th) {
+  position: sticky; top: 0; z-index: 1;
+  background: #f8fafc; font-size: 11px; font-weight: 700;
+  color: #6b7280; text-transform: uppercase; letter-spacing: .4px;
+  border-bottom: 1.5px solid #e8edf3;
 }
+:deep(.shopee-table tbody tr.hover-row:hover) {
+  background: #fff8f7 !important;
+}
+:deep(.shopee-table tbody td) { border-bottom: 1px solid #f1f5f9; }
 
-/* ── Grid de cards ───────────────────────────────────────── */
-.items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
-}
+.border-grey { border: 1px solid #e8edf3; }
+.font-mono { font-family: 'Courier New', monospace; font-size: 11px; }
 
-.item-card {
-  background: #fff; border-radius: 10px;
-  border: 1.5px solid #e8edf3; overflow: hidden;
-  transition: box-shadow .15s, border-color .15s; cursor: default;
-}
-.item-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  border-color: #EE4D2D;
-}
-
-/* Thumbnail */
-.item-thumb {
-  position: relative; width: 100%; padding-top: 100%;
-  background: #f5f7fa; overflow: hidden;
-}
-.thumb-img {
-  position: absolute; top: 0; left: 0;
-  width: 100%; height: 100%; object-fit: cover;
-}
-.thumb-placeholder {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-}
-.status-badge {
-  position: absolute; top: 6px; right: 6px;
-  font-size: 10px; font-weight: 700; padding: 2px 7px;
-  border-radius: 6px; text-transform: uppercase; letter-spacing: .3px;
-}
-.status-badge--normal  { background: #dcfce7; color: #16a34a; }
-.status-badge--unlist  { background: #fef9c3; color: #a16207; }
-.status-badge--banned  { background: #fee2e2; color: #dc2626; }
-.status-badge--deleted { background: #f1f5f9; color: #64748b; }
-
-/* Info */
-.item-info { padding: 10px 12px 12px; }
-.item-name {
-  font-size: 12px; font-weight: 600; color: #1a1f36;
-  line-height: 1.4; display: -webkit-box;
-  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  margin-bottom: 4px;
-}
-.item-sku { font-size: 11px; color: #9aa0ac; margin-bottom: 1px; }
-.item-id  { font-size: 10px; color: #c4c9d4; margin-bottom: 8px; }
-
-.item-metrics {
-  display: flex; gap: 10px; margin-bottom: 8px;
-}
-.metric { flex: 1; }
-.metric-label {
-  font-size: 10px; color: #9aa0ac; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .3px; margin-bottom: 2px;
-}
-.metric-value { font-size: 13px; font-weight: 700; color: #1a1f36; }
-.metric-value--price { color: #EE4D2D; }
-.metric-value--zero  { color: #ef4444; }
-
-.item-footer {
-  display: flex; justify-content: space-between; align-items: center;
-  border-top: 1px solid #f1f5f9; padding-top: 7px; margin-top: 4px;
-}
-.item-shop { font-size: 10px; font-weight: 600; color: #6b7280; }
-.item-sync { font-size: 10px; color: #c4c9d4; }
-
-/* Load more */
-.load-more-wrap { display: flex; justify-content: center; padding: 20px 0; }
+/* Animations */
+.fade-enter-active, .fade-leave-active { transition: opacity .15s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
