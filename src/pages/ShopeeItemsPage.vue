@@ -16,20 +16,18 @@
             {{ pagination.rowsNumber.toLocaleString('pt-BR') }} anúncios
           </div>
         </div>
-        <div class="row items-center q-gutter-x-sm">
-          <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar"
-            :loading="syncing" :disable="!selectedAccountId" size="sm" class="q-px-md"
-            @click="syncItems">
-            <q-tooltip v-if="!selectedAccountId">Selecione uma conta primeiro</q-tooltip>
-          </q-btn>
-        </div>
+        <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar"
+          :loading="syncing" :disable="!selectedAccountId" size="sm" class="q-px-md"
+          @click="syncItems">
+          <q-tooltip v-if="!selectedAccountId">Selecione uma conta primeiro</q-tooltip>
+        </q-btn>
       </div>
     </div>
 
     <!-- ══ TOOLBAR ══════════════════════════════════════════════ -->
     <div class="fb">
-      <div class="fb-toolbar">
 
+      <div class="fb-toolbar">
         <!-- Busca -->
         <div class="fb-search" :class="{ focused: searchFocused, filled: !!search }">
           <q-icon name="search" size="18px" class="fb-search-icon" />
@@ -45,7 +43,6 @@
         </div>
 
         <div class="fb-toolbar-actions">
-
           <!-- Ordenação -->
           <div class="fb-btn-group">
             <q-btn-dropdown flat dense no-icon-animation unelevated
@@ -63,6 +60,12 @@
             </q-btn-dropdown>
           </div>
 
+          <transition name="fade">
+            <button v-if="hasActiveFilters" class="fb-clear-btn" @click="clearFilters">
+              <q-icon name="filter_alt_off" size="14px" />
+              <span>Limpar</span>
+            </button>
+          </transition>
         </div>
       </div>
 
@@ -75,7 +78,7 @@
             <q-icon name="storefront" size="14px" class="fb-combo-ico" />
             <span class="fb-combo-label">
               <template v-if="!selectedAccountId">Conta</template>
-              <template v-else>{{ accountOptions.find(a=>a.id===selectedAccountId)?.shop_name || 'Conta' }}</template>
+              <template v-else>{{ accountOptions.find(a => a.id === selectedAccountId)?.shop_name || 'Conta' }}</template>
             </span>
             <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
           </button>
@@ -102,7 +105,7 @@
             <q-icon name="toggle_on" size="14px" class="fb-combo-ico" />
             <span class="fb-combo-label">
               <template v-if="!filterStatus">Status</template>
-              <template v-else>{{ statusOptions.find(o=>o.value===filterStatus)?.label || 'Status' }}</template>
+              <template v-else>{{ statusOptions.find(o => o.value === filterStatus)?.label || 'Status' }}</template>
             </span>
             <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
           </button>
@@ -114,21 +117,11 @@
               <q-item v-for="opt in statusOptions" :key="opt.value" clickable v-close-popup
                 :class="['fb-menu-item', filterStatus === opt.value && 'fb-menu-item--on']"
                 @click="filterStatus = opt.value; loadItems()">
-                <q-item-section class="fb-menu-item-label">
-                  <span :style="`color:${opt.color};font-weight:600`">{{ opt.label }}</span>
-                </q-item-section>
+                <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
         </div>
-
-        <!-- Limpar filtros -->
-        <transition name="fade">
-          <button v-if="hasActiveFilters" class="fb-clear-btn" @click="clearFilters">
-            <q-icon name="filter_alt_off" size="14px" />
-            <span>Limpar</span>
-          </button>
-        </transition>
 
       </div>
     </div>
@@ -156,11 +149,14 @@
       </template>
 
       <template v-slot:body="props">
-        <q-tr :props="props" :class="[props.expand ? 'bg-orange-1' : 'hover-row']" class="cursor-pointer">
+        <q-tr :props="props"
+          :class="[props.expand ? 'bg-orange-1' : 'hover-row']"
+          class="cursor-pointer">
 
           <!-- Expand -->
-          <q-td auto-width>
-            <q-btn size="sm" flat round :color="props.expand ? 'deep-orange' : 'grey-6'"
+          <q-td auto-width class="q-py-md">
+            <q-btn size="sm" flat round
+              :color="props.expand ? 'deep-orange' : 'grey-6'"
               @click.stop="props.expand = !props.expand"
               :icon="props.expand ? 'expand_less' : 'expand_more'" />
           </q-td>
@@ -196,7 +192,7 @@
               <div class="row items-center q-gutter-x-sm text-caption">
                 <span v-if="props.row.item_sku"
                   class="bg-grey-3 text-grey-8 q-px-xs rounded-borders font-mono cursor-pointer"
-                  @click.stop="copyText(props.row.item_sku)">
+                  @click.stop="copyText(props.row.item_sku)" title="Copiar SKU">
                   {{ props.row.item_sku }}
                 </span>
                 <span class="bg-grey-3 text-grey-8 q-px-xs rounded-borders font-mono cursor-pointer"
@@ -205,6 +201,12 @@
                 </span>
                 <span class="text-deep-orange-6 text-weight-bold">
                   <q-icon name="storefront" size="10px" /> {{ props.row.shop_name }}
+                </span>
+              </div>
+              <div class="row items-center text-caption">
+                <q-icon name="inventory" size="xs" class="q-mr-xs text-grey-6" />
+                <span :class="props.row.stock > 0 ? 'text-grey-9' : 'text-red text-weight-bold'">
+                  {{ props.row.stock }} un
                 </span>
               </div>
             </div>
@@ -217,18 +219,10 @@
             </div>
           </q-td>
 
-          <!-- Estoque -->
-          <q-td key="stock" :props="props" align="center">
-            <div class="text-subtitle2 text-weight-bold"
-              :class="props.row.stock === 0 ? 'text-negative' : 'text-grey-9'">
-              {{ props.row.stock }}
-            </div>
-          </q-td>
-
           <!-- Status -->
           <q-td key="status" :props="props" align="center">
             <q-badge :color="statusColor(props.row.status)" text-color="white"
-              class="text-weight-bold text-uppercase" style="font-size:10px">
+              class="text-weight-bold text-uppercase" style="font-size:10px;padding:4px 8px">
               {{ statusLabel(props.row.status) }}
             </q-badge>
           </q-td>
@@ -243,31 +237,39 @@
         <!-- Expand row -->
         <q-tr v-show="props.expand" :props="props">
           <q-td colspan="100%" class="q-pa-none">
-            <div class="bg-orange-1 q-pa-md">
+            <div class="bg-grey-1 q-pa-md" style="border-top:1px solid #f0f0f0">
               <div class="row q-col-gutter-lg">
-                <div class="col-12 col-md-4">
+
+                <div class="col-12 col-md-5">
                   <div class="text-overline text-grey-7 q-mb-sm">Imagens</div>
                   <div class="row q-gutter-xs">
-                    <q-img v-for="(img, i) in (props.row.images || []).slice(0,5)" :key="i"
-                      :src="img" style="width:64px;height:64px" fit="cover"
+                    <q-img v-for="(img, i) in (props.row.images || []).slice(0, 6)" :key="i"
+                      :src="img" style="width:60px;height:60px" fit="cover"
                       class="rounded-borders border-grey" />
-                    <div v-if="!props.row.images?.length" class="text-caption text-grey-5">Sem imagens</div>
+                    <div v-if="!props.row.images?.length" class="text-caption text-grey-5 q-pa-sm">
+                      Sem imagens
+                    </div>
                   </div>
                 </div>
+
                 <div class="col-12 col-md-4">
                   <div class="text-overline text-grey-7 q-mb-sm">Detalhes</div>
-                  <div class="row q-col-gutter-sm text-caption text-grey-8">
-                    <div class="col-12"><b>Item ID:</b> {{ props.row.item_id }}</div>
-                    <div class="col-12" v-if="props.row.item_sku"><b>SKU:</b> {{ props.row.item_sku }}</div>
-                    <div class="col-12"><b>Preço:</b> {{ formatCurrency(props.row.price) }}</div>
-                    <div class="col-12"><b>Estoque:</b> {{ props.row.stock }} un</div>
-                  </div>
+                  <q-markup-table flat dense class="bg-transparent" style="font-size:12px">
+                    <tbody>
+                      <tr><td class="text-grey-6" style="width:80px">Item ID</td><td class="font-mono text-grey-9">{{ props.row.item_id }}</td></tr>
+                      <tr v-if="props.row.item_sku"><td class="text-grey-6">SKU</td><td class="font-mono text-grey-9">{{ props.row.item_sku }}</td></tr>
+                      <tr><td class="text-grey-6">Preço</td><td class="text-weight-bold text-deep-orange">{{ formatCurrency(props.row.price) }}</td></tr>
+                      <tr><td class="text-grey-6">Estoque</td><td :class="props.row.stock === 0 ? 'text-negative text-weight-bold' : 'text-grey-9'">{{ props.row.stock }} un</td></tr>
+                    </tbody>
+                  </q-markup-table>
                 </div>
-                <div class="col-12 col-md-4 flex items-start justify-end">
-                  <q-btn flat dense color="deep-orange" icon="open_in_new" label="Abrir na Shopee"
+
+                <div class="col-12 col-md-3 flex items-start justify-end">
+                  <q-btn outline color="deep-orange" icon="open_in_new" label="Ver na Shopee"
                     :href="`https://shopee.com.br/product/${props.row.shop_id}/${props.row.item_id}`"
-                    target="_blank" type="a" size="sm" />
+                    target="_blank" type="a" size="sm" class="q-px-md" />
                 </div>
+
               </div>
             </div>
           </q-td>
@@ -289,15 +291,15 @@ import { DateTime } from 'luxon'
 const $q = useQuasar()
 
 // ── Estado ──────────────────────────────────────────────────
-const items           = ref([])
-const loading         = ref(false)
-const syncing         = ref(false)
-const search          = ref('')
-const searchFocused   = ref(false)
-const filterStatus    = ref(null)
+const items             = ref([])
+const loading           = ref(false)
+const syncing           = ref(false)
+const search            = ref('')
+const searchFocused     = ref(false)
+const filterStatus      = ref(null)
 const selectedAccountId = ref(null)
-const accountOptions  = ref([])
-const currentSort     = ref('-last_synced_at')
+const accountOptions    = ref([])
+const currentSort       = ref('-last_synced_at')
 
 const pagination = ref({
   sortBy: null,
@@ -309,50 +311,39 @@ const pagination = ref({
 
 let searchTimeout = null
 
-// ── Colunas da tabela ────────────────────────────────────────
+// ── Colunas ───────────────────────────────────────────────────
 const columns = [
-  { name: 'thumbnail',     label: '',              field: 'thumbnail',     sortable: false, align: 'left' },
-  { name: 'item_name',     label: 'Anúncio',       field: 'item_name',     sortable: true,  align: 'left' },
-  { name: 'price',         label: 'Preço',         field: 'price',         sortable: true,  align: 'right' },
-  { name: 'stock',         label: 'Estoque',       field: 'stock',         sortable: true,  align: 'center' },
-  { name: 'status',        label: 'Status',        field: 'status',        sortable: false, align: 'center' },
-  { name: 'last_synced_at',label: 'Sincronizado',  field: 'last_synced_at',sortable: true,  align: 'right' },
+  { name: 'thumbnail',     label: '',             field: 'thumbnail',     sortable: false, align: 'left'  },
+  { name: 'item_name',     label: 'Anúncio',      field: 'item_name',     sortable: true,  align: 'left'  },
+  { name: 'price',         label: 'Preço',        field: 'price',         sortable: true,  align: 'right' },
+  { name: 'status',        label: 'Status',       field: 'status',        sortable: false, align: 'center'},
+  { name: 'last_synced_at',label: 'Sincronizado', field: 'last_synced_at',sortable: true,  align: 'right' },
 ]
 
-// ── Opções ───────────────────────────────────────────────────
+// ── Opções ────────────────────────────────────────────────────
 const statusOptions = [
-  { value: 'NORMAL',  label: 'Ativo',    color: '#22c55e' },
-  { value: 'UNLIST',  label: 'Pausado',  color: '#f59e0b' },
-  { value: 'BANNED',  label: 'Banido',   color: '#ef4444' },
-  { value: 'DELETED', label: 'Deletado', color: '#94a3b8' },
+  { value: 'NORMAL',  label: 'Ativo'    },
+  { value: 'UNLIST',  label: 'Pausado'  },
+  { value: 'BANNED',  label: 'Banido'   },
+  { value: 'DELETED', label: 'Deletado' },
 ]
 
 const sortOptions = [
-  { value: '-last_synced_at', label: 'Mais recente'   },
-  { value: 'item_name',       label: 'Nome A→Z'        },
-  { value: '-item_name',      label: 'Nome Z→A'        },
-  { value: '-price',          label: 'Maior preço'     },
-  { value: 'price',           label: 'Menor preço'     },
-  { value: '-stock',          label: 'Maior estoque'   },
-  { value: 'stock',           label: 'Menor estoque'   },
+  { value: '-last_synced_at', label: 'Mais recente'  },
+  { value: 'item_name',       label: 'Nome A→Z'       },
+  { value: '-item_name',      label: 'Nome Z→A'       },
+  { value: '-price',          label: 'Maior preço'    },
+  { value: 'price',           label: 'Menor preço'    },
+  { value: '-stock',          label: 'Maior estoque'  },
+  { value: 'stock',           label: 'Menor estoque'  },
 ]
 
-const currentSortLabel = computed(() =>
-  sortOptions.find(o => o.value === currentSort.value)?.label || 'Ordenar'
-)
+const currentSortLabel  = computed(() => sortOptions.find(o => o.value === currentSort.value)?.label || 'Ordenar')
+const hasActiveFilters  = computed(() => !!search.value || !!filterStatus.value || !!selectedAccountId.value)
 
-const hasActiveFilters = computed(() => !!search.value || !!filterStatus.value || !!selectedAccountId.value)
-
-// ── Helpers ──────────────────────────────────────────────────
-const statusLabel = (s) => {
-  const map = { NORMAL: 'Ativo', UNLIST: 'Pausado', BANNED: 'Banido', DELETED: 'Deletado' }
-  return map[s] || s || '—'
-}
-
-const statusColor = (s) => {
-  const map = { NORMAL: 'positive', UNLIST: 'orange', BANNED: 'negative', DELETED: 'grey-6' }
-  return map[s] || 'grey-6'
-}
+// ── Helpers ───────────────────────────────────────────────────
+const statusLabel = (s) => ({ NORMAL: 'Ativo', UNLIST: 'Pausado', BANNED: 'Banido', DELETED: 'Deletado' })[s] || s || '—'
+const statusColor = (s) => ({ NORMAL: 'positive', UNLIST: 'orange', BANNED: 'negative', DELETED: 'grey-6' })[s] || 'grey-6'
 
 const formatCurrency = (v) =>
   v != null ? Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'
@@ -365,7 +356,7 @@ const copyText = (text) => {
   $q.notify({ message: `Copiado: ${text}`, color: 'dark', position: 'top', timeout: 1500 })
 }
 
-// ── API ──────────────────────────────────────────────────────
+// ── API ───────────────────────────────────────────────────────
 const loadAccounts = async () => {
   try {
     const { data } = await api.get('/shopee/accounts/')
@@ -380,21 +371,17 @@ const loadAccounts = async () => {
 }
 
 const buildParams = (pg = pagination.value) => {
-  const p = {
-    page: pg.page,
-    page_size: pg.rowsPerPage,
-    sort: currentSort.value,
-  }
-  if (selectedAccountId.value) p.account  = selectedAccountId.value
-  if (filterStatus.value)       p.status   = filterStatus.value
-  if (search.value)             p.search   = search.value
+  const p = { page: pg.page, page_size: pg.rowsPerPage, sort: currentSort.value }
+  if (selectedAccountId.value) p.account = selectedAccountId.value
+  if (filterStatus.value)       p.status  = filterStatus.value
+  if (search.value)             p.search  = search.value
   return p
 }
 
 const loadItems = async (pg = null) => {
   loading.value = true
   if (pg) {
-    pagination.value.page = pg.page
+    pagination.value.page        = pg.page
     pagination.value.rowsPerPage = pg.rowsPerPage
   } else {
     pagination.value.page = 1
@@ -411,26 +398,10 @@ const loadItems = async (pg = null) => {
   }
 }
 
-const onRequest = (props) => {
-  loadItems(props.pagination)
-}
-
-const onSearch = () => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => loadItems(), 400)
-}
-
-const applySort = (val) => {
-  currentSort.value = val
-  loadItems()
-}
-
-const clearFilters = () => {
-  search.value        = ''
-  filterStatus.value  = null
-  selectedAccountId.value = null
-  loadItems()
-}
+const onRequest  = (props) => loadItems(props.pagination)
+const onSearch   = () => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => loadItems(), 400) }
+const applySort  = (val) => { currentSort.value = val; loadItems() }
+const clearFilters = () => { search.value = ''; filterStatus.value = null; selectedAccountId.value = null; loadItems() }
 
 const syncItems = async () => {
   if (!selectedAccountId.value) return
@@ -453,112 +424,127 @@ onMounted(loadAccounts)
 </script>
 
 <style scoped>
-.shopee-items-page { background: #f5f7fa; min-height: 100vh; }
+/* ── Page ─────────────────────────────────────────────────── */
+.shopee-items-page { background: #f5f7fa; }
 
-/* ── Header ─────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────── */
 .page-header {
-  padding: 18px 24px 16px; background: #fff;
+  background: #fff;
+  padding: 14px 20px;
   border-bottom: 1.5px solid #e8edf3;
 }
 .header-icon {
-  width: 36px; height: 36px; border-radius: 10px;
+  width: 34px; height: 34px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, #ff6600, #EE4D2D); color: #fff;
 }
 .header-eyebrow { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-.header-title   { font-size: 17px; font-weight: 700; color: #1a1f36; }
-.header-count {
-  font-size: 12px; font-weight: 600; color: #EE4D2D;
-  background: rgba(238,77,45,.1); border-radius: 12px; padding: 3px 12px;
-}
+.header-title   { font-size: 16px; font-weight: 700; color: #1a1f36; }
+.header-count   { font-size: 12px; color: #9aa0ac; background: #f0f2f5; border-radius: 20px; padding: 2px 10px; }
 
-/* ── Toolbar ─────────────────────────────────────────────── */
-.fb { background: #fff; border-bottom: 1.5px solid #e8edf3; padding: 0 24px; }
+/* ── Filter bar ──────────────────────────────────────────── */
+.fb { background: #fff; border-bottom: 1px solid #e8edf3; }
+
 .fb-toolbar {
-  display: flex; align-items: center; gap: 10px;
-  flex-wrap: wrap; padding: 10px 0 6px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px 0; flex-wrap: wrap;
 }
-.fb-toolbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-
 .fb-search {
   display: flex; align-items: center; gap: 6px;
-  background: #f5f7fa; border: 1.5px solid #e8edf3; border-radius: 8px;
-  padding: 0 10px; transition: border-color .15s; min-width: 240px; flex: 1; max-width: 400px;
+  flex: 1; min-width: 180px; max-width: 360px;
+  height: 34px; border-radius: 8px;
+  border: 1.5px solid #e3e6eb; background: #f8f9fb;
+  padding: 0 10px; transition: border-color .15s, background .15s;
 }
-.fb-search.focused { border-color: #EE4D2D; }
-.fb-search-icon   { color: #9aa0ac; flex-shrink: 0; }
-.fb-search-input  {
-  border: none; background: transparent; outline: none;
-  font-size: 13px; color: #1a1f36; flex: 1; padding: 7px 0;
+.fb-search.focused, .fb-search.filled { border-color: #EE4D2D; background: #fff; }
+.fb-search-icon  { color: #b0b7c3; flex-shrink: 0; }
+.fb-search-input {
+  flex: 1; border: none; background: transparent;
+  font-size: 13px; color: #1a1f36; outline: none;
 }
-.fb-search-clear  {
-  background: none; border: none; cursor: pointer; padding: 2px;
-  color: #9aa0ac; display: flex; align-items: center;
+.fb-search-clear {
+  background: none; border: none; cursor: pointer; color: #b0b7c3;
+  padding: 0; display: flex; align-items: center;
 }
-.fb-btn-group {
-  display: flex; border: 1.5px solid #e8edf3; border-radius: 8px; overflow: hidden;
-}
+.fb-search-clear:hover { color: #1a1f36; }
+
+.fb-toolbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
+.fb-btn-group { display: flex; }
+
 .fb-tbtn {
-  background: #fff !important; border: none; cursor: pointer; padding: 6px 12px;
-  font-size: 12px !important; font-weight: 600; color: #6b7280 !important;
-  transition: background .15s; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px; border-radius: 7px;
+  border: 1.5px solid #e3e6eb; background: #fff !important;
+  font-size: 12px !important; font-weight: 500; color: #4b5563 !important;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
 }
 .fb-tbtn:hover { background: #f5f7fa !important; }
+
 .fb-clear-btn {
-  display: flex; align-items: center; gap: 5px;
-  background: none; border: 1.5px solid #fca5a5; border-radius: 8px; cursor: pointer;
-  padding: 5px 10px; font-size: 12px; font-weight: 600; color: #ef4444;
-  transition: background .15s;
+  display: flex; align-items: center; gap: 4px;
+  height: 30px; padding: 0 10px; border-radius: 7px;
+  border: none; background: none; font-size: 12px;
+  color: #ef4444; cursor: pointer; transition: background .15s;
 }
 .fb-clear-btn:hover { background: #fef2f2; }
 
-/* Filterbar */
+/* Filterbar pill comboboxes */
 .fb-filterbar {
-  display: flex; align-items: center; gap: 8px; padding: 6px 0 10px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px 10px; flex-wrap: wrap;
 }
 .fb-combo {
   position: relative; display: flex; align-items: center;
-  border: 1.5px solid #e8edf3; border-radius: 8px; overflow: hidden;
-  transition: border-color .15s; background: #fff;
+  border: 1.5px solid #e3e6eb; border-radius: 20px;
+  background: #fff; transition: border-color .15s; overflow: visible;
 }
-.fb-combo--on { border-color: #EE4D2D; background: rgba(238,77,45,.04); }
+.fb-combo:hover { border-color: #c8cdd6; }
+.fb-combo--on   { border-color: #EE4D2D; background: #fff8f7; }
 .fb-combo-btn {
-  display: flex; align-items: center; gap: 5px; background: none; border: none;
-  cursor: pointer; padding: 5px 10px; font-size: 12px; font-weight: 600; color: #374151;
-  white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 10px 0 9px;
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 500; color: #374151; border-radius: 20px;
 }
 .fb-combo--on .fb-combo-btn { color: #EE4D2D; }
 .fb-combo-ico   { color: #9aa0ac; flex-shrink: 0; }
 .fb-combo--on .fb-combo-ico { color: #EE4D2D; }
-.fb-combo-arrow { color: #c4c9d4; }
+.fb-combo-label { white-space: nowrap; }
+.fb-combo-arrow { color: #9aa0ac; }
 .fb-combo-clear {
-  background: none; border: none; cursor: pointer;
-  padding: 0 6px 0 0; color: #c4c9d4; display: flex; align-items: center;
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #EE4D2D; border: none; cursor: pointer;
+  color: #fff; margin-right: 5px; flex-shrink: 0;
 }
-.fb-combo-clear:hover { color: #EE4D2D; }
-.fb-menu { border: 1.5px solid #e8edf3; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
-.fb-menu-item { border-radius: 0 !important; }
-.fb-menu-item--on { background: rgba(238,77,45,.06) !important; }
-.fb-menu-item-label { font-size: 13px; font-weight: 500; }
+.fb-combo-clear:hover { background: #d43f21; }
+
+.fb-menu { border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,.1) !important; }
+.fb-menu-item { transition: background .1s; }
+.fb-menu-item--on { background: #fff8f7 !important; }
+.fb-menu-item-label { font-size: 13px; }
 
 /* ── Tabela ──────────────────────────────────────────────── */
 .shopee-table { background: #fff; }
-:deep(.shopee-table .q-table__top) { display: none; }
+
+:deep(.shopee-table .q-table__top)    { display: none; }
 :deep(.shopee-table thead tr th) {
   position: sticky; top: 0; z-index: 1;
-  background: #f8fafc; font-size: 11px; font-weight: 700;
-  color: #6b7280; text-transform: uppercase; letter-spacing: .4px;
+  background: #f8f9fb;
+  font-size: 11px; font-weight: 700; color: #6b7280;
+  text-transform: uppercase; letter-spacing: .4px;
   border-bottom: 1.5px solid #e8edf3;
 }
-:deep(.shopee-table tbody tr.hover-row:hover) {
-  background: #fff8f7 !important;
+:deep(.shopee-table tbody tr.hover-row:hover) { background: #fff8f7 !important; }
+:deep(.shopee-table tbody td) {
+  border-bottom: 1px solid #f1f5f9;
+  min-height: 65px; height: auto; vertical-align: top;
 }
-:deep(.shopee-table tbody td) { border-bottom: 1px solid #f1f5f9; }
 
-.border-grey { border: 1px solid #e8edf3; }
-.font-mono { font-family: 'Courier New', monospace; font-size: 11px; }
+.border-grey { border: 1px solid #eee; }
+.font-mono   { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; font-size: 11px; }
 
 /* Animations */
 .fade-enter-active, .fade-leave-active { transition: opacity .15s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-from, .fade-leave-to       { opacity: 0; }
 </style>
