@@ -462,22 +462,38 @@
         <!-- Marketplaces -->
         <div class="section-label q-mt-lg">Por Marketplace</div>
         <div class="mp-grid">
-          <div v-for="mp in data.marketplaces" :key="mp.key" class="mp-card">
+          <!-- ML -->
+          <div v-if="activeMarketplace !== 'shopee' && data" v-for="mp in data.marketplaces" :key="mp.key" class="mp-card mp-card--ml">
             <div class="mp-name">
-              <img v-if="mp.key === 'mercado_livre'" src="/icons/ml-logo.png" height="18" class="q-mr-xs" alt="ML" />
+              <q-icon name="storefront" size="16px" class="q-mr-xs text-yellow-8" />
               {{ mp.name }}
             </div>
             <div class="mp-kpis">
-              <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(mp.gmv)
-                  }}</span>
-              </div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Lucro Após Ads</span> <span class="mp-kpi-val">{{
-                fmt(mp.lucro_liquido) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ mp.orders_count
-                  }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Share</span> <span class="mp-kpi-val">{{ mp.gmv_share
-                  }}%</span>
-              </div>
+              <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(mp.gmv) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Rec. Líquida</span> <span class="mp-kpi-val">{{ fmt(mp.net_revenue) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Lucro</span> <span class="mp-kpi-val" :class="mp.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(mp.lucro_liquido) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ mp.orders_count }}</span></div>
+            </div>
+            <div class="gmv-bar-wrap q-mt-sm">
+              <div class="gmv-bar-fill gmv-bar-fill--ml" :style="{ width: combinedGmvShare('ml', mp.gmv) + '%' }"></div>
+              <span class="gmv-bar-pct">{{ combinedGmvShare('ml', mp.gmv) }}% do GMV total</span>
+            </div>
+          </div>
+          <!-- Shopee -->
+          <div v-if="activeMarketplace !== 'ml' && shopeeData" class="mp-card mp-card--shopee">
+            <div class="mp-name">
+              <q-icon name="shopping_bag" size="16px" class="q-mr-xs text-deep-orange" />
+              Shopee
+            </div>
+            <div class="mp-kpis">
+              <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(shopeeData.gmv) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Rec. Estimada</span> <span class="mp-kpi-val">{{ fmt(shopeeData.net_revenue) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Lucro</span> <span class="mp-kpi-val" :class="(shopeeData.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(shopeeData.gross_profit) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ shopeeData.orders_count }}</span></div>
+            </div>
+            <div class="gmv-bar-wrap q-mt-sm">
+              <div class="gmv-bar-fill gmv-bar-fill--shopee" :style="{ width: combinedGmvShare('shopee', shopeeData.gmv) + '%' }"></div>
+              <span class="gmv-bar-pct">{{ combinedGmvShare('shopee', shopeeData.gmv) }}% do GMV total</span>
             </div>
           </div>
         </div>
@@ -488,36 +504,56 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th>Marketplace</th>
                 <th>Conta</th>
                 <th>CNPJ</th>
                 <th class="right">GMV</th>
                 <th class="right">Rec. Líq.</th>
-                <th class="right">Lucro Bruto</th>
+                <th class="right">Lucro</th>
                 <th class="right">Ads</th>
-                <th class="right">Lucro Após Ads</th>
                 <th class="right">Pedidos</th>
-                <th class="right">TACoS</th>
                 <th class="right">Share GMV</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="a in data.accounts" :key="a.account_id">
-                <td class="bold">{{ a.account_nickname }}</td>
-                <td class="muted">{{ a.cnpj || '—' }}</td>
-                <td class="right">{{ fmt(a.gmv) }}</td>
-                <td class="right">{{ fmt(a.net_revenue) }}</td>
-                <td class="right">{{ fmt(a.gross_profit) }}</td>
-                <td class="right warn">{{ fmt(a.ads_cost) }}</td>
-                <td class="right" :class="a.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido) }}</td>
-                <td class="right">{{ a.orders_count }}</td>
-                <td class="right">{{ a.tacos }}%</td>
-                <td class="right">
-                  <div class="inline-bar-wrap">
-                    <div class="inline-bar-fill" :style="{ width: a.gmv_share + '%' }"></div>
-                    <span>{{ a.gmv_share }}%</span>
-                  </div>
-                </td>
-              </tr>
+              <!-- ML accounts -->
+              <template v-if="activeMarketplace !== 'shopee' && data?.accounts">
+                <tr v-for="a in data.accounts" :key="'ml-' + a.account_id">
+                  <td><span class="mkt-badge mkt-badge--ml">ML</span></td>
+                  <td class="bold">{{ a.account_nickname }}</td>
+                  <td class="muted">{{ a.cnpj || '—' }}</td>
+                  <td class="right">{{ fmt(a.gmv) }}</td>
+                  <td class="right">{{ fmt(a.net_revenue) }}</td>
+                  <td class="right" :class="a.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido) }}</td>
+                  <td class="right warn">{{ fmt(a.ads_cost) }}</td>
+                  <td class="right">{{ a.orders_count }}</td>
+                  <td class="right">
+                    <div class="inline-bar-wrap">
+                      <div class="inline-bar-fill" :style="{ width: combinedGmvShare('ml', a.gmv) + '%' }"></div>
+                      <span>{{ combinedGmvShare('ml', a.gmv) }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+              <!-- Shopee accounts -->
+              <template v-if="activeMarketplace !== 'ml' && shopeeData?.by_account">
+                <tr v-for="a in shopeeData.by_account" :key="'sh-' + a.account_id">
+                  <td><span class="mkt-badge mkt-badge--shopee">Shopee</span></td>
+                  <td class="bold">{{ a.shop_name }}</td>
+                  <td class="muted">—</td>
+                  <td class="right">{{ fmt(a.gmv) }}</td>
+                  <td class="right">{{ fmt(a.net_revenue) }}</td>
+                  <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
+                  <td class="right warn">—</td>
+                  <td class="right">{{ a.orders_count }}</td>
+                  <td class="right">
+                    <div class="inline-bar-wrap">
+                      <div class="inline-bar-fill inline-bar-fill--shopee" :style="{ width: combinedGmvShare('shopee', a.gmv) + '%' }"></div>
+                      <span>{{ combinedGmvShare('shopee', a.gmv) }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -590,7 +626,7 @@
       </div>
 
       <!-- ══════════ ABA: FLEX ══════════════════════════════════════════════ -->
-      <div v-show="activeTab === 'flex'" class="tab-content">
+      <div v-show="activeTab === 'flex' && activeMarketplace !== 'shopee'" class="tab-content">
         <div class="kpi-grid">
           <div class="kpi-card">
             <div class="kpi-label">Pedidos Flex no Período</div>
@@ -719,12 +755,47 @@ const metricStats = computed(() => {
 })
 
 // Ascendente (esquerda = mais antigo) — usado no gráfico
+// Mescla dados diários ML + Shopee por data
 const chartData = computed(() => {
-  if (!data.value?.daily) return []
-  return [...data.value.daily].sort((a, b) => a.date.localeCompare(b.date)).map(d => ({
-    ...d,
-    dateLabel: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-  }))
+  const mlDaily      = activeMarketplace.value !== 'shopee' ? (data.value?.daily || []) : []
+  const shopeeDaily  = activeMarketplace.value !== 'ml'     ? (shopeeData.value?.daily || []) : []
+
+  // Indexa por data e soma os campos
+  const byDate = {}
+  for (const d of mlDaily) {
+    byDate[d.date] = {
+      date:          d.date,
+      gmv:           d.gmv || 0,
+      net_revenue:   d.net_revenue || 0,
+      gross_profit:  d.gross_profit || 0,
+      ads_cost:      d.ads_cost || 0,
+      lucro_liquido: d.lucro_liquido || 0,
+      orders_count:  d.orders_count || 0,
+    }
+  }
+  for (const d of shopeeDaily) {
+    if (byDate[d.date]) {
+      byDate[d.date].gmv          += d.gmv || 0
+      byDate[d.date].net_revenue  += d.net_revenue || 0
+      byDate[d.date].gross_profit  = (byDate[d.date].gross_profit || 0) + (d.gross_profit || 0)
+      byDate[d.date].lucro_liquido = (byDate[d.date].lucro_liquido || 0) + (d.gross_profit || 0)
+      byDate[d.date].orders_count += d.orders_count || 0
+    } else {
+      byDate[d.date] = {
+        date:          d.date,
+        gmv:           d.gmv || 0,
+        net_revenue:   d.net_revenue || 0,
+        gross_profit:  d.gross_profit || 0,
+        ads_cost:      0,
+        lucro_liquido: d.gross_profit || 0,
+        orders_count:  d.orders_count || 0,
+      }
+    }
+  }
+
+  return Object.values(byDate)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(d => ({ ...d, dateLabel: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) }))
 })
 
 // Descendente (mais recente primeiro) — usado na tabela
@@ -968,6 +1039,14 @@ const combinedOp = computed(() => {
     vs_prev: ml.vs_prev,
   }
 })
+
+function combinedGmvShare(marketplace, gmv) {
+  const mlGmv     = data.value?.operation?.gmv || 0
+  const shopeeGmv = shopeeData.value?.gmv      || 0
+  const total     = mlGmv + shopeeGmv
+  if (!total || !gmv) return 0
+  return Math.min(100, Math.round((gmv / total) * 100))
+}
 
 function applyPreset(key) {
   activeDatePreset.value = key
