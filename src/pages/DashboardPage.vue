@@ -11,6 +11,24 @@
         </div>
       </div>
       <div class="header-right">
+        <!-- Filtro de marketplace -->
+        <div class="mkt-filter-group">
+          <button :class="['mkt-btn', activeMarketplace === 'all' && 'mkt-btn--on']"
+            @click="activeMarketplace = 'all'">
+            <q-icon name="all_inclusive" size="13px" />Todos
+          </button>
+          <button :class="['mkt-btn', 'mkt-btn--ml', activeMarketplace === 'ml' && 'mkt-btn--on']"
+            @click="activeMarketplace = 'ml'">
+            <img src="/img/ml-logo.svg" height="13" style="vertical-align:middle" onerror="this.style.display='none'" />
+            Mercado Livre
+          </button>
+          <button :class="['mkt-btn', 'mkt-btn--shopee', activeMarketplace === 'shopee' && 'mkt-btn--on']"
+            @click="activeMarketplace = 'shopee'">
+            <img src="/img/shopee-logo.svg" height="13" style="vertical-align:middle" onerror="this.style.display='none'" />
+            Shopee
+          </button>
+        </div>
+
         <div class="date-range-group">
           <button v-for="p in datePresets" :key="p.key"
             :class="['date-preset-btn', activeDatePreset === p.key && 'date-preset-btn--on']"
@@ -38,7 +56,7 @@
     <template v-else-if="data">
 
       <!-- ══════════ HOJE EM DESTAQUE ══════════════════════════════════════ -->
-      <div v-if="todayData && activeDatePreset !== 'hoje'" class="today-banner">
+      <div v-if="combinedToday && activeDatePreset !== 'hoje'" class="today-banner">
         <div class="today-label">
           <span class="live-dot"></span>
           Hoje
@@ -46,37 +64,37 @@
         <div class="today-kpis">
           <div class="today-kpi">
             <div class="today-kpi-label">GMV do Dia</div>
-            <div class="today-kpi-val today-gmv">{{ fmt(todayData.gmv) }}</div>
+            <div class="today-kpi-val today-gmv">{{ fmt(combinedToday.gmv) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Pedidos</div>
-            <div class="today-kpi-val">{{ todayData.orders_count || 0 }}</div>
+            <div class="today-kpi-val">{{ combinedToday.orders_count || 0 }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Receita Líquida</div>
-            <div class="today-kpi-val">{{ fmt(todayData.net_revenue) }}</div>
+            <div class="today-kpi-val">{{ fmt(combinedToday.net_revenue) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Lucro Bruto</div>
-            <div class="today-kpi-val" :class="(todayData.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(todayData.gross_profit) }}</div>
+            <div class="today-kpi-val" :class="(combinedToday.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.gross_profit) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Lucro Após Ads</div>
-            <div class="today-kpi-val" :class="(todayData.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(todayData.lucro_liquido) }}</div>
+            <div class="today-kpi-val" :class="(combinedToday.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.lucro_liquido) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Ticket Médio</div>
-            <div class="today-kpi-val">{{ fmt(todayData.avg_ticket) }}</div>
+            <div class="today-kpi-val">{{ fmt(combinedToday.avg_ticket) }}</div>
           </div>
           <div class="today-sep">|</div>
           <div class="today-kpi">
             <div class="today-kpi-label">Unidades</div>
-            <div class="today-kpi-val">{{ todayData.units_sold || 0 }}</div>
+            <div class="today-kpi-val">{{ combinedToday.units_sold || 0 }}</div>
           </div>
         </div>
         <div class="today-note">Tempo real — leitura direta dos pedidos</div>
@@ -609,11 +627,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
+import ShopeeService from 'src/services/ShopeeService'
 
 // ── State ─────────────────────────────────────────────────────────────────
 const loading = ref(false)
 const data = ref(null)
 const todayData = ref(null)
+const shopeeData = ref(null)     // dados Shopee para o período
+const shopeeTodayData = ref(null) // dados Shopee de hoje
+
+// Filtro de marketplace: 'all' | 'ml' | 'shopee'
+const activeMarketplace = ref('all')
 const hoveredIdx = ref(null)
 const activeTab = ref('evolucao')
 const activeMetrics = ref(['gmv', 'lucro_liquido'])
@@ -706,26 +730,8 @@ const chartData = computed(() => {
 // Descendente (mais recente primeiro) — usado na tabela
 const chartDataDesc = computed(() => [...chartData.value].reverse())
 
-// Fonte dos KPI cards: todayData (real-time) quando preset=hoje, senão data.operation
-const op = computed(() => {
-  if (activeDatePreset.value === 'hoje' && todayData.value) {
-    const d = todayData.value
-    const ll_pct = d.net_revenue ? +(d.lucro_liquido / d.net_revenue * 100).toFixed(2) : null
-    const gm_pct = d.net_revenue ? +(d.gross_profit / d.net_revenue * 100).toFixed(2) : null
-    return {
-      ...d,
-      lucro_liquido_pct: ll_pct,
-      gross_margin_pct: gm_pct,
-      roas: null,
-      acos: null,
-      catalog_orders_count: 0,
-      flex_orders_count: 0,
-      canceled_count: null,
-      vs_prev: null,
-    }
-  }
-  return data.value?.operation
-})
+// op = alias para combinedOp (mantém compatibilidade com template)
+const op = combinedOp
 
 // Eixo esquerdo — exclui ads_cost (que tem escala própria à direita)
 const LEFT_KEYS = ['gmv', 'net_revenue', 'gross_profit', 'lucro_liquido']
@@ -854,8 +860,13 @@ function onChartMouseMove(e) {
 async function load() {
   loading.value = true
   try {
-    const res = await MercadoLivreService.getDashboardOperation({ date_from: dateFrom.value, date_to: dateTo.value })
-    data.value = res.data
+    const params = { date_from: dateFrom.value, date_to: dateTo.value }
+    const [mlRes, shopeeRes] = await Promise.allSettled([
+      MercadoLivreService.getDashboardOperation(params),
+      ShopeeService.getDashboardStats(params),
+    ])
+    data.value       = mlRes.status === 'fulfilled' ? mlRes.value.data : null
+    shopeeData.value = shopeeRes.status === 'fulfilled' ? shopeeRes.value.data : null
   } catch (e) {
     console.error('Dashboard error', e)
     data.value = null
@@ -866,12 +877,97 @@ async function load() {
 
 async function loadToday() {
   try {
-    const res = await MercadoLivreService.getDashboardToday()
-    todayData.value = res.data  // flat: { gmv, orders_count, units_sold, net_revenue, lucro_liquido, avg_ticket }
+    const [mlRes, shopeeRes] = await Promise.allSettled([
+      MercadoLivreService.getDashboardToday(),
+      ShopeeService.getTodayStats(),
+    ])
+    todayData.value      = mlRes.status === 'fulfilled' ? mlRes.value.data : null
+    shopeeTodayData.value = shopeeRes.status === 'fulfilled' ? shopeeRes.value.data : null
   } catch (e) {
     console.error('Today data error', e)
   }
 }
+
+// ── Dados combinados (ML + Shopee) ────────────────────────────────────────
+const combinedToday = computed(() => {
+  const ml = todayData.value
+  const sh = shopeeTodayData.value
+  if (activeMarketplace.value === 'ml')     return ml ? { ...ml } : null
+  if (activeMarketplace.value === 'shopee') return sh ? shopeeToMLFormat(sh) : null
+
+  // all: soma ML + Shopee
+  if (!ml && !sh) return null
+  return {
+    gmv:          (ml?.gmv || 0) + (sh?.faturamento || 0),
+    orders_count: (ml?.orders_count || 0) + (sh?.count_paid || 0),
+    net_revenue:  (ml?.net_revenue || 0) + (sh?.faturamento || 0),
+    gross_profit: (ml?.gross_profit || 0) + (sh?.lucro_apos_cmp || 0),
+    lucro_liquido: (ml?.lucro_liquido || 0) + (sh?.lucro_apos_cmp || 0),
+    units_sold:   (ml?.units_sold || 0),
+    avg_ticket:   null, // recalculado abaixo
+    _ml: ml,
+    _shopee: sh,
+  }
+})
+
+function shopeeToMLFormat(sh) {
+  return {
+    gmv:          sh.faturamento || 0,
+    orders_count: sh.count_paid || 0,
+    net_revenue:  sh.faturamento || 0,
+    gross_profit: sh.lucro_apos_cmp || 0,
+    lucro_liquido: sh.lucro_apos_cmp || 0,
+    units_sold:   0,
+    avg_ticket:   null,
+  }
+}
+
+// KPIs mesclados: quando preset=hoje usa combinedToday, senão usa ML + shopeeData somados
+const combinedOp = computed(() => {
+  if (activeDatePreset.value === 'hoje' && combinedToday.value) {
+    const d = combinedToday.value
+    const ll_pct = d.net_revenue ? +(d.lucro_liquido / d.net_revenue * 100).toFixed(2) : null
+    const gm_pct = d.net_revenue ? +(d.gross_profit / d.net_revenue * 100).toFixed(2) : null
+    return { ...d, lucro_liquido_pct: ll_pct, gross_margin_pct: gm_pct, roas: null, acos: null, catalog_orders_count: 0, flex_orders_count: 0, canceled_count: null, vs_prev: null }
+  }
+
+  const ml = activeMarketplace.value !== 'shopee' ? data.value?.operation : null
+  const sh = activeMarketplace.value !== 'ml'     ? shopeeData.value      : null
+
+  if (!ml && !sh) return null
+  if (!sh) return ml
+  if (!ml) return {
+    gmv:          sh.gmv,
+    net_revenue:  sh.net_revenue,
+    gross_profit: sh.gross_profit || 0,
+    lucro_liquido: sh.gross_profit || 0,
+    orders_count: sh.orders_count,
+    avg_ticket:   sh.avg_ticket,
+    units_sold:   sh.units_sold,
+    ads_cost:     0,
+    lucro_liquido_pct: sh.net_revenue ? +((sh.gross_profit || 0) / sh.net_revenue * 100).toFixed(2) : null,
+    gross_margin_pct:  null,
+    vs_prev: null,
+  }
+
+  return {
+    gmv:           (ml.gmv || 0) + (sh.gmv || 0),
+    net_revenue:   (ml.net_revenue || 0) + (sh.net_revenue || 0),
+    gross_profit:  (ml.gross_profit || 0) + (sh.gross_profit || 0),
+    lucro_liquido: (ml.lucro_liquido || 0) + (sh.gross_profit || 0),
+    orders_count:  (ml.orders_count || 0) + (sh.orders_count || 0),
+    units_sold:    (ml.units_sold || 0) + (sh.units_sold || 0),
+    avg_ticket:    null,
+    ads_cost:      ml.ads_cost || 0,
+    lucro_liquido_pct: null,
+    gross_margin_pct:  null,
+    roas: ml.roas, acos: ml.acos, tacos: ml.tacos,
+    canceled_count: ml.canceled_count,
+    catalog_orders_count: ml.catalog_orders_count,
+    flex_orders_count:    ml.flex_orders_count,
+    vs_prev: ml.vs_prev,
+  }
+})
 
 function applyPreset(key) {
   activeDatePreset.value = key
@@ -1030,6 +1126,24 @@ onMounted(() => { load(); loadToday() })
   gap: 10px;
   flex-wrap: wrap;
 }
+
+/* ── Marketplace filter ────────────────────────────────────────────────── */
+.mkt-filter-group {
+  display: flex; align-items: center; gap: 4px;
+  background: #f1f5f9; border-radius: 8px;
+  padding: 3px;
+}
+.mkt-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 500; color: #64748b;
+  border: none; background: transparent; cursor: pointer;
+  transition: all .15s;
+}
+.mkt-btn:hover { background: #e2e8f0; color: #334155; }
+.mkt-btn--on { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,.1); font-weight: 700; }
+.mkt-btn--ml.mkt-btn--on { color: #FFE600; background: #1a1a2e; }
+.mkt-btn--shopee.mkt-btn--on { color: #EE4D2D; background: #fff7f5; }
 
 /* ── Date range ────────────────────────────────────────────────────────── */
 .date-range-group {

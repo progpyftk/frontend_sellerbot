@@ -56,4 +56,13 @@ export default {
   listItems(params = {}) {
     return api.get('/shopee/items/', { params })
   },
+
+  // Dashboard
+  getTodayStats(params = {}) {
+    return api.get('/shopee/orders/today_stats/', { params })
+  },
+
+  getDashboardStats(params = {}) {
+    return api.get('/shopee/orders/dashboard_stats/', { params })
+  },
 }

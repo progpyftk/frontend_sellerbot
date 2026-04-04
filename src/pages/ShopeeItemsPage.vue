@@ -399,21 +399,27 @@
           <!-- Anúncio: nome, SKU, ID, loja, estoque -->
           <q-td key="item_name" :props="props" style="max-width:380px;white-space:normal">
             <div class="column q-gutter-y-xs">
-              <div class="text-grey-9 text-weight-bold" style="font-size:13px;line-height:1.3">
+              <div class="text-grey-9 text-weight-bold cursor-pointer"
+                style="font-size:13px;line-height:1.3"
+                @click.stop="copyText(props.row.item_name)"
+                title="Copiar nome">
                 {{ props.row.item_name }}
+                <q-tooltip class="bg-grey-9">Clique para copiar o nome</q-tooltip>
               </div>
               <div class="row items-center q-gutter-x-sm text-caption">
                 <span v-if="props.row.item_sku"
                   class="badge-mono cursor-pointer"
-                  @click.stop="copyText(props.row.item_sku)"
-                  title="Copiar SKU">
+                  @click.stop="copyText(props.row.item_sku)">
+                  <q-icon name="content_copy" size="9px" class="q-mr-xs text-grey-4" />
                   {{ props.row.item_sku }}
+                  <q-tooltip class="bg-grey-9">Copiar SKU</q-tooltip>
                 </span>
                 <span
                   class="badge-mono cursor-pointer"
-                  @click.stop="copyText(String(props.row.item_id))"
-                  title="Copiar ID">
-                  {{ props.row.item_id }}
+                  @click.stop="copyText(String(props.row.item_id))">
+                  <q-icon name="content_copy" size="9px" class="q-mr-xs text-grey-4" />
+                  ID {{ props.row.item_id }}
+                  <q-tooltip class="bg-grey-9">Copiar ID</q-tooltip>
                 </span>
                 <span class="shop-badge">
                   <q-icon name="storefront" size="10px" /> {{ props.row.shop_name }}
@@ -445,18 +451,30 @@
 
           <!-- Analytics: visitas, vendas, avaliação -->
           <q-td key="analytics" :props="props" align="center">
-            <div class="column items-center q-gutter-y-xs">
-              <div class="analytics-chip">
-                <q-icon name="visibility" size="12px" class="q-mr-xs text-grey-5" />
-                <span>{{ (props.row.views || 0).toLocaleString('pt-BR') }}</span>
+            <div class="analytics-grid">
+              <!-- Visitas -->
+              <div class="ag-cell" :class="props.row.views > 0 ? 'ag-cell--views' : 'ag-cell--zero'">
+                <q-icon name="visibility" size="11px" class="ag-icon" />
+                <span class="ag-value">{{ props.row.views > 999 ? (props.row.views / 1000).toFixed(1) + 'k' : (props.row.views || 0) }}</span>
+                <q-tooltip class="bg-grey-9">{{ (props.row.views || 0).toLocaleString('pt-BR') }} visitas</q-tooltip>
               </div>
-              <div class="analytics-chip" :class="props.row.sales > 0 ? 'analytics-chip--sales' : ''">
-                <q-icon name="shopping_cart" size="12px" class="q-mr-xs" :class="props.row.sales > 0 ? 'text-teal-7' : 'text-grey-5'" />
-                <span :class="props.row.sales > 0 ? 'text-teal-8 text-weight-bold' : ''">{{ (props.row.sales || 0).toLocaleString('pt-BR') }}</span>
+              <!-- Vendas -->
+              <div class="ag-cell" :class="props.row.sales > 0 ? 'ag-cell--sales' : 'ag-cell--zero'">
+                <q-icon name="shopping_bag" size="11px" class="ag-icon" />
+                <span class="ag-value">{{ props.row.sales > 999 ? (props.row.sales / 1000).toFixed(1) + 'k' : (props.row.sales || 0) }}</span>
+                <q-tooltip class="bg-grey-9">{{ (props.row.sales || 0).toLocaleString('pt-BR') }} vendas</q-tooltip>
               </div>
-              <div v-if="props.row.rating_count" class="analytics-chip">
-                <q-icon name="star" size="12px" color="amber" class="q-mr-xs" />
-                <span>{{ Number(props.row.rating_star || 0).toFixed(1) }}</span>
+              <!-- Avaliação -->
+              <div class="ag-cell" :class="props.row.rating_count > 0 ? 'ag-cell--rating' : 'ag-cell--zero'">
+                <q-icon name="star" size="11px" class="ag-icon" />
+                <span class="ag-value">{{ props.row.rating_count > 0 ? Number(props.row.rating_star || 0).toFixed(1) : '—' }}</span>
+                <q-tooltip v-if="props.row.rating_count" class="bg-grey-9">{{ Number(props.row.rating_star || 0).toFixed(1) }} estrelas · {{ props.row.rating_count }} avaliações</q-tooltip>
+              </div>
+              <!-- Avaliações (count) -->
+              <div class="ag-cell" :class="props.row.rating_count > 0 ? 'ag-cell--reviews' : 'ag-cell--zero'">
+                <q-icon name="chat_bubble" size="11px" class="ag-icon" />
+                <span class="ag-value">{{ props.row.rating_count > 999 ? (props.row.rating_count / 1000).toFixed(1) + 'k' : (props.row.rating_count || 0) }}</span>
+                <q-tooltip class="bg-grey-9">{{ (props.row.rating_count || 0).toLocaleString('pt-BR') }} avaliações</q-tooltip>
               </div>
             </div>
           </q-td>
@@ -704,7 +722,7 @@ const syncing        = ref(false)
 const searchFocused  = ref(false)
 const showAdvanced   = ref(false)
 const accountOptions = ref([])
-const currentSort    = ref('-last_synced_at')
+const currentSort    = ref('-sales')
 const itemDetails    = ref({})   // cache de detalhes completos por item_id
 const detailLoading  = ref({})   // loading state por item_id
 const showAllImages  = ref({})   // per item_id: show all images or just first 3
@@ -1239,11 +1257,31 @@ onMounted(loadAccounts)
 
 .price-main { color: #EE4D2D; }
 
-.analytics-chip {
-  display: flex; align-items: center;
-  font-size: 11px; color: #64748b;
+/* ── Analytics grid ──────────────────────────────────────────────────── */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  min-width: 80px;
+}
+.ag-cell {
+  display: flex; align-items: center; gap: 3px;
+  padding: 2px 5px; border-radius: 5px;
+  font-size: 10.5px; font-weight: 600;
   white-space: nowrap;
 }
+.ag-icon { flex-shrink: 0; }
+.ag-value { line-height: 1; }
+
+.ag-cell--zero    { color: #cbd5e1; }
+.ag-cell--views   { background: #f0f9ff; color: #0284c7; }
+.ag-cell--views .ag-icon { color: #38bdf8; }
+.ag-cell--sales   { background: #f0fdf4; color: #16a34a; }
+.ag-cell--sales .ag-icon { color: #4ade80; }
+.ag-cell--rating  { background: #fefce8; color: #ca8a04; }
+.ag-cell--rating .ag-icon { color: #facc15; }
+.ag-cell--reviews { background: #faf5ff; color: #9333ea; }
+.ag-cell--reviews .ag-icon { color: #c084fc; }
 
 /* ── Status pills ─────────────────────────────────────────────────────── */
 .status-pill {

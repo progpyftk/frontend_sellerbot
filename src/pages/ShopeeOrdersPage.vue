@@ -387,6 +387,9 @@
                     <span v-if="props.row.items[0].model_name" class="variation-badge-inline">
                       <q-icon name="tune" size="9px" /> {{ props.row.items[0].model_name }}
                     </span>
+                    <span v-if="props.row.items[0].model_sku || props.row.items[0].seller_sku" class="sku-inline">
+                      {{ props.row.items[0].model_sku || props.row.items[0].seller_sku }}
+                    </span>
                     <span v-if="props.row.items.length > 1" class="text-caption text-grey-5">
                       +{{ props.row.items.length - 1 }} item{{ props.row.items.length > 2 ? 's' : '' }}
                     </span>
@@ -559,9 +562,18 @@
                 <span v-if="item.model_name" class="variation-badge q-mt-xs">
                   <q-icon name="tune" size="10px" /> {{ item.model_name }}
                 </span>
-                <div class="row items-center q-gutter-x-xs text-caption text-grey-6 q-mt-xs">
-                  <span v-if="item.seller_sku" class="badge-mono">{{ item.seller_sku }}</span>
-                  <span class="badge-mono">ID {{ item.item_id }}</span>
+                <div class="row items-center q-gutter-x-xs q-mt-xs" style="flex-wrap:wrap;gap:4px">
+                  <!-- SKU da variação (model_sku) — preferido sobre SKU do item -->
+                  <span v-if="item.model_sku" class="badge-sku badge-sku--variation">
+                    <q-icon name="tag" size="9px" />{{ item.model_sku }}
+                    <q-tooltip class="bg-grey-9">SKU da variação</q-tooltip>
+                  </span>
+                  <!-- SKU do item (seller_sku) — mostra apenas se diferente do model_sku -->
+                  <span v-if="item.seller_sku && item.seller_sku !== item.model_sku" class="badge-sku">
+                    <q-icon name="tag" size="9px" />{{ item.seller_sku }}
+                    <q-tooltip class="bg-grey-9">SKU do anúncio</q-tooltip>
+                  </span>
+                  <span class="badge-sku badge-sku--id">ID {{ item.item_id }}</span>
                 </div>
               </div>
               <div class="column items-end q-gutter-y-none" style="flex-shrink:0">
@@ -591,77 +603,79 @@
 
               <!-- Com escrow: preço original → desconto → preço final -->
               <template v-if="selectedOrder.escrow_synced">
-                <!-- Preço original (lista) = selling_price + descontos do seller -->
-                <div v-if="Number(selectedOrder.seller_product_discount) > 0 || Number(selectedOrder.seller_voucher) > 0" class="finance-row">
-                  <span class="finance-label">
-                    Preço original (lista)
-                    <q-tooltip class="bg-grey-9" style="max-width:240px">Preço cheio antes de qualquer desconto do vendedor</q-tooltip>
-                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
-                  </span>
-                  <span class="finance-val" style="text-decoration:line-through;color:#94a3b8">
-                    {{ formatCurrency(Number(selectedOrder.selling_price) + Number(selectedOrder.seller_product_discount || 0) + Number(selectedOrder.seller_voucher || 0)) }}
-                  </span>
+
+                <!-- ▸ Quadrinho: formação do preço (descontos do seller) -->
+                <div class="price-box">
+                  <!-- Preço original só aparece se houve desconto do seller -->
+                  <div v-if="Number(selectedOrder.seller_product_discount) > 0 || Number(selectedOrder.seller_voucher) > 0" class="price-box-row">
+                    <span class="price-box-label">Preço original (lista)</span>
+                    <span class="price-box-val price-box-strike">
+                      {{ formatCurrency(Number(selectedOrder.selling_price) + Number(selectedOrder.seller_product_discount || 0) + Number(selectedOrder.seller_voucher || 0)) }}
+                    </span>
+                  </div>
+                  <div v-if="Number(selectedOrder.seller_product_discount) > 0" class="price-box-row">
+                    <span class="price-box-label text-orange-7">Desconto no produto (seller)</span>
+                    <span class="price-box-val text-orange-7">-{{ formatCurrency(selectedOrder.seller_product_discount) }}</span>
+                  </div>
+                  <div v-if="Number(selectedOrder.seller_voucher) > 0" class="price-box-row">
+                    <span class="price-box-label text-orange-7">
+                      Cupom do vendedor<template v-if="selectedOrder.seller_voucher_code"> ({{ selectedOrder.seller_voucher_code }})</template>
+                    </span>
+                    <span class="price-box-val text-orange-7">-{{ formatCurrency(selectedOrder.seller_voucher) }}</span>
+                  </div>
+                  <div class="price-box-divider" />
+                  <div class="price-box-row price-box-total">
+                    <span class="price-box-label">
+                      Preço de venda
+                      <q-tooltip class="bg-grey-9" style="max-width:240px">Valor base do escrow: o que o seller recebe como referência de receita antes das taxas Shopee.</q-tooltip>
+                      <q-icon name="info_outline" size="9px" class="q-ml-xs text-grey-4" />
+                    </span>
+                    <span class="price-box-val price-box-bold">{{ formatCurrency(selectedOrder.selling_price) }}</span>
+                  </div>
                 </div>
-                <div v-if="Number(selectedOrder.seller_product_discount) > 0" class="finance-row finance-row--note">
-                  <span class="finance-label-note text-orange-7">Desconto no produto (seller)</span>
-                  <span class="finance-val-note text-orange-7">-{{ formatCurrency(selectedOrder.seller_product_discount) }}</span>
-                </div>
-                <div v-if="Number(selectedOrder.seller_voucher) > 0" class="finance-row finance-row--note">
-                  <span class="finance-label-note text-orange-7">
-                    Cupom do vendedor
-                    <template v-if="selectedOrder.seller_voucher_code"> ({{ selectedOrder.seller_voucher_code }})</template>
+
+                <!-- Subsídios da Shopee que cobrem a diferença até o valor pago pelo comprador -->
+                <div v-if="getShopeeSubsidy(selectedOrder) > 0" class="finance-row finance-row--note q-mt-xs">
+                  <span class="finance-label-note text-indigo-6">
+                    Subsídio Shopee
+                    <q-tooltip class="bg-grey-9" style="max-width:300px">
+                      A Shopee cobriu a diferença entre o Preço de venda (R${{ formatCurrency(selectedOrder.selling_price) }}) e o valor efetivamente pago pelo comprador (R${{ formatCurrency(selectedOrder.total_amount) }}).
+                      Inclui cupons Shopee, moedas resgatadas, desconto PIX e promoções da plataforma.
+                      O seller ainda recebe com base no Preço de venda — a Shopee assume esse custo.
+                    </q-tooltip>
+                    <q-icon name="info_outline" size="10px" class="q-ml-xs" />
                   </span>
-                  <span class="finance-val-note text-orange-7">-{{ formatCurrency(selectedOrder.seller_voucher) }}</span>
-                </div>
-                <div class="finance-row">
-                  <span class="finance-label">
-                    Preço de venda (promocional)
-                    <q-tooltip class="bg-grey-9" style="max-width:240px">model_discounted_price × qtd — preço efetivo cobrado do comprador</q-tooltip>
-                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
-                  </span>
-                  <span class="finance-val finance-bold">{{ formatCurrency(selectedOrder.selling_price) }}</span>
+                  <span class="finance-val-note text-indigo-6">-{{ formatCurrency(getShopeeSubsidy(selectedOrder)) }}</span>
                 </div>
                 <div class="finance-row finance-row--note">
-                  <span class="finance-label-note">Total pago pelo comprador</span>
+                  <span class="finance-label-note finance-bold">Total pago pelo comprador</span>
                   <span class="finance-val-note finance-bold">{{ formatCurrency(selectedOrder.total_amount) }}</span>
                 </div>
               </template>
 
               <!-- Sem escrow: breakdown por itens -->
               <template v-else>
-                <!-- Preço original riscado (quando há desconto no produto) -->
-                <div v-if="hasDiscount(selectedOrder)" class="finance-row">
-                  <span class="finance-label">Preço original (lista)</span>
-                  <span class="finance-val" style="text-decoration:line-through;color:#94a3b8">
-                    {{ formatCurrency(getItemsOriginalTotal(selectedOrder)) }}
-                  </span>
-                </div>
-                <div v-if="hasDiscount(selectedOrder)" class="finance-row finance-row--note">
-                  <span class="finance-label-note text-orange-7">Desconto no produto</span>
-                  <span class="finance-val-note text-orange-7">
-                    -{{ formatCurrency(getItemsOriginalTotal(selectedOrder) - getItemsSaleTotal(selectedOrder)) }}
-                  </span>
-                </div>
-                <!-- Preço de venda efetivo dos produtos -->
-                <div class="finance-row">
-                  <span class="finance-label">
-                    Preço de venda (produtos)
-                    <q-tooltip class="bg-grey-9" style="max-width:240px">Soma dos preços efetivos dos itens (unit_price × qtd). Não inclui frete nem acréscimo de pagamento.</q-tooltip>
-                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
-                  </span>
-                  <span class="finance-val finance-bold">{{ formatCurrency(getItemsSaleTotal(selectedOrder)) }}</span>
-                </div>
-                <!-- Frete pago pelo comprador — informativo, vai direto pro Shopee Xpress -->
-                <div v-if="Number(selectedOrder.shipping_fee) > 0" class="finance-row finance-row--note">
-                  <span class="finance-label-note">
-                    Frete pago pelo comprador
-                    <q-tooltip class="bg-grey-9" style="max-width:260px">Valor que o comprador pagou pelo frete. Vai direto para o Shopee Xpress — não entra no repasse do seller. O custo real de frete para o seller vem do escrow.</q-tooltip>
-                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
-                  </span>
-                  <span class="finance-val-note text-grey-5">{{ formatCurrency(selectedOrder.shipping_fee) }}</span>
+                <div class="price-box">
+                  <div v-if="hasDiscount(selectedOrder)" class="price-box-row">
+                    <span class="price-box-label">Preço original (lista)</span>
+                    <span class="price-box-val price-box-strike">{{ formatCurrency(getItemsOriginalTotal(selectedOrder)) }}</span>
+                  </div>
+                  <div v-if="hasDiscount(selectedOrder)" class="price-box-row">
+                    <span class="price-box-label text-orange-7">Desconto no produto</span>
+                    <span class="price-box-val text-orange-7">-{{ formatCurrency(getItemsOriginalTotal(selectedOrder) - getItemsSaleTotal(selectedOrder)) }}</span>
+                  </div>
+                  <div class="price-box-divider" v-if="hasDiscount(selectedOrder)" />
+                  <div class="price-box-row price-box-total">
+                    <span class="price-box-label">Preço de venda (produtos)</span>
+                    <span class="price-box-val price-box-bold">{{ formatCurrency(getItemsSaleTotal(selectedOrder)) }}</span>
+                  </div>
                 </div>
                 <div class="finance-row finance-row--note">
-                  <span class="finance-label-note">Total pago pelo comprador</span>
+                  <span class="finance-label-note">
+                    Total pago pelo comprador
+                    <q-tooltip class="bg-grey-9" style="max-width:260px">Valor pago pelo comprador. Inclui frete pago por ele (se houver). Pode ser igual ao preço dos produtos quando há frete subsidiado pela Shopee.</q-tooltip>
+                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
+                  </span>
                   <span class="finance-val-note finance-bold">{{ formatCurrency(selectedOrder.total_amount) }}</span>
                 </div>
               </template>
@@ -692,32 +706,32 @@
                   <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.service_fee) }}</span>
                 </div>
 
-                <!-- Logística -->
-                <div class="finance-row">
-                  <span class="finance-label">
-                    Frete (bruto)
-                    <q-tooltip class="bg-grey-9" style="max-width:260px">actual_shipping_fee: custo da logística Shopee Xpress cobrado do seller</q-tooltip>
-                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
-                  </span>
-                  <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.logistics_fee) }}</span>
-                </div>
-
-                <!-- Rebate de frete -->
-                <div v-if="Number(selectedOrder.shopee_shipping_rebate) > 0" class="finance-row finance-row--note">
-                  <span class="finance-label-note text-teal-7">
-                    Rebate de frete Shopee
-                    <q-tooltip class="bg-grey-9" style="max-width:260px">shopee_shipping_rebate: Shopee subsidia o frete, devolvendo total ou parcialmente ao seller</q-tooltip>
-                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-teal-4" />
-                  </span>
-                  <span class="finance-val-note text-teal-7">+{{ formatCurrency(selectedOrder.shopee_shipping_rebate) }}</span>
-                </div>
-
-                <!-- Net frete -->
-                <div class="finance-row finance-row--note" style="border-top:1px solid #f1f5f9;padding-top:4px;margin-top:2px">
-                  <span class="finance-label-note">Frete líquido (custo real)</span>
-                  <span :class="['finance-val-note', (Number(selectedOrder.logistics_fee) - Number(selectedOrder.shopee_shipping_rebate)) > 0 ? 'finance-negative' : 'text-teal-7']">
-                    {{ formatCurrency(Number(selectedOrder.logistics_fee) - Number(selectedOrder.shopee_shipping_rebate)) }}
-                  </span>
+                <!-- ▸ Quadrinho de logística -->
+                <div class="logistics-box q-mt-xs">
+                  <div class="logistics-box-label">
+                    <q-icon name="local_shipping" size="11px" class="q-mr-xs" />Logística
+                  </div>
+                  <div class="logistics-box-row">
+                    <span>Frete bruto
+                      <q-tooltip class="bg-grey-9" style="max-width:260px">actual_shipping_fee: custo Shopee Xpress cobrado do seller</q-tooltip>
+                      <q-icon name="info_outline" size="9px" class="q-ml-xs text-grey-4" />
+                    </span>
+                    <span class="finance-negative">-{{ formatCurrency(selectedOrder.logistics_fee) }}</span>
+                  </div>
+                  <div v-if="Number(selectedOrder.shopee_shipping_rebate) > 0" class="logistics-box-row text-teal-7">
+                    <span>Rebate Shopee
+                      <q-tooltip class="bg-grey-9" style="max-width:260px">shopee_shipping_rebate: Shopee subsidia o frete devolvendo ao seller</q-tooltip>
+                      <q-icon name="info_outline" size="9px" class="q-ml-xs" />
+                    </span>
+                    <span>+{{ formatCurrency(selectedOrder.shopee_shipping_rebate) }}</span>
+                  </div>
+                  <div class="logistics-box-divider" />
+                  <div class="logistics-box-row logistics-box-total">
+                    <span>Frete líquido (custo real)</span>
+                    <span :class="getFreteNet(selectedOrder) > 0 ? 'finance-negative' : 'text-teal-7'">
+                      {{ formatCurrency(getFreteNet(selectedOrder)) }}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -739,10 +753,19 @@
             <template v-else>
               <div class="finance-block">
                 <div class="finance-block-label">Deduções (estimado)</div>
+                <!-- Logística estimada (shipping_fee = custo Shopee Xpress cobrado do seller) -->
+                <div v-if="Number(selectedOrder.shipping_fee) > 0" class="finance-row">
+                  <span class="finance-label">
+                    Logística Shopee (estimada)
+                    <q-tooltip class="bg-grey-9" style="max-width:280px">shipping_fee: custo estimado da logística Shopee Xpress cobrado do seller. O frete que o comprador paga vai direto para a Shopee — não soma na sua receita. Sincronize o escrow para o valor real.</q-tooltip>
+                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
+                  </span>
+                  <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.shipping_fee) }}</span>
+                </div>
                 <div class="finance-row finance-row--note">
                   <span class="finance-label-note">
-                    Comissão + taxas + frete líquido
-                    <q-tooltip class="bg-grey-9" style="max-width:260px">Comissão Shopee (~16%), taxa de serviço (~12%) e frete líquido (bruto − rebate) só estão disponíveis após sincronizar o escrow.</q-tooltip>
+                    Comissão + taxas
+                    <q-tooltip class="bg-grey-9" style="max-width:260px">Comissão Shopee (~16%) e taxa de serviço (~12%) só estão disponíveis após sincronizar o escrow.</q-tooltip>
                     <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
                   </span>
                   <span class="finance-val-note text-grey-4">Sincronize o escrow</span>
@@ -751,8 +774,8 @@
               <div class="finance-divider" />
               <div class="finance-row finance-row--subtotal">
                 <span class="finance-label-bold">
-                  Venda bruta (sem taxas)
-                  <q-tooltip class="bg-grey-9" style="max-width:260px">Preço de venda dos produtos antes das deduções da Shopee (comissão, taxa, frete líquido). Sincronize o escrow para o repasse real.</q-tooltip>
+                  Repasse estimado
+                  <q-tooltip class="bg-grey-9" style="max-width:280px">total_amount − logística estimada. Não inclui comissão e taxas Shopee (sincronize o escrow para ver o repasse real).</q-tooltip>
                   <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
                 </span>
                 <span :class="['finance-subtotal', getLiquido(selectedOrder) >= 0 ? 'pos' : 'neg']">
@@ -1024,14 +1047,26 @@ function statusIcon(s) {
 // logistics_fee   = frete bruto cobrado; shopee_shipping_rebate = rebate (pode ser 100%)
 // getLiquido = fallback estimado quando escrow ainda não sincronizado
 
+function getShopeeSubsidy(row) {
+  // Diferença entre o preço de venda base (escrow) e o que o comprador pagou de fato.
+  // Essa diferença é coberta pela Shopee via cupons, moedas, PIX discount, promoções.
+  const selling = Number(row.selling_price || 0)
+  const paid = Number(row.total_amount || 0)
+  return Math.max(0, selling - paid)
+}
+
+function getFreteNet(row) {
+  return Number(row.logistics_fee || 0) - Number(row.shopee_shipping_rebate || 0)
+}
+
 function getTaxasShopee(row) {
   return Number(row.commission_fee || 0) + Number(row.service_fee || 0)
 }
 
 function getLiquido(row) {
   if (row.escrow_synced && row.escrow_amount != null) return Number(row.escrow_amount)
-  // Sem escrow: usa a soma dos unit_price dos itens como base (não inclui frete)
-  return getItemsSaleTotal(row)
+  // Sem escrow: total_amount - shipping_fee (logística Shopee) — mesma base usada pelo backend no sync_cmv
+  return Number(row.total_amount || 0) - Number(row.shipping_fee || 0)
 }
 
 // Soma de unit_price × qty — preço real de venda dos produtos (sem frete)
@@ -1594,6 +1629,29 @@ onMounted(() => {
   font-size: 10px; font-weight: 600; color: #0d9488;
 }
 
+/* SKU inline na linha da tabela */
+.sku-inline {
+  display: inline-block;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 10px; color: #94a3b8;
+  letter-spacing: -0.3px;
+}
+
+/* Badges de SKU no painel de detalhe */
+.badge-sku {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 6px; border-radius: 5px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 10.5px; font-weight: 600; letter-spacing: -0.3px;
+  background: #f1f5f9; color: #475569;
+}
+.badge-sku--variation {
+  background: #f0fdf4; color: #15803d;
+}
+.badge-sku--id {
+  background: #f8fafc; color: #94a3b8; font-weight: 400;
+}
+
 /* ── Finance summary (dialog) ──────────────────────────────── */
 .finance-summary { display: flex; flex-direction: column; gap: 4px; }
 .finance-block {
@@ -1634,6 +1692,45 @@ onMounted(() => {
   padding: 8px 12px; margin-top: 8px;
   border: 1px dashed #e2e8f0;
 }
+
+/* ── Price breakdown box (quadrinho de formação de preço) ───── */
+.price-box {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+.price-box-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11.5px; padding: 2px 0;
+}
+.price-box-label { color: #78716c; }
+.price-box-val   { color: #0f172a; font-weight: 500; }
+.price-box-strike { text-decoration: line-through; color: #a8a29e; }
+.price-box-divider { height: 1px; background: #fed7aa; margin: 5px 0; }
+.price-box-total .price-box-label { color: #44403c; font-weight: 600; font-size: 12px; }
+.price-box-bold  { font-size: 13px; font-weight: 700; color: #ea580c; }
+
+/* ── Logistics box (quadrinho de frete) ─────────────────────── */
+.logistics-box {
+  background: #f0fdf9;
+  border: 1px solid #99f6e4;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 4px;
+}
+.logistics-box-label {
+  font-size: 10px; font-weight: 700; color: #0d9488;
+  text-transform: uppercase; letter-spacing: .4px;
+  margin-bottom: 5px; display: flex; align-items: center;
+}
+.logistics-box-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11.5px; color: #475569; padding: 2px 0;
+}
+.logistics-box-divider { height: 1px; background: #99f6e4; margin: 5px 0; }
+.logistics-box-total { font-weight: 600; color: #0f172a; font-size: 12px; }
 
 .tracking-card {
   display: flex; align-items: center;
