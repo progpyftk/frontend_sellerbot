@@ -35,38 +35,86 @@
       </template>
 
       <template v-else>
+
+        <!-- Pedidos pagos -->
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="receipt_long" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ todayStats.count }}</div>
-            <div class="today-card-label">Pedidos</div>
-            <div class="today-card-sub">{{ formatCurrency(todayStats.total_amount) }} bruto</div>
-          </div>
-        </div>
-
-        <div v-if="todayStats.lucro_apos_cmp != null"
-          class="today-card" :class="todayStats.lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg'">
-          <div class="today-card-icon"><q-icon name="trending_up" size="16px" /></div>
-          <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.lucro_apos_cmp) }}</div>
-            <div class="today-card-label">Lucro pós Custo Médio</div>
-            <div class="today-card-sub" v-if="todayStats.cmp_count < todayStats.count">
-              {{ todayStats.cmp_count }}/{{ todayStats.count }} pedidos com custo
+            <div class="today-card-val">{{ todayStats.count_paid }}</div>
+            <div class="today-card-label">Pedidos pagos</div>
+            <div class="today-card-sub">
+              <span v-if="todayStats.count_cancelled > 0" class="text-red-5">
+                {{ todayStats.count_cancelled }} cancelado{{ todayStats.count_cancelled !== 1 ? 's' : '' }}
+              </span>
+              <span v-if="todayStats.count_cancelled > 0 && todayStats.count_unpaid > 0"> · </span>
+              <span v-if="todayStats.count_unpaid > 0" class="text-orange-6">
+                {{ todayStats.count_unpaid }} aguardando pagamento
+              </span>
+              <span v-if="todayStats.count_cancelled === 0 && todayStats.count_unpaid === 0">
+                {{ todayStats.count }} total
+              </span>
             </div>
           </div>
         </div>
 
+        <!-- Faturamento real (escrow) -->
+        <div class="today-card today-card--neutral">
+          <div class="today-card-icon"><q-icon name="payments" size="16px" /></div>
+          <div class="today-card-body">
+            <div class="today-card-val">{{ formatCurrency(todayStats.faturamento) }}</div>
+            <div class="today-card-label">Faturamento</div>
+            <div class="today-card-sub">
+              <span v-if="todayStats.faturamento_note === 'escrow'" class="text-teal-6">repasse real (escrow)</span>
+              <span v-else class="text-grey-5">
+                {{ todayStats.escrow_count }}/{{ todayStats.count_paid }} c/ escrow
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lucro pós CMV -->
+        <div class="today-card"
+          :class="todayStats.lucro_apos_cmp != null
+            ? (todayStats.lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg')
+            : 'today-card--neutral'">
+          <div class="today-card-icon"><q-icon name="trending_up" size="16px" /></div>
+          <div class="today-card-body">
+            <template v-if="todayStats.lucro_apos_cmp != null">
+              <div class="today-card-val">{{ formatCurrency(todayStats.lucro_apos_cmp) }}</div>
+              <div class="today-card-label">
+                Lucro pós CMV
+                <span v-if="todayStats.margem_pct != null" class="today-card-badge">
+                  {{ todayStats.margem_pct }}%
+                </span>
+              </div>
+              <div class="today-card-sub">
+                <span v-if="todayStats.cmp_count < todayStats.count_paid" class="text-orange-5">
+                  {{ todayStats.cmp_count }}/{{ todayStats.count_paid }} c/ custo
+                </span>
+                <span v-else>todos com custo cadastrado</span>
+              </div>
+            </template>
+            <template v-else>
+              <div class="today-card-val today-card-val--muted">—</div>
+              <div class="today-card-label">Lucro pós CMV</div>
+              <div class="today-card-sub text-orange-5">CMV não cadastrado</div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Lucro médio -->
         <div v-if="todayStats.avg_lucro_apos_cmp != null"
           class="today-card" :class="todayStats.avg_lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg'">
           <div class="today-card-icon"><q-icon name="equalizer" size="16px" /></div>
           <div class="today-card-body">
             <div class="today-card-val">{{ formatCurrency(todayStats.avg_lucro_apos_cmp) }}</div>
             <div class="today-card-label">Lucro médio / pedido</div>
-            <div class="today-card-sub" v-if="todayStats.cmp_count">
+            <div class="today-card-sub">
               base: {{ todayStats.cmp_count }} pedido{{ todayStats.cmp_count !== 1 ? 's' : '' }} c/ custo
             </div>
           </div>
         </div>
+
       </template>
     </div>
 
@@ -1214,7 +1262,9 @@ onMounted(() => {
 .today-card--neg .today-card-icon { color: #dc2626; }
 .today-card-body { display: flex; flex-direction: column; }
 .today-card-val { font-size: 16px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-.today-card-label { font-size: 10px; color: #64748b; }
+.today-card-val--muted { color: #94a3b8; }
+.today-card-label { font-size: 10px; color: #64748b; display: flex; align-items: center; gap: 4px; }
+.today-card-badge { background: #f0fdf9; color: #0d9488; border-radius: 4px; padding: 0 4px; font-size: 9px; font-weight: 700; }
 .today-card-sub { font-size: 10px; color: #94a3b8; }
 
 /* ── Filter bar ────────────────────────────────────────────── */
