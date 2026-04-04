@@ -56,7 +56,7 @@
                   clickable v-close-popup @click="applySort(opt.value)">
                   <q-item-section>{{ opt.label }}</q-item-section>
                   <q-item-section side v-if="currentSort === opt.value">
-                    <q-icon name="check" color="deep-orange" size="14px" />
+                    <q-icon name="check" color="teal-7" size="14px" />
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -344,7 +344,7 @@
         <q-tr :props="props" class="shopee-table-header">
           <q-th auto-width>
             <q-checkbox :model-value="allSelected" :indeterminate="someSelected"
-              @update:model-value="toggleAll" color="deep-orange" dense />
+              @update:model-value="toggleAll" color="teal-7" dense />
           </q-th>
           <q-th auto-width />
           <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">
@@ -361,13 +361,13 @@
           <!-- Checkbox -->
           <q-td auto-width>
             <q-checkbox :model-value="isSelected(props.row)" @update:model-value="toggleSelect(props.row)"
-              @click.stop color="deep-orange" dense />
+              @click.stop color="teal-7" dense />
           </q-td>
 
           <!-- Expand -->
           <q-td auto-width class="q-py-md">
             <q-btn size="sm" flat round
-              :color="props.expand ? 'deep-orange' : 'grey-6'"
+              :color="props.expand ? 'teal-7' : 'grey-6'"
               @click.stop="toggleExpand(props)"
               :icon="props.expand ? 'expand_less' : 'expand_more'" />
           </q-td>
@@ -450,9 +450,9 @@
                 <q-icon name="visibility" size="12px" class="q-mr-xs text-grey-5" />
                 <span>{{ (props.row.views || 0).toLocaleString('pt-BR') }}</span>
               </div>
-              <div class="analytics-chip">
-                <q-icon name="shopping_cart" size="12px" class="q-mr-xs text-grey-5" />
-                <span>{{ (props.row.sales || 0).toLocaleString('pt-BR') }}</span>
+              <div class="analytics-chip" :class="props.row.sales > 0 ? 'analytics-chip--sales' : ''">
+                <q-icon name="shopping_cart" size="12px" class="q-mr-xs" :class="props.row.sales > 0 ? 'text-teal-7' : 'text-grey-5'" />
+                <span :class="props.row.sales > 0 ? 'text-teal-8 text-weight-bold' : ''">{{ (props.row.sales || 0).toLocaleString('pt-BR') }}</span>
               </div>
               <div v-if="props.row.rating_count" class="analytics-chip">
                 <q-icon name="star" size="12px" color="amber" class="q-mr-xs" />
@@ -483,7 +483,7 @@
               <!-- Loading detalhe -->
               <div v-if="detailLoading[props.row.item_id] || (props.row.has_model && !itemDetails[props.row.item_id])"
                 class="flex flex-center q-py-lg">
-                <q-spinner color="deep-orange" size="28px" />
+                <q-spinner color="teal-7" size="28px" />
                 <span class="q-ml-sm text-caption text-grey-6">Carregando detalhes...</span>
               </div>
 
@@ -493,17 +493,24 @@
                 <div class="col-12 col-md-3">
                   <div class="expand-section-label">Imagens</div>
                   <div class="row q-gutter-xs">
-                    <q-img
-                      v-for="(img, i) in (itemDetails[props.row.item_id]?.images || props.row.images || []).slice(0, 6)"
-                      :key="i"
-                      :src="img"
-                      style="width:60px;height:60px"
-                      fit="cover"
-                      class="rounded-borders border-grey" />
-                    <div v-if="!(itemDetails[props.row.item_id]?.images || props.row.images)?.length"
-                      class="text-caption text-grey-5 q-pa-sm">
-                      Sem imagens
-                    </div>
+                    <template v-if="(itemDetails[props.row.item_id]?.images || props.row.images || []).length">
+                      <q-img
+                        v-for="(img, i) in (showAllImages[props.row.item_id]
+                          ? (itemDetails[props.row.item_id]?.images || props.row.images || [])
+                          : (itemDetails[props.row.item_id]?.images || props.row.images || []).slice(0, 3))"
+                        :key="i"
+                        :src="img"
+                        style="width:60px;height:60px"
+                        fit="cover"
+                        class="rounded-borders border-grey" />
+                      <div
+                        v-if="!showAllImages[props.row.item_id] && (itemDetails[props.row.item_id]?.images || props.row.images || []).length > 3"
+                        class="img-more-tile rounded-borders cursor-pointer"
+                        @click="showAllImages[props.row.item_id] = true">
+                        +{{ (itemDetails[props.row.item_id]?.images || props.row.images || []).length - 3 }}
+                      </div>
+                    </template>
+                    <div v-else class="text-caption text-grey-5 q-pa-sm">Sem imagens</div>
                   </div>
                 </div>
 
@@ -700,6 +707,7 @@ const accountOptions = ref([])
 const currentSort    = ref('-last_synced_at')
 const itemDetails    = ref({})   // cache de detalhes completos por item_id
 const detailLoading  = ref({})   // loading state por item_id
+const showAllImages  = ref({})   // per item_id: show all images or just first 3
 const selectedItems  = ref([])
 
 const pagination = ref({
@@ -1039,7 +1047,7 @@ onMounted(loadAccounts)
   padding: 0 10px; transition: border-color .15s, background .15s;
 }
 .fb-search.focused,
-.fb-search.filled { border-color: #EE4D2D; background: #fff; }
+.fb-search.filled { border-color: #0d9488; background: #fff; }
 .fb-search-icon  { color: #94a3b8; flex-shrink: 0; }
 .fb-search-input {
   flex: 1; border: none; background: transparent;
@@ -1062,9 +1070,9 @@ onMounted(loadAccounts)
   cursor: pointer; transition: all .15s; white-space: nowrap;
 }
 .fb-tbtn:hover { background: #f8fafc !important; }
-.fb-tbtn--active { border-color: #EE4D2D !important; color: #EE4D2D !important; background: #fff8f7 !important; }
+.fb-tbtn--active { border-color: #0d9488 !important; color: #0d9488 !important; background: #f0fdf9 !important; }
 .fb-adv-badge {
-  background: #EE4D2D; color: #fff;
+  background: #0d9488; color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 10px;
   padding: 1px 5px; min-width: 16px; text-align: center;
 }
@@ -1087,33 +1095,33 @@ onMounted(loadAccounts)
   background: #fff; transition: border-color .15s; overflow: visible;
 }
 .fb-combo:hover { border-color: #cbd5e1; }
-.fb-combo--on   { border-color: #EE4D2D; background: #fff8f7; }
+.fb-combo--on   { border-color: #0d9488; background: #f0fdf9; }
 .fb-combo-btn {
   display: flex; align-items: center; gap: 5px;
   height: 30px; padding: 0 10px 0 9px;
   background: none; border: none; cursor: pointer;
   font-size: 12px; font-weight: 500; color: #374151; border-radius: 20px;
 }
-.fb-combo--on .fb-combo-btn { color: #EE4D2D; }
+.fb-combo--on .fb-combo-btn { color: #0d9488; }
 .fb-combo-ico   { color: #94a3b8; flex-shrink: 0; }
-.fb-combo--on .fb-combo-ico { color: #EE4D2D; }
+.fb-combo--on .fb-combo-ico { color: #0d9488; }
 .fb-combo-label { white-space: nowrap; }
 .fb-combo-multi {
-  background: #EE4D2D; color: #fff; border-radius: 10px;
+  background: #0d9488; color: #fff; border-radius: 10px;
   font-size: 10px; font-weight: 700; padding: 0 5px;
 }
 .fb-combo-arrow { color: #94a3b8; }
 .fb-combo-clear {
   display: flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 50%;
-  background: #EE4D2D; border: none; cursor: pointer;
+  background: #0d9488; border: none; cursor: pointer;
   color: #fff; margin-right: 5px; flex-shrink: 0;
 }
-.fb-combo-clear:hover { background: #c73c1e; }
+.fb-combo-clear:hover { background: #0f766e; }
 
 .fb-menu { border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,.10) !important; }
 .fb-menu-item { transition: background .1s; }
-.fb-menu-item--on { background: #fff8f7 !important; }
+.fb-menu-item--on { background: #f0fdf9 !important; }
 .fb-menu-item-label { font-size: 13px; }
 
 /* ── Filter index ─────────────────────────────────────────────────────── */
@@ -1136,11 +1144,11 @@ onMounted(loadAccounts)
 .fb-index-pill {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 12px;
-  background: #ffe4de; color: #EE4D2D;
+  background: #f0fdf9; color: #0d9488;
   font-size: 11px; font-weight: 500;
   cursor: pointer; transition: background .1s;
 }
-.fb-index-pill:hover { background: #ffd0c5; }
+.fb-index-pill:hover { background: #ccfbf1; }
 
 /* ── Smart Views bar ──────────────────────────────────────────────────── */
 .smart-views-bar {
@@ -1181,9 +1189,9 @@ onMounted(loadAccounts)
 
 /* ── Bulk bar ─────────────────────────────────────────────────────────── */
 .bulk-bar {
-  background: #fff3ef;
-  border-bottom: 1px solid #fcd9cc;
-  border-top: 1px solid #fcd9cc;
+  background: #f0fdf9;
+  border-bottom: 1px solid #99f6e4;
+  border-top: 1px solid #99f6e4;
 }
 
 /* ── Tabela ───────────────────────────────────────────────────────────── */
@@ -1200,15 +1208,15 @@ onMounted(loadAccounts)
 }
 
 :deep(.shopee-table tbody tr.hover-row:hover) {
-  background: #fff8f7 !important;
+  background: #f0fdf9 !important;
 }
 
 :deep(.shopee-table tbody tr.row-selected) {
-  background: #fff3ef !important;
+  background: #e6fdf8 !important;
 }
 
 :deep(.shopee-table tbody tr.row-expanded) {
-  background: #fff8f7 !important;
+  background: #f0fdf9 !important;
 }
 
 :deep(.shopee-table tbody td) {
@@ -1250,9 +1258,9 @@ onMounted(loadAccounts)
 
 /* ── Expand row ───────────────────────────────────────────────────────── */
 .expand-panel {
-  background: #fff8f7;
+  background: #fff;
   padding: 16px 20px;
-  border-top: 1px solid #fcd9cc;
+  border-top: 2px solid #0d9488;
 }
 
 .expand-section-label {
@@ -1260,6 +1268,16 @@ onMounted(loadAccounts)
   text-transform: uppercase; letter-spacing: .5px;
   margin-bottom: 8px;
 }
+
+/* ── Image more tile ──────────────────────────────────────────────────── */
+.img-more-tile {
+  width: 60px; height: 60px;
+  display: flex; align-items: center; justify-content: center;
+  background: #f0fdf9; border: 1.5px dashed #0d9488;
+  color: #0d9488; font-size: 13px; font-weight: 700;
+  transition: background .15s;
+}
+.img-more-tile:hover { background: #ccfbf1; }
 
 /* ── Detail table ─────────────────────────────────────────────────────── */
 :deep(.detail-table tbody td) {
@@ -1308,7 +1326,7 @@ onMounted(loadAccounts)
   font-size: 13px; color: #0f172a; background: #f8fafc;
   outline: none; transition: border-color .15s;
 }
-.fadv-input:focus { border-color: #EE4D2D; background: #fff; }
+.fadv-input:focus { border-color: #0d9488; background: #fff; }
 .fadv-input--full { width: 100%; box-sizing: border-box; }
 .fadv-footer {
   display: flex; gap: 8px; padding: 14px 20px;
@@ -1322,11 +1340,11 @@ onMounted(loadAccounts)
 .fadv-btn-clear:hover { background: #f8fafc; }
 .fadv-btn-apply {
   flex: 2; height: 36px; border-radius: 8px;
-  border: none; background: #EE4D2D; color: #fff;
+  border: none; background: #0d9488; color: #fff;
   font-size: 13px; font-weight: 600; cursor: pointer;
   transition: background .15s;
 }
-.fadv-btn-apply:hover { background: #c73c1e; }
+.fadv-btn-apply:hover { background: #0f766e; }
 
 /* ── Utilities ────────────────────────────────────────────────────────── */
 .font-mono {

@@ -27,7 +27,29 @@ export default {
     return api.post(`/shopee/accounts/${accountId}/sync_items/`)
   },
 
+  syncEscrow(accountId, payload = {}) {
+    return api.post(`/shopee/accounts/${accountId}/sync_escrow/`, payload)
+  },
+
   deleteAccount(accountId) {
     return api.delete(`/shopee/accounts/${accountId}/`)
+  },
+
+  // Orders
+  listOrders(params = {}) {
+    return api.get('/shopee/orders/', { params })
+  },
+
+  getOrder(orderId) {
+    return api.get(`/shopee/orders/${orderId}/`)
+  },
+
+  getOrderTodayStats() {
+    return api.get('/shopee/orders/today_stats/')
+  },
+
+  // Items list
+  listItems(params = {}) {
+    return api.get('/shopee/items/', { params })
   },
 }
