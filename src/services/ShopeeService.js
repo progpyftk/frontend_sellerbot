@@ -44,6 +44,10 @@ export default {
     return api.get(`/shopee/orders/${orderId}/`)
   },
 
+  getOrderTracking(orderId) {
+    return api.get(`/shopee/orders/${orderId}/tracking/`)
+  },
+
   getOrderTodayStats() {
     return api.get('/shopee/orders/today_stats/')
   },

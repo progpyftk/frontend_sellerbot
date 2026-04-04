@@ -589,15 +589,18 @@
             <div class="finance-block">
               <div class="finance-block-label">Receita do Comprador</div>
 
-              <!-- Com escrow: selling_price + descontos do vendedor -->
+              <!-- Com escrow: preço original → desconto → preço final -->
               <template v-if="selectedOrder.escrow_synced">
-                <div class="finance-row">
+                <!-- Preço original (lista) = selling_price + descontos do seller -->
+                <div v-if="Number(selectedOrder.seller_product_discount) > 0 || Number(selectedOrder.seller_voucher) > 0" class="finance-row">
                   <span class="finance-label">
-                    Preço de venda
-                    <q-tooltip class="bg-grey-9" style="max-width:240px">order_selling_price: preço efetivo dos itens (model_discounted_price × qtd)</q-tooltip>
+                    Preço original (lista)
+                    <q-tooltip class="bg-grey-9" style="max-width:240px">Preço cheio antes de qualquer desconto do vendedor</q-tooltip>
                     <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
                   </span>
-                  <span class="finance-val finance-bold">{{ formatCurrency(selectedOrder.selling_price) }}</span>
+                  <span class="finance-val" style="text-decoration:line-through;color:#94a3b8">
+                    {{ formatCurrency(Number(selectedOrder.selling_price) + Number(selectedOrder.seller_product_discount || 0) + Number(selectedOrder.seller_voucher || 0)) }}
+                  </span>
                 </div>
                 <div v-if="Number(selectedOrder.seller_product_discount) > 0" class="finance-row finance-row--note">
                   <span class="finance-label-note text-orange-7">Desconto no produto (seller)</span>
@@ -610,31 +613,56 @@
                   </span>
                   <span class="finance-val-note text-orange-7">-{{ formatCurrency(selectedOrder.seller_voucher) }}</span>
                 </div>
+                <div class="finance-row">
+                  <span class="finance-label">
+                    Preço de venda (promocional)
+                    <q-tooltip class="bg-grey-9" style="max-width:240px">model_discounted_price × qtd — preço efetivo cobrado do comprador</q-tooltip>
+                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
+                  </span>
+                  <span class="finance-val finance-bold">{{ formatCurrency(selectedOrder.selling_price) }}</span>
+                </div>
                 <div class="finance-row finance-row--note">
                   <span class="finance-label-note">Total pago pelo comprador</span>
                   <span class="finance-val-note finance-bold">{{ formatCurrency(selectedOrder.total_amount) }}</span>
                 </div>
               </template>
 
-              <!-- Sem escrow: estimativa por items -->
+              <!-- Sem escrow: breakdown por itens -->
               <template v-else>
+                <!-- Preço original riscado (quando há desconto no produto) -->
+                <div v-if="hasDiscount(selectedOrder)" class="finance-row">
+                  <span class="finance-label">Preço original (lista)</span>
+                  <span class="finance-val" style="text-decoration:line-through;color:#94a3b8">
+                    {{ formatCurrency(getItemsOriginalTotal(selectedOrder)) }}
+                  </span>
+                </div>
+                <div v-if="hasDiscount(selectedOrder)" class="finance-row finance-row--note">
+                  <span class="finance-label-note text-orange-7">Desconto no produto</span>
+                  <span class="finance-val-note text-orange-7">
+                    -{{ formatCurrency(getItemsOriginalTotal(selectedOrder) - getItemsSaleTotal(selectedOrder)) }}
+                  </span>
+                </div>
+                <!-- Preço de venda efetivo dos produtos -->
                 <div class="finance-row">
                   <span class="finance-label">
-                    Valor da venda
-                    <q-tooltip class="bg-grey-9" style="max-width:240px">Valor pago pelo comprador. Sincronize o escrow para ver o breakdown completo.</q-tooltip>
+                    Preço de venda (produtos)
+                    <q-tooltip class="bg-grey-9" style="max-width:240px">Soma dos preços efetivos dos itens (unit_price × qtd). Não inclui frete nem acréscimo de pagamento.</q-tooltip>
                     <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
                   </span>
-                  <span class="finance-val finance-bold">{{ formatCurrency(selectedOrder.total_amount) }}</span>
+                  <span class="finance-val finance-bold">{{ formatCurrency(getItemsSaleTotal(selectedOrder)) }}</span>
                 </div>
-                <div v-if="hasDiscount(selectedOrder)" class="finance-row finance-row--note">
-                  <span class="finance-label-note">Preço original (lista)</span>
-                  <span class="finance-val-note">{{ formatCurrency(getItemsOriginalTotal(selectedOrder)) }}</span>
-                </div>
-                <div v-if="hasDiscount(selectedOrder)" class="finance-row finance-row--note">
-                  <span class="finance-label-note text-orange-7">Desconto aplicado</span>
-                  <span class="finance-val-note text-orange-7">
-                    -{{ formatCurrency(getItemsOriginalTotal(selectedOrder) - Number(selectedOrder.total_amount)) }}
+                <!-- Frete pago pelo comprador — informativo, vai direto pro Shopee Xpress -->
+                <div v-if="Number(selectedOrder.shipping_fee) > 0" class="finance-row finance-row--note">
+                  <span class="finance-label-note">
+                    Frete pago pelo comprador
+                    <q-tooltip class="bg-grey-9" style="max-width:260px">Valor que o comprador pagou pelo frete. Vai direto para o Shopee Xpress — não entra no repasse do seller. O custo real de frete para o seller vem do escrow.</q-tooltip>
+                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
                   </span>
+                  <span class="finance-val-note text-grey-5">{{ formatCurrency(selectedOrder.shipping_fee) }}</span>
+                </div>
+                <div class="finance-row finance-row--note">
+                  <span class="finance-label-note">Total pago pelo comprador</span>
+                  <span class="finance-val-note finance-bold">{{ formatCurrency(selectedOrder.total_amount) }}</span>
                 </div>
               </template>
             </div>
@@ -711,28 +739,22 @@
             <template v-else>
               <div class="finance-block">
                 <div class="finance-block-label">Deduções (estimado)</div>
-                <div class="finance-row">
-                  <span class="finance-label">
-                    Frete estimado
-                    <q-tooltip class="bg-grey-9" style="max-width:240px">Frete informado no pedido. Pode haver rebate da Shopee. Sincronize o escrow para valores reais.</q-tooltip>
-                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
-                  </span>
-                  <span :class="['finance-val', selectedOrder.shipping_fee > 0 ? 'finance-negative' : 'finance-pos']">
-                    {{ selectedOrder.shipping_fee > 0 ? `-${formatCurrency(selectedOrder.shipping_fee)}` : 'Grátis' }}
-                  </span>
-                </div>
                 <div class="finance-row finance-row--note">
                   <span class="finance-label-note">
-                    Comissão + taxas
-                    <q-tooltip class="bg-grey-9" style="max-width:240px">Disponível após sincronizar o escrow via botão Sincronizar Escrow.</q-tooltip>
+                    Comissão + taxas + frete líquido
+                    <q-tooltip class="bg-grey-9" style="max-width:260px">Comissão Shopee (~16%), taxa de serviço (~12%) e frete líquido (bruto − rebate) só estão disponíveis após sincronizar o escrow.</q-tooltip>
                     <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
                   </span>
-                  <span class="finance-val-note text-grey-4">Aguardando escrow</span>
+                  <span class="finance-val-note text-grey-4">Sincronize o escrow</span>
                 </div>
               </div>
               <div class="finance-divider" />
               <div class="finance-row finance-row--subtotal">
-                <span class="finance-label-bold">Líquido estimado</span>
+                <span class="finance-label-bold">
+                  Venda bruta (sem taxas)
+                  <q-tooltip class="bg-grey-9" style="max-width:260px">Preço de venda dos produtos antes das deduções da Shopee (comissão, taxa, frete líquido). Sincronize o escrow para o repasse real.</q-tooltip>
+                  <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
+                </span>
                 <span :class="['finance-subtotal', getLiquido(selectedOrder) >= 0 ? 'pos' : 'neg']">
                   {{ formatCurrency(getLiquido(selectedOrder)) }}
                 </span>
@@ -762,6 +784,35 @@
                 Custo do produto não cadastrado. Configure o CMV no ERP para ver o lucro real.
               </div>
             </template>
+          </div>
+
+          <!-- Rastreamento -->
+          <div v-if="selectedOrder.tracking_number" class="detail-section">
+            <div class="detail-section-title">
+              <q-icon name="local_shipping" size="14px" /> Rastreamento
+              <span class="font-mono text-grey-5 q-ml-sm" style="font-size:10px">{{ selectedOrder.tracking_number }}</span>
+              <q-spinner v-if="trackingLoading" size="12px" color="teal-6" class="q-ml-sm" />
+            </div>
+
+            <!-- Timeline de eventos -->
+            <div v-if="!trackingLoading && trackingList.length" class="tracking-timeline">
+              <div v-for="(event, idx) in trackingList" :key="idx" class="tracking-event">
+                <div class="tracking-dot" :class="idx === 0 ? 'tracking-dot--active' : 'tracking-dot--done'" />
+                <div class="tracking-line" v-if="idx < trackingList.length - 1" />
+                <div class="tracking-content">
+                  <div class="tracking-desc" :class="idx === 0 && 'tracking-desc--latest'">
+                    {{ event.description }}
+                  </div>
+                  <div class="tracking-time">
+                    {{ event.time ? formatDateFull(event.time * 1000) : '—' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-else-if="!trackingLoading && !trackingList.length" class="text-grey-5 text-caption q-mt-xs">
+              Sem eventos de rastreamento disponíveis
+            </div>
           </div>
 
           <!-- Datas -->
@@ -841,9 +892,11 @@ const accountOptions = ref([])
 const currentSort    = ref('-create_time')
 const todayStats     = ref(null)
 const todayLoading   = ref(false)
-const detailOpen     = ref(false)
-const selectedOrder  = ref(null)
-const syncingEscrow  = ref(false)
+const detailOpen       = ref(false)
+const selectedOrder    = ref(null)
+const syncingEscrow    = ref(false)
+const trackingList     = ref([])
+const trackingLoading  = ref(false)
 
 const pagination = ref({
   sortBy: null,
@@ -977,19 +1030,27 @@ function getTaxasShopee(row) {
 
 function getLiquido(row) {
   if (row.escrow_synced && row.escrow_amount != null) return Number(row.escrow_amount)
-  return Number(row.total_amount || 0) - Number(row.shipping_fee || 0)
+  // Sem escrow: usa a soma dos unit_price dos itens como base (não inclui frete)
+  return getItemsSaleTotal(row)
 }
 
-// Retorna a soma dos preços originais (antes de desconto Shopee) dos itens
+// Soma de unit_price × qty — preço real de venda dos produtos (sem frete)
+function getItemsSaleTotal(row) {
+  if (!row.items?.length) return Number(row.total_amount || 0)
+  return row.items.reduce((s, i) => s + (Number(i.unit_price || 0) * (i.quantity || 1)), 0)
+}
+
+// Soma de original_price × qty — preço de lista antes do desconto
 function getItemsOriginalTotal(row) {
   if (!row.items?.length) return 0
-  return row.items.reduce((s, i) => s + (Number(i.original_price || i.unit_price || 0) * i.quantity), 0)
+  return row.items.reduce((s, i) => s + (Number(i.original_price || i.unit_price || 0) * (i.quantity || 1)), 0)
 }
 
-// Há desconto se o preço original dos itens for diferente do total_amount
+// Há desconto se o preço original dos itens for maior que o preço de venda dos itens
 function hasDiscount(row) {
   const orig = getItemsOriginalTotal(row)
-  return orig > 0 && Math.abs(orig - Number(row.total_amount || 0)) > 0.05
+  const sale = getItemsSaleTotal(row)
+  return orig > 0 && (orig - sale) > 0.05
 }
 
 // ── Helpers de imagem ──────────────────────────────────────────────────────
@@ -1180,7 +1241,24 @@ async function syncOrders() {
 
 function openDetail(order) {
   selectedOrder.value = order
+  trackingList.value = []
   detailOpen.value = true
+  if (order.tracking_number) {
+    loadTracking(order)
+  }
+}
+
+async function loadTracking(order) {
+  trackingLoading.value = true
+  try {
+    const { data } = await ShopeeService.getOrderTracking(order.id)
+    trackingList.value = data.tracking_list || []
+  } catch (e) {
+    console.error('[Shopee] Erro ao carregar rastreamento:', e)
+    trackingList.value = []
+  } finally {
+    trackingLoading.value = false
+  }
 }
 
 async function syncOrderEscrow(order) {
@@ -1600,6 +1678,39 @@ onMounted(() => {
 }
 .detail-meta-row { display: flex; flex-direction: column; gap: 5px; }
 .detail-meta-item { display: flex; align-items: center; font-size: 12px; }
+
+/* ── Tracking timeline ─────────────────────────────────────── */
+.tracking-timeline { padding: 4px 0 0; }
+.tracking-event {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 10px;
+  position: relative;
+  padding-bottom: 14px;
+}
+.tracking-dot {
+  grid-column: 1; grid-row: 1;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-top: 3px;
+  justify-self: center;
+  flex-shrink: 0;
+  &--active { background: #0d9488; box-shadow: 0 0 0 3px #ccfbf1; }
+  &--done   { background: #cbd5e1; }
+}
+.tracking-line {
+  grid-column: 1; grid-row: 2;
+  width: 2px; background: #e2e8f0;
+  justify-self: center;
+  min-height: 100%;
+}
+.tracking-content { grid-column: 2; grid-row: 1 / 3; }
+.tracking-desc {
+  font-size: 12px; color: #475569; line-height: 1.4;
+  &--latest { color: #0f172a; font-weight: 600; }
+}
+.tracking-time { font-size: 10px; color: #94a3b8; margin-top: 2px; }
 
 /* ── Advanced filter drawer ────────────────────────────────── */
 .fadv-panel { display: flex; flex-direction: column; border-radius: 0 !important; }
