@@ -53,7 +53,7 @@
       <div class="loading-text">Carregando dados...</div>
     </div>
 
-    <template v-else-if="data">
+    <template v-else-if="data || shopeeData">
 
       <!-- ══════════ HOJE EM DESTAQUE ══════════════════════════════════════ -->
       <div v-if="combinedToday && activeDatePreset !== 'hoje'" class="today-banner">
@@ -433,7 +433,7 @@
         <!-- By CNPJ -->
         <div class="section-label">Por CNPJ / Empresa</div>
         <div class="cnpj-grid">
-          <div v-for="c in data.by_cnpj" :key="c.cnpj || 'sem'" class="cnpj-card">
+          <div v-for="c in (data?.by_cnpj || [])" :key="c.cnpj || 'sem'" class="cnpj-card">
             <div class="cnpj-header">
               <div class="cnpj-name">{{ c.cnpj || 'Sem CNPJ' }}</div>
               <div class="cnpj-accounts">{{ c.accounts.join(' · ') }}</div>
@@ -595,7 +595,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(p, i) in data.top_products" :key="p.item_id">
+                <tr v-for="(p, i) in (data?.top_products || [])" :key="p.item_id">
                   <td class="rank">{{ i + 1 }}</td>
                   <td class="product-cell">
                     <img v-if="p.thumbnail" :src="p.thumbnail.replace(/^http:\/\//i, 'https://')" class="prod-thumb" />
@@ -630,17 +630,17 @@
         <div class="kpi-grid">
           <div class="kpi-card">
             <div class="kpi-label">Pedidos Flex no Período</div>
-            <div class="kpi-value">{{ (data.flex.orders_count || 0).toLocaleString('pt-BR') }}</div>
-            <div class="kpi-sub">{{ pctRaw(data.flex.orders_count, op?.orders_count) }} dos pedidos</div>
+            <div class="kpi-value">{{ (data?.flex?.orders_count || 0).toLocaleString('pt-BR') }}</div>
+            <div class="kpi-sub">{{ pctRaw(data?.flex?.orders_count, op?.orders_count) }} dos pedidos</div>
           </div>
           <div class="kpi-card kpi-warn-card">
             <div class="kpi-label">Custo Total Flex</div>
-            <div class="kpi-value kpi-warn">{{ fmt(data.flex.shipping_cost_total) }}</div>
-            <div class="kpi-sub">{{ pctRaw(data.flex.shipping_cost_total, op?.gmv) }} do GMV</div>
+            <div class="kpi-value kpi-warn">{{ fmt(data?.flex?.shipping_cost_total) }}</div>
+            <div class="kpi-sub">{{ pctRaw(data?.flex?.shipping_cost_total, op?.gmv) }} do GMV</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Custo Médio por Pedido Flex</div>
-            <div class="kpi-value">{{ fmt(data.flex.avg_cost) }}</div>
+            <div class="kpi-value">{{ fmt(data?.flex?.avg_cost) }}</div>
           </div>
         </div>
         <div class="info-box q-mt-md">
@@ -656,6 +656,7 @@
       <q-icon name="bar_chart" size="48px" color="grey-5" />
       <div>Nenhum dado encontrado para o período.</div>
     </div>
+
 
   </q-page>
 </template>
