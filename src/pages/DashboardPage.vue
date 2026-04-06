@@ -802,9 +802,6 @@ const chartData = computed(() => {
 // Descendente (mais recente primeiro) — usado na tabela
 const chartDataDesc = computed(() => [...chartData.value].reverse())
 
-// op = alias para combinedOp (mantém compatibilidade com template)
-const op = combinedOp
-
 // Eixo esquerdo — exclui ads_cost (que tem escala própria à direita)
 const LEFT_KEYS = ['gmv', 'net_revenue', 'gross_profit', 'lucro_liquido']
 
@@ -1040,6 +1037,9 @@ const combinedOp = computed(() => {
     vs_prev: ml.vs_prev,
   }
 })
+
+// op = alias para combinedOp (mantém compatibilidade com template)
+const op = combinedOp
 
 function combinedGmvShare(marketplace, gmv) {
   const mlGmv     = data.value?.operation?.gmv || 0
