@@ -41,14 +41,16 @@
           <template v-slot:option="scope">
             <q-item v-bind="scope.itemProps">
               <q-item-section>
-                <q-item-label>{{ scope.opt.nickname }}</q-item-label>
-                <q-item-label caption>{{ formatCNPJ(scope.opt.cnpj) }}</q-item-label>
+                <q-item-label>{{ formatCNPJ(scope.opt.cnpj) }}</q-item-label>
+                <q-item-label caption :class="scope.opt.is_connected ? 'text-teal-7' : 'text-grey-5'">
+                  {{ scope.opt.is_connected ? 'Conectado' : 'Desconectado' }}
+                </q-item-label>
               </q-item-section>
             </q-item>
           </template>
           <template v-slot:no-option>
             <q-item>
-              <q-item-section class="text-grey-5">Nenhuma conta com Tiny conectado</q-item-section>
+              <q-item-section class="text-grey-5">Nenhuma conta Tiny cadastrada</q-item-section>
             </q-item>
           </template>
         </q-select>
@@ -312,16 +314,15 @@ async function toggleLock(row, value) {
 const loadMlAccounts = async () => {
   loadingAccounts.value = true
   try {
-    const { data } = await api.get('/mercadolivre/accounts/')
-    const list = Array.isArray(data) ? data : (data.results || [])
+    const { data } = await api.get('/api/erps/tiny/accounts/')
+    const list = Array.isArray(data) ? data : []
 
-    accountOptions.value = list
-      .filter(a => a.is_tiny_connected && a.cnpj)
-      .map(a => ({
-        cnpj:     a.cnpj,
-        nickname: a.account_nickname,
-        label:    `${a.account_nickname} — ${formatCNPJ(a.cnpj)}`,
-      }))
+    accountOptions.value = list.map(a => ({
+      cnpj:     a.cnpj,
+      nickname: formatCNPJ(a.cnpj),
+      label:    formatCNPJ(a.cnpj),
+      is_connected: a.is_connected,
+    }))
 
     if (accountOptions.value.length > 0) {
       selectedAccount.value = accountOptions.value[0]
