@@ -16,6 +16,13 @@
             {{ pagination.rowsNumber.toLocaleString('pt-BR') }} pedidos
           </div>
         </div>
+        <q-btn unelevated color="teal-7" icon="account_balance_wallet" label="Backfill Escrow"
+          :loading="backfillingEscrow" size="sm" class="q-px-md q-mr-sm"
+          @click="backfillEscrow">
+          <q-tooltip class="bg-grey-9" style="max-width:260px">
+            Sincroniza dados financeiros reais (escrow) de todos os pedidos pagos que ainda mostram valores estimados
+          </q-tooltip>
+        </q-btn>
         <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar"
           :loading="syncing" :disable="!filters.account?.length && accountOptions.length > 1" size="sm" class="q-px-md"
           @click="syncOrders">
@@ -918,6 +925,7 @@ const todayLoading   = ref(false)
 const detailOpen       = ref(false)
 const selectedOrder    = ref(null)
 const syncingEscrow    = ref(false)
+const backfillingEscrow = ref(false)
 const trackingList     = ref([])
 const trackingLoading  = ref(false)
 
@@ -1293,6 +1301,32 @@ async function loadTracking(order) {
     trackingList.value = []
   } finally {
     trackingLoading.value = false
+  }
+}
+
+async function backfillEscrow() {
+  if (!accountOptions.value.length) return
+  backfillingEscrow.value = true
+
+  let totalSynced = 0, totalErrors = 0
+  try {
+    for (const account of accountOptions.value) {
+      const { data } = await ShopeeService.syncEscrow(account.id, { force: false })
+      totalSynced += data.stats?.synced || 0
+      totalErrors += data.stats?.errors || 0
+    }
+    $q.notify({
+      message: `Backfill concluído: ${totalSynced} pedido(s) com escrow real, ${totalErrors} erro(s).`,
+      color: totalErrors > 0 ? 'warning' : 'positive',
+      position: 'top',
+      timeout: 6000,
+    })
+    loadOrders()
+  } catch (e) {
+    console.error('[Shopee] Erro no backfill de escrow:', e)
+    $q.notify({ message: 'Erro ao executar backfill de escrow.', color: 'negative', position: 'top' })
+  } finally {
+    backfillingEscrow.value = false
   }
 }
 
