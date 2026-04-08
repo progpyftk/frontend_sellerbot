@@ -176,6 +176,7 @@ const menuSections = [
     items: [
       { label: "Meus Anúncios", icon: "mdi-storefront",    route: "shopee-items",  color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
       { label: "Vendas e Pedidos", icon: "receipt_long",  route: "shopee-orders", color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
+      { label: "Publicidade",      icon: "campaign",       route: "shopee-ads",    color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
     ],
   },
   {

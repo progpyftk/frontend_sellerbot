@@ -65,4 +65,13 @@ export default {
   getDashboardStats(params = {}) {
     return api.get('/shopee/orders/dashboard_stats/', { params })
   },
+
+  // Ads
+  getAdsOverview(params = {}) {
+    return api.get('/shopee/ads/overview/', { params })
+  },
+
+  getAdsDaily(params = {}) {
+    return api.get('/shopee/ads/daily/', { params })
+  },
 }

@@ -65,6 +65,11 @@ const routes = [
         component: () => import('pages/AdsPage.vue')
       },
       {
+        path: 'shopee/ads',
+        name: 'shopee-ads',
+        component: () => import('pages/ShopeeAdsPage.vue')
+      },
+      {
         path: 'dashboard',
         name: 'dashboard',
         component: () => import('pages/DashboardPage.vue')
