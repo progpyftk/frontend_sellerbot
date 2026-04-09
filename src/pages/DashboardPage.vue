@@ -47,6 +47,20 @@
       </div>
     </div>
 
+    <!-- ══════════ ACCOUNT FILTER PILLS ════════════════════════════════════ -->
+    <div v-if="knownAccounts.length > 1 && activeMarketplace !== 'shopee'" class="acct-filter-bar">
+      <span class="acct-filter-label">Conta:</span>
+      <button :class="['acct-pill', !selectedAccountId && 'acct-pill--on']" @click="selectAccount(null)">
+        <q-icon name="all_inclusive" size="11px" />
+        Todas
+      </button>
+      <button v-for="a in knownAccounts" :key="a.id"
+        :class="['acct-pill', selectedAccountId === a.id && 'acct-pill--on']"
+        @click="selectAccount(a.id)">
+        {{ a.label }}
+      </button>
+    </div>
+
     <!-- ══════════ LOADING / EMPTY ══════════════════════════════════════════ -->
     <div v-if="loading" class="loading-center">
       <q-spinner-dots color="teal" size="48px" />
@@ -100,6 +114,96 @@
         <div class="today-note">Tempo real — leitura direta dos pedidos</div>
       </div>
 
+      <!-- ══════════ ALERTA CMV ════════════════════════════════════════════ -->
+      <div v-if="!dismissCmvAlert && data?.cost_coverage && data.cost_coverage.cobertura_pct < 95" class="cmv-alert">
+        <q-icon name="warning" size="16px" />
+        <div class="cmv-alert-text">
+          <strong>{{ (100 - data.cost_coverage.cobertura_pct).toFixed(0) }}% do GMV sem custo cadastrado</strong>
+          — {{ fmt(data.cost_coverage.gmv_sem_custo) }} em pedidos sem CMV ({{ data.cost_coverage.orders_sem_custo }} pedidos).
+          O lucro exibido pode estar <strong>inflado</strong>.
+          <span class="cmv-alert-cta">→ Cadastre os custos em Configurações de Produto</span>
+        </div>
+        <button class="cmv-alert-close" @click="dismissCmvAlert = true">✕</button>
+      </div>
+
+      <!-- ══════════ CASCATA P&L ════════════════════════════════════════════ -->
+      <div class="waterfall-card" v-if="op?.gmv">
+        <div class="waterfall-header">
+          <div class="waterfall-title">
+            <q-icon name="waterfall_chart" size="16px" class="q-mr-xs" />
+            Cascata P&L
+          </div>
+          <div class="waterfall-subtitle">Fluxo completo de margem no período</div>
+          <!-- Projeção do mês -->
+          <div class="projection-badge" v-if="monthProjection">
+            <q-icon name="trending_up" size="12px" />
+            Projeção mês: <strong>{{ fmt(monthProjection.gmv) }}</strong> GMV · <strong>{{ fmt(monthProjection.lucro) }}</strong> lucro
+            <span class="muted" style="font-size:10px">(dia {{ monthProjection.dayOfMonth }} de {{ monthProjection.daysInMonth }})</span>
+          </div>
+        </div>
+        <div class="waterfall-steps">
+          <div class="wf-step wf-step--start">
+            <div class="wf-label">GMV</div>
+            <div class="wf-bar-wrap">
+              <div class="wf-bar wf-bar--gmv" style="width:100%"></div>
+            </div>
+            <div class="wf-value">{{ fmt(op?.gmv) }}</div>
+          </div>
+          <div class="wf-arrow">▼</div>
+          <div class="wf-step wf-step--deduct">
+            <div class="wf-label">− Tarifas ML</div>
+            <div class="wf-bar-wrap">
+              <div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.total_fees, op?.gmv) + '%' }"></div>
+            </div>
+            <div class="wf-value wf-value--neg">−{{ fmt(op?.total_fees) }} <span class="wf-pct">({{ wfPct(op?.total_fees, op?.gmv).toFixed(1) }}%)</span></div>
+          </div>
+          <div class="wf-arrow">▼</div>
+          <div class="wf-step wf-step--result">
+            <div class="wf-label">= Rec. Líquida</div>
+            <div class="wf-bar-wrap">
+              <div class="wf-bar wf-bar--net" :style="{ width: wfPct(op?.net_revenue, op?.gmv) + '%' }"></div>
+            </div>
+            <div class="wf-value">{{ fmt(op?.net_revenue) }} <span class="wf-pct">({{ wfPct(op?.net_revenue, op?.gmv).toFixed(1) }}% do GMV)</span></div>
+          </div>
+          <div class="wf-arrow">▼</div>
+          <div class="wf-step wf-step--deduct">
+            <div class="wf-label">− CPV (custo do produto)</div>
+            <div class="wf-bar-wrap">
+              <div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.cmv_total, op?.gmv) + '%' }"></div>
+            </div>
+            <div class="wf-value wf-value--neg">−{{ fmt(op?.cmv_total) }} <span class="wf-pct">({{ wfPct(op?.cmv_total, op?.gmv).toFixed(1) }}%)</span></div>
+          </div>
+          <div class="wf-arrow">▼</div>
+          <div class="wf-step wf-step--result">
+            <div class="wf-label">= Lucro Bruto</div>
+            <div class="wf-bar-wrap">
+              <div class="wf-bar wf-bar--gp" :style="{ width: wfPct(op?.gross_profit, op?.gmv) + '%' }"></div>
+            </div>
+            <div class="wf-value">{{ fmt(op?.gross_profit) }} <span class="wf-pct">({{ wfPct(op?.gross_profit, op?.gmv).toFixed(1) }}% do GMV)</span></div>
+          </div>
+          <div class="wf-arrow">▼</div>
+          <div class="wf-step wf-step--deduct">
+            <div class="wf-label">− Investimento Ads</div>
+            <div class="wf-bar-wrap">
+              <div class="wf-bar wf-bar--ads" :style="{ width: wfPct(op?.ads_cost, op?.gmv) + '%' }"></div>
+            </div>
+            <div class="wf-value wf-value--warn">−{{ fmt(op?.ads_cost) }} <span class="wf-pct">(TACoS {{ wfPct(op?.ads_cost, op?.gmv).toFixed(1) }}%)</span></div>
+          </div>
+          <div class="wf-arrow">▼</div>
+          <div class="wf-step wf-step--final" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-step--pos' : 'wf-step--neg'">
+            <div class="wf-label">= Lucro Real</div>
+            <div class="wf-bar-wrap">
+              <div class="wf-bar" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-bar--ll' : 'wf-bar--neg'"
+                :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
+            </div>
+            <div class="wf-value wf-value--highlight">
+              {{ fmt(op?.lucro_liquido) }}
+              <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% margem)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ══════════ KPI CARDS ══════════════════════════════════════════════ -->
       <div class="kpi-grid">
 
@@ -107,12 +211,13 @@
           <div class="kpi-label">
             GMV
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Faturamento bruto total — o valor que o comprador pagou. Não desconta tarifas nem custo do produto.
-              </q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Faturamento bruto total — o valor que o comprador pagou. Não desconta tarifas nem custo do produto.</q-tooltip>
             </q-icon>
           </div>
           <div class="kpi-value">{{ fmt(op?.gmv) }}</div>
+          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
+            <path :d="sparklinePath('gmv')" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
           <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.gmv)">
             <q-icon :name="deltaIcon(op?.vs_prev?.gmv)" size="12px" />
             {{ deltaFmt(op?.vs_prev?.gmv) }} vs período anterior
@@ -123,13 +228,13 @@
           <div class="kpi-label">
             Receita Líquida
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                GMV menos as tarifas cobradas pelo Mercado Livre (comissão de venda, tarifa de frete, etc.). É o que
-                entra na sua conta.
-              </q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">GMV menos as tarifas cobradas pelo Mercado Livre. É o que entra na sua conta.</q-tooltip>
             </q-icon>
           </div>
           <div class="kpi-value">{{ fmt(op?.net_revenue) }}</div>
+          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
+            <path :d="sparklinePath('net_revenue')" fill="none" stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
           <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.net_revenue)">
             <q-icon :name="deltaIcon(op?.vs_prev?.net_revenue)" size="12px" />
             {{ deltaFmt(op?.vs_prev?.net_revenue) }} vs período anterior
@@ -140,12 +245,13 @@
           <div class="kpi-label">
             Lucro Bruto
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Receita Líquida menos o CPV (Custo do Produto Vendido). Lucro antes de descontar marketing.
-              </q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Receita Líquida menos o CPV. Lucro antes de descontar marketing.</q-tooltip>
             </q-icon>
           </div>
           <div class="kpi-value">{{ fmt(op?.gross_profit) }}</div>
+          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
+            <path :d="sparklinePath('gross_profit')" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
           <div class="kpi-sub">Margem {{ pct(op?.gross_profit, op?.net_revenue) }}</div>
           <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.gross_profit)">
             <q-icon :name="deltaIcon(op?.vs_prev?.gross_profit)" size="12px" />
@@ -157,12 +263,13 @@
           <div class="kpi-label">
             Lucro após Ads
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Lucro Bruto menos o gasto com Mercado Ads. É o lucro real da operação — o número que mais importa.
-              </q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Lucro Bruto menos o gasto com Ads. O lucro real da operação.</q-tooltip>
             </q-icon>
           </div>
           <div class="kpi-value kpi-highlight">{{ fmt(op?.lucro_liquido) }}</div>
+          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
+            <path :d="sparklinePath('lucro_liquido')" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
           <div class="kpi-sub">Margem {{ pct(op?.lucro_liquido, op?.net_revenue) }}</div>
           <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.lucro_liquido)">
             <q-icon :name="deltaIcon(op?.vs_prev?.lucro_liquido)" size="12px" />
@@ -174,12 +281,13 @@
           <div class="kpi-label">
             Gasto com Ads
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Total investido em Mercado Ads no período. TACoS = Ads / GMV total (inclui vendas orgânicas).
-              </q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Total investido em Ads. TACoS = Ads / GMV total.</q-tooltip>
             </q-icon>
           </div>
           <div class="kpi-value kpi-warn">{{ fmt(op?.ads_cost) }}</div>
+          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
+            <path :d="sparklinePath('ads_cost')" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
           <div class="kpi-sub">TACoS {{ pctRaw(op?.ads_cost, op?.gmv) }}</div>
           <div class="kpi-delta" :class="deltaClass(-(op?.vs_prev?.ads_cost || 0))">
             <q-icon :name="deltaIcon(-(op?.vs_prev?.ads_cost || 0))" size="12px" />
@@ -191,12 +299,13 @@
           <div class="kpi-label">
             Pedidos Pagos
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Quantidade de pedidos com status "pago" no período. O ticket médio é GMV ÷ pedidos.
-              </q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Quantidade de pedidos pagos. Ticket médio = GMV ÷ pedidos.</q-tooltip>
             </q-icon>
           </div>
           <div class="kpi-value">{{ (op?.orders_count || 0).toLocaleString('pt-BR') }}</div>
+          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
+            <path :d="sparklinePath('orders_count')" fill="none" stroke="#ec4899" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
           <div class="kpi-sub">Ticket médio {{ fmt(op?.avg_ticket) }}</div>
           <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.orders_count)">
             <q-icon :name="deltaIcon(op?.vs_prev?.orders_count)" size="12px" />
@@ -393,18 +502,25 @@
                   <th class="right">Rec. Líquida</th>
                   <th class="right">Lucro Bruto</th>
                   <th class="right">Ads</th>
+                  <th class="right">TACoS</th>
                   <th class="right">Lucro Após Ads</th>
                   <th class="right">Pedidos</th>
                   <th class="right">Margem LL</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="d in chartDataDesc" :key="d.date">
+                <tr v-for="d in chartDataDesc" :key="d.date"
+                  :class="d.lucro_liquido < 0 ? 'row-negative' : ''">
                   <td>{{ d.dateLabel }}</td>
                   <td class="right">{{ fmt(d.gmv) }}</td>
                   <td class="right">{{ fmt(d.net_revenue) }}</td>
                   <td class="right">{{ fmt(d.gross_profit) }}</td>
                   <td class="right warn">{{ fmt(d.ads_cost) }}</td>
+                  <td class="right">
+                    <span :class="d.gmv > 0 ? tacosBadgeClass(d.ads_cost / d.gmv * 100) : ''">
+                      {{ d.gmv > 0 ? (d.ads_cost / d.gmv * 100).toFixed(1) + '%' : '—' }}
+                    </span>
+                  </td>
                   <td class="right" :class="d.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(d.lucro_liquido) }}</td>
                   <td class="right">{{ d.orders_count }}</td>
                   <td class="right">{{ pct(d.lucro_liquido, d.net_revenue) }}</td>
@@ -417,6 +533,7 @@
                   <td class="right">{{ fmt(chartTotals.net_revenue) }}</td>
                   <td class="right">{{ fmt(chartTotals.gross_profit) }}</td>
                   <td class="right warn">{{ fmt(chartTotals.ads_cost) }}</td>
+                  <td class="right">{{ chartTotals.gmv > 0 ? (chartTotals.ads_cost / chartTotals.gmv * 100).toFixed(1) + '%' : '—' }}</td>
                   <td class="right" :class="(chartTotals.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(chartTotals.lucro_liquido) }}</td>
                   <td class="right">{{ chartTotals.orders_count }}</td>
                   <td class="right">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</td>
@@ -561,6 +678,13 @@
 
       <!-- ══════════ ABA: TOP PRODUTOS ══════════════════════════════════════ -->
       <div v-show="activeTab === 'produtos'" class="tab-content">
+
+        <!-- Concentração de receita -->
+        <div v-if="concentrationAlert" :class="['concentration-badge', concentrationAlert.level]">
+          <q-icon :name="concentrationAlert.icon" size="14px" />
+          {{ concentrationAlert.text }}
+        </div>
+
         <div class="table-card">
           <div class="table-header-row">
             <div class="table-title">Ranking de Produtos</div>
@@ -595,7 +719,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(p, i) in (data?.top_products || [])" :key="p.item_id">
+                <tr v-for="(p, i) in topProductsSorted" :key="p.item_id || p.sku">
                   <td class="rank">{{ i + 1 }}</td>
                   <td class="product-cell">
                     <img v-if="p.thumbnail" :src="p.thumbnail.replace(/^http:\/\//i, 'https://')" class="prod-thumb" />
@@ -627,8 +751,10 @@
 
       <!-- ══════════ ABA: FLEX ══════════════════════════════════════════════ -->
       <div v-show="activeTab === 'flex' && activeMarketplace !== 'shopee'" class="tab-content">
+
+        <!-- KPI cards -->
         <div class="kpi-grid">
-          <div class="kpi-card">
+          <div class="kpi-card kpi-flex-orders">
             <div class="kpi-label">Pedidos Flex no Período</div>
             <div class="kpi-value">{{ (data?.flex?.orders_count || 0).toLocaleString('pt-BR') }}</div>
             <div class="kpi-sub">{{ pctRaw(data?.flex?.orders_count, op?.orders_count) }} dos pedidos</div>
@@ -641,13 +767,300 @@
           <div class="kpi-card">
             <div class="kpi-label">Custo Médio por Pedido Flex</div>
             <div class="kpi-value">{{ fmt(data?.flex?.avg_cost) }}</div>
+            <div class="kpi-sub" v-if="op?.orders_count">
+              {{ ((data?.flex?.shipping_cost_total || 0) / (op?.gmv || 1) * 100).toFixed(1) }}% do GMV
+            </div>
+          </div>
+          <div class="kpi-card" v-if="data?.flex?.avg_ticket_flex">
+            <div class="kpi-label">Ticket Médio — Flex vs Padrão</div>
+            <div class="kpi-value kpi-highlight">{{ fmt(data?.flex?.avg_ticket_flex) }}</div>
+            <div class="kpi-sub">
+              Padrão: {{ fmt(data?.flex?.avg_ticket_nonflex) }}
+              <span v-if="data?.flex?.avg_ticket_flex && data?.flex?.avg_ticket_nonflex"
+                :class="data.flex.avg_ticket_flex > data.flex.avg_ticket_nonflex ? 'pos' : 'neg'">
+                ({{ data.flex.avg_ticket_flex > data.flex.avg_ticket_nonflex ? '+' : '' }}{{ ((data.flex.avg_ticket_flex / data.flex.avg_ticket_nonflex - 1) * 100).toFixed(0) }}%)
+              </span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Taxa de Adoção Flex</div>
+            <div class="kpi-value kpi-highlight">
+              {{ op?.orders_count ? ((data?.flex?.orders_count || 0) / op.orders_count * 100).toFixed(1) + '%' : '—' }}
+            </div>
+            <div class="kpi-sub">dos pedidos usam Flex</div>
           </div>
         </div>
+
+        <!-- Gráfico diário de pedidos Flex -->
+        <div class="chart-card q-mt-md" v-if="flexDailyData.length">
+          <div class="chart-header">
+            <div class="chart-title">
+              <q-icon name="electric_bike" size="16px" class="q-mr-xs text-teal-7" />
+              Pedidos Flex por Dia
+            </div>
+            <div class="chart-title muted" style="font-size:12px; font-weight:400">
+              {{ data?.flex?.orders_count || 0 }} pedidos no período
+            </div>
+          </div>
+          <!-- SVG bar chart -->
+          <svg class="flex-bar-svg" :viewBox="`0 0 ${FLEX_W} ${FLEX_H}`" preserveAspectRatio="none">
+            <!-- Grid lines -->
+            <line v-for="(tick, i) in flexYTicks" :key="'fg'+i"
+              :x1="FLEX_PAD" :y1="flexSvgY(tick)"
+              :x2="FLEX_W - FLEX_PAD_R" :y2="flexSvgY(tick)"
+              stroke="#e8edf3" stroke-width="1" stroke-dasharray="4 4" />
+            <!-- X baseline -->
+            <line :x1="FLEX_PAD" :y1="FLEX_H - FLEX_PAD_B"
+              :x2="FLEX_W - FLEX_PAD_R" :y2="FLEX_H - FLEX_PAD_B"
+              stroke="#e0e5ed" stroke-width="1.5" />
+            <!-- Bars -->
+            <g v-for="(d, i) in flexDailyData" :key="'fb'+i">
+              <rect
+                :x="flexBarX(i)"
+                :y="flexSvgY(d.flex_orders_count)"
+                :width="flexBarW"
+                :height="Math.max(2, (FLEX_H - FLEX_PAD_B) - flexSvgY(d.flex_orders_count))"
+                :fill="d.flex_orders_count > 0 ? '#0d9488' : '#e8edf3'"
+                rx="2"
+                opacity="0.85"
+              />
+              <!-- Value label on bar -->
+              <text v-if="d.flex_orders_count > 0 && flexBarW > 20"
+                :x="flexBarX(i) + flexBarW / 2"
+                :y="flexSvgY(d.flex_orders_count) - 4"
+                text-anchor="middle" font-size="9" fill="#0d9488" font-weight="600">
+                {{ d.flex_orders_count }}
+              </text>
+            </g>
+            <!-- X labels -->
+            <text v-for="(d, i) in flexDailyData" :key="'fl'+i"
+              v-show="showFlexXLabel(i)"
+              :x="flexBarX(i) + flexBarW / 2"
+              :y="FLEX_H - 2"
+              text-anchor="middle" font-size="9" fill="#9aa0ac">
+              {{ d.dateLabel }}
+            </text>
+            <!-- Y labels -->
+            <text v-for="(tick, i) in flexYTicks" :key="'fy'+i"
+              :x="FLEX_PAD - 4"
+              :y="flexSvgY(tick) + 4"
+              text-anchor="end" font-size="9" fill="#64748b">
+              {{ tick }}
+            </text>
+          </svg>
+        </div>
+
+        <!-- Breakdown por conta -->
+        <div class="table-card q-mt-md" v-if="flexByAccount.length">
+          <div class="table-header-row">
+            <div class="table-title">
+              <q-icon name="store" size="14px" class="q-mr-xs text-teal-7" />
+              Flex por Conta
+            </div>
+            <div class="muted" style="font-size:12px">
+              Contas que utilizaram entrega Flex no período
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Conta</th>
+                  <th class="right">Pedidos Flex</th>
+                  <th class="right">% dos pedidos</th>
+                  <th class="right">Adoção</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in flexByAccount" :key="a.account_id">
+                  <td class="bold">{{ a.account_nickname }}</td>
+                  <td class="right kpi-highlight" style="font-weight:700">{{ a.flex_orders_count }}</td>
+                  <td class="right">{{ pctRaw(a.flex_orders_count, data?.flex?.orders_count) }}</td>
+                  <td class="right">
+                    <div class="flex-bar-wrap">
+                      <div class="flex-bar-fill"
+                        :style="{ width: (a.orders_count ? Math.min(100, a.flex_orders_count / a.orders_count * 100) : 0) + '%' }">
+                      </div>
+                      <span>{{ a.orders_count ? (a.flex_orders_count / a.orders_count * 100).toFixed(1) + '%' : '—' }}</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="info-box q-mt-md">
           <q-icon name="info" size="16px" class="q-mr-xs" />
           O custo Flex é o valor estimado registrado no momento da venda (snapshot).
           Pedidos sem entrega Flex não são contabilizados aqui.
         </div>
+      </div>
+
+      <!-- ══════════ ABA: DIAS DA SEMANA ══════════════════════════════════ -->
+      <div v-show="activeTab === 'semana'" class="tab-content">
+
+        <!-- Seletor de métrica -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <q-icon name="event_note" size="16px" class="q-mr-xs text-teal-7" />
+              Padrão de Vendas por Dia da Semana
+            </div>
+            <div class="chart-metric-toggles">
+              <select v-model="weekdayMetric" class="sort-select">
+                <option value="gmv">GMV</option>
+                <option value="orders_count">Pedidos</option>
+                <option value="gross_profit">Lucro Bruto</option>
+                <option value="lucro_liquido">Lucro Após Ads</option>
+                <option value="ads_cost">Ads</option>
+              </select>
+              <span class="muted" style="font-size:11px">Baseado nos últimos {{ weekdaySourceData.length }} dias carregados</span>
+            </div>
+          </div>
+
+          <!-- Gráfico de barras: média por dia da semana -->
+          <div v-if="weekdayAvgs.length">
+            <svg class="weekday-avg-svg" viewBox="0 0 700 180" preserveAspectRatio="none">
+              <line v-for="(t, i) in weekdayYTicks" :key="'wt'+i"
+                x1="50" :y1="weekdayBarY(t)" x2="680" :y2="weekdayBarY(t)"
+                stroke="#e8edf3" stroke-width="1" stroke-dasharray="4 4" />
+              <line x1="50" y1="155" x2="680" y2="155" stroke="#e0e5ed" stroke-width="1.5" />
+              <g v-for="(d, i) in weekdayAvgs" :key="'wa'+i">
+                <rect
+                  :x="50 + i * 90 + 10" :y="weekdayBarY(d.avg)"
+                  :width="60"
+                  :height="Math.max(2, 155 - weekdayBarY(d.avg))"
+                  :fill="d.isTop ? '#0d9488' : '#cbd5e1'"
+                  rx="4" />
+                <text :x="50 + i * 90 + 40" :y="weekdayBarY(d.avg) - 5"
+                  text-anchor="middle" font-size="10" :fill="d.isTop ? '#0d9488' : '#64748b'" font-weight="600">
+                  {{ weekdayFmt(d.avg) }}
+                </text>
+                <text :x="50 + i * 90 + 40" y="170"
+                  text-anchor="middle" font-size="11" fill="#374151" font-weight="600">
+                  {{ d.label }}
+                </text>
+                <text :x="50 + i * 90 + 40" y="180"
+                  text-anchor="middle" font-size="9" fill="#9aa0ac">
+                  {{ d.count }}x
+                </text>
+              </g>
+              <text v-for="(t, i) in weekdayYTicks" :key="'wyl'+i"
+                x="44" :y="weekdayBarY(t) + 4"
+                text-anchor="end" font-size="9" fill="#64748b">{{ weekdayFmt(t) }}</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Comparar últimas N ocorrências de dias selecionados -->
+        <div class="chart-card q-mt-md">
+          <div class="chart-header">
+            <div class="chart-title">
+              <q-icon name="compare_arrows" size="16px" class="q-mr-xs text-teal-7" />
+              Comparar Dias da Semana — últimas ocorrências
+            </div>
+            <div class="chart-metric-toggles" style="gap:6px;flex-wrap:wrap">
+              <button v-for="(d, i) in WEEKDAYS" :key="d.key"
+                :class="['wd-pill', weekdaySelected.includes(i) && 'wd-pill--on']"
+                :style="weekdaySelected.includes(i) ? `background:${d.color}20;color:${d.color};border-color:${d.color}` : ''"
+                @click="toggleWeekday(i)">
+                {{ d.label }}
+              </button>
+              <select v-model="weekdayNCount" class="sort-select" style="min-width:100px">
+                <option :value="5">Últimas 5</option>
+                <option :value="8">Últimas 8</option>
+                <option :value="10">Últimas 10</option>
+                <option :value="13">Últimas 13</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Série temporal das últimas N ocorrências de cada dia selecionado -->
+          <div v-if="weekdayCompareSvgSeries.length" class="weekday-compare-area">
+            <svg class="weekday-compare-svg" :viewBox="`0 0 ${WD_W} ${WD_H}`" preserveAspectRatio="none">
+              <defs>
+                <linearGradient v-for="d in WEEKDAYS.filter((_, i) => weekdaySelected.includes(i))" :key="'wdg'+d.key"
+                  :id="'wdgrad-'+d.key" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" :stop-color="d.color" stop-opacity="0.15" />
+                  <stop offset="100%" :stop-color="d.color" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <!-- Grid -->
+              <line v-for="(t, i) in wdYTicks" :key="'wdg'+i"
+                :x1="WD_PAD" :y1="wdSvgY(t)"
+                :x2="WD_W - 20" :y2="wdSvgY(t)"
+                stroke="#e8edf3" stroke-width="1" stroke-dasharray="4 4" />
+              <line :x1="WD_PAD" :y1="WD_H - 24" :x2="WD_W - 20" :y2="WD_H - 24" stroke="#e0e5ed" stroke-width="1.5" />
+
+              <!-- Lines per selected weekday -->
+              <template v-for="(ser, si) in weekdayCompareSvgSeries" :key="'wds'+si">
+                <path :d="wdAreaPath(ser.points)" :fill="`url(#wdgrad-${ser.dayKey})`" />
+                <path :d="wdLinePath(ser.points)" fill="none" :stroke="ser.color" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round" />
+                <!-- Dots -->
+                <circle v-for="(pt, pi) in ser.points" :key="'wdpt'+pi"
+                  :cx="pt.x" :cy="pt.y" r="3.5" :fill="ser.color" stroke="#fff" stroke-width="2" />
+                <!-- X labels (last row) -->
+                <text v-for="(pt, pi) in ser.points" :key="'wdxl'+pi"
+                  :x="pt.x" :y="WD_H - 8"
+                  text-anchor="middle" font-size="8.5" fill="#9aa0ac">{{ pt.label }}</text>
+              </template>
+
+              <!-- Y labels -->
+              <text v-for="(t, i) in wdYTicks" :key="'wdyl'+i"
+                :x="WD_PAD - 4" :y="wdSvgY(t) + 4"
+                text-anchor="end" font-size="9" fill="#64748b">{{ weekdayFmt(t) }}</text>
+            </svg>
+
+            <!-- Legenda -->
+            <div class="wd-legend">
+              <div v-for="ser in weekdayCompareSvgSeries" :key="'wdl'+ser.dayKey" class="wd-legend-item">
+                <span class="wd-legend-dot" :style="{ background: ser.color }"></span>
+                <span>{{ ser.dayLabel }}</span>
+                <span class="muted">avg: <strong>{{ weekdayFmt(ser.avg) }}</strong></span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="chart-empty">Selecione pelo menos um dia acima</div>
+        </div>
+
+        <!-- Tabela detalhada das últimas N ocorrências -->
+        <div class="table-card q-mt-md" v-if="weekdayTableRows.length">
+          <div class="table-header-row">
+            <div class="table-title">Últimas {{ weekdayNCount }} ocorrências por dia</div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Data</th>
+                  <th>Dia</th>
+                  <th class="right">GMV</th>
+                  <th class="right">Pedidos</th>
+                  <th class="right">Lucro</th>
+                  <th class="right">Ads</th>
+                  <th class="right">TACoS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in weekdayTableRows" :key="r.date"
+                  :style="{ borderLeft: `3px solid ${WEEKDAYS[r.dow].color}` }">
+                  <td class="rank">{{ r.rank }}</td>
+                  <td>{{ r.dateLabel }}</td>
+                  <td><span class="wd-day-badge" :style="{ background: WEEKDAYS[r.dow].color + '20', color: WEEKDAYS[r.dow].color }">{{ WEEKDAYS[r.dow].label }}</span></td>
+                  <td class="right">{{ fmt(r.gmv) }}</td>
+                  <td class="right">{{ r.orders_count }}</td>
+                  <td class="right" :class="r.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(r.lucro_liquido) }}</td>
+                  <td class="right warn">{{ fmt(r.ads_cost) }}</td>
+                  <td class="right">{{ r.gmv > 0 ? (r.ads_cost / r.gmv * 100).toFixed(1) + '%' : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </template>
@@ -683,6 +1096,10 @@ const normalizeChart = ref(false)
 const topGroupBy = ref('item')
 const topSortBy = ref('gross_profit')
 
+// Filtro por conta
+const selectedAccountId = ref(null)
+const knownAccounts = ref([])  // persiste mesmo quando account_id está filtrado
+
 const today = new Date()
 // Usa data local (não UTC) para evitar problema de fuso horário
 // toISOString() retorna UTC, o que em UTC-3 pode dar o dia seguinte após 21h
@@ -697,10 +1114,11 @@ const dateTo = ref(fmtDate(today))
 
 // ── Config ────────────────────────────────────────────────────────────────
 const tabs = [
-  { key: 'evolucao', label: 'Evolução', icon: 'show_chart' },
-  { key: 'contas', label: 'Contas & CNPJ', icon: 'account_balance' },
-  { key: 'produtos', label: 'Top Produtos', icon: 'inventory_2' },
-  { key: 'flex', label: 'Flex Delivery', icon: 'electric_bike' },
+  { key: 'evolucao', label: 'Evolução',      icon: 'show_chart' },
+  { key: 'contas',   label: 'Contas & CNPJ', icon: 'account_balance' },
+  { key: 'produtos', label: 'Top Produtos',  icon: 'inventory_2' },
+  { key: 'flex',     label: 'Flex Delivery', icon: 'electric_bike' },
+  { key: 'semana',   label: 'Dias da Semana', icon: 'event_note' },
 ]
 
 const chartMetrics = [
@@ -712,11 +1130,13 @@ const chartMetrics = [
 ]
 
 const datePresets = [
-  { key: 'hoje', label: 'Hoje' },
-  { key: '7d', label: '7d' },
-  { key: '14d', label: '14d' },
-  { key: '30d', label: '30d' },
-  { key: '90d', label: '90d' },
+  { key: 'hoje',     label: 'Hoje' },
+  { key: '7d',       label: '7d' },
+  { key: '14d',      label: '14d' },
+  { key: '30d',      label: '30d' },
+  { key: '90d',      label: '90d' },
+  { key: 'mes',      label: 'Mês' },
+  { key: 'mes_ant',  label: 'Mês ant.' },
 ]
 
 // ── SVG chart constants ────────────────────────────────────────────────────
@@ -801,6 +1221,76 @@ const chartData = computed(() => {
 
 // Descendente (mais recente primeiro) — usado na tabela
 const chartDataDesc = computed(() => [...chartData.value].reverse())
+
+// Produtos ordenados pelo critério selecionado
+const topProductsSorted = computed(() => {
+  const prods = [...(data.value?.top_products || [])]
+  return prods.sort((a, b) => (b[topSortBy.value] || 0) - (a[topSortBy.value] || 0))
+})
+
+// Flex: dados diários com flex_orders_count
+const flexDailyData = computed(() => {
+  const daily = data.value?.daily || []
+  return daily
+    .map(d => ({
+      ...d,
+      flex_orders_count: d.flex_orders_count || 0,
+      dateLabel: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+    }))
+    .filter(d => true)  // incluir todos os dias mesmo com 0
+})
+
+// Flex: breakdown por conta (apenas contas com flex > 0)
+const flexByAccount = computed(() => {
+  return (data.value?.accounts || [])
+    .filter(a => a.flex_orders_count > 0)
+    .sort((a, b) => b.flex_orders_count - a.flex_orders_count)
+})
+
+// ── Flex bar chart constants ───────────────────────────────────────────────
+const FLEX_W    = 900
+const FLEX_H    = 200
+const FLEX_PAD  = 40   // esquerda
+const FLEX_PAD_R = 20  // direita
+const FLEX_PAD_B = 24  // baixo
+
+const flexYMax = computed(() => {
+  const max = Math.max(...flexDailyData.value.map(d => d.flex_orders_count), 1)
+  return Math.ceil(max * 1.2) || 1
+})
+
+const flexYTicks = computed(() => {
+  const max = flexYMax.value
+  return [max, Math.round(max * 0.5), 0]
+})
+
+const flexBarW = computed(() => {
+  const n = flexDailyData.value.length
+  if (!n) return 10
+  const totalW = FLEX_W - FLEX_PAD - FLEX_PAD_R
+  return Math.max(2, totalW / n * 0.7)
+})
+
+function flexBarX(i) {
+  const n = flexDailyData.value.length
+  if (!n) return FLEX_PAD
+  const totalW = FLEX_W - FLEX_PAD - FLEX_PAD_R
+  const step = totalW / n
+  return FLEX_PAD + i * step + step * 0.15
+}
+
+function flexSvgY(val) {
+  const ratio = Math.min(1, Math.max(0, (val || 0) / flexYMax.value))
+  const plotH = FLEX_H - FLEX_PAD_B - 10
+  return (FLEX_H - FLEX_PAD_B) - ratio * plotH
+}
+
+function showFlexXLabel(i) {
+  const n = flexDailyData.value.length
+  if (n <= 14) return true
+  if (n <= 31) return i % 3 === 0 || i === n - 1
+  return i % 7 === 0 || i === n - 1
+}
 
 // Eixo esquerdo — exclui ads_cost (que tem escala própria à direita)
 const LEFT_KEYS = ['gmv', 'net_revenue', 'gross_profit', 'lucro_liquido']
@@ -929,19 +1419,35 @@ function onChartMouseMove(e) {
 async function load() {
   loading.value = true
   try {
-    const params = { date_from: dateFrom.value, date_to: dateTo.value }
+    const params = {
+      date_from: dateFrom.value,
+      date_to:   dateTo.value,
+      group_by:  topGroupBy.value,
+    }
+    if (selectedAccountId.value) params.account_id = selectedAccountId.value
+
     const [mlRes, shopeeRes] = await Promise.allSettled([
       MercadoLivreService.getDashboardOperation(params),
-      ShopeeService.getDashboardStats(params),
+      ShopeeService.getDashboardStats({ date_from: dateFrom.value, date_to: dateTo.value }),
     ])
     data.value       = mlRes.status === 'fulfilled' ? mlRes.value.data : null
     shopeeData.value = shopeeRes.status === 'fulfilled' ? shopeeRes.value.data : null
+
+    // Atualiza lista de contas conhecidas apenas quando sem filtro (para manter as pills visíveis)
+    if (!selectedAccountId.value && data.value?.accounts?.length) {
+      knownAccounts.value = data.value.accounts.map(a => ({ id: a.account_id, label: a.account_nickname }))
+    }
   } catch (e) {
     console.error('Dashboard error', e)
     data.value = null
   } finally {
     loading.value = false
   }
+}
+
+function selectAccount(id) {
+  selectedAccountId.value = id
+  load()
 }
 
 async function loadToday() {
@@ -1014,6 +1520,8 @@ const combinedOp = computed(() => {
     avg_ticket:   sh.avg_ticket,
     units_sold:   sh.units_sold,
     ads_cost:     0,
+    total_fees:   0,
+    cmv_total:    0,
     lucro_liquido_pct: sh.net_revenue ? +((sh.gross_profit || 0) / sh.net_revenue * 100).toFixed(2) : null,
     gross_margin_pct:  null,
     vs_prev: null,
@@ -1028,6 +1536,8 @@ const combinedOp = computed(() => {
     units_sold:    (ml.units_sold || 0) + (sh.units_sold || 0),
     avg_ticket:    null,
     ads_cost:      ml.ads_cost || 0,
+    total_fees:    ml.total_fees || 0,
+    cmv_total:     ml.cmv_total || 0,
     lucro_liquido_pct: null,
     gross_margin_pct:  null,
     roas: ml.roas, acos: ml.acos, tacos: ml.tacos,
@@ -1053,11 +1563,21 @@ function applyPreset(key) {
   activeDatePreset.value = key
   if (key === 'hoje') {
     dateFrom.value = fmtDate(today)
-    dateTo.value = fmtDate(today)
+    dateTo.value   = fmtDate(today)
+  } else if (key === 'mes') {
+    const d = new Date(today)
+    dateFrom.value = fmtDate(new Date(d.getFullYear(), d.getMonth(), 1))
+    dateTo.value   = fmtDate(today)
+  } else if (key === 'mes_ant') {
+    const d = new Date(today)
+    const firstOfLast  = new Date(d.getFullYear(), d.getMonth() - 1, 1)
+    const lastOfLast   = new Date(d.getFullYear(), d.getMonth(), 0)
+    dateFrom.value = fmtDate(firstOfLast)
+    dateTo.value   = fmtDate(lastOfLast)
   } else {
     const days = parseInt(key)
     dateFrom.value = fmtDate(new Date(today - (days - 1) * 86400000))
-    dateTo.value = fmtDate(today)
+    dateTo.value   = fmtDate(today)
   }
   load()
 }
@@ -1071,7 +1591,11 @@ function toggleMetric(key) {
   }
 }
 
-function setTopGroupBy(val) { topGroupBy.value = val }
+function setTopGroupBy(val) {
+  if (topGroupBy.value === val) return
+  topGroupBy.value = val
+  load()
+}
 
 // Curva suave (cubic bezier com midpoints) para o gráfico
 function smoothLine(metric) {
@@ -1141,6 +1665,251 @@ function deltaClass(v) {
 function deltaIcon(v) {
   if (v == null) return 'remove'
   return v >= 0 ? 'arrow_upward' : 'arrow_downward'
+}
+
+// ── Dias da Semana — constantes ──────────────────────────────────────────
+const WEEKDAYS = [
+  { key: 'dom', label: 'Dom', color: '#ef4444' },
+  { key: 'seg', label: 'Seg', color: '#6366f1' },
+  { key: 'ter', label: 'Ter', color: '#0ea5e9' },
+  { key: 'qua', label: 'Qua', color: '#10b981' },
+  { key: 'qui', label: 'Qui', color: '#f59e0b' },
+  { key: 'sex', label: 'Sex', color: '#8b5cf6' },
+  { key: 'sab', label: 'Sáb', color: '#ec4899' },
+]
+
+const weekdayMetric   = ref('gmv')
+const weekdaySelected = ref([1, 5])   // Seg e Sex por padrão
+const weekdayNCount   = ref(8)
+const dismissCmvAlert = ref(false)
+
+// Fonte de dados para análise por dia: usa todos os dados diários disponíveis
+// Se < 30 dias carregados, expande para 90d quando o tab Semana for aberto
+const weekdaySourceData = computed(() => chartData.value.length > 0 ? chartData.value : [])
+
+// Médias por dia da semana
+const weekdayAvgs = computed(() => {
+  const src = weekdaySourceData.value
+  if (!src.length) return []
+  const buckets = Array.from({ length: 7 }, () => ({ sum: 0, count: 0 }))
+  for (const d of src) {
+    const dow = new Date(d.date + 'T12:00:00').getDay()
+    buckets[dow].sum   += d[weekdayMetric.value] || 0
+    buckets[dow].count += 1
+  }
+  const avgs = buckets.map((b, i) => ({
+    ...WEEKDAYS[i],
+    dow:   i,
+    avg:   b.count > 0 ? b.sum / b.count : 0,
+    count: b.count,
+  }))
+  const maxAvg = Math.max(...avgs.map(a => a.avg))
+  return avgs.map(a => ({ ...a, isTop: a.avg === maxAvg && a.avg > 0 }))
+})
+
+const weekdayYMax = computed(() => Math.max(...weekdayAvgs.value.map(a => a.avg), 1) * 1.2)
+const weekdayYTicks = computed(() => {
+  const m = weekdayYMax.value
+  return [m, m * 0.5, 0].map(v => Math.round(v))
+})
+function weekdayBarY(val) {
+  const ratio = Math.min(1, Math.max(0, (val || 0) / weekdayYMax.value))
+  return 155 - ratio * 140
+}
+function weekdayFmt(v) {
+  if (!v) return '0'
+  if (weekdayMetric.value === 'orders_count') return Math.round(v).toLocaleString('pt-BR')
+  if (v >= 1000000) return 'R$' + (v / 1000000).toFixed(1) + 'M'
+  if (v >= 1000)    return 'R$' + (v / 1000).toFixed(0) + 'k'
+  return 'R$' + Math.round(v)
+}
+
+// Séries comparativas: últimas N ocorrências de cada dia selecionado
+const weekdayCompareSeries = computed(() => {
+  const src = [...weekdaySourceData.value].sort((a, b) => a.date.localeCompare(b.date))
+  const n   = weekdayNCount.value
+  return WEEKDAYS
+    .map((wd, i) => {
+      if (!weekdaySelected.value.includes(i)) return null
+      const occurrences = src.filter(d => new Date(d.date + 'T12:00:00').getDay() === i)
+      const last = occurrences.slice(-n)
+      return { dayKey: wd.key, dayLabel: wd.label, color: wd.color, occurrences: last }
+    })
+    .filter(Boolean)
+    .map(ser => {
+      const vals = ser.occurrences.map(d => d[weekdayMetric.value] || 0)
+      const avg  = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
+      return { ...ser, avg, vals }
+    })
+})
+
+// SVG para weekday compare
+const WD_W   = 860
+const WD_H   = 220
+const WD_PAD = 55
+
+const wdYMax = computed(() => {
+  const allVals = weekdayCompareSeries.value.flatMap(s => s.vals)
+  return Math.max(...allVals, 1) * 1.15
+})
+const wdYTicks = computed(() => {
+  const m = wdYMax.value
+  return [m, m * 0.5, 0].map(v => Math.round(v))
+})
+function wdSvgY(val) {
+  const ratio = Math.min(1, Math.max(0, (val || 0) / wdYMax.value))
+  const plotH = WD_H - 24 - 14
+  return (WD_H - 24) - ratio * plotH
+}
+function wdSvgX(ptIdx, totalPts) {
+  const w = WD_W - WD_PAD - 20
+  return totalPts <= 1 ? WD_PAD + w / 2 : WD_PAD + (ptIdx / (totalPts - 1)) * w
+}
+
+// Build points for a series
+const weekdayCompareSvgSeries = computed(() => {
+  return weekdayCompareSeries.value.map(ser => {
+    const n = ser.occurrences.length
+    const points = ser.occurrences.map((d, i) => ({
+      x: wdSvgX(i, n),
+      y: wdSvgY(d[weekdayMetric.value] || 0),
+      label: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+    }))
+    return { ...ser, points }
+  })
+})
+
+
+function wdLinePath(points) {
+  if (!points.length) return ''
+  if (points.length === 1) return `M ${points[0].x},${points[0].y}`
+  let p = `M ${points[0].x},${points[0].y}`
+  for (let i = 1; i < points.length; i++) {
+    const mx = (points[i - 1].x + points[i].x) / 2
+    p += ` C ${mx},${points[i - 1].y} ${mx},${points[i].y} ${points[i].x},${points[i].y}`
+  }
+  return p
+}
+function wdAreaPath(points) {
+  if (!points.length) return ''
+  const n = points.length
+  let p = `M ${points[0].x},${WD_H - 24} L ${points[0].x},${points[0].y}`
+  for (let i = 1; i < n; i++) {
+    const mx = (points[i - 1].x + points[i].x) / 2
+    p += ` C ${mx},${points[i - 1].y} ${mx},${points[i].y} ${points[i].x},${points[i].y}`
+  }
+  p += ` L ${points[n - 1].x},${WD_H - 24} Z`
+  return p
+}
+
+function toggleWeekday(i) {
+  const idx = weekdaySelected.value.indexOf(i)
+  if (idx === -1) weekdaySelected.value = [...weekdaySelected.value, i]
+  else if (weekdaySelected.value.length > 1) weekdaySelected.value = weekdaySelected.value.filter(x => x !== i)
+}
+
+// Tabela comparativa
+const weekdayTableRows = computed(() => {
+  if (!weekdaySelected.value.length) return []
+  const src = [...weekdaySourceData.value].sort((a, b) => b.date.localeCompare(a.date))
+  const result = []
+  const counters = {}
+  for (const d of src) {
+    const dow = new Date(d.date + 'T12:00:00').getDay()
+    if (!weekdaySelected.value.includes(dow)) continue
+    counters[dow] = (counters[dow] || 0) + 1
+    if (counters[dow] > weekdayNCount.value) continue
+    result.push({
+      ...d,
+      dow,
+      rank: counters[dow],
+      dateLabel: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+    })
+  }
+  return result.sort((a, b) => b.date.localeCompare(a.date))
+})
+
+// ── Sparklines ────────────────────────────────────────────────────────────
+function sparklinePath(metric) {
+  const data = chartData.value
+  if (!data.length) return ''
+  const vals = data.map(d => d[metric] || 0)
+  const min = Math.min(...vals)
+  const max = Math.max(...vals)
+  const span = max - min || 1
+  const n = vals.length
+  const pts = vals.map((v, i) => {
+    const x = n <= 1 ? 30 : (i / (n - 1)) * 60
+    const y = 20 - ((v - min) / span) * 18
+    return [x, y]
+  })
+  if (pts.length === 1) return `M ${pts[0][0]},${pts[0][1]}`
+  let path = `M ${pts[0][0]},${pts[0][1]}`
+  for (let i = 1; i < pts.length; i++) {
+    const mx = (pts[i - 1][0] + pts[i][0]) / 2
+    path += ` C ${mx},${pts[i - 1][1]} ${mx},${pts[i][1]} ${pts[i][0]},${pts[i][1]}`
+  }
+  return path
+}
+
+// ── Cascata P&L helpers ───────────────────────────────────────────────────
+function wfPct(num, den) {
+  if (!den || num == null) return 0
+  return (num / den) * 100
+}
+
+// ── Projeção do mês ───────────────────────────────────────────────────────
+const monthProjection = computed(() => {
+  // Só projeta se estiver vendo o mês atual ou um período que inclua hoje
+  const daily = chartData.value
+  if (!daily.length) return null
+  const todayStr = fmtDate(today)
+  const hasToday = daily.some(d => d.date === todayStr)
+  if (!hasToday && activeDatePreset.value !== 'mes') return null
+
+  const now = new Date(today)
+  const dayOfMonth  = now.getDate()
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  if (dayOfMonth >= daysInMonth) return null  // último dia, sem projeção
+
+  // Média diária dos dias disponíveis (exclui hoje para não sub-estimar — dia incompleto)
+  const completeDays = daily.filter(d => d.date !== todayStr)
+  const nDays = completeDays.length || 1
+  const gmvAvg   = completeDays.reduce((s, d) => s + (d.gmv || 0), 0)   / nDays
+  const lucroAvg = completeDays.reduce((s, d) => s + (d.lucro_liquido || 0), 0) / nDays
+
+  return {
+    gmv:        Math.round(gmvAvg * daysInMonth),
+    lucro:      Math.round(lucroAvg * daysInMonth),
+    dayOfMonth,
+    daysInMonth,
+  }
+})
+
+// ── Alerta de concentração de receita ────────────────────────────────────
+const concentrationAlert = computed(() => {
+  const prods = data.value?.top_products || []
+  if (!prods.length || !op.value?.gmv) return null
+  const top3gmv = topProductsSorted.value.slice(0, 3).reduce((s, p) => s + (p.revenue || 0), 0)
+  const pct3    = top3gmv / op.value.gmv * 100
+  if (pct3 >= 70) return {
+    level: 'conc-high',
+    icon:  'warning',
+    text:  `Atenção: top 3 produtos = ${pct3.toFixed(0)}% do GMV — concentração de receita alta. Se um produto for suspenso, o impacto é severo.`,
+  }
+  if (pct3 >= 50) return {
+    level: 'conc-med',
+    icon:  'info',
+    text:  `Top 3 produtos = ${pct3.toFixed(0)}% do GMV. Concentração moderada — considere diversificar.`,
+  }
+  return null
+})
+
+// ── TACoS badge color ─────────────────────────────────────────────────────
+function tacosBadgeClass(pct) {
+  if (pct > 15) return 'tacos-high'
+  if (pct > 8)  return 'tacos-med'
+  return 'tacos-ok'
 }
 
 onMounted(() => { load(); loadToday() })
@@ -1962,6 +2731,20 @@ onMounted(() => { load(); loadToday() })
   flex-shrink: 0;
 }
 
+/* ── Marketplace badges ─────────────────────────────────────────────────── */
+.mkt-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+.mkt-badge--ml     { background: #1a1a2e; color: #FFE600; }
+.mkt-badge--shopee { background: #fff3f1; color: #EE4D2D; border: 1px solid #EE4D2D44; }
+
 /* ── Toggle group ───────────────────────────────────────────────────────── */
 .toggle-group {
   display: flex;
@@ -2054,5 +2837,313 @@ onMounted(() => { load(); loadToday() })
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* ── Account filter bar ─────────────────────────────────────────────────── */
+.acct-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1.5px solid #e8edf3;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.acct-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9aa0ac;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.acct-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #e8edf3;
+  background: transparent;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+
+.acct-pill:hover:not(.acct-pill--on) {
+  border-color: #0d9488;
+  color: #0d9488;
+  background: #f0fdf9;
+}
+
+.acct-pill--on {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Flex tab ────────────────────────────────────────────────────────────── */
+.kpi-flex-orders::before { background: linear-gradient(90deg, #0d9488, #34d399); }
+
+.flex-bar-svg {
+  display: block;
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(180deg, #fafbfd 0%, #ffffff 100%);
+  border-radius: 8px;
+}
+
+.flex-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 100px;
+}
+
+.flex-bar-fill {
+  height: 6px;
+  background: linear-gradient(90deg, #0d9488, #2dd4bf);
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: width .4s;
+}
+
+/* Marketplace bar variants */
+.gmv-bar-fill--ml     { background: linear-gradient(90deg, #ffe600, #ffd000); }
+.gmv-bar-fill--shopee { background: linear-gradient(90deg, #ee4d2d, #ff6b4a); }
+.inline-bar-fill--shopee { background: linear-gradient(90deg, #ee4d2d, #ff6b4a); }
+
+/* ── CMV Alert ──────────────────────────────────────────────────────────── */
+.cmv-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fff7ed;
+  border: 1.5px solid #f97316;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  color: #9a3412;
+  font-size: 13px;
+}
+.cmv-alert-text { flex: 1; line-height: 1.5; }
+.cmv-alert-cta { color: #ea580c; font-weight: 600; cursor: pointer; }
+.cmv-alert-close {
+  border: none; background: transparent; cursor: pointer;
+  color: #f97316; font-size: 14px; padding: 0 4px;
+}
+
+/* ── Waterfall P&L ──────────────────────────────────────────────────────── */
+.waterfall-card {
+  background: #fff;
+  border: 1.5px solid #e8edf3;
+  border-radius: 16px;
+  padding: 22px 24px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+}
+.waterfall-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.waterfall-title {
+  display: flex; align-items: center;
+  font-size: 15px; font-weight: 700; color: #1a1f36;
+}
+.waterfall-subtitle {
+  font-size: 12px; color: #9aa0ac;
+}
+.projection-badge {
+  margin-left: auto;
+  background: #f0fdf9;
+  border: 1.5px solid #0d9488;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  color: #0d9488;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.waterfall-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wf-step {
+  display: grid;
+  grid-template-columns: 180px 1fr 220px;
+  align-items: center;
+  gap: 12px;
+}
+.wf-arrow {
+  text-align: center;
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1;
+  margin-left: 180px;
+}
+.wf-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+.wf-step--result .wf-label { color: #1a1f36; }
+.wf-step--final .wf-label  { color: #1a1f36; font-size: 13px; }
+
+.wf-bar-wrap {
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.wf-bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width .5s ease;
+}
+.wf-bar--gmv   { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+.wf-bar--deduct{ background: linear-gradient(90deg, #fca5a5, #f87171); }
+.wf-bar--net   { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+.wf-bar--gp    { background: linear-gradient(90deg, #10b981, #34d399); }
+.wf-bar--ads   { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.wf-bar--ll    { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
+.wf-bar--neg   { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+.wf-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+.wf-value--neg      { color: #ef4444; }
+.wf-value--warn     { color: #f59e0b; }
+.wf-value--highlight{ color: #0d9488; font-size: 15px; }
+.wf-pct {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9aa0ac;
+  margin-left: 6px;
+}
+.wf-step--pos { background: #f0fdf9; border-radius: 8px; padding: 6px 8px; }
+.wf-step--neg { background: #fff1f2; border-radius: 8px; padding: 6px 8px; }
+
+/* ── Sparkline ──────────────────────────────────────────────────────────── */
+.sparkline {
+  display: block;
+  width: 100%;
+  height: 22px;
+  margin: 6px 0 4px;
+  opacity: 0.7;
+}
+
+/* ── Concentration alert ────────────────────────────────────────────────── */
+.concentration-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+.conc-high {
+  background: #fff1f2;
+  border: 1.5px solid #f87171;
+  color: #9f1239;
+}
+.conc-med {
+  background: #fff7ed;
+  border: 1.5px solid #fbbf24;
+  color: #92400e;
+}
+
+/* ── Row highlight ──────────────────────────────────────────────────────── */
+.row-negative td {
+  background: #fff1f2 !important;
+}
+
+/* ── TACoS badge ────────────────────────────────────────────────────────── */
+.tacos-ok   { color: #0d9488; font-weight: 600; }
+.tacos-med  { color: #f59e0b; font-weight: 600; }
+.tacos-high { color: #ef4444; font-weight: 600; }
+
+/* ── Dias da Semana ─────────────────────────────────────────────────────── */
+.weekday-avg-svg {
+  display: block;
+  width: 100%;
+  height: 190px;
+  background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
+  border-radius: 8px;
+}
+
+.weekday-compare-area { position: relative; }
+
+.weekday-compare-svg {
+  display: block;
+  width: 100%;
+  height: 230px;
+  background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
+  border-radius: 8px;
+}
+
+.wd-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 0 4px;
+}
+.wd-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+.wd-legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wd-pill {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid #e8edf3;
+  background: transparent;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+.wd-pill:hover:not(.wd-pill--on) {
+  border-color: #94a3b8;
+  color: #374151;
+}
+.wd-pill--on { font-weight: 700; }
+
+.wd-day-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
 }
 </style>
