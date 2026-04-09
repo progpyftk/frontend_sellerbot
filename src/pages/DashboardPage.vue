@@ -712,14 +712,20 @@
                   <th>Produto</th>
                   <th class="right">Qtd</th>
                   <th class="right">Receita</th>
+                  <th class="right">% Acum.</th>
                   <th class="right">Tarifas</th>
                   <th class="right">CPV</th>
                   <th class="right">Lucro Bruto</th>
                   <th class="right">Margem</th>
+                  <th class="right" v-if="topGroupBy === 'item' && activeMarketplace !== 'shopee'">
+                    <q-tooltip>Visitas → Vendas no período</q-tooltip>
+                    Conversão
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(p, i) in topProductsSorted" :key="p.item_id || p.sku">
+                <tr v-for="(p, i) in topProductsSorted" :key="p.item_id || p.sku"
+                  :class="paretoLine(i) === 80 ? 'pareto-line-80' : paretoLine(i) === 95 ? 'pareto-line-95' : ''">
                   <td class="rank">{{ i + 1 }}</td>
                   <td class="product-cell">
                     <img v-if="p.thumbnail" :src="p.thumbnail.replace(/^http:\/\//i, 'https://')" class="prod-thumb" />
@@ -730,6 +736,17 @@
                   </td>
                   <td class="right">{{ p.qty_sold }}</td>
                   <td class="right">{{ fmt(p.revenue) }}</td>
+                  <td class="right">
+                    <div class="pareto-cell">
+                      <div class="pareto-bar-bg">
+                        <div class="pareto-bar-fill"
+                          :style="{ width: paretoAccum(i) + '%',
+                            background: paretoAccum(i) <= 80 ? '#6366f1' : paretoAccum(i) <= 95 ? '#f59e0b' : '#94a3b8' }">
+                        </div>
+                      </div>
+                      <span class="pareto-pct">{{ paretoAccum(i) }}%</span>
+                    </div>
+                  </td>
                   <td class="right warn">{{ fmt(p.fees_total) }}</td>
                   <td class="right warn">{{ fmt(p.cmv_total) }}</td>
                   <td class="right" :class="p.gross_profit >= 0 ? 'pos' : 'neg'">{{ fmt(p.gross_profit) }}</td>
@@ -741,6 +758,16 @@
                       }"></div>
                       <span>{{ p.gross_margin_pct }}%</span>
                     </div>
+                  </td>
+                  <td class="right" v-if="topGroupBy === 'item' && activeMarketplace !== 'shopee'">
+                    <span v-if="p.visits_count > 0" class="conv-funnel">
+                      <span class="conv-visits">{{ p.visits_count?.toLocaleString('pt-BR') || '—' }}</span>
+                      <span class="conv-arrow">→</span>
+                      <span :class="['conv-rate', convClass(p.qty_sold, p.visits_count)]">
+                        {{ ((p.qty_sold / p.visits_count) * 100).toFixed(1) }}%
+                      </span>
+                    </span>
+                    <span v-else class="muted">—</span>
                   </td>
                 </tr>
               </tbody>
@@ -1063,6 +1090,126 @@
 
       </div>
 
+      <!-- ══════════ ABA: SAZONALIDADE ══════════════════════════════════════ -->
+      <div v-show="activeTab === 'sazonalidade' && activeMarketplace !== 'shopee'" class="tab-content">
+
+        <div class="saz-intro">
+          <q-icon name="compare_arrows" size="16px" class="q-mr-xs text-indigo-5" />
+          Comparação do período selecionado com o <strong>mesmo período do ano anterior</strong>.
+          Use o preset <strong>Mês</strong> para comparar este mês vs mês do ano passado.
+        </div>
+
+        <!-- KPI comparativo -->
+        <div v-if="loadingLastYear" class="loading-center" style="min-height:120px">
+          <q-spinner-dots color="teal" size="32px" />
+        </div>
+        <template v-else>
+          <div class="saz-kpi-grid">
+            <div class="saz-kpi-card" v-for="kpi in [
+              { label: 'GMV',          curr: op?.gmv,          prev: lastYearOp?.gmv,          fmt: true },
+              { label: 'Rec. Líquida', curr: op?.net_revenue,  prev: lastYearOp?.net_revenue,  fmt: true },
+              { label: 'Lucro Bruto',  curr: op?.gross_profit, prev: lastYearOp?.gross_profit, fmt: true },
+              { label: 'Lucro Após Ads', curr: op?.lucro_liquido, prev: lastYearOp?.lucro_liquido, fmt: true },
+              { label: 'Pedidos',      curr: op?.orders_count, prev: lastYearOp?.orders_count, fmt: false },
+              { label: 'Ads',          curr: op?.ads_cost,     prev: lastYearOp?.ads_cost,     fmt: true },
+            ]" :key="kpi.label">
+              <div class="saz-kpi-label">{{ kpi.label }}</div>
+              <div class="saz-kpi-row">
+                <div class="saz-side">
+                  <div class="saz-year-label">{{ new Date(dateTo).getFullYear() }}</div>
+                  <div class="saz-value">{{ kpi.fmt ? fmt(kpi.curr) : (kpi.curr || 0).toLocaleString('pt-BR') }}</div>
+                </div>
+                <div class="saz-delta" v-if="lastYearOp">
+                  <span :class="['saz-pct', yoyClass(yoyPct(kpi.curr || 0, kpi.prev || 0))]">
+                    {{ yoyPct(kpi.curr || 0, kpi.prev || 0) !== null
+                      ? (yoyPct(kpi.curr || 0, kpi.prev || 0) >= 0 ? '+' : '') + yoyPct(kpi.curr || 0, kpi.prev || 0) + '%'
+                      : '—' }}
+                  </span>
+                  <div class="saz-arrow">vs {{ new Date(dateFrom).getFullYear() - 1 }}</div>
+                </div>
+                <div class="saz-side saz-side--prev" v-if="lastYearOp">
+                  <div class="saz-year-label">{{ new Date(dateFrom).getFullYear() - 1 }}</div>
+                  <div class="saz-value saz-value--prev">{{ kpi.fmt ? fmt(kpi.prev) : (kpi.prev || 0).toLocaleString('pt-BR') }}</div>
+                </div>
+                <div v-else class="saz-no-data">Sem dados do ano anterior</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráfico linha: atual vs ano anterior (GMV) -->
+          <div class="chart-card q-mt-md" v-if="lastYearOp && chartData.length">
+            <div class="chart-header">
+              <div class="chart-title">
+                <q-icon name="timeline" size="16px" class="q-mr-xs text-indigo-5" />
+                GMV Diário — Ano Atual vs Ano Anterior
+              </div>
+            </div>
+            <div class="saz-chart-wrap">
+              <svg class="saz-chart" :viewBox="`0 0 ${SAZ_W} ${SAZ_H}`" preserveAspectRatio="none"
+                @mousemove="onSazMouseMove" @mouseleave="sazHoveredIdx = -1">
+                <defs>
+                  <linearGradient id="saz-grad-curr" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#6366f1" stop-opacity="0.18"/>
+                    <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+                  </linearGradient>
+                  <linearGradient id="saz-grad-prev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.12"/>
+                    <stop offset="100%" stop-color="#94a3b8" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- Grid lines -->
+                <line v-for="gl in sazGridLines" :key="gl" :x1="SAZ_PAD" :y1="gl" :x2="SAZ_W - SAZ_PAD" :y2="gl"
+                  stroke="#e2e8f0" stroke-width="0.5" />
+
+                <!-- Área ano anterior -->
+                <path v-if="sazPathPrev" :d="sazPathPrev.area" fill="url(#saz-grad-prev)" />
+                <path v-if="sazPathPrev" :d="sazPathPrev.line" fill="none" stroke="#94a3b8" stroke-width="1.5"
+                  stroke-dasharray="4,3" stroke-linecap="round" />
+
+                <!-- Área ano atual -->
+                <path v-if="sazPathCurr" :d="sazPathCurr.area" fill="url(#saz-grad-curr)" />
+                <path v-if="sazPathCurr" :d="sazPathCurr.line" fill="none" stroke="#6366f1" stroke-width="2"
+                  stroke-linecap="round" />
+
+                <!-- Legenda inline -->
+                <line :x1="SAZ_PAD + 8" :y1="14" :x2="SAZ_PAD + 26" :y2="14" stroke="#6366f1" stroke-width="2"/>
+                <text :x="SAZ_PAD + 30" y="18" font-size="9" fill="#6366f1" font-family="sans-serif">Ano atual</text>
+                <line :x1="SAZ_PAD + 90" :y1="14" :x2="SAZ_PAD + 108" :y2="14" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/>
+                <text :x="SAZ_PAD + 112" y="18" font-size="9" fill="#94a3b8" font-family="sans-serif">Ano anterior</text>
+
+                <!-- Tooltip crosshair -->
+                <template v-if="sazHoveredIdx >= 0 && sazHoveredIdx < chartData.length">
+                  <line :x1="sazXPos(sazHoveredIdx)" y1="20" :x2="sazXPos(sazHoveredIdx)" :y2="SAZ_H - 20"
+                    stroke="#6366f1" stroke-width="0.8" stroke-dasharray="3,2" />
+                </template>
+              </svg>
+
+              <!-- Tooltip box -->
+              <div v-if="sazHoveredIdx >= 0 && sazHoveredIdx < chartData.length" class="saz-tooltip">
+                <div class="saz-tt-date">{{ chartData[sazHoveredIdx]?.date }}</div>
+                <div class="saz-tt-row">
+                  <span class="saz-tt-dot" style="background:#6366f1"></span>
+                  Atual: <strong>{{ fmt(chartData[sazHoveredIdx]?.gmv) }}</strong>
+                </div>
+                <div class="saz-tt-row" v-if="lastYearChartData[sazHoveredIdx]">
+                  <span class="saz-tt-dot" style="background:#94a3b8"></span>
+                  Anterior: <strong>{{ fmt(lastYearChartData[sazHoveredIdx]?.gmv) }}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sem dados do ano anterior -->
+          <div v-if="!lastYearOp" class="saz-empty">
+            <q-icon name="history" size="36px" color="grey-5" />
+            <div>Sem dados do ano anterior para o período selecionado.</div>
+            <div class="muted">O SellerBot precisa ter dados históricos do mesmo período em {{ new Date(dateFrom).getFullYear() - 1 }} para exibir a comparação.</div>
+          </div>
+        </template>
+
+      </div>
+
     </template>
 
     <div v-else-if="!loading" class="empty-state">
@@ -1114,11 +1261,12 @@ const dateTo = ref(fmtDate(today))
 
 // ── Config ────────────────────────────────────────────────────────────────
 const tabs = [
-  { key: 'evolucao', label: 'Evolução',      icon: 'show_chart' },
-  { key: 'contas',   label: 'Contas & CNPJ', icon: 'account_balance' },
-  { key: 'produtos', label: 'Top Produtos',  icon: 'inventory_2' },
-  { key: 'flex',     label: 'Flex Delivery', icon: 'electric_bike' },
-  { key: 'semana',   label: 'Dias da Semana', icon: 'event_note' },
+  { key: 'evolucao',    label: 'Evolução',       icon: 'show_chart' },
+  { key: 'contas',      label: 'Contas & CNPJ',  icon: 'account_balance' },
+  { key: 'produtos',    label: 'Top Produtos',   icon: 'inventory_2' },
+  { key: 'flex',        label: 'Flex Delivery',  icon: 'electric_bike' },
+  { key: 'semana',      label: 'Dias da Semana', icon: 'event_note' },
+  { key: 'sazonalidade',label: 'Sazonalidade',   icon: 'compare_arrows' },
 ]
 
 const chartMetrics = [
@@ -1437,6 +1585,9 @@ async function load() {
     if (!selectedAccountId.value && data.value?.accounts?.length) {
       knownAccounts.value = data.value.accounts.map(a => ({ id: a.account_id, label: a.account_nickname }))
     }
+
+    // Carrega dados do ano anterior em paralelo (para aba de sazonalidade)
+    if (activeMarketplace.value !== 'shopee') loadLastYear()
   } catch (e) {
     console.error('Dashboard error', e)
     data.value = null
@@ -1911,6 +2062,149 @@ function tacosBadgeClass(pct) {
   if (pct > 8)  return 'tacos-med'
   return 'tacos-ok'
 }
+
+// ── Pareto 80/20 ──────────────────────────────────────────────────────────
+// Retorna o % acumulado de GMV até o produto i (inclusive), arredondado
+const paretoAccumData = computed(() => {
+  const prods = topProductsSorted.value
+  const totalRev = prods.reduce((s, p) => s + (p.revenue || 0), 0)
+  if (!totalRev) return []
+  let accum = 0
+  return prods.map(p => {
+    accum += p.revenue || 0
+    return Math.round(accum / totalRev * 100)
+  })
+})
+
+function paretoAccum(i) {
+  return paretoAccumData.value[i] ?? 0
+}
+
+// Retorna o número (80 ou 95) se este índice é o ponto de corte, senão null
+function paretoLine(i) {
+  const data = paretoAccumData.value
+  if (!data.length) return null
+  const prev = i > 0 ? data[i - 1] : 0
+  if (prev < 80 && data[i] >= 80) return 80
+  if (prev < 95 && data[i] >= 95) return 95
+  return null
+}
+
+// ── Funil de conversão ────────────────────────────────────────────────────
+function convClass(qty, visits) {
+  if (!visits) return ''
+  const rate = qty / visits * 100
+  if (rate >= 5)  return 'conv-high'
+  if (rate >= 2)  return 'conv-med'
+  return 'conv-low'
+}
+
+// ── Sazonalidade — ano anterior ───────────────────────────────────────────
+const lastYearData   = ref(null)
+const loadingLastYear = ref(false)
+
+async function loadLastYear() {
+  if (!dateFrom.value || !dateTo.value) return
+  loadingLastYear.value = true
+  try {
+    const d0 = new Date(dateFrom.value + 'T12:00:00')
+    const d1 = new Date(dateTo.value   + 'T12:00:00')
+    d0.setFullYear(d0.getFullYear() - 1)
+    d1.setFullYear(d1.getFullYear() - 1)
+    const params = { date_from: fmtDate(d0), date_to: fmtDate(d1) }
+    if (selectedAccountId.value) params.account_id = selectedAccountId.value
+    const res = await MercadoLivreService.getDashboardOperation(params)
+    lastYearData.value = res.data
+  } catch {
+    lastYearData.value = null
+  } finally {
+    loadingLastYear.value = false
+  }
+}
+
+// Calcula variação % entre atual e ano anterior
+function yoyPct(curr, prev) {
+  if (!prev || prev === 0) return null
+  return ((curr - prev) / Math.abs(prev) * 100).toFixed(1)
+}
+
+function yoyClass(pct) {
+  if (pct === null) return ''
+  return pct >= 0 ? 'pos' : 'neg'
+}
+
+// Série diária do ano anterior alinhada por day-of-year offset para o gráfico
+const lastYearChartData = computed(() => {
+  return lastYearData.value?.daily || []
+})
+
+// KPIs do ano anterior
+const lastYearOp = computed(() => {
+  const d = lastYearData.value
+  if (!d) return null
+  return {
+    gmv:          d.gmv || 0,
+    net_revenue:  d.net_revenue || 0,
+    gross_profit: d.gross_profit || 0,
+    lucro_liquido: d.lucro_liquido || 0,
+    orders_count: d.orders_count || 0,
+    ads_cost:     d.ads_cost || 0,
+  }
+})
+
+// ── Gráfico de sazonalidade ───────────────────────────────────────────────
+const SAZ_W = 700
+const SAZ_H = 160
+const SAZ_PAD = 12
+
+const sazHoveredIdx = ref(-1)
+
+function sazXPos(i) {
+  const n = chartData.value.length
+  if (n <= 1) return SAZ_PAD
+  return SAZ_PAD + i * (SAZ_W - SAZ_PAD * 2) / (n - 1)
+}
+
+function onSazMouseMove(e) {
+  const rect = e.currentTarget.getBoundingClientRect()
+  const x = (e.clientX - rect.left) / rect.width * SAZ_W
+  const n = chartData.value.length
+  if (!n) return
+  const xStep = n > 1 ? (SAZ_W - SAZ_PAD * 2) / (n - 1) : 1
+  sazHoveredIdx.value = Math.max(0, Math.min(n - 1, Math.round((x - SAZ_PAD) / xStep)))
+}
+
+function buildSazPath(series, maxVal) {
+  if (!series.length || !maxVal) return null
+  const n = series.length
+  const top = 22, bot = SAZ_H - 20
+  const h = bot - top
+  const pts = series.map((d, i) => ({
+    x: SAZ_PAD + i * (SAZ_W - SAZ_PAD * 2) / Math.max(n - 1, 1),
+    y: bot - (d.gmv || 0) / maxVal * h,
+  }))
+  let line = `M ${pts[0].x} ${pts[0].y}`
+  for (let i = 1; i < pts.length; i++) {
+    const cx = (pts[i-1].x + pts[i].x) / 2
+    line += ` C ${cx} ${pts[i-1].y} ${cx} ${pts[i].y} ${pts[i].x} ${pts[i].y}`
+  }
+  const area = line + ` L ${pts[pts.length-1].x} ${bot} L ${pts[0].x} ${bot} Z`
+  return { line, area }
+}
+
+const sazMaxVal = computed(() => {
+  const curr = chartData.value.map(d => d.gmv || 0)
+  const prev = lastYearChartData.value.map(d => d.gmv || 0)
+  return Math.max(...curr, ...prev, 1)
+})
+
+const sazPathCurr = computed(() => buildSazPath(chartData.value, sazMaxVal.value))
+const sazPathPrev = computed(() => buildSazPath(lastYearChartData.value, sazMaxVal.value))
+
+const sazGridLines = computed(() => {
+  const top = 22, bot = SAZ_H - 20
+  return [top, top + (bot - top) / 3, top + (bot - top) * 2 / 3, bot]
+})
 
 onMounted(() => { load(); loadToday() })
 </script>
@@ -3145,5 +3439,201 @@ onMounted(() => { load(); loadToday() })
   border-radius: 10px;
   font-size: 11px;
   font-weight: 700;
+}
+
+/* ── Pareto 80/20 ──────────────────────────────────────────────────────── */
+.pareto-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.pareto-bar-bg {
+  width: 54px;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.pareto-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .3s;
+}
+.pareto-pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  min-width: 34px;
+  text-align: right;
+}
+/* Linha de corte — borda inferior tracejada na linha onde o acumulado cruza 80% e 95% */
+tr.pareto-line-80 td {
+  border-bottom: 2px dashed #6366f1 !important;
+  position: relative;
+}
+tr.pareto-line-80::after {
+  content: '◀ 80%';
+  position: absolute;
+  right: 8px;
+  font-size: 10px;
+  color: #6366f1;
+  font-weight: 700;
+}
+tr.pareto-line-95 td {
+  border-bottom: 2px dashed #f59e0b !important;
+}
+
+/* ── Funil de conversão ─────────────────────────────────────────────────── */
+.conv-funnel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.conv-visits {
+  color: #64748b;
+  font-size: 11px;
+}
+.conv-arrow {
+  color: #94a3b8;
+  font-size: 10px;
+}
+.conv-rate {
+  font-weight: 700;
+  font-size: 12px;
+}
+.conv-high { color: #0d9488; }
+.conv-med  { color: #f59e0b; }
+.conv-low  { color: #ef4444; }
+
+/* ── Sazonalidade ───────────────────────────────────────────────────────── */
+.saz-intro {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #6366f1;
+}
+.saz-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.saz-kpi-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.saz-kpi-label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.saz-kpi-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.saz-side {
+  flex: 1;
+}
+.saz-side--prev {
+  text-align: right;
+  opacity: .65;
+}
+.saz-year-label {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+.saz-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.saz-value--prev {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+}
+.saz-delta {
+  text-align: center;
+  flex-shrink: 0;
+}
+.saz-pct {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+.saz-arrow {
+  font-size: 9px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.saz-no-data {
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+}
+.saz-chart-wrap {
+  position: relative;
+}
+.saz-chart {
+  width: 100%;
+  height: 160px;
+  display: block;
+}
+.saz-tooltip {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15,23,42,.88);
+  color: #fff;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+.saz-tt-date {
+  font-weight: 700;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.saz-tt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.6;
+}
+.saz-tt-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.saz-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
 }
 </style>
