@@ -185,6 +185,7 @@ const menuSections = [
     items: [
       { label: "SellerBot AI", icon: "psychology", route: "sellerbot-ai", color: "#a855f7", bg: "rgba(168,85,247,.15)" },
       { label: "Análise de Anúncios", icon: "insights", route: "item-analytics", color: "#0d9488", bg: "rgba(13,148,136,.15)" },
+      { label: "Inteligência de Mercado", icon: "manage_search", route: "market-intelligence", color: "#6366f1", bg: "rgba(99,102,241,.15)" },
     ],
   },
   {

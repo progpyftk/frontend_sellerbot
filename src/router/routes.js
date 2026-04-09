@@ -99,6 +99,11 @@ const routes = [
         name: 'system-health',
         component: () => import('pages/SystemHealthPage.vue')
       },
+      {
+        path: 'market',
+        name: 'market-intelligence',
+        component: () => import('pages/MarketIntelligencePage.vue')
+      },
     ],
   },
   {

@@ -137,4 +137,15 @@ export default {
   getItemCausalAnalysis(itemId, params) {
     return api.get(`/mercadolivre/analytics/items/${itemId}/causal/`, { params })
   },
+
+  // --- Inteligência de Mercado (Sprint B) ---
+  getMarketTrends(params) {
+    return api.get('/mercadolivre/market/trends/', { params })
+  },
+  getMarketHighlights(params) {
+    return api.get('/mercadolivre/market/highlights/', { params })
+  },
+  getMarketNiche(params) {
+    return api.get('/mercadolivre/market/niche/', { params })
+  },
 }
