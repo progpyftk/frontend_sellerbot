@@ -1,7 +1,7 @@
 <template>
   <q-page class="dash-page">
 
-    <!-- ══════════ HEADER ══════════════════════════════════════════════════ -->
+    <!-- ══════════ HEADER (slim) ══════════════════════════════════════════ -->
     <div class="page-header">
       <div class="header-left">
         <div class="header-icon"><q-icon name="dashboard" size="20px" /></div>
@@ -11,57 +11,32 @@
         </div>
       </div>
       <div class="header-right">
-        <!-- Filtro de marketplace -->
-        <div class="mkt-filter-group">
-          <button :class="['mkt-btn', activeMarketplace === 'all' && 'mkt-btn--on']"
-            @click="activeMarketplace = 'all'">
-            <q-icon name="all_inclusive" size="13px" />Todos
-          </button>
-          <button :class="['mkt-btn', 'mkt-btn--ml', activeMarketplace === 'ml' && 'mkt-btn--on']"
-            @click="activeMarketplace = 'ml'">
-            <img src="/img/ml-logo.svg" height="13" style="vertical-align:middle" onerror="this.style.display='none'" />
-            Mercado Livre
-          </button>
-          <button :class="['mkt-btn', 'mkt-btn--shopee', activeMarketplace === 'shopee' && 'mkt-btn--on']"
-            @click="activeMarketplace = 'shopee'">
-            <img src="/img/shopee-logo.svg" height="13" style="vertical-align:middle" onerror="this.style.display='none'" />
-            Shopee
-          </button>
+        <!-- Indicador do período ativo -->
+        <div class="active-period-badge" v-if="activeDatePreset">
+          <q-icon name="calendar_today" size="12px" />
+          {{ datePresets.find(p => p.key === activeDatePreset)?.label || activeDatePreset }}
+          <span class="muted" style="font-size:10px">{{ dateFrom }} → {{ dateTo }}</span>
         </div>
-
-        <div class="date-range-group">
-          <button v-for="p in datePresets" :key="p.key"
-            :class="['date-preset-btn', activeDatePreset === p.key && 'date-preset-btn--on']"
-            @click="applyPreset(p.key)">{{ p.label }}</button>
-          <div class="date-inputs">
-            <q-input v-model="dateFrom" type="date" dense borderless class="date-inp"
-              @update:model-value="activeDatePreset = null; load()" />
-            <span class="date-sep">→</span>
-            <q-input v-model="dateTo" type="date" dense borderless class="date-inp"
-              @update:model-value="activeDatePreset = null; load()" />
-          </div>
+        <div class="active-period-badge" v-else>
+          <q-icon name="calendar_today" size="12px" />
+          {{ dateFrom }} → {{ dateTo }}
+        </div>
+        <!-- Indicador de contas -->
+        <div class="active-accts-badge" v-if="selectedAccountKeys.length && selectedAccountKeys.length < allAccountKeys.length">
+          <span v-for="k in selectedAccountKeys.slice(0,3)" :key="k" class="acct-chip-dot" :style="{ background: accountColor(k) }"></span>
+          <span v-if="selectedAccountKeys.length > 3" class="muted" style="font-size:10px">+{{ selectedAccountKeys.length - 3 }}</span>
         </div>
         <q-btn flat round icon="refresh" color="teal-7" :loading="loading" @click="load" size="sm">
           <q-tooltip>Atualizar</q-tooltip>
         </q-btn>
+        <button class="filter-toggle-btn" :class="{ 'filter-toggle-btn--on': showFilters }" @click="showFilters = !showFilters">
+          <q-icon name="tune" size="16px" />
+          Filtros
+        </button>
       </div>
     </div>
 
-    <!-- ══════════ ACCOUNT FILTER PILLS ════════════════════════════════════ -->
-    <div v-if="knownAccounts.length > 1 && activeMarketplace !== 'shopee'" class="acct-filter-bar">
-      <span class="acct-filter-label">Conta:</span>
-      <button :class="['acct-pill', !selectedAccountId && 'acct-pill--on']" @click="selectAccount(null)">
-        <q-icon name="all_inclusive" size="11px" />
-        Todas
-      </button>
-      <button v-for="a in knownAccounts" :key="a.id"
-        :class="['acct-pill', selectedAccountId === a.id && 'acct-pill--on']"
-        @click="selectAccount(a.id)">
-        {{ a.label }}
-      </button>
-    </div>
-
-    <!-- ══════════ LOADING / EMPTY ══════════════════════════════════════════ -->
+    <!-- ══════════ LOADING ═════════════════════════════════════════════════ -->
     <div v-if="loading" class="loading-center">
       <q-spinner-dots color="teal" size="48px" />
       <div class="loading-text">Carregando dados...</div>
@@ -69,50 +44,278 @@
 
     <template v-else-if="data || shopeeData">
 
-      <!-- ══════════ HOJE EM DESTAQUE ══════════════════════════════════════ -->
-      <div v-if="combinedToday && activeDatePreset !== 'hoje'" class="today-banner">
-        <div class="today-label">
-          <span class="live-dot"></span>
-          Hoje
-        </div>
-        <div class="today-kpis">
-          <div class="today-kpi">
-            <div class="today-kpi-label">GMV do Dia</div>
-            <div class="today-kpi-val today-gmv">{{ fmt(combinedToday.gmv) }}</div>
+      <!-- ══════════ LAYOUT PRINCIPAL ════════════════════════════════════ -->
+      <div class="dash-main-layout" :class="{ 'has-sidebar': showFilters }">
+
+        <!-- ── SIDEBAR DE FILTROS ──────────────────────────────────────── -->
+        <aside class="filter-sidebar" :class="{ 'filter-sidebar--open': showFilters }">
+          <div class="fs-inner">
+
+            <!-- Cabeçalho da sidebar -->
+            <div class="fs-header">
+              <div class="fs-header-title">
+                <q-icon name="tune" size="15px" style="opacity:.7" />
+                Filtros
+              </div>
+              <button class="fs-header-close" @click="showFilters = false">
+                <q-icon name="chevron_left" size="16px" />
+              </button>
+            </div>
+
+            <!-- ── PERÍODO ── -->
+            <div class="fs-section">
+              <div class="fs-section-title">
+                <q-icon name="calendar_today" size="11px" />Período
+              </div>
+              <div class="fs-presets">
+                <button v-for="p in datePresets" :key="p.key"
+                  :class="['fs-preset-btn', activeDatePreset === p.key && 'fs-preset-btn--on']"
+                  @click="applyPreset(p.key)">{{ p.label }}</button>
+              </div>
+              <div class="fs-dates">
+                <div class="fs-date-row">
+                  <span class="fs-date-label">De</span>
+                  <q-input v-model="dateFrom" type="date" dense borderless class="fs-date-inp"
+                    @update:model-value="activeDatePreset = null; load()" />
+                </div>
+                <div class="fs-date-row">
+                  <span class="fs-date-label">Até</span>
+                  <q-input v-model="dateTo" type="date" dense borderless class="fs-date-inp"
+                    @update:model-value="activeDatePreset = null; load()" />
+                </div>
+              </div>
+            </div>
+
+            <!-- ── CONTAS & VISUALIZAÇÃO (seção unificada) ── -->
+            <div class="fs-section">
+              <div class="fs-section-title">
+                <q-icon name="manage_accounts" size="11px" />Contas
+              </div>
+
+              <!-- Mercado Livre -->
+              <div v-if="knownMlAccounts.length" class="fs-mkt-group">
+                <label class="fs-mkt-header" @change="toggleAllMl">
+                  <span class="fs-custom-check" :class="{ 'is-checked': allMlSelected, 'is-indeterminate': someMlSelected && !allMlSelected }">
+                    <input type="checkbox" :checked="allMlSelected" :indeterminate.prop="someMlSelected && !allMlSelected" style="display:none" />
+                    <span class="fs-check-inner"></span>
+                  </span>
+                  <span class="fs-mkt-logo fs-mkt-logo--ml">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" fill="#FFE600"/>
+                      <path d="M7 9l5 6 5-6" stroke="#1a1a2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    ML
+                  </span>
+                  <span class="fs-mkt-name">Mercado Livre</span>
+                </label>
+                <label v-for="a in knownMlAccounts" :key="a.key" class="fs-acct-item"
+                  :class="{ 'fs-acct-item--on': selectedAccountKeys.includes(a.key) }">
+                  <span class="fs-custom-check" :class="{ 'is-checked': selectedAccountKeys.includes(a.key) }">
+                    <input type="checkbox" :value="a.key" v-model="selectedAccountKeys" @change="onFilterChange" style="display:none" />
+                    <span class="fs-check-inner"></span>
+                  </span>
+                  <span class="fs-acct-color" :style="{ background: a.color }"></span>
+                  <span class="fs-acct-label">{{ a.label }}</span>
+                </label>
+              </div>
+
+              <!-- Shopee -->
+              <div v-if="knownShopeeAccounts.length" class="fs-mkt-group">
+                <label class="fs-mkt-header" @change="toggleAllShopee">
+                  <span class="fs-custom-check" :class="{ 'is-checked': allShopeeSelected, 'is-indeterminate': someShopeeSelected && !allShopeeSelected }">
+                    <input type="checkbox" :checked="allShopeeSelected" :indeterminate.prop="someShopeeSelected && !allShopeeSelected" style="display:none" />
+                    <span class="fs-check-inner"></span>
+                  </span>
+                  <span class="fs-mkt-logo fs-mkt-logo--shopee">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 3C7 3 3.5 6.5 3.5 11c0 2.5 1.2 4.7 3 6.1V20l2.5-1.2C10 19.6 11 19.8 12 19.8c5 0 8.5-3.5 8.5-8 0-4.8-3.5-8.8-8.5-8.8z" fill="#EE4D2D"/>
+                      <path d="M9 11.5c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" fill="white"/>
+                    </svg>
+                    Shopee
+                  </span>
+                  <span class="fs-mkt-name">Shopee</span>
+                </label>
+                <label v-for="a in knownShopeeAccounts" :key="a.key" class="fs-acct-item"
+                  :class="{ 'fs-acct-item--on': selectedAccountKeys.includes(a.key) }">
+                  <span class="fs-custom-check" :class="{ 'is-checked': selectedAccountKeys.includes(a.key) }">
+                    <input type="checkbox" :value="a.key" v-model="selectedAccountKeys" @change="onFilterChange" style="display:none" />
+                    <span class="fs-check-inner"></span>
+                  </span>
+                  <span class="fs-acct-color" :style="{ background: a.color }"></span>
+                  <span class="fs-acct-label">{{ a.label }}</span>
+                </label>
+              </div>
+
+              <div v-if="isComparativeMode" class="fs-comparative-hint">
+                <q-icon name="compare_arrows" size="12px" />
+                {{ selectedAccountKeys.length }} contas selecionadas
+              </div>
+            </div>
+
+            <!-- ── MÉTRICAS ── -->
+            <div class="fs-section">
+              <div class="fs-section-title">
+                <q-icon name="show_chart" size="11px" />Métricas
+                <span class="fs-mode-hint" :class="{ 'fs-mode-hint--active': chartMode !== 'metrics' }">
+                  modo Agregado
+                  <q-icon name="info_outline" size="10px">
+                    <q-tooltip max-width="180px" anchor="top right" self="bottom right" class="fs-hint-tooltip">
+                      A seleção de métricas só funciona no modo <strong>Agregado</strong>.<br>No modo <em>Por Conta</em>, use as pílulas no cabeçalho do gráfico.
+                    </q-tooltip>
+                  </q-icon>
+                </span>
+              </div>
+              <div class="fs-metric-list" :class="{ 'fs-metric-list--disabled': chartMode !== 'metrics' }">
+                <label v-for="m in chartMetrics" :key="m.key" class="fs-metric-item"
+                  :class="{ 'fs-metric-item--on': activeMetrics.includes(m.key), 'fs-metric-item--locked': chartMode !== 'metrics' }">
+                  <span class="fs-metric-pip" :style="{ background: activeMetrics.includes(m.key) && chartMode === 'metrics' ? m.color : 'rgba(255,255,255,.15)' }"></span>
+                  <input type="checkbox" :checked="activeMetrics.includes(m.key)" @change="chartMode === 'metrics' && toggleMetric(m.key)" style="display:none" />
+                  {{ m.label }}
+                </label>
+              </div>
+
+              <!-- Toggle Semana -->
+              <label class="fs-weekday-toggle" :class="{ 'fs-weekday-toggle--on': chartMode === 'weekday' }"
+                @click="setChartMode(chartMode === 'weekday' ? 'metrics' : 'weekday')">
+                <span class="fs-weekday-icon"><q-icon name="event_note" size="13px" /></span>
+                <span class="fs-weekday-label">Média por dia da semana</span>
+                <span class="fs-weekday-switch" :class="{ 'fs-weekday-switch--on': chartMode === 'weekday' }"></span>
+              </label>
+            </div>
+
+          </div><!-- /fs-inner -->
+        </aside>
+
+        <!-- ── ÁREA DE CONTEÚDO ────────────────────────────────────────── -->
+        <div class="dash-content">
+
+          <!-- ══ HOJE EM DESTAQUE (acima do gráfico) ════════════════════ -->
+          <div v-if="combinedToday && activeDatePreset !== 'hoje'" class="today-banner">
+            <div class="today-label">
+              <span class="live-dot"></span>
+              Hoje
+            </div>
+            <div class="today-kpis">
+              <div class="today-kpi">
+                <div class="today-kpi-label">GMV</div>
+                <div class="today-kpi-val today-gmv">{{ fmt(combinedToday.gmv) }}</div>
+              </div>
+              <div class="today-sep">|</div>
+              <div class="today-kpi">
+                <div class="today-kpi-label">Pedidos</div>
+                <div class="today-kpi-val">{{ combinedToday.orders_count || 0 }}</div>
+              </div>
+              <div class="today-sep">|</div>
+              <div class="today-kpi">
+                <div class="today-kpi-label">Rec. Líquida</div>
+                <div class="today-kpi-val">{{ fmt(combinedToday.net_revenue) }}</div>
+              </div>
+              <div class="today-sep">|</div>
+              <div class="today-kpi">
+                <div class="today-kpi-label">Lucro Bruto</div>
+                <div class="today-kpi-val" :class="(combinedToday.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.gross_profit) }}</div>
+              </div>
+              <div class="today-sep">|</div>
+              <div class="today-kpi">
+                <div class="today-kpi-label">Lucro Após Ads</div>
+                <div class="today-kpi-val" :class="(combinedToday.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.lucro_liquido) }}</div>
+              </div>
+              <div class="today-sep">|</div>
+              <div class="today-kpi">
+                <div class="today-kpi-label">Ticket Médio</div>
+                <div class="today-kpi-val">{{ fmt(combinedToday.avg_ticket) }}</div>
+              </div>
+              <div class="today-sep">|</div>
+              <div class="today-kpi">
+                <div class="today-kpi-label">Unidades</div>
+                <div class="today-kpi-val">{{ combinedToday.units_sold || 0 }}</div>
+              </div>
+            </div>
+            <div class="today-note">Tempo real — leitura direta dos pedidos</div>
           </div>
-          <div class="today-sep">|</div>
-          <div class="today-kpi">
-            <div class="today-kpi-label">Pedidos</div>
-            <div class="today-kpi-val">{{ combinedToday.orders_count || 0 }}</div>
+
+          <!-- ══ GRÁFICO HERO ════════════════════════════════════════════ -->
+          <div class="chart-card hero-chart">
+            <div class="chart-header-row1">
+              <div class="chart-title-block">
+                <div class="chart-title">{{ chartMode === 'weekday' ? 'Média por Dia da Semana' : 'Evolução' }}</div>
+                <div class="chart-period-tag">{{ periodLabel }}</div>
+              </div>
+
+              <div class="chart-header-actions">
+                <span v-if="chartLoading || loadingAccountData" class="chart-loading-badge">
+                  <q-spinner-dots size="14px" color="teal" />
+                </span>
+
+                <!-- Seletor de métrica (modo Por Conta e Semana) -->
+                <div v-if="chartMode !== 'metrics'" class="chart-metric-pills">
+                  <button v-for="m in chartMetrics" :key="m.key"
+                    :class="['chart-metric-pill', (chartMode === 'per_account' ? chartAccountMetric : weekdayChartMetric) === m.key && 'chart-metric-pill--on']"
+                    :style="(chartMode === 'per_account' ? chartAccountMetric : weekdayChartMetric) === m.key ? `--pill-color:${m.color}` : ''"
+                    @click="chartMode === 'per_account' ? (chartAccountMetric = m.key) : (weekdayChartMetric = m.key); renderPlotlyChart()">
+                    {{ m.label }}
+                  </button>
+                </div>
+
+                <!-- Toggle Agregado / Por Conta -->
+                <div v-if="chartMode !== 'weekday'" class="chart-mode-toggle">
+                  <button :class="['cmt-btn', chartMode === 'metrics' && 'cmt-btn--on']"
+                    @click="setChartMode('metrics')">
+                    <q-icon name="show_chart" size="13px" />Agregado
+                  </button>
+                  <button :class="['cmt-btn', chartMode === 'per_account' && 'cmt-btn--on']"
+                    @click="setChartMode('per_account')">
+                    <q-icon name="account_tree" size="13px" />Por Conta
+                  </button>
+                  <!-- Hint tooltip -->
+                  <q-icon name="help_outline" size="14px" class="cmt-help-icon">
+                    <q-tooltip max-width="220px" anchor="bottom right" self="top right" class="chart-hint-tooltip">
+                      <div class="cht-tip">
+                        <div class="cht-tip-row">
+                          <q-icon name="show_chart" size="12px" /><strong>Agregado</strong> — todas as contas somadas em métricas separadas (GMV, Lucro…)
+                        </div>
+                        <div class="cht-tip-row">
+                          <q-icon name="account_tree" size="12px" /><strong>Por Conta</strong> — uma linha por conta, escolha a métrica nas pílulas acima
+                        </div>
+                        <div class="cht-tip-row">
+                          <q-icon name="event_note" size="12px" /><strong>Semana</strong> — média histórica por dia da semana (ative nos filtros)
+                        </div>
+                        <div class="cht-tip-divider"></div>
+                        <div class="cht-tip-row cht-tip-muted">Scroll para zoom · Duplo clique para resetar</div>
+                      </div>
+                    </q-tooltip>
+                  </q-icon>
+                </div>
+              </div>
+            </div>
+            <!-- Modo ativo — destaque contextual -->
+            <div class="chart-mode-bar">
+              <span v-if="chartMode === 'metrics'" class="chart-mode-bar-badge chart-mode-bar-badge--agg">
+                <q-icon name="show_chart" size="12px" />Agregado
+                <span class="chart-mode-bar-hint">múltiplas métricas · todas as contas combinadas</span>
+              </span>
+              <span v-else-if="chartMode === 'per_account'" class="chart-mode-bar-badge chart-mode-bar-badge--acc">
+                <q-icon name="account_tree" size="12px" />Por Conta
+                <span class="chart-mode-bar-hint">uma linha por conta · métrica selecionada: <strong>{{ chartMetrics.find(m => m.key === chartAccountMetric)?.label }}</strong></span>
+              </span>
+              <span v-else class="chart-mode-bar-badge chart-mode-bar-badge--week">
+                <q-icon name="event_note" size="12px" />Média por Dia da Semana
+                <span class="chart-mode-bar-hint">média histórica de {{ chartMetrics.find(m => m.key === weekdayChartMetric)?.label }}</span>
+              </span>
+            </div>
+            <div v-if="chartData.length" class="plotly-wrap">
+              <div ref="plotlyContainer" class="plotly-chart-container"></div>
+              <!-- Loading overlay — bloqueia interação enquanto dados por conta carregam -->
+              <transition name="chart-overlay-fade">
+                <div v-if="loadingAccountData" class="plotly-loading-overlay">
+                  <q-spinner-dots size="36px" color="teal" />
+                  <div class="plotly-loading-text">Carregando dados por conta…</div>
+                </div>
+              </transition>
+            </div>
+            <div v-else class="chart-empty">Sem dados para o período selecionado</div>
           </div>
-          <div class="today-sep">|</div>
-          <div class="today-kpi">
-            <div class="today-kpi-label">Receita Líquida</div>
-            <div class="today-kpi-val">{{ fmt(combinedToday.net_revenue) }}</div>
-          </div>
-          <div class="today-sep">|</div>
-          <div class="today-kpi">
-            <div class="today-kpi-label">Lucro Bruto</div>
-            <div class="today-kpi-val" :class="(combinedToday.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.gross_profit) }}</div>
-          </div>
-          <div class="today-sep">|</div>
-          <div class="today-kpi">
-            <div class="today-kpi-label">Lucro Após Ads</div>
-            <div class="today-kpi-val" :class="(combinedToday.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.lucro_liquido) }}</div>
-          </div>
-          <div class="today-sep">|</div>
-          <div class="today-kpi">
-            <div class="today-kpi-label">Ticket Médio</div>
-            <div class="today-kpi-val">{{ fmt(combinedToday.avg_ticket) }}</div>
-          </div>
-          <div class="today-sep">|</div>
-          <div class="today-kpi">
-            <div class="today-kpi-label">Unidades</div>
-            <div class="today-kpi-val">{{ combinedToday.units_sold || 0 }}</div>
-          </div>
-        </div>
-        <div class="today-note">Tempo real — leitura direta dos pedidos</div>
-      </div>
+
 
       <!-- ══════════ ALERTA CMV ════════════════════════════════════════════ -->
       <div v-if="!dismissCmvAlert && data?.cost_coverage && data.cost_coverage.cobertura_pct < 95" class="cmv-alert">
@@ -126,85 +329,18 @@
         <button class="cmv-alert-close" @click="dismissCmvAlert = true">✕</button>
       </div>
 
-      <!-- ══════════ CASCATA P&L ════════════════════════════════════════════ -->
-      <div class="waterfall-card" v-if="op?.gmv">
-        <div class="waterfall-header">
-          <div class="waterfall-title">
-            <q-icon name="waterfall_chart" size="16px" class="q-mr-xs" />
-            Cascata P&L
-          </div>
-          <div class="waterfall-subtitle">Fluxo completo de margem no período</div>
-          <!-- Projeção do mês -->
-          <div class="projection-badge" v-if="monthProjection">
-            <q-icon name="trending_up" size="12px" />
-            Projeção mês: <strong>{{ fmt(monthProjection.gmv) }}</strong> GMV · <strong>{{ fmt(monthProjection.lucro) }}</strong> lucro
-            <span class="muted" style="font-size:10px">(dia {{ monthProjection.dayOfMonth }} de {{ monthProjection.daysInMonth }})</span>
-          </div>
-        </div>
-        <div class="waterfall-steps">
-          <div class="wf-step wf-step--start">
-            <div class="wf-label">GMV</div>
-            <div class="wf-bar-wrap">
-              <div class="wf-bar wf-bar--gmv" style="width:100%"></div>
-            </div>
-            <div class="wf-value">{{ fmt(op?.gmv) }}</div>
-          </div>
-          <div class="wf-arrow">▼</div>
-          <div class="wf-step wf-step--deduct">
-            <div class="wf-label">− Tarifas ML</div>
-            <div class="wf-bar-wrap">
-              <div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.total_fees, op?.gmv) + '%' }"></div>
-            </div>
-            <div class="wf-value wf-value--neg">−{{ fmt(op?.total_fees) }} <span class="wf-pct">({{ wfPct(op?.total_fees, op?.gmv).toFixed(1) }}%)</span></div>
-          </div>
-          <div class="wf-arrow">▼</div>
-          <div class="wf-step wf-step--result">
-            <div class="wf-label">= Rec. Líquida</div>
-            <div class="wf-bar-wrap">
-              <div class="wf-bar wf-bar--net" :style="{ width: wfPct(op?.net_revenue, op?.gmv) + '%' }"></div>
-            </div>
-            <div class="wf-value">{{ fmt(op?.net_revenue) }} <span class="wf-pct">({{ wfPct(op?.net_revenue, op?.gmv).toFixed(1) }}% do GMV)</span></div>
-          </div>
-          <div class="wf-arrow">▼</div>
-          <div class="wf-step wf-step--deduct">
-            <div class="wf-label">− CPV (custo do produto)</div>
-            <div class="wf-bar-wrap">
-              <div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.cmv_total, op?.gmv) + '%' }"></div>
-            </div>
-            <div class="wf-value wf-value--neg">−{{ fmt(op?.cmv_total) }} <span class="wf-pct">({{ wfPct(op?.cmv_total, op?.gmv).toFixed(1) }}%)</span></div>
-          </div>
-          <div class="wf-arrow">▼</div>
-          <div class="wf-step wf-step--result">
-            <div class="wf-label">= Lucro Bruto</div>
-            <div class="wf-bar-wrap">
-              <div class="wf-bar wf-bar--gp" :style="{ width: wfPct(op?.gross_profit, op?.gmv) + '%' }"></div>
-            </div>
-            <div class="wf-value">{{ fmt(op?.gross_profit) }} <span class="wf-pct">({{ wfPct(op?.gross_profit, op?.gmv).toFixed(1) }}% do GMV)</span></div>
-          </div>
-          <div class="wf-arrow">▼</div>
-          <div class="wf-step wf-step--deduct">
-            <div class="wf-label">− Investimento Ads</div>
-            <div class="wf-bar-wrap">
-              <div class="wf-bar wf-bar--ads" :style="{ width: wfPct(op?.ads_cost, op?.gmv) + '%' }"></div>
-            </div>
-            <div class="wf-value wf-value--warn">−{{ fmt(op?.ads_cost) }} <span class="wf-pct">(TACoS {{ wfPct(op?.ads_cost, op?.gmv).toFixed(1) }}%)</span></div>
-          </div>
-          <div class="wf-arrow">▼</div>
-          <div class="wf-step wf-step--final" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-step--pos' : 'wf-step--neg'">
-            <div class="wf-label">= Lucro Real</div>
-            <div class="wf-bar-wrap">
-              <div class="wf-bar" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-bar--ll' : 'wf-bar--neg'"
-                :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
-            </div>
-            <div class="wf-value wf-value--highlight">
-              {{ fmt(op?.lucro_liquido) }}
-              <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% margem)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- ══════════ KPI CARDS ══════════════════════════════════════════════ -->
+      <div class="kpi-grid-header">
+        <span class="kpi-grid-title">Resumo do Período</span>
+        <span class="kpi-period-badge">
+          <q-icon name="calendar_today" size="11px" />
+          {{ periodLabel }}
+        </span>
+        <span v-if="selectedAccountKeys.length < allAccountKeys.length && selectedAccountKeys.length > 0" class="kpi-period-badge kpi-accts-badge">
+          <q-icon name="filter_alt" size="11px" />
+          {{ selectedAccountKeys.length }} de {{ allAccountKeys.length }} contas
+        </span>
+      </div>
       <div class="kpi-grid">
 
         <div class="kpi-card kpi-gmv">
@@ -377,171 +513,374 @@
 
       </div>
 
-      <!-- ══════════ ABAS ═══════════════════════════════════════════════════ -->
-      <div class="tab-bar">
-        <button v-for="t in tabs" :key="t.key" :class="['tab-btn', activeTab === t.key && 'tab-btn--on']"
-          @click="activeTab = t.key">
-          <q-icon :name="t.icon" size="14px" class="q-mr-xs" />{{ t.label }}
-        </button>
-      </div>
-
-      <!-- ══════════ ABA: EVOLUÇÃO ══════════════════════════════════════════ -->
-      <div v-show="activeTab === 'evolucao'" class="tab-content">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">Evolução Diária</div>
-            <div class="chart-metric-toggles">
-              <button v-for="m in chartMetrics" :key="m.key"
-                :class="['metric-btn', activeMetrics.includes(m.key) && 'metric-btn--on']" :style="activeMetrics.includes(m.key)
-                  ? `background:${m.color}20; color:${m.color}; border-color:${m.color}`
-                  : ''" @click="toggleMetric(m.key)">
-                <span class="metric-btn-dot" :style="{ background: m.color }"></span>
-                {{ m.label }}
-              </button>
-              <button :class="['metric-btn', 'metric-btn--normalize', normalizeChart && 'metric-btn--on']"
-                :style="normalizeChart ? 'background:#64748b20;color:#64748b;border-color:#64748b' : ''"
-                @click="normalizeChart = !normalizeChart">
-                <q-icon name="show_chart" size="11px" />
-                Normalizar
-              </button>
-
-            </div>
+          <!-- ══════════ ABAS ═══════════════════════════════════════════════════ -->
+          <div class="tab-bar">
+            <button v-for="t in tabs" :key="t.key" :class="['tab-btn', activeTab === t.key && 'tab-btn--on']"
+              @click="activeTab = t.key">
+              <q-icon :name="t.icon" size="14px" class="q-mr-xs" />{{ t.label }}
+            </button>
           </div>
 
-          <div class="chart-area" v-if="chartData.length">
-            <!-- SVG line chart -->
-            <svg class="line-chart-svg" :viewBox="`0 0 ${SVG_W} ${SVG_H}`" preserveAspectRatio="none"
-              @mousemove="onChartMouseMove" @mouseleave="hoveredIdx = null">
-
-              <!-- Gradient defs -->
-              <defs>
-                <linearGradient v-for="m in chartMetrics" :key="'grad-' + m.key"
-                  :id="'grad-' + m.key" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" :stop-color="m.color" stop-opacity="0.22" />
-                  <stop offset="100%" :stop-color="m.color" stop-opacity="0" />
-                </linearGradient>
-              </defs>
-
-              <!-- Y grid lines (dashed) -->
-              <line v-for="(tick, i) in svgYTicks" :key="'g' + i" :x1="PLOT.x0" :y1="svgY(tick)" :x2="PLOT.x1"
-                :y2="svgY(tick)" stroke="#e8edf3" stroke-width="1" stroke-dasharray="4 4" />
-
-              <!-- X axis baseline -->
-              <line :x1="PLOT.x0" :y1="PLOT.y1" :x2="PLOT.x1" :y2="PLOT.y1" stroke="#e0e5ed" stroke-width="1.5" />
-
-              <!-- Area fills with gradient -->
-              <path v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'area-' + m.key"
-                :d="smoothArea(m.key)" :fill="`url(#grad-${m.key})`" />
-
-              <!-- Smooth lines -->
-              <path v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'line-' + m.key"
-                :d="smoothLine(m.key)" :stroke="m.color" stroke-width="2.5" fill="none"
-                stroke-linejoin="round" stroke-linecap="round" />
-
-              <!-- Hover vertical line -->
-              <line v-if="hoveredIdx !== null" :x1="svgXAt(hoveredIdx)" y1="10" :x2="svgXAt(hoveredIdx)" :y2="PLOT.y1"
-                stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3" />
-
-              <!-- Eixo direito: linha separadora (apenas quando ads está ativo) -->
-              <line v-if="adsActive" :x1="PLOT.x1" :y1="PLOT.y0" :x2="PLOT.x1" :y2="PLOT.y1"
-                stroke="#fde68a" stroke-width="1" stroke-dasharray="3 4" opacity="0.8" />
-
-              <!-- Dots on hover -->
-              <template v-if="hoveredIdx !== null">
-                <circle v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'dot-' + m.key"
-                  :cx="svgXAt(hoveredIdx)" :cy="svgYForMetric(m.key, chartData[hoveredIdx]?.[m.key] || 0)" r="5" :fill="m.color"
-                  stroke="#ffffff" stroke-width="2.5" />
-              </template>
-
-              <!-- X axis labels (every N days) -->
-              <text v-for="(d, i) in chartData" :key="'xl' + i" v-show="showXLabel(i)" :x="svgXAt(i)" :y="SVG_H - 1"
-                text-anchor="middle" font-size="10" fill="#9aa0ac">{{ d.dateLabel }}</text>
-
-              <!-- Y axis labels (esquerda) -->
-              <text v-for="(tick, i) in svgYTicks" :key="'yl' + i" :x="PLOT.x0 - 6" :y="svgY(tick) + 4"
-                text-anchor="end" font-size="10" fill="#64748b" font-weight="500">{{ fmtTick(tick) }}</text>
-
-              <!-- Y axis labels (direita — Ads) -->
-              <template v-if="adsActive">
-                <text v-for="(tick, i) in svgYTicksRight" :key="'yr' + i" :x="PLOT.x1 + 6" :y="svgYRight(tick) + 4"
-                  text-anchor="start" font-size="10" fill="#d97706" font-weight="500">{{ fmtShort(tick) }}</text>
-                <!-- Label "Ads →" no topo do eixo direito -->
-                <text :x="PLOT.x1 + 6" :y="PLOT.y0 - 2"
-                  text-anchor="start" font-size="9" fill="#f59e0b" font-weight="600" letter-spacing="0.5">ADS</text>
-              </template>
-            </svg>
-
-            <!-- Floating tooltip -->
-            <div v-if="hoveredIdx !== null && chartData[hoveredIdx]" class="line-tooltip" :style="tooltipStyle">
-              <div class="tooltip-date">{{ chartData[hoveredIdx].dateLabel }}</div>
-              <div v-for="m in chartMetrics.filter(m => activeMetrics.includes(m.key))" :key="'tt-' + m.key"
-                class="tooltip-row">
-                <span class="tooltip-dot" :style="{ background: m.color }"></span>
-                <span class="tooltip-label">{{ m.label }}</span>
-                <span class="tooltip-val">{{ fmt(chartData[hoveredIdx][m.key]) }}</span>
-              </div>
-              <div class="tooltip-row">
-                <span class="tooltip-dot" style="background:#64748b"></span>
-                <span class="tooltip-label">Pedidos</span>
-                <span class="tooltip-val">{{ chartData[hoveredIdx].orders_count }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-else class="chart-empty">Sem dados para o período</div>
-        </div>
+          <!-- ══════════ ABA: EVOLUÇÃO (tabela diária) ══════════════════════════ -->
+          <div v-show="activeTab === 'evolucao'" class="tab-content">
 
         <!-- Daily table -->
-        <div class="table-card">
-          <div class="table-title">Detalhamento Diário</div>
-          <div class="table-wrap">
-            <table class="data-table">
+        <div class="daily-table-card">
+          <div class="daily-table-header">
+            <div class="daily-table-title">
+              <q-icon name="calendar_month" size="15px" />
+              Detalhamento Diário
+            </div>
+            <div class="daily-table-meta">
+              {{ chartDataDesc.length }} dias
+              <span v-if="selectedAccountKeys.length < allAccountKeys.length" class="daily-filter-badge">
+                <q-icon name="filter_alt" size="11px" />
+                {{ selectedAccountKeys.length }} conta{{ selectedAccountKeys.length > 1 ? 's' : '' }}
+              </span>
+            </div>
+          </div>
+          <div class="daily-table-wrap">
+            <table class="daily-table">
               <thead>
                 <tr>
-                  <th>Data</th>
-                  <th class="right">GMV</th>
-                  <th class="right">Rec. Líquida</th>
-                  <th class="right">Lucro Bruto</th>
-                  <th class="right">Ads</th>
-                  <th class="right">TACoS</th>
-                  <th class="right">Lucro Após Ads</th>
-                  <th class="right">Pedidos</th>
-                  <th class="right">Margem LL</th>
+                  <th class="col-date">Data</th>
+                  <th class="col-num">GMV</th>
+                  <th class="col-num">Rec. Líquida</th>
+                  <th class="col-num">Lucro Bruto</th>
+                  <th class="col-num col-ads">Ads</th>
+                  <th class="col-num col-ads">TACoS</th>
+                  <th class="col-num col-ll">Lucro Após Ads</th>
+                  <th class="col-num">Pedidos</th>
+                  <th class="col-num">Margem</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="d in chartDataDesc" :key="d.date"
-                  :class="d.lucro_liquido < 0 ? 'row-negative' : ''">
-                  <td>{{ d.dateLabel }}</td>
-                  <td class="right">{{ fmt(d.gmv) }}</td>
-                  <td class="right">{{ fmt(d.net_revenue) }}</td>
-                  <td class="right">{{ fmt(d.gross_profit) }}</td>
-                  <td class="right warn">{{ fmt(d.ads_cost) }}</td>
-                  <td class="right">
-                    <span :class="d.gmv > 0 ? tacosBadgeClass(d.ads_cost / d.gmv * 100) : ''">
-                      {{ d.gmv > 0 ? (d.ads_cost / d.gmv * 100).toFixed(1) + '%' : '—' }}
-                    </span>
-                  </td>
-                  <td class="right" :class="d.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(d.lucro_liquido) }}</td>
-                  <td class="right">{{ d.orders_count }}</td>
-                  <td class="right">{{ pct(d.lucro_liquido, d.net_revenue) }}</td>
-                </tr>
+                <template v-for="d in chartDataDesc" :key="d.date">
+                  <!-- Linha principal do dia -->
+                  <tr :class="['dt-row', d.lucro_liquido < 0 ? 'dt-row--neg' : '', expandedDays.has(d.date) ? 'dt-row--open' : '']"
+                    @click="toggleDayExpand(d.date)">
+                    <td class="col-date">
+                      <span class="dt-expand-btn">
+                        <q-icon :name="expandedDays.has(d.date) ? 'expand_less' : 'chevron_right'" size="13px" />
+                      </span>
+                      <span class="dt-date-label">{{ d.dateLabel }}</span>
+                    </td>
+                    <td class="col-num dt-gmv">{{ fmt(d.gmv) }}</td>
+                    <td class="col-num">{{ fmt(d.net_revenue) }}</td>
+                    <td class="col-num" :class="d.gross_profit >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(d.gross_profit) }}</td>
+                    <td class="col-num col-ads dt-warn">{{ fmt(d.ads_cost) }}</td>
+                    <td class="col-num col-ads">
+                      <span v-if="d.gmv > 0" :class="['dt-tacos-badge', tacosBadgeClass(d.ads_cost / d.gmv * 100)]">
+                        {{ (d.ads_cost / d.gmv * 100).toFixed(1) }}%
+                      </span>
+                      <span v-else class="dt-empty">—</span>
+                    </td>
+                    <td class="col-num col-ll" :class="d.lucro_liquido >= 0 ? 'dt-pos' : 'dt-neg'">
+                      <strong>{{ fmt(d.lucro_liquido) }}</strong>
+                    </td>
+                    <td class="col-num">{{ d.orders_count }}</td>
+                    <td class="col-num">
+                      <span :class="d.net_revenue > 0 ? (d.lucro_liquido / d.net_revenue >= 0.15 ? 'dt-pos' : d.lucro_liquido / d.net_revenue >= 0.05 ? '' : 'dt-warn-text') : ''">
+                        {{ pct(d.lucro_liquido, d.net_revenue) }}
+                      </span>
+                    </td>
+                  </tr>
+                  <!-- Breakdown por conta -->
+                  <template v-if="expandedDays.has(d.date)">
+                    <tr v-for="a in dayAccountRows(d.date)" :key="a.label + d.date" class="dt-acct-row">
+                      <td class="col-date">
+                        <span class="dt-acct-indent">
+                          <span class="dt-acct-dot" :style="{ background: a.color }"></span>
+                          {{ a.label }}
+                          <span :class="['dt-mkt-tag', `dt-mkt-tag--${a.marketplace}`]">{{ a.marketplace === 'ml' ? 'ML' : 'SH' }}</span>
+                        </span>
+                      </td>
+                      <td class="col-num dt-sub">{{ fmt(a.gmv) }}</td>
+                      <td class="col-num dt-sub">{{ fmt(a.net_revenue) }}</td>
+                      <td class="col-num dt-sub" :class="(a.gross_profit || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(a.gross_profit) }}</td>
+                      <td class="col-num col-ads dt-sub dt-warn">{{ a.ads_cost ? fmt(a.ads_cost) : '—' }}</td>
+                      <td class="col-num col-ads dt-sub">
+                        <span v-if="a.gmv > 0">{{ (a.ads_cost / a.gmv * 100).toFixed(1) }}%</span>
+                        <span v-else class="dt-empty">—</span>
+                      </td>
+                      <td class="col-num col-ll dt-sub" :class="(a.lucro_liquido || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(a.lucro_liquido) }}</td>
+                      <td class="col-num dt-sub">{{ a.orders_count || 0 }}</td>
+                      <td class="col-num dt-sub">{{ pct(a.lucro_liquido, a.net_revenue) }}</td>
+                    </tr>
+                    <tr v-if="!dayAccountRows(d.date).length" class="dt-acct-row">
+                      <td colspan="9" class="dt-loading-hint">
+                        <q-spinner-dots size="12px" color="teal" />
+                        Carregando dados por conta…
+                      </td>
+                    </tr>
+                  </template>
+                </template>
               </tbody>
               <tfoot>
-                <tr class="total-row">
-                  <td>TOTAL</td>
-                  <td class="right">{{ fmt(chartTotals.gmv) }}</td>
-                  <td class="right">{{ fmt(chartTotals.net_revenue) }}</td>
-                  <td class="right">{{ fmt(chartTotals.gross_profit) }}</td>
-                  <td class="right warn">{{ fmt(chartTotals.ads_cost) }}</td>
-                  <td class="right">{{ chartTotals.gmv > 0 ? (chartTotals.ads_cost / chartTotals.gmv * 100).toFixed(1) + '%' : '—' }}</td>
-                  <td class="right" :class="(chartTotals.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(chartTotals.lucro_liquido) }}</td>
-                  <td class="right">{{ chartTotals.orders_count }}</td>
-                  <td class="right">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</td>
+                <tr class="dt-total-row">
+                  <td class="col-date">
+                    <q-icon name="functions" size="13px" style="opacity:.6;margin-right:5px" />
+                    Total {{ chartDataDesc.length }}d
+                  </td>
+                  <td class="col-num dt-gmv">{{ fmt(chartTotals.gmv) }}</td>
+                  <td class="col-num">{{ fmt(chartTotals.net_revenue) }}</td>
+                  <td class="col-num" :class="(chartTotals.gross_profit || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(chartTotals.gross_profit) }}</td>
+                  <td class="col-num col-ads dt-warn">{{ fmt(chartTotals.ads_cost) }}</td>
+                  <td class="col-num col-ads">{{ chartTotals.gmv > 0 ? (chartTotals.ads_cost / chartTotals.gmv * 100).toFixed(1) + '%' : '—' }}</td>
+                  <td class="col-num col-ll" :class="(chartTotals.lucro_liquido || 0) >= 0 ? 'dt-pos' : 'dt-neg'">
+                    <strong>{{ fmt(chartTotals.lucro_liquido) }}</strong>
+                  </td>
+                  <td class="col-num">{{ chartTotals.orders_count }}</td>
+                  <td class="col-num">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
         </div>
+      </div>
+
+      <!-- ══════════ ABA: RANKING CONTAS ════════════════════════════════════ -->
+      <div v-show="activeTab === 'ranking'" class="tab-content">
+        <div class="table-card">
+          <div class="table-header-row">
+            <div class="table-title">
+              <q-icon name="leaderboard" size="16px" class="q-mr-xs text-teal-7" />
+              Ranking de Contas — {{ dateFrom }} → {{ dateTo }}
+            </div>
+            <div class="table-controls">
+              <select v-model="rankingSortKey" class="sort-select">
+                <option value="gmv">Maior GMV</option>
+                <option value="lucro_liquido">Maior Lucro Real</option>
+                <option value="gross_profit">Maior Lucro Bruto</option>
+                <option value="lucro_liquido_pct">Melhor Margem Líquida</option>
+                <option value="gross_margin_pct">Melhor Margem Bruta</option>
+                <option value="roas">Melhor ROAS</option>
+                <option value="tacos">Menor TACoS</option>
+                <option value="orders_count">Mais pedidos</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Marketplace</th>
+                  <th>Conta</th>
+                  <th class="right">GMV</th>
+                  <th class="right">Rec. Líq.</th>
+                  <th class="right">Lucro Bruto</th>
+                  <th class="right">Margem Bruta</th>
+                  <th class="right">Ads</th>
+                  <th class="right">TACoS</th>
+                  <th class="right">Lucro Real</th>
+                  <th class="right">Margem Líq.</th>
+                  <th class="right">ROAS</th>
+                  <th class="right">Pedidos</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(a, i) in rankingRows" :key="a.key">
+                  <td class="rank">
+                    <span :class="['rank-medal', i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : '']">
+                      {{ i + 1 }}
+                    </span>
+                  </td>
+                  <td>
+                    <span :class="['mkt-badge', a.marketplace === 'ml' ? 'mkt-badge--ml' : 'mkt-badge--shopee']">
+                      {{ a.marketplace === 'ml' ? 'ML' : 'Shopee' }}
+                    </span>
+                  </td>
+                  <td class="bold">
+                    <span class="acct-dot-inline" :style="{ background: accountColor(a.key) }"></span>
+                    {{ a.label }}
+                  </td>
+                  <td class="right">{{ fmt(a.gmv) }}</td>
+                  <td class="right">{{ fmt(a.net_revenue) }}</td>
+                  <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
+                  <td class="right">
+                    <span :class="a.gross_margin_pct >= 30 ? 'pos' : a.gross_margin_pct >= 15 ? '' : 'neg'">
+                      {{ a.gross_margin_pct != null ? a.gross_margin_pct + '%' : '—' }}
+                    </span>
+                  </td>
+                  <td class="right warn">{{ a.ads_cost ? fmt(a.ads_cost) : '—' }}</td>
+                  <td class="right">
+                    <span v-if="a.tacos != null" :class="tacosBadgeClass(a.tacos)">{{ a.tacos.toFixed(1) }}%</span>
+                    <span v-else class="muted">—</span>
+                  </td>
+                  <td class="right" :class="(a.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido) }}</td>
+                  <td class="right">
+                    <span :class="a.lucro_liquido_pct >= 15 ? 'pos' : a.lucro_liquido_pct >= 5 ? '' : 'neg'">
+                      {{ a.lucro_liquido_pct != null ? a.lucro_liquido_pct + '%' : '—' }}
+                    </span>
+                  </td>
+                  <td class="right">{{ a.roas ? a.roas + 'x' : '—' }}</td>
+                  <td class="right">{{ a.orders_count }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Cards de destaque -->
+        <div class="ranking-highlights" v-if="rankingRows.length >= 2">
+          <div class="ranking-highlight-card" v-for="h in rankingHighlights" :key="h.label">
+            <div class="rh-label">{{ h.label }}</div>
+            <div class="rh-winner">
+              <span class="acct-dot-inline" :style="{ background: accountColor(h.winner.key) }"></span>
+              <strong>{{ h.winner.label }}</strong>
+            </div>
+            <div class="rh-value" :class="h.positive ? 'pos' : ''">{{ h.value }}</div>
+            <div v-if="h.loser" class="rh-loser muted">
+              Último: {{ h.loser.label }} ({{ h.loserValue }})
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ ABA: DRE-APROXIMADA ══════════════════════════════════ -->
+      <div v-show="activeTab === 'dre'" class="tab-content">
+        <div class="waterfall-card" v-if="op?.gmv">
+          <div class="waterfall-header">
+            <div class="waterfall-title">
+              <q-icon name="account_balance" size="16px" class="q-mr-xs" />
+              DRE-Aproximada
+            </div>
+            <div class="waterfall-subtitle">Demonstrativo de Resultado do Exercício — período selecionado</div>
+            <div class="projection-badge" v-if="monthProjection">
+              <q-icon name="trending_up" size="12px" />
+              Projeção mês: <strong>{{ fmt(monthProjection.gmv) }}</strong> GMV · <strong>{{ fmt(monthProjection.lucro) }}</strong> lucro
+              <span class="muted" style="font-size:10px">(dia {{ monthProjection.dayOfMonth }} de {{ monthProjection.daysInMonth }})</span>
+            </div>
+          </div>
+
+          <!-- Cascata visual -->
+          <div class="waterfall-steps">
+            <div class="wf-step wf-step--start">
+              <div class="wf-label">GMV</div>
+              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--gmv" style="width:100%"></div></div>
+              <div class="wf-value">{{ fmt(op?.gmv) }}</div>
+            </div>
+            <div class="wf-arrow">▼</div>
+            <div class="wf-step wf-step--deduct">
+              <div class="wf-label">− Tarifas ML</div>
+              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.total_fees, op?.gmv) + '%' }"></div></div>
+              <div class="wf-value wf-value--neg">−{{ fmt(op?.total_fees) }} <span class="wf-pct">({{ wfPct(op?.total_fees, op?.gmv).toFixed(1) }}%)</span></div>
+            </div>
+            <div class="wf-arrow">▼</div>
+            <div class="wf-step wf-step--result">
+              <div class="wf-label">= Rec. Líquida</div>
+              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--net" :style="{ width: wfPct(op?.net_revenue, op?.gmv) + '%' }"></div></div>
+              <div class="wf-value">{{ fmt(op?.net_revenue) }} <span class="wf-pct">({{ wfPct(op?.net_revenue, op?.gmv).toFixed(1) }}% do GMV)</span></div>
+            </div>
+            <div class="wf-arrow">▼</div>
+            <div class="wf-step wf-step--deduct">
+              <div class="wf-label">− CPV (custo do produto)</div>
+              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.cmv_total, op?.gmv) + '%' }"></div></div>
+              <div class="wf-value wf-value--neg">−{{ fmt(op?.cmv_total) }} <span class="wf-pct">({{ wfPct(op?.cmv_total, op?.gmv).toFixed(1) }}%)</span></div>
+            </div>
+            <div class="wf-arrow">▼</div>
+            <div class="wf-step wf-step--result">
+              <div class="wf-label">= Lucro Bruto</div>
+              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--gp" :style="{ width: wfPct(op?.gross_profit, op?.gmv) + '%' }"></div></div>
+              <div class="wf-value">{{ fmt(op?.gross_profit) }} <span class="wf-pct">({{ wfPct(op?.gross_profit, op?.gmv).toFixed(1) }}% do GMV)</span></div>
+            </div>
+            <div class="wf-arrow">▼</div>
+            <div class="wf-step wf-step--deduct">
+              <div class="wf-label">− Investimento Ads</div>
+              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--ads" :style="{ width: wfPct(op?.ads_cost, op?.gmv) + '%' }"></div></div>
+              <div class="wf-value wf-value--warn">−{{ fmt(op?.ads_cost) }} <span class="wf-pct">(TACoS {{ wfPct(op?.ads_cost, op?.gmv).toFixed(1) }}%)</span></div>
+            </div>
+            <div class="wf-arrow">▼</div>
+            <div class="wf-step wf-step--final" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-step--pos' : 'wf-step--neg'">
+              <div class="wf-label">= Lucro Real</div>
+              <div class="wf-bar-wrap">
+                <div class="wf-bar" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-bar--ll' : 'wf-bar--neg'"
+                  :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
+              </div>
+              <div class="wf-value wf-value--highlight">
+                {{ fmt(op?.lucro_liquido) }}
+                <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% margem)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Breakdown por conta -->
+          <div class="dre-breakdown">
+            <div class="dre-breakdown-title">
+              <q-icon name="account_tree" size="13px" class="q-mr-xs" />
+              Origem dos valores — por conta e marketplace
+            </div>
+            <div class="table-wrap">
+              <table class="data-table dre-breakdown-table">
+                <thead>
+                  <tr>
+                    <th>Marketplace</th>
+                    <th>Conta</th>
+                    <th class="right">GMV</th>
+                    <th class="right">Tarifas</th>
+                    <th class="right">Rec. Líquida</th>
+                    <th class="right">CPV</th>
+                    <th class="right">Lucro Bruto</th>
+                    <th class="right">Ads</th>
+                    <th class="right">Lucro Real</th>
+                    <th class="right">Margem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template v-if="activeMarketplaces.includes('ml') && data?.accounts">
+                    <tr v-for="a in data.accounts" :key="'dre2-ml-' + a.account_id">
+                      <td><span class="mkt-badge mkt-badge--ml">ML</span></td>
+                      <td class="bold">
+                        <span class="acct-dot-inline" :style="{ background: accountColor('ml:' + a.account_id) }"></span>
+                        {{ a.account_nickname }}
+                      </td>
+                      <td class="right">{{ fmt(a.gmv) }}</td>
+                      <td class="right warn">{{ fmt(a.total_fees) }}</td>
+                      <td class="right">{{ fmt(a.net_revenue) }}</td>
+                      <td class="right warn">{{ fmt(a.cmv_total) }}</td>
+                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
+                      <td class="right warn">{{ fmt(a.ads_cost) }}</td>
+                      <td class="right" :class="(a.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido) }}</td>
+                      <td class="right">{{ pct(a.lucro_liquido, a.net_revenue) }}</td>
+                    </tr>
+                  </template>
+                  <template v-if="activeMarketplaces.includes('shopee') && shopeeData?.by_account">
+                    <tr v-for="a in shopeeData.by_account" :key="'dre2-sh-' + a.account_id">
+                      <td><span class="mkt-badge mkt-badge--shopee">Shopee</span></td>
+                      <td class="bold">
+                        <span class="acct-dot-inline" :style="{ background: accountColor('shopee:' + a.account_id) }"></span>
+                        {{ a.shop_name }}
+                      </td>
+                      <td class="right">{{ fmt(a.gmv) }}</td>
+                      <td class="right warn">—</td>
+                      <td class="right">{{ fmt(a.net_revenue) }}</td>
+                      <td class="right warn">—</td>
+                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
+                      <td class="right warn">—</td>
+                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
+                      <td class="right">{{ pct(a.gross_profit, a.net_revenue) }}</td>
+                    </tr>
+                  </template>
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="2">TOTAL</td>
+                    <td class="right">{{ fmt(op?.gmv) }}</td>
+                    <td class="right warn">{{ fmt(op?.total_fees) }}</td>
+                    <td class="right">{{ fmt(op?.net_revenue) }}</td>
+                    <td class="right warn">{{ fmt(op?.cmv_total) }}</td>
+                    <td class="right" :class="(op?.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(op?.gross_profit) }}</td>
+                    <td class="right warn">{{ fmt(op?.ads_cost) }}</td>
+                    <td class="right" :class="(op?.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(op?.lucro_liquido) }}</td>
+                    <td class="right">{{ pct(op?.lucro_liquido, op?.net_revenue) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div v-else class="chart-empty">Sem dados para o período</div>
       </div>
 
       <!-- ══════════ ABA: CONTAS & CNPJ ════════════════════════════════════ -->
@@ -1208,7 +1547,10 @@
           </div>
         </template>
 
-      </div>
+          </div><!-- /tab sazonalidade -->
+
+        </div><!-- /dash-content -->
+      </div><!-- /dash-main-layout -->
 
     </template>
 
@@ -1222,7 +1564,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
 
@@ -1233,8 +1575,140 @@ const todayData = ref(null)
 const shopeeData = ref(null)     // dados Shopee para o período
 const shopeeTodayData = ref(null) // dados Shopee de hoje
 
-// Filtro de marketplace: 'all' | 'ml' | 'shopee'
-const activeMarketplace = ref('all')
+// ── Layout ────────────────────────────────────────────────────────────────
+const showFilters = ref(true)   // sidebar de filtros visível por padrão
+
+// ── Multi-select account filter ─────────────────────────────────────────
+const showAccountPicker = ref(false)
+const selectedAccountKeys = ref([])  // e.g. ['ml:123', 'shopee:456']
+const knownMlAccounts    = ref([])   // { key, id, marketplace, label, color }
+const knownShopeeAccounts = ref([])
+
+const ACCOUNT_COLORS = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ec4899','#8b5cf6','#ef4444','#14b8a6','#f97316','#06b6d4']
+
+function buildAccountKey(marketplace, id) { return `${marketplace}:${id}` }
+
+const allAccountKeys = computed(() => [
+  ...knownMlAccounts.value.map(a => a.key),
+  ...knownShopeeAccounts.value.map(a => a.key),
+])
+
+const allMlSelected    = computed(() => knownMlAccounts.value.length > 0 && knownMlAccounts.value.every(a => selectedAccountKeys.value.includes(a.key)))
+const someMlSelected   = computed(() => knownMlAccounts.value.some(a => selectedAccountKeys.value.includes(a.key)))
+const allShopeeSelected = computed(() => knownShopeeAccounts.value.length > 0 && knownShopeeAccounts.value.every(a => selectedAccountKeys.value.includes(a.key)))
+const someShopeeSelected = computed(() => knownShopeeAccounts.value.some(a => selectedAccountKeys.value.includes(a.key)))
+
+const isComparativeMode = computed(() => selectedAccountKeys.value.length > 1)
+
+// Active marketplaces derived from selection (empty = all)
+const activeMarketplaces = computed(() => {
+  if (selectedAccountKeys.value.length === 0 || selectedAccountKeys.value.length === allAccountKeys.value.length) return ['ml', 'shopee']
+  const set = new Set(selectedAccountKeys.value.map(k => k.split(':')[0]))
+  return [...set]
+})
+
+// Legacy activeMarketplace for tabs that still use it (sazonalidade, etc.)
+const activeMarketplace = computed(() => {
+  const mps = activeMarketplaces.value
+  if (mps.includes('ml') && mps.includes('shopee')) return 'all'
+  return mps[0] || 'all'
+})
+
+function accountColor(key) {
+  const all = allAccountKeys.value
+  const idx = all.indexOf(key)
+  return ACCOUNT_COLORS[idx >= 0 ? idx % ACCOUNT_COLORS.length : 0]
+}
+
+function accountLabel(key) {
+  const ml = knownMlAccounts.value.find(a => a.key === key)
+  if (ml) return ml.label
+  const sh = knownShopeeAccounts.value.find(a => a.key === key)
+  if (sh) return sh.label
+  return key
+}
+
+function toggleAllMl() {
+  if (allMlSelected.value) {
+    selectedAccountKeys.value = selectedAccountKeys.value.filter(k => !k.startsWith('ml:'))
+  } else {
+    const mlKeys = knownMlAccounts.value.map(a => a.key)
+    selectedAccountKeys.value = [...new Set([...selectedAccountKeys.value, ...mlKeys])]
+  }
+  onFilterChange()
+}
+
+function toggleAllShopee() {
+  if (allShopeeSelected.value) {
+    selectedAccountKeys.value = selectedAccountKeys.value.filter(k => !k.startsWith('shopee:'))
+  } else {
+    const shopeeKeys = knownShopeeAccounts.value.map(a => a.key)
+    selectedAccountKeys.value = [...new Set([...selectedAccountKeys.value, ...shopeeKeys])]
+  }
+  onFilterChange()
+}
+
+function onFilterChange() {
+  // Sem chamada à API — todos os computeds (filteredMlOp, filteredMlDaily, chartData)
+  // já reagem ao selectedAccountKeys. Só precisa re-renderizar o Plotly.
+  renderPlotlyChart()
+}
+
+// ── DRE ───────────────────────────────────────────────────────────────────
+
+// ── Plotly ────────────────────────────────────────────────────────────────
+const plotlyContainer    = ref(null)
+const chartLoading       = ref(false)
+const chartMode          = ref('metrics')        // 'metrics' | 'per_account'
+const chartAccountMetric = ref('gmv')            // which metric to compare across accounts
+const chartVisibleAccounts = ref([])             // account keys visible in per_account mode
+const chartShowTotal     = ref(true)             // show dashed total line in per_account mode
+const accountDailyData   = ref({})               // { 'ml:123': [{date, gmv, ...}] }
+const loadingAccountData = ref(false)
+const weekdayChartMetric = ref('gmv')            // metric for weekday bar chart mode
+let plotlyLoaded = false
+
+const loadPlotly = () => new Promise((resolve) => {
+  if (plotlyLoaded || window.Plotly) { plotlyLoaded = true; resolve(); return }
+  const script = document.createElement('script')
+  script.src = 'https://cdn.plot.ly/plotly-basic-3.0.0.min.js'
+  script.onload = () => { plotlyLoaded = true; resolve() }
+  document.head.appendChild(script)
+})
+
+// ── Ranking ────────────────────────────────────────────────────────────────
+const rankingSortKey = ref('gmv')
+
+// ── Expandable daily table rows ───────────────────────────────────────────
+const expandedDays = ref(new Set())
+function toggleDayExpand(date) {
+  const s = new Set(expandedDays.value)
+  if (s.has(date)) s.delete(date)
+  else s.add(date)
+  expandedDays.value = s
+}
+
+// Per-account breakdown for a given date
+function dayAccountRows(date) {
+  const rows = []
+  for (const a of knownMlAccounts.value) {
+    const day = (accountDailyData.value[a.key] || []).find(d => d.date === date)
+    if (day && (day.gmv || day.orders_count)) {
+      rows.push({ ...day, label: a.label, color: a.color, marketplace: 'ml' })
+    }
+  }
+  for (const a of knownShopeeAccounts.value) {
+    const shopeeDaily = shopeeData.value?.daily || []
+    const day = shopeeDaily.find(d => d.date === date)
+    if (day && (day.gmv || day.orders_count)) {
+      rows.push({ ...day, label: a.label, color: a.color, marketplace: 'shopee',
+        lucro_liquido: day.gross_profit, ads_cost: 0 })
+    }
+  }
+  return rows
+}
+
+// ── Legacy compat (kept for tabs/sazonalidade that reference these) ──────
 const hoveredIdx = ref(null)
 const activeTab = ref('evolucao')
 const activeMetrics = ref(['gmv', 'lucro_liquido'])
@@ -1243,9 +1717,94 @@ const normalizeChart = ref(false)
 const topGroupBy = ref('item')
 const topSortBy = ref('gross_profit')
 
-// Filtro por conta
-const selectedAccountId = ref(null)
-const knownAccounts = ref([])  // persiste mesmo quando account_id está filtrado
+// kept for loadLastYear compat
+const selectedAccountId = computed(() => {
+  const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
+  if (mlKeys.length === 1 && knownMlAccounts.value.length > 1) return mlKeys[0].replace('ml:', '')
+  return null
+})
+const knownAccounts = knownMlAccounts  // alias
+
+// ── Per-account filtered aggregates (respects selectedAccountKeys) ────────
+
+// Filtered ML operation: sums only selected ML accounts from data.value?.accounts
+const filteredMlOp = computed(() => {
+  if (!data.value) return null
+  const accounts = data.value.accounts || []
+  const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
+  const allMlKeys = knownMlAccounts.value.map(a => a.key)
+  // All selected or no per-account data → use aggregate operation
+  if (!mlKeys.length || mlKeys.length === allMlKeys.length || !accounts.length) {
+    return data.value.operation || null
+  }
+  // Single account selected → API already filtered, use operation directly
+  if (mlKeys.length === 1) return data.value.operation || null
+  // Partial multi-account → sum from per-account data
+  const selectedIds = new Set(mlKeys.map(k => k.replace('ml:', '')))
+  const selected = accounts.filter(a => selectedIds.has(String(a.account_id)))
+  if (!selected.length) return data.value.operation || null
+  const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
+  const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit')
+  const ads = s('ads_cost'), orders = s('orders_count'), units = s('units_sold')
+  const ll = selected.reduce((acc, a) => acc + (a.lucro_liquido != null ? a.lucro_liquido : (a.gross_profit || 0) - (a.ads_cost || 0)), 0)
+  return {
+    gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, lucro_liquido: ll,
+    orders_count: orders, units_sold: units,
+    avg_ticket: orders ? +(gmv / orders).toFixed(2) : null,
+    total_fees: s('total_fees'), cmv_total: s('cmv_total'),
+    lucro_liquido_pct: net ? +(ll / net * 100).toFixed(2) : null,
+    gross_margin_pct: net ? +(gp / net * 100).toFixed(2) : null,
+    roas: ads ? +(gmv / ads).toFixed(2) : null,
+    acos: gmv ? +(ads / gmv * 100).toFixed(2) : null,
+    tacos: gmv ? +(ads / gmv * 100).toFixed(2) : null,
+    canceled_count: s('canceled_count'),
+    catalog_orders_count: s('catalog_orders_count'),
+    flex_orders_count: s('flex_orders_count'),
+    vs_prev: null,
+  }
+})
+
+// Filtered Shopee operation: sums only selected Shopee accounts
+const filteredShopeeOp = computed(() => {
+  if (!shopeeData.value) return null
+  const byAccount = shopeeData.value.by_account || []
+  const shopeeKeys = selectedAccountKeys.value.filter(k => k.startsWith('shopee:'))
+  const allShopeeKeys = knownShopeeAccounts.value.map(a => a.key)
+  if (!shopeeKeys.length || shopeeKeys.length === allShopeeKeys.length || !byAccount.length) {
+    return shopeeData.value || null
+  }
+  const selectedIds = new Set(shopeeKeys.map(k => k.replace('shopee:', '')))
+  const selected = byAccount.filter(a => selectedIds.has(String(a.account_id)))
+  if (!selected.length) return null
+  const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
+  const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
+  return { gmv, net_revenue: net, gross_profit: gp, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
+})
+
+// Filtered ML daily: sums selected accounts from accountDailyData (when partial multi-account selection)
+const filteredMlDaily = computed(() => {
+  const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
+  const allMlKeys = knownMlAccounts.value.map(a => a.key)
+  const hasAccountData = Object.keys(accountDailyData.value).length > 0
+  // All ML accounts selected, or no per-account data yet → use API aggregate directly
+  if (!mlKeys.length || mlKeys.length === allMlKeys.length || !hasAccountData) {
+    return data.value?.daily || []
+  }
+  // Partial selection (1 or more accounts) → sum from accountDailyData for selected accounts only
+  const byDate = {}
+  for (const key of mlKeys) {
+    for (const d of (accountDailyData.value[key] || [])) {
+      if (!byDate[d.date]) byDate[d.date] = { date: d.date, gmv: 0, net_revenue: 0, gross_profit: 0, ads_cost: 0, lucro_liquido: 0, orders_count: 0 }
+      byDate[d.date].gmv           += d.gmv || 0
+      byDate[d.date].net_revenue   += d.net_revenue || 0
+      byDate[d.date].gross_profit  += d.gross_profit || 0
+      byDate[d.date].ads_cost      += d.ads_cost || 0
+      byDate[d.date].lucro_liquido += d.lucro_liquido || 0
+      byDate[d.date].orders_count  += d.orders_count || 0
+    }
+  }
+  return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
+})
 
 const today = new Date()
 // Usa data local (não UTC) para evitar problema de fuso horário
@@ -1259,10 +1818,23 @@ const fmtDate = d => {
 const dateFrom = ref(fmtDate(new Date(today - 29 * 86400000)))
 const dateTo = ref(fmtDate(today))
 
+// Rótulo do período para exibir nos KPI cards
+const periodLabel = computed(() => {
+  if (activeDatePreset.value === 'hoje') return 'Hoje'
+  const from = new Date(dateFrom.value + 'T12:00:00')
+  const to   = new Date(dateTo.value   + 'T12:00:00')
+  const days = Math.round((to - from) / 86400000) + 1
+  const fmt2 = d => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  if (dateFrom.value === dateTo.value) return fmt2(from)
+  return `${days}d · ${fmt2(from)} → ${fmt2(to)}`
+})
+
 // ── Config ────────────────────────────────────────────────────────────────
 const tabs = [
   { key: 'evolucao',    label: 'Evolução',       icon: 'show_chart' },
-  { key: 'contas',      label: 'Contas & CNPJ',  icon: 'account_balance' },
+  { key: 'ranking',     label: 'Ranking Contas', icon: 'leaderboard' },
+  { key: 'dre',         label: 'DRE-Aprox.',     icon: 'account_balance' },
+  { key: 'contas',      label: 'Contas & CNPJ',  icon: 'storefront' },
   { key: 'produtos',    label: 'Top Produtos',   icon: 'inventory_2' },
   { key: 'flex',        label: 'Flex Delivery',  icon: 'electric_bike' },
   { key: 'semana',      label: 'Dias da Semana', icon: 'event_note' },
@@ -1326,7 +1898,7 @@ const metricStats = computed(() => {
 // Ascendente (esquerda = mais antigo) — usado no gráfico
 // Mescla dados diários ML + Shopee por data
 const chartData = computed(() => {
-  const mlDaily      = activeMarketplace.value !== 'shopee' ? (data.value?.daily || []) : []
+  const mlDaily      = activeMarketplace.value !== 'shopee' ? filteredMlDaily.value : []
   const shopeeDaily  = activeMarketplace.value !== 'ml'     ? (shopeeData.value?.daily || []) : []
 
   // Indexa por data e soma os campos
@@ -1378,7 +1950,7 @@ const topProductsSorted = computed(() => {
 
 // Flex: dados diários com flex_orders_count
 const flexDailyData = computed(() => {
-  const daily = data.value?.daily || []
+  const daily = filteredMlDaily.value
   return daily
     .map(d => ({
       ...d,
@@ -1567,38 +2139,75 @@ function onChartMouseMove(e) {
 async function load() {
   loading.value = true
   try {
-    const params = {
-      date_from: dateFrom.value,
-      date_to:   dateTo.value,
-      group_by:  topGroupBy.value,
-    }
-    if (selectedAccountId.value) params.account_id = selectedAccountId.value
+    const base = { date_from: dateFrom.value, date_to: dateTo.value, group_by: topGroupBy.value }
+
+    // Always fetch all ML data so data.value?.accounts has per-account info for filtering
+    // (filtering by account is done in computed properties: filteredMlOp, filteredMlDaily)
+    const mlParams = { ...base }
+
+    // Only call ML if ml accounts are in selection (or no selection = all)
+    const wantMl     = activeMarketplaces.value.includes('ml')
+    const wantShopee = activeMarketplaces.value.includes('shopee')
 
     const [mlRes, shopeeRes] = await Promise.allSettled([
-      MercadoLivreService.getDashboardOperation(params),
-      ShopeeService.getDashboardStats({ date_from: dateFrom.value, date_to: dateTo.value }),
+      wantMl     ? MercadoLivreService.getDashboardOperation(mlParams) : Promise.resolve(null),
+      wantShopee ? ShopeeService.getDashboardStats({ date_from: dateFrom.value, date_to: dateTo.value }) : Promise.resolve(null),
     ])
-    data.value       = mlRes.status === 'fulfilled' ? mlRes.value.data : null
-    shopeeData.value = shopeeRes.status === 'fulfilled' ? shopeeRes.value.data : null
+    data.value       = (mlRes.status === 'fulfilled' && mlRes.value) ? mlRes.value.data : null
+    shopeeData.value = (shopeeRes.status === 'fulfilled' && shopeeRes.value) ? shopeeRes.value.data : null
 
-    // Atualiza lista de contas conhecidas apenas quando sem filtro (para manter as pills visíveis)
-    if (!selectedAccountId.value && data.value?.accounts?.length) {
-      knownAccounts.value = data.value.accounts.map(a => ({ id: a.account_id, label: a.account_nickname }))
+    // Build/update known accounts list from full API response
+    if (data.value?.accounts?.length) {
+      knownMlAccounts.value = data.value.accounts.map((a, i) => ({
+        key: buildAccountKey('ml', a.account_id),
+        id: a.account_id,
+        marketplace: 'ml',
+        label: a.account_nickname,
+        color: ACCOUNT_COLORS[i % ACCOUNT_COLORS.length],
+      }))
+    }
+    if (shopeeData.value?.by_account?.length) {
+      const offset = knownMlAccounts.value.length
+      knownShopeeAccounts.value = shopeeData.value.by_account.map((a, i) => ({
+        key: buildAccountKey('shopee', a.account_id),
+        id: a.account_id,
+        marketplace: 'shopee',
+        label: a.shop_name,
+        color: ACCOUNT_COLORS[(offset + i) % ACCOUNT_COLORS.length],
+      }))
     }
 
-    // Carrega dados do ano anterior em paralelo (para aba de sazonalidade)
+    // Initialize selectedAccountKeys on first load (select all)
+    if (selectedAccountKeys.value.length === 0 && allAccountKeys.value.length > 0) {
+      selectedAccountKeys.value = [...allAccountKeys.value]
+    }
+    // Sync chartVisibleAccounts with known accounts on first load
+    if (chartVisibleAccounts.value.length === 0 && allChartAccounts.value.length > 0) {
+      chartVisibleAccounts.value = allChartAccounts.value.map(a => a.key)
+    }
+
+    // Padrão: modo Per Conta quando há múltiplas contas, Agregado quando há só uma
+    if (allChartAccounts.value.length > 1 && chartMode.value === 'metrics') {
+      chartMode.value = 'per_account'
+    } else if (allChartAccounts.value.length <= 1) {
+      chartMode.value = 'metrics'
+    }
+
+    // Carrega dados do ano anterior (sazonalidade)
     if (activeMarketplace.value !== 'shopee') loadLastYear()
+
+    // Sempre carrega dados por conta para per_account mode e filtros reativos
+    loadAccountDailyData()
+
+    // Render Plotly chart after data arrives
+    await nextTick()
+    renderPlotlyChart()
   } catch (e) {
     console.error('Dashboard error', e)
     data.value = null
   } finally {
     loading.value = false
   }
-}
-
-function selectAccount(id) {
-  selectedAccountId.value = id
-  load()
 }
 
 async function loadToday() {
@@ -1657,8 +2266,8 @@ const combinedOp = computed(() => {
     return { ...d, lucro_liquido_pct: ll_pct, gross_margin_pct: gm_pct, roas: null, acos: null, catalog_orders_count: 0, flex_orders_count: 0, canceled_count: null, vs_prev: null }
   }
 
-  const ml = activeMarketplace.value !== 'shopee' ? data.value?.operation : null
-  const sh = activeMarketplace.value !== 'ml'     ? shopeeData.value      : null
+  const ml = activeMarketplace.value !== 'shopee' ? filteredMlOp.value    : null
+  const sh = activeMarketplace.value !== 'ml'     ? filteredShopeeOp.value : null
 
   if (!ml && !sh) return null
   if (!sh) return ml
@@ -1740,7 +2349,384 @@ function toggleMetric(key) {
   } else if (activeMetrics.value.length > 1) {
     activeMetrics.value = activeMetrics.value.filter(k => k !== key)
   }
+  renderPlotlyChart()
 }
+
+// ── Chart helpers ─────────────────────────────────────────────────────────
+const allChartAccounts = computed(() => [
+  ...knownMlAccounts.value,
+  ...knownShopeeAccounts.value,
+])
+
+function setChartMode(mode) {
+  chartMode.value = mode
+  if (mode === 'per_account') {
+    if (chartVisibleAccounts.value.length === 0) {
+      chartVisibleAccounts.value = allChartAccounts.value.map(a => a.key)
+    }
+    loadAccountDailyData()
+  } else {
+    renderPlotlyChart()
+  }
+}
+
+// Weekday averages for Plotly (uses chartData which already respects filters)
+const weekdayPlotlyData = computed(() => {
+  const src = chartData.value
+  if (!src.length) return []
+  const DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const buckets = Array.from({ length: 7 }, () => ({ sum: 0, count: 0 }))
+  for (const d of src) {
+    const dow = new Date(d.date + 'T12:00:00').getDay()
+    buckets[dow].sum   += d[weekdayChartMetric.value] || 0
+    buckets[dow].count += 1
+  }
+  return DAYS.map((label, i) => ({
+    label,
+    avg: buckets[i].count > 0 ? buckets[i].sum / buckets[i].count : 0,
+    count: buckets[i].count,
+  }))
+})
+
+function toggleChartAccount(key) {
+  const idx = chartVisibleAccounts.value.indexOf(key)
+  if (idx === -1) chartVisibleAccounts.value = [...chartVisibleAccounts.value, key]
+  else if (chartVisibleAccounts.value.length > 1) chartVisibleAccounts.value = chartVisibleAccounts.value.filter(k => k !== key)
+  renderPlotlyChart()
+}
+
+async function loadAccountDailyData() {
+  loadingAccountData.value = true
+  const params = { date_from: dateFrom.value, date_to: dateTo.value, group_by: topGroupBy.value }
+  const result = {}
+
+  // ML accounts — one API call per account in parallel
+  await Promise.all(knownMlAccounts.value.map(async (a) => {
+    try {
+      const res = await MercadoLivreService.getDashboardOperation({ ...params, account_id: a.id })
+      result[a.key] = (res.data?.daily || []).map(d => ({ ...d }))
+    } catch { result[a.key] = [] }
+  }))
+
+  // Shopee — use existing daily (aggregated; no per-account daily endpoint yet)
+  for (const a of knownShopeeAccounts.value) {
+    result[a.key] = shopeeData.value?.daily?.map(d => ({ ...d })) || []
+  }
+
+  accountDailyData.value = result
+  loadingAccountData.value = false
+  renderPlotlyChart()
+}
+
+// ── Plotly render ─────────────────────────────────────────────────────────
+async function renderPlotlyChart() {
+  if (!chartData.value.length) return
+  chartLoading.value = true
+  try {
+    await loadPlotly()
+    await nextTick()
+    if (!plotlyContainer.value) return
+
+    const traces = []
+    let hasRightAxis = false
+
+    // ── MODO: Por Conta ──────────────────────────────────────────────────
+    if (chartMode.value === 'per_account') {
+      const metric    = chartAccountMetric.value
+      const meta      = chartMetrics.find(m => m.key === metric)
+      const metaLabel = meta?.label || metric
+      const isOrders  = metric === 'orders_count'
+
+      const fmtS = v => isOrders
+        ? Math.round(v).toLocaleString('pt-BR')
+        : (v >= 1000000 ? 'R$' + (v/1000000).toFixed(1)+'M' : v >= 1000 ? 'R$'+(v/1000).toFixed(0)+'k' : 'R$'+Math.round(v))
+
+      const todayStrAcc = fmtDate(today)
+
+      for (const acc of allChartAccounts.value) {
+        if (!selectedAccountKeys.value.includes(acc.key)) continue
+        const dailyRaw = accountDailyData.value[acc.key] || []
+        const daily = dailyRaw.filter(d => d.date !== todayStrAcc)
+        if (!daily.length) continue
+
+        const nPts    = daily.length
+        const showAll = nPts <= 14
+        const rawVals = daily.map(d => d[metric] || 0)
+        const total   = rawVals.reduce((s, v) => s + v, 0)
+        const maxIdx  = rawVals.indexOf(Math.max(...rawVals))
+        const lastIdx = rawVals.length - 1
+        const step    = nPts <= 14 ? 1 : nPts <= 31 ? 7 : 14
+        const lblSet  = new Set([maxIdx, lastIdx])
+        for (let i = 0; i < nPts; i += step) lblSet.add(i)
+
+        traces.push({
+          x: daily.map(d => d.date),
+          y: rawVals,
+          name: acc.label + '  ·  ' + fmtS(total),
+          type: 'scatter',
+          mode: 'lines+markers+text',
+          line:   { color: acc.color, width: 2.5, shape: 'spline' },
+          marker: {
+            size:  rawVals.map((_, i) => i === maxIdx ? 9 : i === lastIdx ? 7 : 4),
+            color: rawVals.map((_, i) => i === maxIdx ? '#fff' : acc.color),
+            line:  { color: rawVals.map((_, i) => i === maxIdx ? acc.color : 'transparent'), width: rawVals.map((_, i) => i === maxIdx ? 2.5 : 0) },
+          },
+          text:         rawVals.map((v, i) => lblSet.has(i) ? fmtS(v) : ''),
+          textposition: 'top center',
+          textfont:     { size: 10, color: acc.color, family: 'Inter, sans-serif' },
+          fill:      'tozeroy',
+          fillcolor: acc.color + '10',
+          hovertemplate:
+            '<b>%{x|%A, %d/%m}</b><br>' +
+            '<span style="color:' + acc.color + '">●</span> ' + acc.label +
+            ': <b>' + (isOrders ? '%{y:,.0f}' : 'R$%{y:,.0f}') + '</b><extra></extra>',
+        })
+      }
+
+    // ── MODO: Dias da Semana ──────────────────────────────────────────────
+    } else if (chartMode.value === 'weekday') {
+      const wd     = weekdayPlotlyData.value
+      const meta   = chartMetrics.find(m => m.key === weekdayChartMetric.value)
+      const color  = meta?.color || '#6366f1'
+      const isMonetary = weekdayChartMetric.value !== 'orders_count'
+
+      const maxAvg = Math.max(...wd.map(d => d.avg))
+      traces.push({
+        x: wd.map(d => d.label),
+        y: wd.map(d => +d.avg.toFixed(2)),
+        name: meta?.label || weekdayChartMetric.value,
+        type: 'bar',
+        marker: {
+          color: wd.map(d => d.avg === maxAvg && d.avg > 0 ? color : color + '88'),
+          line: { width: 0 },
+        },
+        text: wd.map(d => d.count > 0
+          ? (isMonetary ? 'R$' + (d.avg >= 1000 ? (d.avg/1000).toFixed(1)+'k' : Math.round(d.avg)) : Math.round(d.avg))
+          : ''),
+        textposition: 'outside',
+        textfont: { size: 11, color: '#64748b' },
+        hovertemplate: '<b>%{x}</b><br>Média: <b>' + (isMonetary ? 'R$%{y:,.0f}' : '%{y:.0f}') + '</b><br>Amostras: %{customdata}<extra></extra>',
+        customdata: wd.map(d => d.count),
+      })
+
+    // ── MODO: Métricas ────────────────────────────────────────────────────
+    } else {
+      // Helpers de formatação inline para labels e legendas
+      const fmtShort = (v, isOrders) => {
+        if (isOrders) return Math.round(v).toLocaleString('pt-BR')
+        if (v >= 1000000) return 'R$' + (v / 1000000).toFixed(1) + 'M'
+        if (v >= 1000)    return 'R$' + (v / 1000).toFixed(0) + 'k'
+        return 'R$' + Math.round(v)
+      }
+
+      // Remove hoje — dia incompleto distorce a visualização e faz as linhas convergirem
+      const todayStr  = fmtDate(today)
+      const chartDays = chartData.value.filter(d => d.date !== todayStr)
+
+      const nPts = chartDays.length
+      if (!nPts) return
+
+      // Decide quais índices recebem label de valor
+      // ≤14d: todos | ≤31d: cada 7 + máx + mín | >31d: cada 14 + máx + mín
+      function labelIndices(vals) {
+        const maxIdx = vals.indexOf(Math.max(...vals))
+        const minIdx = vals.indexOf(Math.min(...vals.filter(v => v > 0)))
+        const step   = nPts <= 14 ? 1 : nPts <= 31 ? 7 : 14
+        const set    = new Set([maxIdx, minIdx < 0 ? maxIdx : minIdx])
+        for (let i = 0; i < nPts; i += step) set.add(i)
+        set.add(nPts - 1) // sempre mostra o último
+        return set
+      }
+
+      for (const m of chartMetrics) {
+        if (!activeMetrics.value.includes(m.key)) continue
+        const isAds    = m.key === 'ads_cost' && !normalizeChart.value
+        const isOrders = m.key === 'orders_count'
+        if (isAds) hasRightAxis = true
+
+        const rawVals = chartDays.map(d => d[m.key] || 0)
+        const total   = rawVals.reduce((s, v) => s + v, 0)
+        const maxVal  = Math.max(...rawVals)
+        const maxIdx  = rawVals.indexOf(maxVal)
+        const lastIdx = rawVals.length - 1
+        const lblSet  = labelIndices(rawVals)
+
+        const vals = normalizeChart.value
+          ? (() => {
+              const mn = Math.min(...rawVals), mx = Math.max(...rawVals)
+              const span = mx - mn || 1
+              return rawVals.map(v => ((v - mn) / span) * 100)
+            })()
+          : rawVals
+
+        const textArr = rawVals.map((v, i) => lblSet.has(i) ? fmtShort(v, isOrders) : '')
+
+        // Marcadores: maior = 9px, último = 8px, resto = 4px
+        const markerSizes  = rawVals.map((v, i) => i === maxIdx ? 9 : i === lastIdx ? 8 : 4)
+        const markerColors = rawVals.map((v, i) =>
+          i === maxIdx ? '#fff' : m.color
+        )
+
+        // Legenda com total do período
+        const legendName = m.label + '  ·  ' + fmtShort(total, isOrders)
+
+        traces.push({
+          x:    chartDays.map(d => d.date),
+          y:    vals,
+          name: legendName,
+          type: 'scatter',
+          mode: 'lines+markers+text',
+          line:    { color: m.color, width: 2.5, shape: 'spline' },
+          marker: {
+            size:  markerSizes,
+            color: markerColors,
+            line:  { color: rawVals.map((_, i) => i === maxIdx ? m.color : 'transparent'), width: rawVals.map((_, i) => i === maxIdx ? 2.5 : 0) },
+          },
+          text:         textArr,
+          textposition: 'top center',
+          textfont:     { size: 10, color: m.color, family: 'Inter, sans-serif' },
+          fill:      'tozeroy',
+          fillcolor: m.color + '12',
+          yaxis: isAds ? 'y2' : 'y',
+          hovertemplate:
+            '<b>%{x|%A, %d/%m}</b><br>' +
+            '<span style="color:' + m.color + '">●</span> ' + m.label +
+            ': <b>' + (normalizeChart.value ? '%{y:.1f}%' : (isOrders ? '%{y:,.0f}' : 'R$%{y:,.0f}')) + '</b>' +
+            '<extra></extra>',
+        })
+      }
+    }
+
+    const isWeekdayMode = chartMode.value === 'weekday'
+    const isMonetary    = weekdayChartMetric.value !== 'orders_count'
+    // nPts: usa os dados já filtrados (sem hoje) para calcular formatação do eixo
+    const nPts = isWeekdayMode ? 7 : (chartData.value.filter(d => d.date !== fmtDate(today)).length)
+
+    // ── Annotations: label no fim de cada linha (sem hover) ──────────────
+    const annotations = []
+    if (!isWeekdayMode) {
+      for (const t of traces) {
+        if (!t.x?.length || t.line?.dash === 'dot') continue // skip totais tracejados
+        const lastX = t.x[t.x.length - 1]
+        const lastY = t.y[t.y.length - 1]
+        if (lastY == null) continue
+
+        // Extrai apenas o nome sem o total (antes do '  ·  ')
+        const shortName = (t.name || '').split('  ·  ')[0].trim()
+
+        annotations.push({
+          x: lastX,
+          y: lastY,
+          xref: 'x',
+          yref: t.yaxis === 'y2' ? 'y2' : 'y',
+          text: '<b>' + shortName + '</b>',
+          showarrow: false,
+          xanchor: 'left',
+          yanchor: 'middle',
+          xshift: 10,
+          font: {
+            size: 11,
+            color: t.line?.color || '#64748b',
+            family: 'Inter, sans-serif',
+          },
+          bgcolor: 'rgba(255,255,255,0.85)',
+          borderpad: 2,
+        })
+      }
+    }
+
+    const layout = {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor:  '#fafbfd',
+      // Margem direita grande para acomodar as labels de fim de linha
+      margin: { t: 32, r: isWeekdayMode ? 20 : 155, b: 60, l: isWeekdayMode ? 16 : 80 },
+      height: 460,
+
+      annotations,
+
+      // Sem legenda — as annotations já identificam as linhas
+      showlegend: isWeekdayMode,
+      legend: {
+        orientation: 'h',
+        y: -0.22,
+        x: 0,
+        font: { size: 11, color: '#374151', family: 'Inter, sans-serif' },
+        bgcolor: 'transparent',
+        bordercolor: 'transparent',
+      },
+
+      hovermode: isWeekdayMode ? 'closest' : 'x unified',
+      hoverlabel: {
+        bgcolor: '#1e293b',
+        bordercolor: '#334155',
+        font: { size: 12, color: '#f1f5f9', family: 'Inter, sans-serif' },
+        align: 'left',
+      },
+
+      xaxis: isWeekdayMode ? {
+        gridcolor: 'transparent',
+        linecolor: '#e0e5ed',
+        tickfont: { size: 13, color: '#374151', family: 'Inter, sans-serif' },
+        showgrid: false,
+        fixedrange: true,
+      } : {
+        type: 'date',
+        tickformat: nPts <= 14 ? '%d/%m' : (nPts <= 60 ? '%d/%m' : '%b/%y'),
+        gridcolor: '#eef0f4',
+        linecolor: '#e0e5ed',
+        tickfont: { size: 10, color: '#94a3b8', family: 'Inter, sans-serif' },
+        showgrid: true,
+        gridwidth: 1,
+        tickangle: nPts > 20 ? -35 : 0,
+        nticks: Math.min(nPts, 20),
+        fixedrange: false,
+      },
+
+      yaxis: isWeekdayMode ? {
+        visible: false,
+        zeroline: false,
+      } : {
+        gridcolor: '#eef0f4',
+        gridwidth: 1,
+        tickprefix: normalizeChart.value ? '' : 'R$',
+        ticksuffix: normalizeChart.value ? '%' : '',
+        tickfont: { size: 10, color: '#94a3b8', family: 'Inter, sans-serif' },
+        hoverformat: ',.0f',
+        zeroline: false,
+        automargin: true,
+      },
+
+      ...(hasRightAxis ? {
+        yaxis2: {
+          overlaying: 'y',
+          side: 'right',
+          tickprefix: 'R$',
+          tickfont: { size: 10, color: '#d97706', family: 'Inter, sans-serif' },
+          gridcolor: 'transparent',
+          showgrid: false,
+          zeroline: false,
+          title: { text: 'Ads', font: { color: '#d97706', size: 10 } },
+          automargin: true,
+        }
+      } : {}),
+    }
+
+    window.Plotly.react(plotlyContainer.value, traces, layout, {
+      responsive: true,
+      displayModeBar: true,
+      displaylogo: false,
+      modeBarButtonsToRemove: ['toImage', 'sendDataToCloud', 'lasso2d', 'select2d', 'autoScale2d'],
+      modeBarButtonsToAdd: [],
+      scrollZoom: true,
+      doubleClick: 'reset',
+    })
+  } finally {
+    chartLoading.value = false
+  }
+}
+
+// Watch metric toggles to re-render
+watch(activeMetrics, renderPlotlyChart)
 
 function setTopGroupBy(val) {
   if (topGroupBy.value === val) return
@@ -2063,6 +3049,129 @@ function tacosBadgeClass(pct) {
   return 'tacos-ok'
 }
 
+// ── Ranking ───────────────────────────────────────────────────────────────
+const rankingRows = computed(() => {
+  const rows = []
+
+  // ML accounts
+  for (const a of (data.value?.accounts || [])) {
+    const key = buildAccountKey('ml', a.account_id)
+    if (selectedAccountKeys.value.length > 0 && !selectedAccountKeys.value.includes(key) && selectedAccountKeys.value.length < allAccountKeys.value.length) continue
+    const gmv = a.gmv || 0
+    const net = a.net_revenue || 0
+    const gp  = a.gross_profit || 0
+    const ads = a.ads_cost || 0
+    const ll  = a.lucro_liquido ?? (gp - ads)
+    rows.push({
+      key,
+      marketplace: 'ml',
+      label: a.account_nickname,
+      gmv,
+      net_revenue: net,
+      gross_profit: gp,
+      gross_margin_pct: net ? +(gp / net * 100).toFixed(1) : null,
+      ads_cost: ads,
+      tacos: gmv ? +(ads / gmv * 100).toFixed(1) : null,
+      lucro_liquido: ll,
+      lucro_liquido_pct: net ? +(ll / net * 100).toFixed(1) : null,
+      roas: a.roas || null,
+      orders_count: a.orders_count || 0,
+    })
+  }
+
+  // Shopee accounts
+  for (const a of (shopeeData.value?.by_account || [])) {
+    const key = buildAccountKey('shopee', a.account_id)
+    if (selectedAccountKeys.value.length > 0 && !selectedAccountKeys.value.includes(key) && selectedAccountKeys.value.length < allAccountKeys.value.length) continue
+    const gmv = a.gmv || 0
+    const net = a.net_revenue || 0
+    const gp  = a.gross_profit || 0
+    rows.push({
+      key,
+      marketplace: 'shopee',
+      label: a.shop_name,
+      gmv,
+      net_revenue: net,
+      gross_profit: gp,
+      gross_margin_pct: net ? +(gp / net * 100).toFixed(1) : null,
+      ads_cost: null,
+      tacos: null,
+      lucro_liquido: gp,
+      lucro_liquido_pct: net ? +(gp / net * 100).toFixed(1) : null,
+      roas: null,
+      orders_count: a.orders_count || 0,
+    })
+  }
+
+  // Sort
+  return rows.sort((a, b) => {
+    const key = rankingSortKey.value
+    if (key === 'tacos') {
+      // Lower TACoS is better — put nulls last
+      if (a.tacos == null) return 1
+      if (b.tacos == null) return -1
+      return a.tacos - b.tacos
+    }
+    return (b[key] || 0) - (a[key] || 0)
+  })
+})
+
+const rankingHighlights = computed(() => {
+  const rows = rankingRows.value
+  if (rows.length < 2) return []
+
+  const sorted = (key, asc = false) => {
+    const valid = rows.filter(r => r[key] != null)
+    if (!valid.length) return { winner: null, loser: null }
+    const s = [...valid].sort((a, b) => asc ? a[key] - b[key] : b[key] - a[key])
+    return { winner: s[0], loser: s[s.length - 1] }
+  }
+
+  const highlights = []
+
+  const gmv = sorted('gmv')
+  if (gmv.winner) highlights.push({
+    label: '🏆 Maior GMV',
+    winner: gmv.winner,
+    value: fmt(gmv.winner.gmv),
+    loser: gmv.loser !== gmv.winner ? gmv.loser : null,
+    loserValue: gmv.loser ? fmt(gmv.loser.gmv) : null,
+    positive: true,
+  })
+
+  const margin = sorted('lucro_liquido_pct')
+  if (margin.winner) highlights.push({
+    label: '💹 Melhor Margem',
+    winner: margin.winner,
+    value: (margin.winner.lucro_liquido_pct ?? '—') + '%',
+    loser: margin.loser !== margin.winner ? margin.loser : null,
+    loserValue: margin.loser ? (margin.loser.lucro_liquido_pct ?? '—') + '%' : null,
+    positive: true,
+  })
+
+  const roas = sorted('roas')
+  if (roas.winner && roas.winner.roas) highlights.push({
+    label: '📈 Melhor ROAS',
+    winner: roas.winner,
+    value: roas.winner.roas + 'x',
+    loser: roas.loser !== roas.winner ? roas.loser : null,
+    loserValue: roas.loser?.roas ? roas.loser.roas + 'x' : null,
+    positive: true,
+  })
+
+  const tacos = sorted('tacos', true)  // ascending — lower is better
+  if (tacos.winner && tacos.winner.tacos != null) highlights.push({
+    label: '🎯 Menor TACoS',
+    winner: tacos.winner,
+    value: tacos.winner.tacos.toFixed(1) + '%',
+    loser: tacos.loser !== tacos.winner ? tacos.loser : null,
+    loserValue: tacos.loser?.tacos != null ? tacos.loser.tacos.toFixed(1) + '%' : null,
+    positive: false,
+  })
+
+  return highlights
+})
+
 // ── Pareto 80/20 ──────────────────────────────────────────────────────────
 // Retorna o % acumulado de GMV até o produto i (inclusive), arredondado
 const paretoAccumData = computed(() => {
@@ -2206,18 +3315,18 @@ const sazGridLines = computed(() => {
   return [top, top + (bot - top) / 3, top + (bot - top) * 2 / 3, bot]
 })
 
-onMounted(() => { load(); loadToday() })
+onMounted(() => {
+  load()
+  loadToday()
+  // Close account picker on outside click
+  document.addEventListener('click', (e) => {
+    const wrap = document.querySelector('.acct-picker-wrap')
+    if (wrap && !wrap.contains(e.target)) showAccountPicker.value = false
+  })
+})
 </script>
 
 <style scoped>
-/* ── Page ──────────────────────────────────────────────────────────────── */
-.dash-page {
-  background: #f5f7fa;
-  min-height: 100vh;
-  padding: 24px;
-  color: #374151;
-  font-family: 'Inter', 'Roboto', sans-serif;
-}
 
 /* ── Header ────────────────────────────────────────────────────────────── */
 .page-header {
@@ -2432,6 +3541,38 @@ onMounted(() => { load(); loadToday() })
   color: #94a3b8;
   margin-left: auto;
   white-space: nowrap;
+}
+
+/* ── KPI Grid header ────────────────────────────────────────────────────── */
+.kpi-grid-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.kpi-grid-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  flex: 1;
+}
+.kpi-period-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: #f0fdfb;
+  border: 1px solid #99f6e4;
+  color: #0d9488;
+  font-size: 11px;
+  font-weight: 600;
+}
+.kpi-accts-badge {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #b45309;
 }
 
 /* ── KPI Grid ──────────────────────────────────────────────────────────── */
@@ -3372,6 +4513,205 @@ onMounted(() => { load(); loadToday() })
   background: #fff1f2 !important;
 }
 
+/* ── Daily table (new design) ───────────────────────────────────────────── */
+.daily-table-card {
+  background: #fff;
+  border: 1.5px solid #e8edf3;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.daily-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1.5px solid #f1f5f9;
+}
+.daily-table-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.daily-table-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.daily-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0fdfa;
+  color: #0d9488;
+  border: 1px solid #99f6e4;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.daily-table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 520px;
+}
+.daily-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.daily-table thead th {
+  padding: 9px 14px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: #94a3b8;
+  background: #f8fafc;
+  border-bottom: 1.5px solid #e8edf3;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.daily-table thead th.col-date { text-align: left; }
+.daily-table thead th.col-num { text-align: right; }
+.daily-table thead th.col-ll { color: #0d9488; }
+.daily-table thead th.col-ads { color: #f59e0b; }
+
+.daily-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+  color: #374151;
+}
+.daily-table td.col-date { text-align: left; }
+.daily-table td.col-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Row states */
+.dt-row { cursor: pointer; transition: background .1s; }
+.dt-row:hover td { background: #f8fffe; }
+.dt-row--open td { background: #f0fdfa; font-weight: 600; }
+.dt-row--open .dt-expand-btn { color: #0d9488; }
+.dt-row--neg td { background: #fff8f8; }
+.dt-row--neg:hover td { background: #fff0f0; }
+
+/* Expand button */
+.dt-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  color: #cbd5e1;
+  margin-right: 6px;
+  vertical-align: middle;
+  transition: color .15s;
+}
+.dt-row:hover .dt-expand-btn { color: #94a3b8; }
+.dt-date-label { vertical-align: middle; }
+
+/* Value styles */
+.dt-gmv { color: #1e293b; font-weight: 600; }
+.dt-pos { color: #0d9488; font-weight: 600; }
+.dt-neg { color: #ef4444; font-weight: 600; }
+.dt-warn { color: #f59e0b; }
+.dt-warn-text { color: #f59e0b; }
+.dt-empty { color: #cbd5e1; }
+.dt-tacos-badge { font-size: 12px; padding: 1px 0; }
+
+/* Account breakdown rows */
+.dt-acct-row td {
+  background: #fafbfc;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 12px;
+}
+.dt-acct-row:last-of-type td { border-bottom: 2px solid #e8edf3; }
+.dt-sub { color: #64748b; }
+.dt-acct-indent {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 28px;
+}
+.dt-acct-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dt-mkt-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: .3px;
+}
+.dt-mkt-tag--ml { background: #fef9c3; color: #854d0e; }
+.dt-mkt-tag--shopee { background: #fee2e2; color: #b91c1c; }
+
+.dt-loading-hint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 40px !important;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Total row */
+.dt-total-row td {
+  background: #1e293b;
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 13px;
+  border-top: 2px solid #0d9488;
+  border-bottom: none;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+.dt-total-row .dt-gmv { color: #f1f5f9; }
+.dt-total-row .dt-pos { color: #2dd4bf; }
+.dt-total-row .dt-neg { color: #fca5a5; }
+.dt-total-row .dt-warn { color: #fcd34d; }
+
+/* Expandable daily rows (legacy — mantidos para outras tabelas) */
+.day-row { transition: background .1s; }
+.day-row--expanded td { background: #f0fdfb !important; font-weight: 600; }
+.day-expand-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  color: #94a3b8;
+  vertical-align: middle;
+}
+.day-row--expanded .day-expand-icon { color: #0d9488; }
+.day-acct-row td {
+  background: #f8fafc;
+  font-size: 11.5px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.day-acct-row:last-of-type td { border-bottom: 2px solid #e2e8f0; }
+.day-acct-indent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 28px;
+}
+
+/* ── Sidebar hint note ──────────────────────────────────────────────────── */
+.fs-hint-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: rgba(255,255,255,.3);
+  margin-top: 8px;
+  padding: 0 8px;
+}
+
 /* ── TACoS badge ────────────────────────────────────────────────────────── */
 .tacos-ok   { color: #0d9488; font-weight: 600; }
 .tacos-med  { color: #f59e0b; font-weight: 600; }
@@ -3635,5 +4975,949 @@ tr.pareto-line-95 td {
   color: #94a3b8;
   font-size: 13px;
   text-align: center;
+}
+
+/* ── Multi-select account picker ───────────────────────────────────────── */
+.acct-picker-wrap {
+  position: relative;
+}
+.acct-picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  min-width: 160px;
+  max-width: 300px;
+}
+.acct-picker-btn:hover { border-color: #0d9488; }
+.acct-chip-inline { display: inline-flex; align-items: center; gap: 3px; }
+.acct-chip-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.acct-chip-more  { font-size: 11px; color: #64748b; margin-left: 2px; }
+
+.acct-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+  min-width: 240px;
+  padding: 8px 0 0;
+}
+.acct-group { padding: 0 10px 8px; }
+.acct-group + .acct-group { border-top: 1px solid #f1f5f9; padding-top: 8px; }
+.acct-group-header { margin-bottom: 4px; }
+.acct-group-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+}
+.acct-mkt-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.acct-mkt-badge--ml     { background: #1a1a2e; color: #FFE600; }
+.acct-mkt-badge--shopee { background: #fff7f5; color: #EE4D2D; border: 1px solid #EE4D2D40; }
+.acct-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+}
+.acct-item:hover { background: #f8fafc; }
+.acct-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.acct-dot-inline {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+.acct-comparative-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: #f0fdf4;
+  color: #0d9488;
+  font-size: 11px;
+  border-top: 1px solid #e2e8f0;
+}
+.acct-picker-footer {
+  padding: 6px 10px 8px;
+  border-top: 1px solid #f1f5f9;
+  text-align: right;
+}
+.acct-picker-close {
+  font-size: 11px;
+  color: #64748b;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.acct-picker-close:hover { background: #f8fafc; }
+
+/* ── Comparative mode banner ────────────────────────────────────────────── */
+.comparative-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f0fdf4;
+  border: 1px solid #6ee7b7;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #065f46;
+  margin-bottom: 16px;
+}
+.comp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.comp-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+/* ── DRE breakdown toggle ────────────────────────────────────────────────── */
+.dre-breakdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all .15s;
+  margin-left: auto;
+}
+.dre-breakdown-toggle:hover { background: #f1f5f9; color: #0d9488; border-color: #0d9488; }
+
+.dre-breakdown {
+  border-top: 1px solid #e8edf3;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.dre-breakdown-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+.dre-breakdown-table thead th { font-size: 11px; }
+.dre-breakdown-table td, .dre-breakdown-table th { padding: 6px 10px; }
+
+/* ── Main layout: sidebar + content ─────────────────────────────────────── */
+.dash-page {
+  background: #f5f7fa;
+  min-height: 100vh;
+  padding: 20px 20px 40px;
+  color: #374151;
+  font-family: 'Inter', 'Roboto', sans-serif;
+}
+.dash-main-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+.dash-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Filter sidebar ──────────────────────────────────────────────────────── */
+.filter-sidebar {
+  width: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 100px);
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+}
+.filter-sidebar--open { width: 262px; }
+.fs-inner {
+  width: 262px;
+  height: 100%;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #fff;
+  border-radius: 16px;
+  padding: 0 0 20px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(15,23,42,.1), 0 1px 4px rgba(15,23,42,.06);
+}
+.fs-inner::-webkit-scrollbar { width: 3px; }
+.fs-inner::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+/* ── Sidebar header ── */
+.fs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  background: linear-gradient(135deg, #0f172a, #1e3a5f);
+  border-radius: 14px 14px 0 0;
+}
+.fs-header-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+}
+.fs-header-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.7);
+  cursor: pointer;
+  transition: all .15s;
+}
+.fs-header-close:hover { background: rgba(255,255,255,.2); color: #fff; }
+
+/* ── Sections ── */
+.fs-section {
+  padding: 14px 16px 12px;
+  border-bottom: 1.5px solid #f1f5f9;
+}
+.fs-section:last-child { border-bottom: none; padding-bottom: 10px; }
+.fs-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 12px;
+}
+.fs-section-title .q-icon { color: #0d9488; }
+
+/* ── Period presets ── */
+.fs-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.fs-preset-btn {
+  padding: 7px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #374151;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  text-align: center;
+}
+.fs-preset-btn:hover {
+  border-color: #0d9488;
+  color: #0d9488;
+  background: #f0fdfa;
+}
+.fs-preset-btn--on {
+  background: #0d9488;
+  color: #fff;
+  border-color: #0d9488;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(13,148,136,.35);
+}
+
+/* ── Date inputs ── */
+.fs-dates { display: flex; flex-direction: column; gap: 6px; }
+.fs-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 7px 12px;
+  transition: border-color .15s, background .15s;
+}
+.fs-date-row:focus-within {
+  border-color: #0d9488;
+  background: #f0fdfa;
+}
+.fs-date-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  min-width: 22px;
+}
+.fs-date-inp {
+  font-size: 12px;
+  color: #1e293b !important;
+  flex: 1;
+}
+.fs-date-inp :deep(input) { color: #1e293b; }
+
+/* ── Marketplace groups ── */
+.fs-mkt-group {
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  border: 1.5px solid #e8edf3;
+}
+.fs-mkt-group:last-of-type { margin-bottom: 0; }
+.fs-mkt-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background .15s;
+  background: #f8fafc;
+}
+.fs-mkt-header:hover { background: #f1f5f9; }
+.fs-mkt-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  flex: 1;
+}
+
+/* ── Marketplace logo pills ── */
+.fs-mkt-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 5px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .3px;
+}
+.fs-mkt-logo--ml { background: #FFE600; color: #1a1a2e; }
+.fs-mkt-logo--shopee {
+  background: linear-gradient(135deg, #EE4D2D, #ff7043);
+  color: #fff;
+}
+
+/* ── Account items ── */
+.fs-acct-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: background .12s;
+  margin: 0;
+  background: #fff;
+  border-bottom: 1px solid #f8fafc;
+}
+.fs-acct-item:last-child { border-bottom: none; }
+.fs-acct-item:hover { background: #f0fdfa; color: #0f766e; }
+.fs-acct-item--on { color: #0f172a; font-weight: 600; }
+.fs-acct-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.08);
+}
+.fs-acct-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Custom checkboxes ── */
+.fs-custom-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1.5px solid #cbd5e1;
+  background: #fff;
+  flex-shrink: 0;
+  transition: all .15s;
+  position: relative;
+}
+.fs-custom-check.is-checked {
+  background: #0d9488;
+  border-color: #0d9488;
+  box-shadow: 0 1px 5px rgba(13,148,136,.4);
+}
+.fs-custom-check.is-indeterminate {
+  background: #ccfbf1;
+  border-color: #0d9488;
+}
+.fs-custom-check.is-checked .fs-check-inner::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 7px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+.fs-custom-check.is-indeterminate .fs-check-inner::after {
+  content: '';
+  display: block;
+  width: 7px;
+  height: 1.5px;
+  background: #0d9488;
+  border-radius: 1px;
+}
+
+.fs-comparative-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #0d9488;
+  font-weight: 600;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #f0fdfa;
+  border-radius: 8px;
+  border: 1.5px solid #99f6e4;
+}
+
+/* ── Weekday toggle ── */
+.fs-weekday-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 10px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  transition: all .2s;
+}
+.fs-weekday-toggle:hover { background: #f1f5f9; border-color: #0d9488; }
+.fs-weekday-toggle--on {
+  background: #f0fdfa;
+  border-color: #0d9488;
+}
+.fs-weekday-icon { color: #0d9488; display: flex; }
+.fs-weekday-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+.fs-weekday-toggle--on .fs-weekday-label { color: #0f766e; font-weight: 600; }
+.fs-weekday-switch {
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: #cbd5e1;
+  position: relative;
+  flex-shrink: 0;
+  transition: background .2s;
+}
+.fs-weekday-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform .2s;
+}
+.fs-weekday-switch--on { background: #0d9488; }
+.fs-weekday-switch--on::after { transform: translateX(14px); }
+
+/* ── Metric items ── */
+.fs-metric-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+  transition: opacity .2s;
+}
+.fs-metric-list--disabled { opacity: .35; pointer-events: none; }
+.fs-metric-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all .15s;
+}
+.fs-metric-item:hover { background: #f1f5f9; color: #0f172a; }
+.fs-metric-item--on { color: #0f172a; font-weight: 600; background: #f0fdfa; }
+.fs-metric-pip {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all .2s;
+}
+.fs-metric-item--on .fs-metric-pip { box-shadow: 0 0 6px currentColor; }
+.fs-normalize-item { gap: 7px; }
+.fs-sub-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 8px 0 4px 9px;
+}
+
+/* ── Filter toggle button in header ─────────────────────────────────────── */
+.filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 13px;
+  border-radius: 9px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all .2s;
+}
+.filter-toggle-btn:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfb; }
+.filter-toggle-btn--on {
+  background: linear-gradient(135deg, #0f172a, #162032);
+  color: rgba(255,255,255,.85);
+  border-color: #0f172a;
+  box-shadow: 0 2px 8px rgba(15,23,42,.25);
+}
+
+.active-period-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+.active-accts-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+/* ── Hero chart ──────────────────────────────────────────────────────────── */
+.hero-chart {
+  border: 1.5px solid #e8edf3;
+  padding-bottom: 8px;
+}
+.hero-chart .plotly-wrap {
+  margin: 0 -4px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.chart-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-active-metrics {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.chart-metric-pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.chart-loading-badge {
+  display: flex;
+  align-items: center;
+}
+.chart-subtitle {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+/* ── Chart header ───────────────────────────────────────────────────────── */
+.chart-header-row1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chart-title-block {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.chart-period-tag {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.chart-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Agregado / Por Conta toggle */
+.chart-mode-toggle {
+  display: flex;
+  gap: 2px;
+  background: #f1f5f9;
+  border-radius: 9px;
+  padding: 3px;
+}
+.cmt-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #64748b;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.cmt-btn:hover { color: #0f172a; }
+.cmt-btn--on {
+  background: #fff;
+  color: #0d9488;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+
+/* Help icon no toggle */
+.cmt-help-icon {
+  color: #94a3b8;
+  cursor: pointer;
+  margin-left: 2px;
+  transition: color .15s;
+}
+.cmt-help-icon:hover { color: #0d9488; }
+
+/* Tooltip de hints do gráfico */
+.cht-tip { display: flex; flex-direction: column; gap: 7px; padding: 2px 0; }
+.cht-tip-row { display: flex; align-items: flex-start; gap: 6px; font-size: 12px; line-height: 1.4; }
+.cht-tip-muted { font-size: 10.5px; color: #94a3b8; }
+.cht-tip-divider { height: 1px; background: rgba(255,255,255,.15); margin: 2px 0; }
+
+/* Barra de modo ativo (abaixo do header, acima do gráfico) */
+.chart-mode-bar {
+  padding: 6px 16px 4px;
+  display: flex;
+  align-items: center;
+}
+.chart-mode-bar-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px 3px 7px;
+  border-radius: 20px;
+  letter-spacing: .01em;
+}
+.chart-mode-bar-badge--agg {
+  background: rgba(99, 102, 241, .08);
+  color: #4f46e5;
+  border: 1px solid rgba(99, 102, 241, .18);
+}
+.chart-mode-bar-badge--acc {
+  background: rgba(13, 148, 136, .08);
+  color: #0d9488;
+  border: 1px solid rgba(13, 148, 136, .2);
+}
+.chart-mode-bar-badge--week {
+  background: rgba(245, 158, 11, .08);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, .2);
+}
+.chart-mode-bar-hint {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 10.5px;
+  margin-left: 2px;
+}
+
+/* Hint no título "Métricas" da sidebar */
+.fs-mode-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: #8faec8;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  cursor: default;
+  transition: all .2s;
+}
+.fs-mode-hint--active {
+  color: #fbbf24;
+  background: rgba(251,191,36,.1);
+  border-color: rgba(251,191,36,.25);
+}
+
+/* Tooltip da sidebar */
+.fs-hint-tooltip {
+  font-size: 11.5px !important;
+  line-height: 1.5 !important;
+}
+
+/* Metric pills (visíveis no header quando em modo Por Conta / Semana) */
+.chart-metric-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.chart-metric-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  transition: all .15s;
+}
+.chart-metric-pill:hover { border-color: #94a3b8; color: #374151; }
+.chart-metric-pill--on {
+  background: color-mix(in srgb, var(--pill-color, #0d9488) 12%, white);
+  border-color: var(--pill-color, #0d9488);
+  color: var(--pill-color, #0d9488);
+  font-weight: 700;
+}
+
+.chart-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.chart-controls-per-account {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.chart-ctrl-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chart-ctrl-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  min-width: 56px;
+}
+.mkt-mini-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+.mkt-mini-badge--ml     { background: #1a1a2e; color: #FFE600; }
+.mkt-mini-badge--shopee { background: #EE4D2D; color: #fff; }
+.acct-loading-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ── Plotly chart ────────────────────────────────────────────────────────── */
+.plotly-wrap {
+  position: relative;
+  min-height: 180px;
+}
+.chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.7);
+  z-index: 10;
+}
+.plotly-chart-container {
+  width: 100%;
+  min-height: 460px;
+}
+.plotly-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(250, 251, 253, 0.82);
+  backdrop-filter: blur(2px);
+  border-radius: 10px;
+  z-index: 20;
+  pointer-events: all;
+}
+.plotly-loading-text {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+.chart-overlay-fade-enter-active,
+.chart-overlay-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.chart-overlay-fade-enter-from,
+.chart-overlay-fade-leave-to {
+  opacity: 0;
+}
+
+/* ── Ranking tab ─────────────────────────────────────────────────────────── */
+.rank-medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #64748b;
+}
+.rank-gold   { background: #fef3c7; color: #d97706; }
+.rank-silver { background: #f1f5f9; color: #64748b; }
+.rank-bronze { background: #fef0e7; color: #c2410c; }
+
+.ranking-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.ranking-highlight-card {
+  background: #fff;
+  border: 1.5px solid #e8edf3;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.rh-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.rh-winner {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+.rh-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0d9488;
+  margin-bottom: 4px;
+}
+.rh-loser {
+  font-size: 11px;
 }
 </style>
