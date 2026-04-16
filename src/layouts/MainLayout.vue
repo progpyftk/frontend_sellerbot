@@ -36,10 +36,13 @@
 
             <!-- Parent row (clicável para expandir/colapsar) -->
             <button :class="['nav-parent', expandedSections.includes(si) && 'nav-parent--open']"
+              :style="`--s-accent: ${section.accent}`"
               @click="toggleSection(si)">
               <span v-if="section.ml" class="nav-ml-badge">ML</span>
               <span v-else-if="section.shopee" class="nav-shopee-badge">SHOPEE</span>
-              <span v-else class="nav-section-dot" />
+              <span v-else class="nav-section-icon">
+                <q-icon :name="section.sectionIcon || 'circle'" size="12px" />
+              </span>
               <span class="nav-parent-label">{{ section.title }}</span>
               <q-icon name="expand_more" size="14px"
                 :class="['nav-chevron', expandedSections.includes(si) && 'nav-chevron--open']" />
@@ -106,6 +109,9 @@
           <q-btn-dropdown flat no-caps dense auto-close class="user-chip-btn">
             <template v-slot:label>
               <div class="user-chip-inner">
+                <q-avatar size="22px" class="chip-avatar">
+                  <img :src="currentUser.avatarUrl || defaultAvatar" />
+                </q-avatar>
                 <span class="chip-name">{{ currentUser.username }}</span>
                 <q-icon name="expand_more" size="14px" class="chip-chevron" />
               </div>
@@ -162,40 +168,46 @@ const menuSections = [
   {
     title: "Mercado Livre",
     ml: true,
+    sectionIcon: null,
+    accent: "#FFE600",
     items: [
-      { label: "Vendas e Pedidos", icon: "receipt_long", route: "orders", color: "#818cf8", bg: "rgba(129,140,248,.15)" },
-      { label: "Publicidade · Ads", icon: "mdi-bullhorn", route: "ads", color: "#fb923c", bg: "rgba(251,146,60,.15)" },
-      { label: "Meus Anúncios", icon: "mdi-package-variant-closed", route: "items", color: "#2dd4bf", bg: "rgba(45,212,191,.15)" },
-      { label: "Promoções Ativas", icon: "local_offer", route: "promotions", color: "#fbbf24", bg: "rgba(251,191,36,.15)" },
-      { label: "Detalhe do Anúncio", icon: "mdi-chart-bar", route: "item-details", color: "#818cf8", bg: "rgba(129,140,248,.15)" },
+      { label: "Vendas e Pedidos",   icon: "receipt_long",            route: "orders",             color: "#818cf8", bg: "rgba(129,140,248,.18)" },
+      { label: "Publicidade · Ads",  icon: "mdi-bullhorn",            route: "ads",                color: "#fb923c", bg: "rgba(251,146,60,.18)"  },
+      { label: "Meus Anúncios",      icon: "mdi-package-variant-closed", route: "items",           color: "#2dd4bf", bg: "rgba(45,212,191,.18)"  },
+      { label: "Promoções Ativas",   icon: "local_offer",             route: "promotions",         color: "#fbbf24", bg: "rgba(251,191,36,.18)"  },
+      { label: "Detalhe do Anúncio", icon: "mdi-chart-bar",           route: "item-details",       color: "#818cf8", bg: "rgba(129,140,248,.18)" },
     ],
   },
   {
     title: "Shopee",
     shopee: true,
+    sectionIcon: null,
+    accent: "#EE4D2D",
     items: [
-      { label: "Meus Anúncios", icon: "mdi-storefront",    route: "shopee-items",  color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
-      { label: "Vendas e Pedidos", icon: "receipt_long",  route: "shopee-orders", color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
-      { label: "Publicidade",      icon: "campaign",       route: "shopee-ads",    color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
+      { label: "Meus Anúncios",      icon: "mdi-storefront", route: "shopee-items",  color: "#ff7043", bg: "rgba(255,112,67,.18)" },
+      { label: "Vendas e Pedidos",   icon: "receipt_long",   route: "shopee-orders", color: "#ff7043", bg: "rgba(255,112,67,.18)" },
+      { label: "Publicidade",        icon: "campaign",       route: "shopee-ads",    color: "#ff7043", bg: "rgba(255,112,67,.18)" },
     ],
   },
   {
     title: "Inteligência",
-    ml: false,
+    sectionIcon: "auto_awesome",
+    accent: "#a855f7",
     items: [
-      { label: "SellerBot AI", icon: "psychology", route: "sellerbot-ai", color: "#a855f7", bg: "rgba(168,85,247,.15)" },
-      { label: "Análise de Anúncios", icon: "insights", route: "item-analytics", color: "#0d9488", bg: "rgba(13,148,136,.15)" },
-      { label: "Inteligência de Mercado", icon: "manage_search", route: "market-intelligence", color: "#6366f1", bg: "rgba(99,102,241,.15)" },
+      { label: "SellerBot AI",              icon: "psychology",    route: "sellerbot-ai",        color: "#c084fc", bg: "rgba(192,132,252,.18)" },
+      { label: "Análise de Anúncios",       icon: "insights",      route: "item-analytics",      color: "#2dd4bf", bg: "rgba(45,212,191,.18)"  },
+      { label: "Inteligência de Mercado",   icon: "manage_search", route: "market-intelligence", color: "#818cf8", bg: "rgba(129,140,248,.18)" },
     ],
   },
   {
     title: "Sistema",
-    ml: false,
+    sectionIcon: "settings",
+    accent: "#64748b",
     items: [
-      { label: "Custo dos Produtos", icon: "inventory_2", route: "products", color: "#34d399", bg: "rgba(52,211,153,.15)" },
-      { label: "Minhas Contas", icon: "mdi-store", route: "accounts", color: "#EE4D2D", bg: "rgba(238,77,45,.15)" },
-      { label: "Saúde do Sistema", icon: "monitor_heart", route: "system-health", color: "#38bdf8", bg: "rgba(56,189,248,.15)" },
-      { label: "Configurações", icon: "mdi-cog", route: "user-config", color: "#94a3b8", bg: "rgba(148,163,184,.15)" },
+      { label: "Custo dos Produtos", icon: "inventory_2",    route: "products",     color: "#34d399", bg: "rgba(52,211,153,.18)"  },
+      { label: "Minhas Contas",      icon: "mdi-store",      route: "accounts",     color: "#f97316", bg: "rgba(249,115,22,.18)"  },
+      { label: "Saúde do Sistema",   icon: "monitor_heart",  route: "system-health",color: "#38bdf8", bg: "rgba(56,189,248,.18)"  },
+      { label: "Configurações",      icon: "mdi-cog",        route: "user-config",  color: "#94a3b8", bg: "rgba(148,163,184,.18)" },
     ],
   },
 ]
@@ -214,111 +226,179 @@ const redirectToLogin = () => router.push("/login")
 </script>
 
 <style scoped>
-/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════════════════════════════════ */
 :deep(.sidebar) {
-  background: linear-gradient(180deg, #0f172a 0%, #0d1526 100%) !important;
-  border-right: 1px solid rgba(255, 255, 255, .06) !important;
+  background: linear-gradient(170deg, #1a1740 0%, #111030 55%, #0b0e24 100%) !important;
+  border-right: 1px solid rgba(139, 92, 246, .12) !important;
 }
 
-/* Brand */
+/* ── Brand ── */
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 22px 18px 18px;
+  gap: 12px;
+  padding: 18px 16px 14px;
+  position: relative;
+}
+.sidebar-brand::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(139,92,246,.3), rgba(45,212,191,.2), transparent);
 }
 
 .brand-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
   background: linear-gradient(135deg, #0d9488 0%, #2dd4bf 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(13, 148, 136, .45);
+  box-shadow: 0 0 0 3px rgba(45,212,191,.15), 0 8px 20px rgba(13,148,136,.45);
 }
 
 .brand-name {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
-  color: #f1f5f9;
+  background: linear-gradient(90deg, #fff 30%, #7dd3fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   letter-spacing: -.4px;
   line-height: 1;
 }
 
 .brand-sub {
-  font-size: 10px;
-  color: #475569;
-  font-weight: 500;
-  letter-spacing: .04em;
-  margin-top: 3px;
+  font-size: 9.5px;
+  color: #4e4b7a;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-top: 4px;
 }
 
-/* Scroll */
+/* ── Scroll ── */
 .sidebar-scroll {
-  height: calc(100% - 142px);
+  height: calc(100% - 148px);
 }
 
-/* Nav */
+/* ── Nav ── */
 .sidebar-nav {
-  padding: 6px 10px 8px;
+  padding: 8px 10px 10px;
+}
+
+/* Dashboard top item */
+.nav-item--top {
+  margin-bottom: 4px;
+  border-radius: 10px;
 }
 
 /* Parent row (colapsável) */
 .nav-parent {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
-  background: transparent;
   border: none;
   cursor: pointer;
-  padding: 10px 8px 6px;
-  border-radius: 7px;
-  transition: background .14s;
+  padding: 7px 10px 7px 8px;
+  border-radius: 9px;
+  transition: background .15s;
+  background: rgba(255,255,255,.03);
+  margin-bottom: 2px;
 }
 
 .nav-parent:hover {
-  background: rgba(255, 255, 255, .04);
+  background: rgba(var(--s-accent, 139,92,246), .08);
 }
 
 .nav-parent--open {
-  background: transparent;
+  background: rgba(255,255,255,.04);
 }
 
 .nav-parent-label {
   flex: 1;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .1em;
-  color: #e2e8f0;
+  letter-spacing: .12em;
+  color: var(--s-accent, #a5b4fc);
   text-align: left;
 }
 
 .nav-chevron {
-  color: #64748b;
+  color: rgba(255,255,255,.2);
   transition: transform .22s ease;
   flex-shrink: 0;
 }
-
 .nav-chevron--open {
   transform: rotate(180deg);
+  color: rgba(255,255,255,.4);
 }
 
-/* Children — colapsável via max-height */
+/* Section icon (Inteligência / Sistema) */
+.nav-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.06);
+  color: var(--s-accent, #a5b4fc);
+  flex-shrink: 0;
+}
+
+/* ML / Shopee badges */
+.nav-ml-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFE600;
+  color: #1a1a2e;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  border-radius: 5px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(255,230,0,.4);
+}
+
+.nav-shopee-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #EE4D2D, #ff7043);
+  color: #fff;
+  font-size: 7.5px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  border-radius: 5px;
+  padding: 2px 5px;
+  flex-shrink: 0;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(238,77,45,.4);
+}
+
+/* Children */
 .nav-children {
   max-height: 0;
   overflow: hidden;
-  transition: max-height .25s ease, opacity .2s ease;
+  transition: max-height .28s ease, opacity .22s ease;
   opacity: 0;
-  /* Indentação + linha lateral estilo tree */
-  margin-left: 14px;
-  border-left: 1.5px solid rgba(255, 255, 255, .07);
-  padding-left: 6px;
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(255,255,255,.06);
 }
 
 .nav-children--open {
@@ -326,55 +406,15 @@ const redirectToLogin = () => router.push("/login")
   opacity: 1;
 }
 
-/* Remove a span inútil */
-.nav-tree-line {
-  display: none;
-}
+.nav-tree-line { display: none; }
 
-.nav-section-dot {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: #2dd4bf;
-  flex-shrink: 0;
-}
-
-.nav-ml-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #FFE600;
-  color: #1a1f36;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: .04em;
-  border-radius: 4px;
-  padding: 1px 4px;
-  flex-shrink: 0;
-  line-height: 1.4;
-}
-
-.nav-shopee-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #EE4D2D;
-  color: #fff;
-  font-size: 7px;
-  font-weight: 900;
-  letter-spacing: .04em;
-  border-radius: 4px;
-  padding: 1px 4px;
-  flex-shrink: 0;
-  line-height: 1.4;
-}
-
+/* Nav item */
 .nav-item {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 9px;
+  padding: 7px 10px;
   border-radius: 9px;
   border: none;
   background: transparent;
@@ -386,25 +426,27 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .nav-item:hover:not(.nav-item--active) {
-  background: rgba(255, 255, 255, .05);
+  background: rgba(255,255,255,.05);
 }
 
 .nav-item--active {
-  background: linear-gradient(90deg, rgba(13, 148, 136, .22) 0%, rgba(13, 148, 136, .08) 100%);
+  background: linear-gradient(90deg, rgba(13,148,136,.3) 0%, rgba(13,148,136,.08) 100%);
 }
 
 .nav-item--active::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 3px;
+  height: 60%;
   border-radius: 0 3px 3px 0;
-  background: #2dd4bf;
+  background: linear-gradient(180deg, #2dd4bf, #0f766e);
+  box-shadow: 0 0 10px rgba(45,212,191,.7);
 }
 
-/* Icon wrap */
+/* Icon wrap — sempre colorido */
 .nav-icon-wrap {
   width: 30px;
   height: 30px;
@@ -413,36 +455,37 @@ const redirectToLogin = () => router.push("/login")
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--icon-bg, rgba(255, 255, 255, .06));
-  color: var(--icon-color, #64748b);
-  transition: background .15s, color .15s;
+  background: var(--icon-bg, rgba(255,255,255,.06));
+  color: var(--icon-color, #6b7280);
+  transition: background .15s, box-shadow .15s;
 }
 
 .nav-item--active .nav-icon-wrap {
-  background: rgba(13, 148, 136, .30);
+  background: rgba(13,148,136,.3);
   color: #2dd4bf;
+  box-shadow: 0 0 14px rgba(45,212,191,.25);
 }
 
 .nav-item:hover:not(.nav-item--active) .nav-icon-wrap {
-  background: rgba(255, 255, 255, .08);
+  filter: brightness(1.2);
 }
 
 /* Label */
 .nav-label {
   font-size: 12.5px;
   font-weight: 500;
-  color: #94a3b8;
+  color: #6e7ab8;
   flex: 1;
   transition: color .15s;
   white-space: nowrap;
 }
 
 .nav-item:hover:not(.nav-item--active) .nav-label {
-  color: #cbd5e1;
+  color: #c7d2fe;
 }
 
 .nav-item--active .nav-label {
-  color: #f1f5f9;
+  color: #f0fdfa;
   font-weight: 600;
 }
 
@@ -455,35 +498,34 @@ const redirectToLogin = () => router.push("/login")
   padding: 1px 6px;
 }
 
-.nav-item--top {
-  margin-bottom: 0;
-}
-
 .nav-sep {
   height: 1px;
-  background: rgba(255, 255, 255, .05);
-  margin: 8px 8px;
+  background: linear-gradient(90deg, transparent, rgba(139,92,246,.15), transparent);
+  margin: 6px 4px;
 }
 
-/* Footer user card */
+/* ── Footer user card ── */
 .sidebar-footer {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  border-top: 1px solid rgba(255, 255, 255, .06);
+  background: rgba(10, 9, 30, .9);
+  border-top: 1px solid rgba(139, 92, 246, .12);
+  backdrop-filter: blur(8px);
 }
 
 .sidebar-user {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 10px 14px;
 }
 
 .sidebar-avatar {
-  border: 1.5px solid rgba(45, 212, 191, .4);
+  border: 2px solid rgba(45,212,191,.45);
   flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(45,212,191,.08);
 }
 
 .sidebar-user-info {
@@ -494,31 +536,36 @@ const redirectToLogin = () => router.push("/login")
 .sidebar-user-name {
   font-size: 12.5px;
   font-weight: 600;
-  color: #cbd5e1;
+  color: #e0e7ff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .sidebar-user-role {
-  font-size: 10px;
-  color: #334155;
-  margin-top: 1px;
+  font-size: 9.5px;
+  color: #3d3a68;
+  margin-top: 2px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
 }
 
 .sidebar-logout {
-  color: #334155 !important;
+  color: #3d3a68 !important;
   transition: color .15s !important;
 }
 
 .sidebar-logout:hover {
-  color: #ef4444 !important;
+  color: #f87171 !important;
 }
 
-/* ── Header ───────────────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   HEADER (top bar branco/claro)
+══════════════════════════════════════════════════════════════════════════ */
 .app-header {
-  background: linear-gradient(90deg, #0f172a 0%, #0d1a2e 100%) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .06), 0 2px 12px rgba(0, 0, 0, .25) !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 0 #e2e8f0, 0 2px 8px rgba(15, 23, 42, .06) !important;
 }
 
 .app-toolbar {
@@ -532,7 +579,7 @@ const redirectToLogin = () => router.push("/login")
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #475569;
+  color: #94a3b8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -541,8 +588,8 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .menu-toggle:hover {
-  background: rgba(255, 255, 255, .08);
-  color: #2dd4bf;
+  background: #f0fdfa;
+  color: #0d9488;
 }
 
 /* Wordmark */
@@ -554,11 +601,11 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .header-wordmark-seller {
-  color: #f1f5f9;
+  color: #0f172a;
 }
 
 .header-wordmark-bot {
-  color: #2dd4bf;
+  color: #0d9488;
 }
 
 /* User chip */
@@ -576,23 +623,29 @@ const redirectToLogin = () => router.push("/login")
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 5px 12px 5px 8px;
   border-radius: 20px;
-  border: 1.5px solid rgba(255, 255, 255, .1);
-  background: rgba(255, 255, 255, .06);
-  transition: border-color .14s, background .14s;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  transition: border-color .14s, background .14s, box-shadow .14s;
   cursor: pointer;
 }
 
 .user-chip-inner:hover {
-  border-color: rgba(45, 212, 191, .5);
-  background: rgba(45, 212, 191, .08);
+  border-color: #0d9488;
+  background: #f0fdfa;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, .12);
+}
+
+.chip-avatar {
+  border: 1.5px solid rgba(13, 148, 136, .4);
+  flex-shrink: 0;
 }
 
 .chip-name {
   font-size: 12.5px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #1e293b;
   max-width: 110px;
   white-space: nowrap;
   overflow: hidden;
@@ -600,7 +653,7 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .chip-chevron {
-  color: #475569;
+  color: #94a3b8;
 }
 
 /* Dropdown */
@@ -608,6 +661,7 @@ const redirectToLogin = () => router.push("/login")
   min-width: 220px;
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, .12);
 }
 
 .dd-header {
