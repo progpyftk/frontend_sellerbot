@@ -61,15 +61,6 @@
             </q-btn-dropdown>
           </div>
 
-          <div class="fb-btn-group">
-            <button :class="['fb-tbtn', advancedFilterCount > 0 && 'fb-tbtn--active']"
-              @click="showAdvanced = true">
-              <q-icon name="tune" size="15px" />
-              <span>Filtros</span>
-              <span v-if="advancedFilterCount > 0" class="fb-adv-badge">{{ advancedFilterCount }}</span>
-            </button>
-          </div>
-
           <transition name="fade">
             <button v-if="hasActiveFilters" class="fb-clear-btn" @click="clearFilters">
               <q-icon name="filter_alt_off" size="14px" />
@@ -196,6 +187,97 @@
               </q-item>
             </q-list>
           </q-menu>
+        </div>
+
+      </div>
+
+      <!-- ── FILTROS AVANÇADOS (inline fixo) ──────────────────── -->
+      <div class="fadv-inline">
+
+        <div class="fadv-inline-section">
+          <div class="fadv-inline-label">Estoque</div>
+          <div class="fadv-options">
+            <label v-for="opt in stockOptions" :key="opt.value" class="fadv-radio"
+              :class="filters.stockStatus === opt.value && 'fadv-radio--on'">
+              <input type="radio" :value="opt.value" v-model="filters.stockStatus" />
+              {{ opt.label }}
+            </label>
+          </div>
+        </div>
+
+        <div class="fadv-inline-sep"></div>
+
+        <div class="fadv-inline-section">
+          <div class="fadv-inline-label">Frete Grátis</div>
+          <div class="fadv-options">
+            <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
+              :class="filters.free_shipping === opt.value && 'fadv-radio--on'">
+              <input type="radio" :value="opt.value" v-model="filters.free_shipping" />
+              {{ opt.label }}
+            </label>
+          </div>
+        </div>
+
+        <div class="fadv-inline-sep"></div>
+
+        <div class="fadv-inline-section">
+          <div class="fadv-inline-label">Flex</div>
+          <div class="fadv-options">
+            <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
+              :class="filters.is_flex === opt.value && 'fadv-radio--on'">
+              <input type="radio" :value="opt.value" v-model="filters.is_flex" />
+              {{ opt.label }}
+            </label>
+          </div>
+        </div>
+
+        <div class="fadv-inline-sep"></div>
+
+        <div class="fadv-inline-section">
+          <div class="fadv-inline-label">Catálogo</div>
+          <div class="fadv-options">
+            <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
+              :class="filters.catalog_listing === opt.value && 'fadv-radio--on'">
+              <input type="radio" :value="opt.value" v-model="filters.catalog_listing" />
+              {{ opt.label }}
+            </label>
+          </div>
+        </div>
+
+        <div class="fadv-inline-sep"></div>
+
+        <div class="fadv-inline-section">
+          <div class="fadv-inline-label">Preço (R$)</div>
+          <div class="fadv-range-row">
+            <input class="fadv-input fadv-input--sm" type="number" placeholder="Mín" v-model.number="filters.priceMin" />
+            <span class="fadv-range-sep">→</span>
+            <input class="fadv-input fadv-input--sm" type="number" placeholder="Máx" v-model.number="filters.priceMax" />
+          </div>
+        </div>
+
+        <div class="fadv-inline-sep"></div>
+
+        <div class="fadv-inline-section">
+          <div class="fadv-inline-label">Vendas Mín.</div>
+          <input class="fadv-input fadv-input--sm" type="number" placeholder="Ex: 10" v-model.number="filters.soldMin" />
+        </div>
+
+        <div class="fadv-inline-sep"></div>
+
+        <div class="fadv-inline-section">
+          <div class="fadv-inline-label">Qualidade (%)</div>
+          <div class="fadv-range-row">
+            <input class="fadv-input fadv-input--sm" type="number" placeholder="Mín" v-model.number="filters.healthMin" />
+            <span class="fadv-range-sep">→</span>
+            <input class="fadv-input fadv-input--sm" type="number" placeholder="Máx" v-model.number="filters.healthMax" />
+          </div>
+        </div>
+
+        <div class="fadv-inline-sep"></div>
+
+        <div class="fadv-inline-section">
+          <div class="fadv-inline-label">Desconto Mín. (%)</div>
+          <input class="fadv-input fadv-input--sm" type="number" placeholder="Ex: 15" v-model.number="filters.discountMin" />
         </div>
 
       </div>
@@ -648,104 +730,6 @@
           </template>
         </q-table>
 
-    <!-- ══ FILTROS AVANÇADOS (painel direito) ══════════════════════════════ -->
-    <q-dialog v-model="showAdvanced" position="right" :maximized="true" transition-show="slide-left" transition-hide="slide-right">
-      <q-card class="fadv-panel" style="width:360px;max-width:100vw;height:100vh">
-        <div class="fadv-header">
-          <span class="fadv-title">Filtros Avançados</span>
-          <button class="fadv-close" @click="showAdvanced = false"><q-icon name="close" size="18px" /></button>
-        </div>
-        <q-scroll-area style="height:calc(100vh - 110px)">
-          <div class="fadv-body">
-
-            <!-- Estoque -->
-            <div class="fadv-section">
-              <div class="fadv-section-label">Estoque</div>
-              <div class="fadv-options">
-                <label v-for="opt in stockOptions" :key="opt.value" class="fadv-radio"
-                  :class="filters.stockStatus === opt.value && 'fadv-radio--on'">
-                  <input type="radio" :value="opt.value" v-model="filters.stockStatus" />
-                  {{ opt.label }}
-                </label>
-              </div>
-            </div>
-
-            <!-- Frete Grátis -->
-            <div class="fadv-section">
-              <div class="fadv-section-label">Frete Grátis</div>
-              <div class="fadv-options">
-                <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
-                  :class="filters.free_shipping === opt.value && 'fadv-radio--on'">
-                  <input type="radio" :value="opt.value" v-model="filters.free_shipping" />
-                  {{ opt.label }}
-                </label>
-              </div>
-            </div>
-
-            <!-- Flex -->
-            <div class="fadv-section">
-              <div class="fadv-section-label">Flex</div>
-              <div class="fadv-options">
-                <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
-                  :class="filters.is_flex === opt.value && 'fadv-radio--on'">
-                  <input type="radio" :value="opt.value" v-model="filters.is_flex" />
-                  {{ opt.label }}
-                </label>
-              </div>
-            </div>
-
-            <!-- Catálogo -->
-            <div class="fadv-section">
-              <div class="fadv-section-label">Catálogo</div>
-              <div class="fadv-options">
-                <label v-for="opt in booleanOptions" :key="String(opt.value)" class="fadv-radio"
-                  :class="filters.catalog_listing === opt.value && 'fadv-radio--on'">
-                  <input type="radio" :value="opt.value" v-model="filters.catalog_listing" />
-                  {{ opt.label }}
-                </label>
-              </div>
-            </div>
-
-            <!-- Faixa de Preço -->
-            <div class="fadv-section">
-              <div class="fadv-section-label">Faixa de Preço (R$)</div>
-              <div class="fadv-range-row">
-                <input class="fadv-input" type="number" placeholder="Mín" v-model.number="filters.priceMin" />
-                <span class="fadv-range-sep">→</span>
-                <input class="fadv-input" type="number" placeholder="Máx" v-model.number="filters.priceMax" />
-              </div>
-            </div>
-
-            <!-- Vendas mínimas -->
-            <div class="fadv-section">
-              <div class="fadv-section-label">Vendas Mínimas</div>
-              <input class="fadv-input fadv-input--full" type="number" placeholder="Ex: 10" v-model.number="filters.soldMin" />
-            </div>
-
-            <!-- Qualidade -->
-            <div class="fadv-section">
-              <div class="fadv-section-label">Qualidade (%)</div>
-              <div class="fadv-range-row">
-                <input class="fadv-input" type="number" placeholder="Mín" v-model.number="filters.healthMin" />
-                <span class="fadv-range-sep">→</span>
-                <input class="fadv-input" type="number" placeholder="Máx" v-model.number="filters.healthMax" />
-              </div>
-            </div>
-
-            <!-- Desconto mínimo -->
-            <div class="fadv-section">
-              <div class="fadv-section-label">Desconto Mínimo (%)</div>
-              <input class="fadv-input fadv-input--full" type="number" placeholder="Ex: 15" v-model.number="filters.discountMin" />
-            </div>
-
-          </div>
-        </q-scroll-area>
-        <div class="fadv-footer">
-          <button class="fadv-btn-clear" @click="clearFilters; showAdvanced = false">Limpar tudo</button>
-          <button class="fadv-btn-apply" @click="showAdvanced = false">Aplicar</button>
-        </div>
-      </q-card>
-    </q-dialog>
 
     <q-dialog v-model="showHealthDialog">
       <q-card style="width: 600px; max-width: 95vw;">
@@ -1207,7 +1191,6 @@ const columns = [
 // ============================================================================
 const showAdvancedFilters = ref(false)
 const searchFocused = ref(false)
-const showAdvanced = ref(false)
 const availableAccounts = ref([])
 const availableStatuses = ref([])
 const availableLogistics = ref([])
@@ -2102,58 +2085,45 @@ const reactivateItem = (row) => {
 .fb-index-pill:hover { background: #ccebe8; }
 
 
-/* ── Advanced filters panel ── */
-.fadv-panel { display: flex; flex-direction: column; border-radius: 0 !important; }
-.fadv-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid #e8edf3;
-  background: #fff;
+/* ── Advanced filters inline ── */
+.fadv-inline {
+  display: flex; align-items: flex-start; flex-wrap: wrap; gap: 0;
+  padding: 8px 16px 10px;
+  background: #fafbfc; border-bottom: 1px solid #e8edf3;
 }
-.fadv-title { font-size: 15px; font-weight: 700; color: #1a1f36; }
-.fadv-close { background: none; border: none; cursor: pointer; color: #9aa0ac; display: flex; }
-.fadv-close:hover { color: #1a1f36; }
-.fadv-body { padding: 8px 0; }
-.fadv-section { padding: 12px 20px; border-bottom: 1px solid #f0f2f5; }
-.fadv-section-label { font-size: 11px; font-weight: 700; color: #9aa0ac; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-.fadv-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.fadv-inline-section {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 4px 14px 4px 0;
+}
+.fadv-inline-label {
+  font-size: 10px; font-weight: 700; color: #9aa0ac;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.fadv-inline-sep {
+  width: 1px; background: #e3e6eb;
+  align-self: stretch; margin: 4px 14px 4px 0;
+  flex-shrink: 0;
+}
+.fadv-options { display: flex; flex-wrap: wrap; gap: 5px; }
 .fadv-radio {
   display: flex; align-items: center; gap: 5px;
-  padding: 5px 12px; border-radius: 16px;
+  padding: 4px 10px; border-radius: 14px;
   border: 1.5px solid #e3e6eb; background: #fff;
-  font-size: 12px; font-weight: 500; color: #374151;
+  font-size: 11px; font-weight: 500; color: #374151;
   cursor: pointer; transition: all .15s;
 }
 .fadv-radio input { display: none; }
 .fadv-radio--on { border-color: #0d9488; background: #f0faf9; color: #0d9488; }
-.fadv-range-row { display: flex; align-items: center; gap: 8px; }
-.fadv-range-sep { color: #9aa0ac; font-size: 12px; }
+.fadv-range-row { display: flex; align-items: center; gap: 6px; }
+.fadv-range-sep { color: #9aa0ac; font-size: 11px; }
 .fadv-input {
-  height: 34px; width: 100px; padding: 0 10px;
-  border: 1.5px solid #e3e6eb; border-radius: 8px;
-  font-size: 13px; color: #1a1f36; background: #f8f9fb;
+  height: 28px; padding: 0 8px;
+  border: 1.5px solid #e3e6eb; border-radius: 7px;
+  font-size: 12px; color: #1a1f36; background: #f8f9fb;
   outline: none; transition: border-color .15s;
 }
 .fadv-input:focus { border-color: #0d9488; background: #fff; }
-.fadv-input--full { width: 100%; box-sizing: border-box; }
-.fadv-footer {
-  display: flex; gap: 8px; padding: 14px 20px;
-  border-top: 1px solid #e8edf3; background: #fff;
-  margin-top: auto;
-}
-.fadv-btn-clear {
-  flex: 1; height: 36px; border-radius: 8px;
-  border: 1.5px solid #e3e6eb; background: #fff;
-  font-size: 13px; font-weight: 500; color: #374151;
-  cursor: pointer;
-}
-.fadv-btn-clear:hover { background: #f5f7fa; }
-.fadv-btn-apply {
-  flex: 2; height: 36px; border-radius: 8px;
-  border: none; background: #0d9488; color: #fff;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: background .15s;
-}
-.fadv-btn-apply:hover { background: #0a7a72; }
+.fadv-input--sm { width: 76px; }
 
 /* ── Fade transition ── */
 .fade-enter-active, .fade-leave-active { transition: opacity .2s; }
