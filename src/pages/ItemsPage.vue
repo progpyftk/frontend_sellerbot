@@ -291,30 +291,6 @@
 
     </div>
 
-    <!-- ── SMART VIEWS ────────────────────────────────────────── -->
-    <div class="smart-views-bar">
-      <div class="sv-label">Smart Views</div>
-      <div class="sv-chips">
-        <button class="sv-chip sv-chip--red" @click="setFilterMarginRisk">
-          <q-icon name="warning" size="13px" />Risco de Margem
-        </button>
-        <button class="sv-chip sv-chip--orange" @click="setFilterPremiumUpgrade">
-          <q-icon name="rocket_launch" size="13px" />Validado p/ Premium
-        </button>
-        <button class="sv-chip sv-chip--red" @click="setFilterPoorHealthHighSales">
-          <q-icon name="error_outline" size="13px" />Curva A / Baixa Saúde
-        </button>
-        <button class="sv-chip sv-chip--amber" @click="setFilterFullNoStock">
-          <q-icon name="inventory_2" size="13px" />Full Sem Estoque
-        </button>
-        <button class="sv-chip sv-chip--slate" @click="setFilterOpportunityFlex">
-          <q-icon name="electric_moped" size="13px" />Oportunidade Flex
-        </button>
-      </div>
-      <button class="sv-clear" @click="clearFilters">
-        <q-icon name="filter_alt_off" size="13px" />Limpar
-      </button>
-    </div>
 
 
         <transition name="slide-fade">
@@ -1986,18 +1962,6 @@ const reactivateItem = (row) => {
   letter-spacing: 0.5px;
 }
 
-/* Estilo para os botões "Smart Views" */
-.smart-btn {
-  background-color: white !important;
-  border-color: #e0e0e0 !important;
-  transition: all 0.2s ease;
-}
-
-.smart-btn:hover {
-  background-color: #f8f9fa !important;
-  transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
-}
 
 .hover-underline:hover {
   text-decoration: underline;
@@ -2137,37 +2101,6 @@ const reactivateItem = (row) => {
 }
 .fb-index-pill:hover { background: #ccebe8; }
 
-/* ── Smart Views bar ── */
-.smart-views-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 16px;
-  background: #fff; border-bottom: 1px solid #e8edf3;
-  overflow-x: auto;
-}
-.sv-label { font-size: 10px; font-weight: 700; color: #9aa0ac; text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0; }
-.sv-chips { display: flex; gap: 6px; flex-shrink: 0; }
-.sv-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  height: 28px; padding: 0 10px; border-radius: 14px;
-  border: 1.5px solid; background: #fff;
-  font-size: 11px; font-weight: 600; cursor: pointer;
-  transition: all .15s; white-space: nowrap;
-}
-.sv-chip--red    { border-color: #fca5a5; color: #dc2626; }
-.sv-chip--red:hover    { background: #fef2f2; }
-.sv-chip--orange { border-color: #fcd34d; color: #d97706; }
-.sv-chip--orange:hover { background: #fffbeb; }
-.sv-chip--amber  { border-color: #fbbf24; color: #b45309; }
-.sv-chip--amber:hover  { background: #fef3c7; }
-.sv-chip--slate  { border-color: #cbd5e1; color: #475569; }
-.sv-chip--slate:hover  { background: #f1f5f9; }
-.sv-clear {
-  display: flex; align-items: center; gap: 4px;
-  margin-left: auto; flex-shrink: 0;
-  font-size: 11px; color: #9aa0ac;
-  background: none; border: none; cursor: pointer;
-}
-.sv-clear:hover { color: #ef4444; }
 
 /* ── Advanced filters panel ── */
 .fadv-panel { display: flex; flex-direction: column; border-radius: 0 !important; }
