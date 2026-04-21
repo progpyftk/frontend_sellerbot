@@ -553,26 +553,6 @@
                 </div>
               </q-td>
 
-              <q-td key="promotions" :props="props" align="left" class="promo-td">
-                <div v-if="getPromotionBadges(props.row).length === 0" class="text-caption text-grey-5">
-                  Sem promoção
-                </div>
-                <div v-else class="column q-gutter-y-xs">
-                  <q-badge v-for="p in getPromotionBadges(props.row)" :key="p.key" :color="p.bgColor"
-                    :text-color="p.textColor" class="promo-badge text-weight-bold"
-                    style="border: 1px solid rgba(255,152,0,0.3);">
-                    <q-icon name="local_offer" size="12px" class="q-mr-xs" />
-                    <span class="promo-label">
-                      {{ p.label }}
-                      <span v-if="p.discount_pct"> — {{ p.discount_pct }}% OFF</span>
-                      <span v-if="p.status && p.status !== 'started'"> ({{ p.status }})</span>
-                    </span>
-                    <q-tooltip v-if="p.tooltip" max-width="420px">
-                      <div class="text-caption">{{ p.tooltip }}</div>
-                    </q-tooltip>
-                  </q-badge>
-                </div>
-              </q-td>
 
 
               <q-td key="price" :props="props" align="right">
@@ -1236,7 +1216,6 @@ const columns = [
   { name: 'sold_quantity', align: 'center', label: 'VENDAS', field: 'sold_quantity', sortable: true },
   { name: 'performance_score', align: 'center', label: 'QUALIDADE', field: 'performance_score', sortable: true },
   { name: 'logistic_type', align: 'left', label: 'LOGÍSTICA', field: 'logistic_type' },
-  { name: 'promotions', align: 'left', label: 'PROMOÇÕES', field: 'promotions_info' },
   { name: 'price', align: 'right', label: 'PREÇO', field: 'effective_price' },
   {
     name: 'actions',
