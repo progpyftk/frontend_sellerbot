@@ -51,6 +51,9 @@ export default {
   bulkExactPrice(payload) {
     return api.post('/mercadolivre/items/bulk-exact-price/', payload)
   },
+  bulkStock(payload) {
+    return api.post('/mercadolivre/items/bulk-stock/', payload)
+  },
 
   getPromotions() {
     return api.get('/mercadolivre/promotions/')

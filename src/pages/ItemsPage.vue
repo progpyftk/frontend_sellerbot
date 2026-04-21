@@ -348,19 +348,52 @@
 
         <!-- ── Barra de Ações em Massa ──────────────────────────── -->
         <transition name="slide-fade">
-          <div v-if="selectedItems.length" class="bulk-bar q-px-lg q-py-sm row items-center q-gutter-sm">
-            <q-icon name="check_box" color="indigo-6" size="18px" />
-            <span class="text-weight-bold text-indigo-8">{{ selectedItems.length }} selecionado(s)</span>
-            <q-separator vertical inset class="q-mx-xs" />
-            <q-btn unelevated dense color="indigo-6" text-color="white" icon="sell"
-              label="Preços" size="sm" class="q-px-md" @click="showBulkPriceDialog = true" />
-            <q-btn unelevated dense color="orange-7" text-color="white" icon="local_offer"
-              label="Promoção" size="sm" class="q-px-md" @click="showBulkPromoDialog = true" />
-            <q-btn unelevated dense color="teal-7" text-color="white" icon="rocket_launch"
-              label="Tipo Anúncio" size="sm" class="q-px-md" @click="showBulkListingTypeDialog = true" />
-            <q-space />
-            <q-btn flat dense color="grey-6" icon="close" label="Limpar seleção" size="sm"
-              @click="selectedItems = []" />
+          <div v-if="selectedItems.length || selectAllFiltered" class="bulk-bar-wrap">
+            <!-- Barra principal de ações -->
+            <div class="bulk-bar q-px-lg q-py-sm row items-center q-gutter-sm">
+              <q-icon name="check_box" color="indigo-6" size="18px" />
+              <span class="text-weight-bold text-indigo-8">
+                <template v-if="selectAllFiltered">
+                  Todos <strong>{{ pagination.rowsNumber }}</strong> filtrados selecionados
+                </template>
+                <template v-else>
+                  {{ selectedItems.length }} selecionado(s)
+                </template>
+              </span>
+              <q-separator vertical inset class="q-mx-xs" />
+              <q-btn unelevated dense color="indigo-6" text-color="white" icon="sell"
+                label="Preços" size="sm" class="q-px-md" @click="showBulkPriceDialog = true" />
+              <q-btn unelevated dense color="orange-7" text-color="white" icon="local_offer"
+                label="Promoção" size="sm" class="q-px-md" @click="showBulkPromoDialog = true" />
+              <q-btn unelevated dense color="teal-7" text-color="white" icon="rocket_launch"
+                label="Tipo Anúncio" size="sm" class="q-px-md" @click="showBulkListingTypeDialog = true" />
+              <q-btn unelevated dense color="green-7" text-color="white" icon="inventory_2"
+                label="Estoque" size="sm" class="q-px-md" @click="showBulkStockDialog = true" />
+              <q-space />
+              <q-btn flat dense color="grey-6" icon="close" label="Limpar seleção" size="sm"
+                @click="clearSelection" />
+            </div>
+
+            <!-- Banner: selecionar todos filtrados -->
+            <div v-if="!selectAllFiltered && allSelected && pagination.rowsNumber > items.length"
+              class="select-all-filtered-bar q-px-lg q-py-xs row items-center q-gutter-sm">
+              <q-icon name="info" color="indigo-5" size="14px" />
+              <span class="text-caption text-indigo-8">
+                Apenas os <strong>{{ items.length }}</strong> anúncios desta página estão selecionados.
+              </span>
+              <q-btn flat dense no-caps size="sm" color="indigo-7" class="q-px-sm"
+                :label="`Selecionar todos os ${pagination.rowsNumber} filtrados`"
+                @click="selectAllFiltered = true" />
+            </div>
+
+            <!-- Banner: todos filtrados selecionados -->
+            <div v-if="selectAllFiltered"
+              class="select-all-filtered-bar select-all-filtered-bar--active q-px-lg q-py-xs row items-center q-gutter-sm">
+              <q-icon name="check_circle" color="teal-7" size="14px" />
+              <span class="text-caption text-teal-8">
+                Todos os <strong>{{ pagination.rowsNumber }}</strong> anúncios que correspondem ao filtro atual estão selecionados.
+              </span>
+            </div>
           </div>
         </transition>
 
@@ -1081,6 +1114,52 @@
       </q-card>
     </q-dialog>
 
+    <!-- ══ DIALOG 4: ADICIONAR ESTOQUE EM MASSA ═══════════════════════════ -->
+    <q-dialog v-model="showBulkStockDialog" persistent>
+      <q-card style="min-width:360px;max-width:480px">
+        <q-card-section class="q-pb-none">
+          <div class="text-h6 row items-center gap-sm">
+            <q-icon name="inventory_2" color="green-7" size="22px" class="q-mr-sm" />
+            Adicionar Estoque em Massa
+          </div>
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg column q-gutter-md">
+          <q-banner class="bg-green-1 text-green-9 rounded-borders" dense>
+            <template v-slot:avatar><q-icon name="info" color="green-7" size="16px" /></template>
+            <span v-if="selectAllFiltered">
+              Todos os <strong>{{ pagination.rowsNumber }}</strong> anúncios filtrados receberão o estoque definido.
+              Anúncios Full serão ignorados automaticamente.
+            </span>
+            <span v-else>
+              <strong>{{ selectedItems.length }}</strong> anúncio(s) selecionado(s).
+              Anúncios Full serão ignorados automaticamente.
+            </span>
+          </q-banner>
+
+          <q-input v-model.number="bulkStockForm.quantity" type="number" outlined dense
+            label="Quantidade de estoque a definir"
+            hint="Define o estoque absoluto de todos os anúncios selecionados para este valor"
+            color="green-7" :rules="[v => v >= 0 || 'Deve ser ≥ 0']">
+            <template v-slot:prepend><q-icon name="inventory_2" /></template>
+          </q-input>
+
+          <q-banner class="bg-amber-1 text-amber-9 rounded-borders text-caption" dense>
+            <template v-slot:avatar><q-icon name="warning_amber" color="amber-7" size="14px" /></template>
+            As atualizações são enfileiradas e processadas uma a uma para respeitar os limites da API do Mercado Livre.
+          </q-banner>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md q-pt-none">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Enfileirar Atualizações" color="green-7"
+            :loading="bulkLoading"
+            :disable="bulkStockForm.quantity === null || bulkStockForm.quantity < 0"
+            @click="executeBulkStock" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
 
   </q-page>
 </template>
@@ -1100,21 +1179,36 @@ const loading = ref(false)
 
 // ── Seleção múltipla ──────────────────────────────────────────────────────
 const selectedItems = ref([])
+const selectAllFiltered = ref(false)  // true = todos os itens do filtro (além da página atual)
+
 const allSelected = computed(() => items.value.length > 0 && selectedItems.value.length === items.value.length)
 const someSelected = computed(() => selectedItems.value.length > 0 && selectedItems.value.length < items.value.length)
 const isSelected = (row) => selectedItems.value.some(r => r.item_id === row.item_id)
+
 const toggleSelect = (row) => {
+  selectAllFiltered.value = false
   const idx = selectedItems.value.findIndex(r => r.item_id === row.item_id)
   if (idx === -1) selectedItems.value = [...selectedItems.value, row]
   else selectedItems.value = selectedItems.value.filter(r => r.item_id !== row.item_id)
 }
-const toggleAll = (val) => { selectedItems.value = val ? [...items.value] : [] }
+
+const toggleAll = (val) => {
+  selectAllFiltered.value = false
+  selectedItems.value = val ? [...items.value] : []
+}
+
+const clearSelection = () => {
+  selectedItems.value = []
+  selectAllFiltered.value = false
+}
 
 // ── Dialogs bulk ──────────────────────────────────────────────────────────
 const showBulkPriceDialog       = ref(false)
 const showBulkPromoDialog       = ref(false)
 const showBulkListingTypeDialog = ref(false)
+const showBulkStockDialog       = ref(false)
 const bulkLoading = ref(false)
+const bulkStockForm = reactive({ quantity: null })
 
 const bulkPriceForm = reactive({ mode: 'adjust', direction: 'increase', type: 'pct', value: null })
 const bulkPromoForm = reactive({ action: 'deactivate', dealPriceType: 'pct', dealPriceValue: null, finishDate: null })
@@ -1720,6 +1814,52 @@ const executeBulkExactPrice = async () => {
   } finally { bulkLoading.value = false }
 }
 
+const buildFiltersPayload = () => {
+  const p = {
+    search: filters.search || undefined,
+    account: filters.account?.length ? filters.account.join(',') : undefined,
+    logistic_type: filters.logistic_type?.length ? filters.logistic_type.join(',') : undefined,
+    status: filters.status?.length ? filters.status.join(',') : undefined,
+    listing_type_id: filters.listing_type?.length ? filters.listing_type.join(',') : undefined,
+    stock_status: filters.stockStatus || undefined,
+    is_flex: filters.is_flex,
+    free_shipping: filters.free_shipping,
+    catalog_listing: filters.catalog_listing,
+    price_min: filters.priceMin,
+    price_max: filters.priceMax,
+    sold_quantity_min: filters.soldMin,
+    performance_score_min: filters.healthMin,
+    performance_score_max: filters.healthMax,
+    discount_pct_min: filters.discountMin
+  }
+  Object.keys(p).forEach(k => (p[k] === undefined || p[k] === null) && delete p[k])
+  return p
+}
+
+const executeBulkStock = async () => {
+  bulkLoading.value = true
+  try {
+    const payload = selectAllFiltered.value
+      ? { select_all: true, filters: buildFiltersPayload(), quantity: bulkStockForm.quantity }
+      : { items: _itemsPayload(), quantity: bulkStockForm.quantity }
+    const res = await MercadoLivreService.bulkStock(payload)
+    const enqueued = res.data?.enqueued ?? 0
+    const skippedFull = res.data?.skipped_full ?? 0
+    $q.notify({
+      type: 'positive',
+      message: `${enqueued} anúncio(s) enfileirado(s)!${skippedFull ? ` ${skippedFull} Full ignorado(s).` : ''}`,
+      position: 'top'
+    })
+    showBulkStockDialog.value = false
+    bulkStockForm.quantity = null
+    clearSelection()
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao enfileirar atualização de estoque.' })
+  } finally {
+    bulkLoading.value = false
+  }
+}
+
 const reactivateItem = (row) => {
   $q.dialog({
     title: 'Confirmar Reativação',
@@ -1755,10 +1895,22 @@ const reactivateItem = (row) => {
 </script>
 
 <style scoped>
+.bulk-bar-wrap {
+  background: #fff;
+  border-top: 1.5px solid #c5cae9;
+}
 .bulk-bar {
   background: #e8eaf6;
   border-bottom: 1px solid #c5cae9;
-  border-top: 1px solid #c5cae9;
+}
+.select-all-filtered-bar {
+  background: #eef2ff;
+  border-bottom: 1px solid #c7d2fe;
+  font-size: 13px;
+}
+.select-all-filtered-bar--active {
+  background: #f0fdf4;
+  border-bottom: 1px solid #bbf7d0;
 }
 .exact-price-preview { border: 1px solid #ede7f6; border-radius: 8px; overflow: hidden; }
 .exact-price-preview-header { display: flex; justify-content: space-between; padding: 5px 10px; background: #ede7f6; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #7e57c2; letter-spacing: .4px; }
