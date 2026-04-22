@@ -427,6 +427,8 @@
                 label="Tipo Anúncio" size="sm" class="q-px-md" @click="showBulkListingTypeDialog = true" />
               <q-btn unelevated dense color="green-7" text-color="white" icon="inventory_2"
                 label="Estoque" size="sm" class="q-px-md" @click="showBulkStockDialog = true" />
+              <q-btn unelevated dense color="orange-8" text-color="white" icon="add_shopping_cart"
+                label="Reativar" size="sm" class="q-px-md" @click="showBulkReactivateDialog = true" />
               <q-space />
               <q-btn flat dense color="grey-6" icon="close" label="Limpar seleção" size="sm"
                 @click="clearSelection" />
@@ -1102,6 +1104,43 @@
       </q-card>
     </q-dialog>
 
+    <!-- ── BULK REATIVAR ──────────────────────────────────────────────────── -->
+    <q-dialog v-model="showBulkReactivateDialog" persistent>
+      <q-card style="min-width:360px;max-width:480px">
+        <q-card-section class="q-pb-none">
+          <div class="text-h6 row items-center">
+            <q-icon name="add_shopping_cart" color="orange-8" size="22px" class="q-mr-sm" />
+            Reativar Anúncios em Massa
+          </div>
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg column q-gutter-md">
+          <q-banner class="bg-orange-1 text-orange-9 rounded-borders" dense>
+            <template v-slot:avatar><q-icon name="info" color="orange-8" size="16px" /></template>
+            <span v-if="selectAllFiltered">
+              Todos os <strong>{{ pagination.rowsNumber }}</strong> anúncios filtrados serão reativados com <strong>1 unidade</strong>.
+              Anúncios Full serão ignorados automaticamente.
+            </span>
+            <span v-else>
+              <strong>{{ selectedItems.length }}</strong> anúncio(s) receberão <strong>1 unidade</strong> de estoque e serão reativados.
+              Anúncios Full serão ignorados automaticamente.
+            </span>
+          </q-banner>
+
+          <q-banner class="bg-amber-1 text-amber-9 rounded-borders text-caption" dense>
+            <template v-slot:avatar><q-icon name="warning_amber" color="amber-7" size="14px" /></template>
+            As reativações são enfileiradas e processadas uma a uma. O status será atualizado em alguns instantes.
+          </q-banner>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md q-pt-none">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Reativar Selecionados" color="orange-8" icon="add_shopping_cart"
+            :loading="bulkLoading"
+            @click="executeBulkReactivate" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
   </q-page>
 </template>
@@ -1150,6 +1189,7 @@ const showBulkPriceDialog       = ref(false)
 const showBulkPromoDialog       = ref(false)
 const showBulkListingTypeDialog = ref(false)
 const showBulkStockDialog       = ref(false)
+const showBulkReactivateDialog  = ref(false)
 const bulkLoading = ref(false)
 const bulkStockForm = reactive({ quantity: null })
 
@@ -1753,6 +1793,29 @@ const executeBulkExactPrice = async () => {
   } catch (e) {
     $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao definir preço exato.' })
   } finally { bulkLoading.value = false }
+}
+
+const executeBulkReactivate = async () => {
+  bulkLoading.value = true
+  try {
+    const payload = selectAllFiltered.value
+      ? { select_all: true, filters: buildFiltersPayload(), quantity: 1, set_active: true }
+      : { items: _itemsPayload(), quantity: 1, set_active: true }
+    const res = await MercadoLivreService.bulkStock(payload)
+    const enqueued = res.data?.enqueued ?? 0
+    const skippedFull = res.data?.skipped_full ?? 0
+    $q.notify({
+      type: 'positive',
+      message: `${enqueued} reativação(ões) enfileirada(s)!${skippedFull ? ` ${skippedFull} Full ignorado(s).` : ''}`,
+      position: 'top',
+    })
+    showBulkReactivateDialog.value = false
+    clearSelection()
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao enfileirar reativações.' })
+  } finally {
+    bulkLoading.value = false
+  }
 }
 
 const buildFiltersPayload = () => {
