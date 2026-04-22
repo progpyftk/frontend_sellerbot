@@ -644,6 +644,8 @@
                   <q-btn
                     v-if="props.row.logistic_type !== 'fulfillment' && !props.row.is_full && props.row.available_quantity <= 0"
                     unelevated round color="green-1" text-color="green-9" icon="add_shopping_cart" size="sm"
+                    :loading="!!reactivatingItems[props.row.item_id]"
+                    :disable="!!reactivatingItems[props.row.item_id]"
                     class="transition-scale custom-btn-border" @click.stop="reactivateItem(props.row)">
                     <q-tooltip class="bg-green-9 text-white text-weight-bold shadow-4" anchor="top middle"
                       self="bottom middle">
@@ -1116,6 +1118,7 @@ const $q = useQuasar()
 // ============================================================================
 const items = ref([])
 const loading = ref(false)
+const reactivatingItems = reactive({}) // item_id → true enquanto reativação está em processamento
 
 // ── Seleção múltipla ──────────────────────────────────────────────────────
 const selectedItems = ref([])
@@ -1807,6 +1810,7 @@ const reactivateItem = (row) => {
     ok: { label: 'Reativar', color: 'orange-8', unelevated: true },
     persistent: true
   }).onOk(async () => {
+    reactivatingItems[row.item_id] = true
     try {
       await MercadoLivreService.reactivateItem(row.item_id, 1)
       $q.notify({
@@ -1815,9 +1819,13 @@ const reactivateItem = (row) => {
         position: 'top',
         timeout: 4000,
       })
-      // Aguarda 4s para o worker processar antes de recarregar a tabela
-      setTimeout(() => refreshData(), 4000)
+      // Aguarda 4s para o worker processar e atualiza a linha
+      setTimeout(() => {
+        delete reactivatingItems[row.item_id]
+        refreshData()
+      }, 4000)
     } catch (error) {
+      delete reactivatingItems[row.item_id]
       const msg = error.response?.data?.message || 'Erro ao comunicar com a API do Mercado Livre.'
       $q.notify({ type: 'negative', message: msg, position: 'top' })
     }
