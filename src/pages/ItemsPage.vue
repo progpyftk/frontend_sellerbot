@@ -1797,6 +1797,11 @@ const executeBulkExactPrice = async () => {
 
 const executeBulkReactivate = async () => {
   bulkLoading.value = true
+  // Captura IDs antes de limpar a seleção (só em modo normal, não select_all)
+  const selectedIds = selectAllFiltered.value
+    ? []
+    : selectedItems.value.filter(r => r.logistic_type !== 'fulfillment' && !r.is_full).map(r => r.item_id)
+
   try {
     const payload = selectAllFiltered.value
       ? { select_all: true, filters: buildFiltersPayload(), quantity: 1, set_active: true }
@@ -1811,7 +1816,25 @@ const executeBulkReactivate = async () => {
     })
     showBulkReactivateDialog.value = false
     clearSelection()
+
+    // Liga o spinner em cada linha selecionada e apaga escalonado (~2,5s por item)
+    // Limita a 15 itens visíveis para não arrastar muito tempo na tela
+    const INTERVAL = 2500
+    const MAX_STAGGER = 15
+    selectedIds.forEach((id, i) => { reactivatingItems[id] = true })
+    selectedIds.forEach((id, i) => {
+      const delay = Math.min(i, MAX_STAGGER) * INTERVAL + 3000
+      setTimeout(() => {
+        delete reactivatingItems[id]
+        // Atualiza tabela ao limpar o último spinner
+        if (i === selectedIds.length - 1) refreshData()
+      }, delay)
+    })
+    // Garante refresh mesmo se lista vazia (select_all) ou todos já removidos
+    if (selectedIds.length === 0) setTimeout(() => refreshData(), 5000)
+
   } catch (e) {
+    selectedIds.forEach(id => delete reactivatingItems[id])
     $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao enfileirar reativações.' })
   } finally {
     bulkLoading.value = false
