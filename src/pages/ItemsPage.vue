@@ -1808,24 +1808,18 @@ const reactivateItem = (row) => {
     persistent: true
   }).onOk(async () => {
     try {
-      // Mostra a tela de carregamento para o usuário não clicar duas vezes
-      $q.loading.show({ message: 'Comunicando com o Mercado Livre...' })
-
-      // Chama o nosso novo serviço
       await MercadoLivreService.reactivateItem(row.item_id, 1)
-
-      $q.notify({ type: 'positive', message: 'Anúncio reativado com sucesso!', position: 'top' })
-
-      // Recarrega a tabela para o anúncio sumir do filtro de "Sem Estoque"
-      refreshData()
-
+      $q.notify({
+        type: 'positive',
+        message: 'Reativação enviada! O anúncio será atualizado em breve.',
+        position: 'top',
+        timeout: 4000,
+      })
+      // Aguarda 4s para o worker processar antes de recarregar a tabela
+      setTimeout(() => refreshData(), 4000)
     } catch (error) {
-      // Tenta pegar a mensagem de erro bonitinha que enviamos do Django
       const msg = error.response?.data?.message || 'Erro ao comunicar com a API do Mercado Livre.'
       $q.notify({ type: 'negative', message: msg, position: 'top' })
-    } finally {
-      // Sempre esconde o loading, dando erro ou sucesso
-      $q.loading.hide()
     }
   })
 }
