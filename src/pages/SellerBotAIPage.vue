@@ -1,37 +1,70 @@
 <template>
   <q-page class="sellerbot-ai-page">
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-left">
-        <div class="header-icon">
-          <q-icon name="psychology" size="20px" />
+
+    <!-- ── Layout dois painéis ── -->
+    <div class="ai-layout">
+
+      <!-- ══ SIDEBAR ══ -->
+      <div :class="['ai-sidebar', { 'ai-sidebar--collapsed': !sidebarOpen }]">
+        <!-- Logo + toggle -->
+        <div class="sidebar-header">
+          <div class="sidebar-brand">
+            <div class="sidebar-icon"><q-icon name="psychology" size="16px" /></div>
+            <span class="sidebar-brand-name">SellerBot AI</span>
+          </div>
+          <q-btn flat round dense icon="menu" size="sm" color="grey-5" @click="sidebarOpen = !sidebarOpen" />
         </div>
-        <div>
-          <div class="header-eyebrow">Inteligência Artificial</div>
-          <div class="header-title">SellerBot AI</div>
+
+        <!-- Nova conversa -->
+        <div class="sidebar-new">
+          <button class="new-chat-btn" @click="newChat">
+            <q-icon name="add" size="16px" />
+            <span>Nova conversa</span>
+          </button>
+        </div>
+
+        <!-- Lista de conversas agrupadas -->
+        <div class="sidebar-sessions">
+          <div v-if="sessions.length === 0" class="sidebar-empty">
+            <q-icon name="chat_bubble_outline" size="28px" color="grey-6" />
+            <span>Nenhuma conversa ainda</span>
+          </div>
+
+          <template v-for="group in groupedSessions" :key="group.label">
+            <div class="session-group-label">{{ group.label }}</div>
+            <div
+              v-for="s in group.items"
+              :key="s.id"
+              :class="['session-item', { 'session-item--active': currentSessionId === s.id }]"
+              @click="loadSession(s.id)"
+            >
+              <q-icon name="chat_bubble_outline" size="13px" class="session-icon" />
+              <span class="session-title">{{ s.title }}</span>
+              <button class="session-delete" @click.stop="deleteSession(s.id)">
+                <q-icon name="delete_outline" size="14px" />
+              </button>
+            </div>
+          </template>
         </div>
       </div>
-      <div class="header-right">
-        <!-- Novo chat -->
-        <q-btn
-          flat dense no-caps
-          icon="add"
-          label="Nova conversa"
-          color="teal-7"
-          class="new-chat-btn"
-          @click="newChat"
-        />
-        <!-- Histórico -->
-        <q-btn
-          flat dense round
-          icon="history"
-          color="grey-7"
-          @click="showHistory = true"
-        >
-          <q-tooltip>Histórico de conversas</q-tooltip>
-        </q-btn>
+      <!-- ══ fim SIDEBAR ══ -->
 
-        <!-- Model Selector -->
+      <!-- ══ CHAT AREA ══ -->
+      <div class="ai-main">
+        <!-- Header interno -->
+        <div class="chat-header">
+          <!-- Toggle sidebar (mobile / collapsed) -->
+          <q-btn v-if="!sidebarOpen" flat round dense icon="menu" size="sm" color="grey-6" @click="sidebarOpen = true" class="q-mr-sm" />
+
+          <div class="chat-header-title">
+            <span v-if="currentSessionId" class="current-session-title">
+              {{ sessions.find(s => s.id === currentSessionId)?.title || 'Conversa atual' }}
+            </span>
+            <span v-else class="current-session-title text-grey-5">Nova conversa</span>
+          </div>
+
+          <div class="chat-header-actions">
+            <!-- Model Selector -->
         <q-btn-dropdown
           flat
           dense
@@ -143,47 +176,30 @@
                 <q-badge v-if="msg.agent" outline color="grey-6" :label="msg.agent" class="q-ml-xs" />
               </div>
 
-              <!-- Log panel: ao vivo durante loading, colapsável depois -->
-              <div v-if="msg.logs && msg.logs.length > 0" class="live-log-panel">
-                <!-- Enquanto carregando: mostra ao vivo -->
-                <template v-if="msg.loading">
+              <!-- ── Thinking trail: ao vivo enquanto não há conteúdo ── -->
+              <div v-if="msg.loading && !msg.content" class="thinking-trail">
+                <div class="thinking-trail-steps">
                   <div
                     v-for="(log, li) in msg.logs"
                     :key="li"
-                    :class="['log-entry', `log-${log.type}`]"
+                    :class="['trail-step', `trail-${log.type}`, { 'trail-step--active': li === msg.logs.length - 1 }]"
                   >
-                    <q-icon :name="logIcon(log.type)" size="12px" />
-                    <span>{{ log.text }}</span>
-                  </div>
-                </template>
-
-                <!-- Após resposta: pill colapsável -->
-                <template v-else>
-                  <div :class="['log-summary', msg.hasError ? 'log-summary--error' : '']" @click="msg.logsOpen = !msg.logsOpen">
-                    <q-icon :name="msg.hasError ? 'bug_report' : 'account_tree'" size="13px" />
-                    <span>
-                      <span v-if="msg.hasError">Erro · </span>
-                      {{ msg.logs.length }} etapa{{ msg.logs.length > 1 ? 's' : '' }}
-                      <span v-if="msg.agent"> · {{ msg.agent }}</span>
-                      <span v-if="msg.durationMs"> · {{ (msg.durationMs / 1000).toFixed(1) }}s</span>
-                    </span>
-                    <q-icon :name="msg.logsOpen ? 'expand_less' : 'expand_more'" size="14px" class="q-ml-auto" />
-                  </div>
-                  <div v-if="msg.logsOpen" class="log-details">
-                    <div
-                      v-for="(log, li) in msg.logs"
-                      :key="li"
-                      :class="['log-entry', `log-${log.type}`]"
-                    >
-                      <q-icon :name="logIcon(log.type)" size="12px" />
-                      <span>{{ log.text }}</span>
-                      <pre v-if="log.traceback" class="log-traceback">{{ log.traceback }}</pre>
+                    <div class="trail-dot">
+                      <q-icon :name="logIcon(log.type)" size="11px" />
                     </div>
+                    <span class="trail-text">{{ log.text }}</span>
+                    <q-spinner-dots v-if="li === msg.logs.length - 1" color="teal-6" size="14px" class="q-ml-xs" />
                   </div>
-                </template>
+                  <!-- Fallback quando ainda sem logs -->
+                  <div v-if="!msg.logs.length" class="trail-step trail-thinking trail-step--active">
+                    <div class="trail-dot"><q-icon name="psychology" size="11px" /></div>
+                    <span class="trail-text">Iniciando agente...</span>
+                    <q-spinner-dots color="teal-6" size="14px" class="q-ml-xs" />
+                  </div>
+                </div>
               </div>
 
-              <!-- Conteúdo da mensagem (texto + tabelas + gráficos) -->
+              <!-- ── Conteúdo da mensagem (texto + tabelas + gráficos) ── -->
               <template v-if="msg.content">
                 <template v-for="(block, bi) in parseBlocks(msg.content)" :key="bi">
                   <div v-if="block.type === 'text'" class="message-text" v-html="formatText(block.content)" />
@@ -196,13 +212,33 @@
                 </template>
               </template>
 
-              <!-- Loading: mostra spinner só se ainda não chegaram tokens -->
-              <div v-if="msg.loading && !msg.content" class="message-loading">
-                <q-spinner-dots color="teal-7" size="20px" />
-                <span>{{ msg.loadingText || 'Processando...' }}</span>
-              </div>
               <!-- Cursor piscante enquanto tokens chegam -->
               <span v-if="msg.loading && msg.content" class="streaming-cursor" />
+
+              <!-- ── Log pill colapsável pós-resposta ── -->
+              <div v-if="!msg.loading && msg.logs && msg.logs.length > 0" class="live-log-panel">
+                <div :class="['log-summary', msg.hasError ? 'log-summary--error' : '']" @click="msg.logsOpen = !msg.logsOpen">
+                  <q-icon :name="msg.hasError ? 'bug_report' : 'account_tree'" size="13px" />
+                  <span>
+                    <span v-if="msg.hasError">Erro · </span>
+                    {{ msg.logs.length }} etapa{{ msg.logs.length > 1 ? 's' : '' }}
+                    <span v-if="msg.agent"> · {{ msg.agent }}</span>
+                    <span v-if="msg.durationMs"> · {{ (msg.durationMs / 1000).toFixed(1) }}s</span>
+                  </span>
+                  <q-icon :name="msg.logsOpen ? 'expand_less' : 'expand_more'" size="14px" class="q-ml-auto" />
+                </div>
+                <div v-if="msg.logsOpen" class="log-details">
+                  <div
+                    v-for="(log, li) in msg.logs"
+                    :key="li"
+                    :class="['log-entry', `log-${log.type}`]"
+                  >
+                    <q-icon :name="logIcon(log.type)" size="12px" />
+                    <span>{{ log.text }}</span>
+                    <pre v-if="log.traceback" class="log-traceback">{{ log.traceback }}</pre>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -246,62 +282,14 @@
           </div>
         </div>
       </div>
+      </div>
+      <!-- ══ fim CHAT AREA ══ -->
+
+      </div>
+      <!-- ══ fim ai-main ══ -->
     </div>
+    <!-- ══ fim ai-layout ══ -->
 
-    <!-- Dialog histórico de conversas -->
-    <q-dialog v-model="showHistory" position="right" full-height>
-      <q-card style="width: 340px; max-width: 100vw; display: flex; flex-direction: column; height: 100%">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">Histórico</div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
-
-        <q-card-section class="q-pt-sm">
-          <q-btn
-            unelevated no-caps color="teal-7" icon="add" label="Nova conversa"
-            class="full-width" @click="newChat"
-          />
-        </q-card-section>
-
-        <q-separator />
-
-        <q-scroll-area style="flex: 1">
-          <q-list>
-            <q-item
-              v-for="s in sessions"
-              :key="s.id"
-              clickable
-              :active="currentSessionId === s.id"
-              active-class="session-item--active"
-              class="session-item"
-              @click="loadSession(s.id)"
-            >
-              <q-item-section>
-                <q-item-label lines="1" class="session-title">{{ s.title }}</q-item-label>
-                <q-item-label caption lines="1">
-                  {{ formatSessionDate(s.updated_at) }}
-                  <span v-if="s.preview"> · {{ s.preview }}</span>
-                </q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <q-btn
-                  flat round dense icon="delete_outline" size="xs" color="grey-5"
-                  @click.stop="deleteSession(s.id)"
-                />
-              </q-item-section>
-            </q-item>
-
-            <q-item v-if="sessions.length === 0">
-              <q-item-section class="text-center text-grey-5 q-py-lg">
-                <q-icon name="chat_bubble_outline" size="32px" class="q-mb-sm" />
-                <div style="font-size: 13px">Nenhuma conversa ainda</div>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-scroll-area>
-      </q-card>
-    </q-dialog>
   </q-page>
 </template>
 
@@ -406,10 +394,39 @@ const selectedModel = ref(VALID_MODEL_IDS.has(_savedModel) ? _savedModel : 'deep
 const currentSessionId = ref(null)
 const sessions = ref([])
 const showHistory = ref(false)
+const sidebarOpen = ref(true)
 
 const selectedModelName = computed(() => {
   const m = MODELS.find(m => m.id === selectedModel.value)
   return m ? m.name : selectedModel.value.split('/').pop()
+})
+
+const groupedSessions = computed(() => {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1)
+  const week = new Date(today); week.setDate(today.getDate() - 7)
+  const month = new Date(today); month.setDate(today.getDate() - 30)
+
+  const groups = [
+    { label: 'Hoje', items: [] },
+    { label: 'Ontem', items: [] },
+    { label: 'Últimos 7 dias', items: [] },
+    { label: 'Últimos 30 dias', items: [] },
+    { label: 'Mais antigas', items: [] },
+  ]
+
+  for (const s of sessions.value) {
+    const d = new Date(s.updated_at)
+    const day = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    if (day >= today) groups[0].items.push(s)
+    else if (day >= yesterday) groups[1].items.push(s)
+    else if (day >= week) groups[2].items.push(s)
+    else if (day >= month) groups[3].items.push(s)
+    else groups[4].items.push(s)
+  }
+
+  return groups.filter(g => g.items.length > 0)
 })
 
 const suggestionGroups = [
@@ -950,58 +967,212 @@ onMounted(() => {
 <style scoped>
 .sellerbot-ai-page {
   background: #f5f7fa;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.page-header {
+/* ── Two-column layout ── */
+.ai-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* ── Sidebar ── */
+.ai-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: #111827;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.2s ease, min-width 0.2s ease;
+  border-right: 1px solid #1f2937;
+}
+.ai-sidebar--collapsed {
+  width: 0;
+  min-width: 0;
+}
+
+.sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
-  background: #fff;
-  border-bottom: 1.5px solid #e8edf3;
-  gap: 12px;
-  flex-wrap: wrap;
+  padding: 14px 12px 10px;
+  border-bottom: 1px solid #1f2937;
 }
-
-.header-left {
+.sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.header-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+.sidebar-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0d9488, #2dd4bf);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0d9488, #2dd4bf);
   color: #fff;
+  flex-shrink: 0;
 }
-
-.header-eyebrow {
-  font-size: 10px;
-  color: #9aa0ac;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-}
-
-.header-title {
-  font-size: 17px;
+.sidebar-brand-name {
+  font-size: 14px;
   font-weight: 700;
-  color: #1a1f36;
+  color: #f9fafb;
+  white-space: nowrap;
 }
+
+.sidebar-new {
+  padding: 10px 10px 6px;
+}
+.new-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px;
+  color: #e5e7eb;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.new-chat-btn:hover {
+  background: rgba(255,255,255,0.10);
+}
+
+.sidebar-sessions {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 12px;
+}
+.sidebar-sessions::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-sessions::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+.sidebar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.session-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #4b5563;
+  padding: 10px 14px 4px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  margin: 1px 6px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s;
+  color: #d1d5db;
+  font-size: 13px;
+  position: relative;
+}
+.session-item:hover {
+  background: rgba(255,255,255,0.07);
+}
+.session-item--active {
+  background: rgba(13, 148, 136, 0.20) !important;
+  color: #5eead4;
+}
+.session-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.session-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 400;
+}
+.session-item--active .session-title {
+  font-weight: 600;
+  color: #5eead4;
+}
+.session-delete {
+  display: none;
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.session-item:hover .session-delete {
+  display: flex;
+}
+.session-delete:hover {
+  color: #ef4444;
+  background: rgba(239,68,68,0.1);
+}
+
+/* ── Main chat area ── */
+.ai-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f5f7fa;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1.5px solid #e8edf3;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.chat-header-title {
+  flex: 1;
+  min-width: 0;
+}
+.current-session-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1f36;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 
 .model-selector-btn {
   border: 1.5px solid #e8edf3;
@@ -1044,8 +1215,9 @@ onMounted(() => {
   max-width: 900px;
   width: 100%;
   margin: 0 auto;
-  padding: 20px;
-  gap: 16px;
+  padding: 16px 20px;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .messages-area {
@@ -1055,8 +1227,6 @@ onMounted(() => {
   border: 1.5px solid #e8edf3;
   padding: 20px;
   overflow-y: auto;
-  min-height: 400px;
-  max-height: calc(100vh - 280px);
 }
 
 .empty-chat {
@@ -1200,6 +1370,69 @@ onMounted(() => {
   font-size: 10px;
   color: #9aa0ac;
 }
+
+/* ── Thinking trail (live activity before tokens arrive) ── */
+.thinking-trail {
+  margin-bottom: 6px;
+}
+.thinking-trail-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 10px 14px 10px 12px;
+  background: #f0fdf9;
+  border: 1px solid #99f6e4;
+  border-radius: 10px;
+  border-top-left-radius: 3px;
+}
+.trail-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12.5px;
+  color: #6b7280;
+  position: relative;
+}
+.trail-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 100%;
+  width: 1px;
+  height: 6px;
+  background: #d1fae5;
+}
+.trail-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #d1fae5;
+  color: #059669;
+}
+.trail-step--active .trail-dot {
+  background: #0d9488;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+.trail-text {
+  flex: 1;
+  line-height: 1.4;
+}
+.trail-step--active .trail-text {
+  color: #0f766e;
+  font-weight: 500;
+}
+.trail-thinking .trail-dot { background: #ede9fe; color: #7c3aed; }
+.trail-step--active.trail-thinking .trail-dot { background: #7c3aed; color: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,.15); }
+.trail-tool_call .trail-dot { background: #fef3c7; color: #d97706; }
+.trail-step--active.trail-tool_call .trail-dot { background: #d97706; color: #fff; box-shadow: 0 0 0 3px rgba(217,119,6,.15); }
+.trail-tool_result .trail-dot { background: #d1fae5; color: #059669; }
+.trail-step--active.trail-tool_result .trail-dot { background: #059669; color: #fff; box-shadow: 0 0 0 3px rgba(5,150,105,.15); }
 
 /* Live log panel */
 .live-log-panel {
@@ -1440,24 +1673,4 @@ onMounted(() => {
   50% { opacity: 0; }
 }
 
-/* Botão nova conversa */
-.new-chat-btn {
-  border: 1.5px solid #e8edf3;
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-/* Item de sessão no histórico */
-.session-item {
-  border-radius: 8px;
-  margin: 2px 6px;
-}
-.session-item--active {
-  background: rgba(13, 148, 136, 0.08);
-}
-.session-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a1f36;
-}
 </style>
