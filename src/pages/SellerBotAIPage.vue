@@ -12,6 +12,25 @@
         </div>
       </div>
       <div class="header-right">
+        <!-- Novo chat -->
+        <q-btn
+          flat dense no-caps
+          icon="add"
+          label="Nova conversa"
+          color="teal-7"
+          class="new-chat-btn"
+          @click="newChat"
+        />
+        <!-- Histórico -->
+        <q-btn
+          flat dense round
+          icon="history"
+          color="grey-7"
+          @click="showHistory = true"
+        >
+          <q-tooltip>Histórico de conversas</q-tooltip>
+        </q-btn>
+
         <!-- Model Selector -->
         <q-btn-dropdown
           flat
@@ -177,11 +196,13 @@
                 </template>
               </template>
 
-              <!-- Loading -->
-              <div v-if="msg.loading" class="message-loading">
+              <!-- Loading: mostra spinner só se ainda não chegaram tokens -->
+              <div v-if="msg.loading && !msg.content" class="message-loading">
                 <q-spinner-dots color="teal-7" size="20px" />
                 <span>{{ msg.loadingText || 'Processando...' }}</span>
               </div>
+              <!-- Cursor piscante enquanto tokens chegam -->
+              <span v-if="msg.loading && msg.content" class="streaming-cursor" />
             </div>
           </div>
         </div>
@@ -226,6 +247,61 @@
         </div>
       </div>
     </div>
+
+    <!-- Dialog histórico de conversas -->
+    <q-dialog v-model="showHistory" position="right" full-height>
+      <q-card style="width: 340px; max-width: 100vw; display: flex; flex-direction: column; height: 100%">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Histórico</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pt-sm">
+          <q-btn
+            unelevated no-caps color="teal-7" icon="add" label="Nova conversa"
+            class="full-width" @click="newChat"
+          />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-scroll-area style="flex: 1">
+          <q-list>
+            <q-item
+              v-for="s in sessions"
+              :key="s.id"
+              clickable
+              :active="currentSessionId === s.id"
+              active-class="session-item--active"
+              class="session-item"
+              @click="loadSession(s.id)"
+            >
+              <q-item-section>
+                <q-item-label lines="1" class="session-title">{{ s.title }}</q-item-label>
+                <q-item-label caption lines="1">
+                  {{ formatSessionDate(s.updated_at) }}
+                  <span v-if="s.preview"> · {{ s.preview }}</span>
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-btn
+                  flat round dense icon="delete_outline" size="xs" color="grey-5"
+                  @click.stop="deleteSession(s.id)"
+                />
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="sessions.length === 0">
+              <q-item-section class="text-center text-grey-5 q-py-lg">
+                <q-icon name="chat_bubble_outline" size="32px" class="q-mb-sm" />
+                <div style="font-size: 13px">Nenhuma conversa ainda</div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-scroll-area>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -325,6 +401,11 @@ const messagesArea = ref(null)
 const VALID_MODEL_IDS = new Set(MODELS.map(m => m.id))
 const _savedModel = localStorage.getItem('sellerbot_model')
 const selectedModel = ref(VALID_MODEL_IDS.has(_savedModel) ? _savedModel : 'deepseek/deepseek-chat')
+
+// Sessões
+const currentSessionId = ref(null)
+const sessions = ref([])
+const showHistory = ref(false)
 
 const selectedModelName = computed(() => {
   const m = MODELS.find(m => m.id === selectedModel.value)
@@ -479,6 +560,62 @@ const logIcon = (type) => {
 }
 
 // ===========================================================================
+// Sessões — histórico de conversas
+// ===========================================================================
+const loadSessions = async () => {
+  try {
+    const res = await api.get('/sellerbot-ai/sessions/')
+    sessions.value = res.data.sessions || []
+  } catch { /* silencia */ }
+}
+
+const loadSession = async (id) => {
+  try {
+    const res = await api.get(`/sellerbot-ai/sessions/${id}/`)
+    const msgs = res.data.messages || []
+    messages.value = msgs.map(m => ({
+      role: m.role,
+      content: m.content,
+      agent: m.agent || null,
+      logs: m.logs || [],
+      logsOpen: false,
+      time: new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    }))
+    currentSessionId.value = id
+    showHistory.value = false
+    nextTick(() => scrollToBottom())
+  } catch {
+    $q.notify({ message: 'Erro ao carregar conversa', color: 'negative', position: 'top' })
+  }
+}
+
+const newChat = () => {
+  messages.value = []
+  currentSessionId.value = null
+  showHistory.value = false
+}
+
+const deleteSession = async (id) => {
+  try {
+    await api.delete(`/sellerbot-ai/sessions/${id}/`)
+    sessions.value = sessions.value.filter(s => s.id !== id)
+    if (currentSessionId.value === id) newChat()
+  } catch {
+    $q.notify({ message: 'Erro ao apagar conversa', color: 'negative', position: 'top' })
+  }
+}
+
+const formatSessionDate = (iso) => {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffDays = Math.floor((now - d) / 86400000)
+  if (diffDays === 0) return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (diffDays === 1) return 'Ontem'
+  if (diffDays < 7) return d.toLocaleDateString('pt-BR', { weekday: 'short' })
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+}
+
+// ===========================================================================
 // Health check
 // ===========================================================================
 const checkHealth = async () => {
@@ -533,7 +670,7 @@ const sendMessage = async () => {
       return fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: userMessage, model_id: selectedModel.value }),
+        body: JSON.stringify({ message: userMessage, model_id: selectedModel.value, session_id: currentSessionId.value }),
       })
     }
 
@@ -592,6 +729,12 @@ const handleStreamEvent = (index, event) => {
   if (!msg) return
 
   switch (event.type) {
+    case 'session':
+      currentSessionId.value = event.session_id
+      // Atualiza lista de sessões após nova sessão criada
+      loadSessions()
+      break
+
     case 'thinking':
       msg.loadingText = event.text
       msg.logs.push({ type: 'thinking', text: event.text })
@@ -606,11 +749,21 @@ const handleStreamEvent = (index, event) => {
       msg.logs.push({ type: 'tool_result', text: '✅ Dados recebidos' })
       break
 
+    case 'token':
+      // Streaming token a token em tempo real
+      msg.content = (msg.content || '') + event.text
+      msg.loadingText = null
+      scrollToBottom()
+      break
+
     case 'done':
-      msg.content = event.response || ''
+      // Se o conteúdo já foi construído via tokens, mantém; senão usa response como fallback
+      if (!msg.content) msg.content = event.response || ''
       msg.agent = event.agent || null
       msg.durationMs = Date.now() - (msg.startedAt || Date.now())
       msg.loading = false
+      // Atualiza preview da sessão no histórico
+      loadSessions()
       break
 
     case 'error':
@@ -790,6 +943,7 @@ const formatText = (content) => {
 // ===========================================================================
 onMounted(() => {
   checkHealth()
+  loadSessions()
 })
 </script>
 
@@ -1269,5 +1423,41 @@ onMounted(() => {
 
 .message--user .message-text :deep(code) {
   background: rgba(255, 255, 255, .2);
+}
+
+/* Cursor piscante durante streaming */
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #0d9488;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 0.7s step-end infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Botão nova conversa */
+.new-chat-btn {
+  border: 1.5px solid #e8edf3;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+/* Item de sessão no histórico */
+.session-item {
+  border-radius: 8px;
+  margin: 2px 6px;
+}
+.session-item--active {
+  background: rgba(13, 148, 136, 0.08);
+}
+.session-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1f36;
 }
 </style>
