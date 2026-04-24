@@ -3316,6 +3316,7 @@ const sazGridLines = computed(() => {
 })
 
 onMounted(() => {
+  loadPlotly()  // pre-fetch Plotly in parallel with API calls — eliminates chart render delay
   load()
   loadToday()
   // Close account picker on outside click
