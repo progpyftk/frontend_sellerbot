@@ -188,13 +188,17 @@
                       <q-icon :name="logIcon(log.type)" size="11px" />
                     </div>
                     <span class="trail-text">{{ log.text }}</span>
-                    <q-spinner-dots v-if="li === msg.logs.length - 1" color="teal-6" size="14px" class="q-ml-xs" />
+                    <template v-if="li === msg.logs.length - 1">
+                      <q-spinner-dots color="teal-6" size="14px" class="q-ml-xs" />
+                      <span v-if="msg.elapsedSec" class="trail-elapsed">{{ msg.elapsedSec }}s</span>
+                    </template>
                   </div>
                   <!-- Fallback quando ainda sem logs -->
                   <div v-if="!msg.logs.length" class="trail-step trail-thinking trail-step--active">
                     <div class="trail-dot"><q-icon name="psychology" size="11px" /></div>
-                    <span class="trail-text">Iniciando agente...</span>
+                    <span class="trail-text">Conectando ao agente...</span>
                     <q-spinner-dots color="teal-6" size="14px" class="q-ml-xs" />
+                    <span v-if="msg.elapsedSec" class="trail-elapsed">{{ msg.elapsedSec }}s</span>
                   </div>
                 </div>
               </div>
@@ -673,8 +677,16 @@ const sendMessage = async () => {
     logs: [],
     logsOpen: false,
     startedAt: Date.now(),
+    elapsedSec: 0,
     agent: null,
   })
+
+  // Timer de tempo decorrido — atualiza a cada segundo enquanto loading
+  const elapsedTimer = setInterval(() => {
+    const msg = messages.value[assistantIndex]
+    if (!msg || !msg.loading) { clearInterval(elapsedTimer); return }
+    msg.elapsedSec = Math.floor((Date.now() - msg.startedAt) / 1000)
+  }, 1000)
 
   scrollToBottom()
   isLoading.value = true
@@ -735,6 +747,7 @@ const sendMessage = async () => {
     messages.value[assistantIndex].loading = false
     $q.notify({ message: 'Erro ao enviar mensagem', color: 'negative', position: 'top' })
   } finally {
+    clearInterval(elapsedTimer)
     messages.value[assistantIndex].loading = false
     isLoading.value = false
     scrollToBottom()
@@ -1427,6 +1440,13 @@ onMounted(() => {
   color: #0f766e;
   font-weight: 500;
 }
+.trail-elapsed {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
 .trail-thinking .trail-dot { background: #ede9fe; color: #7c3aed; }
 .trail-step--active.trail-thinking .trail-dot { background: #7c3aed; color: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,.15); }
 .trail-tool_call .trail-dot { background: #fef3c7; color: #d97706; }
