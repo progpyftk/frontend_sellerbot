@@ -214,7 +214,7 @@
               os
               itens cujo desconto exigido seja <b>menor ou igual</b> ao valor abaixo.
             </div>
-            <q-input v-model.number="maxDiscount" type="number" label="Desconto Máximo Permitido" outlined dense
+            <q-input v-model="maxDiscount" type="number" label="Desconto Máximo Permitido" outlined dense
               bg-color="white" color="orange-8" class="text-weight-bold text-center" min="1" max="99" suffix="% OFF">
               <template v-slot:prepend>
                 <q-icon name="trending_down" color="orange-8" />
@@ -252,7 +252,7 @@
             <div class="text-caption text-grey-7 q-mb-md">
               Essa regra será aplicada para todos os anúncios, de todas as contas, em todas as promoções selecionadas.
             </div>
-            <q-input v-model.number="maxDiscountGlobal" type="number" label="Desconto Máximo Permitido" outlined dense
+            <q-input v-model="maxDiscountGlobal" type="number" label="Desconto Máximo Permitido" outlined dense
               bg-color="white" color="orange-8" class="text-weight-bold text-center" min="1" max="99" suffix="% OFF">
               <template v-slot:prepend>
                 <q-icon name="trending_down" color="orange-8" />
@@ -530,6 +530,7 @@ onBeforeUnmount(() => {
 const openActivationDialog = (account, promo) => {
   selectedAccount.value = account
   selectedPromo.value = promo
+  maxDiscount.value = promo.max_discount_pct_used != null ? Number(promo.max_discount_pct_used) : 15
   showActivationDialog.value = true
 }
 
@@ -546,7 +547,7 @@ const confirmActivation = async () => {
       account_id: selectedAccount.value.account_id,
       promotion_id: selectedPromo.value.id,
       promotion_type: selectedPromo.value.type,
-      max_discount_pct: maxDiscount.value
+      max_discount_pct: parseFloat(maxDiscount.value)
     })
 
     showActivationDialog.value = false
@@ -605,7 +606,7 @@ const confirmActivateAll = async () => {
     $q.loading.show({ message: 'Distribuindo tarefas para o robô...' })
 
     await MercadoLivreService.activateAllPromotions({
-      max_discount_pct: maxDiscountGlobal.value,
+      max_discount_pct: parseFloat(maxDiscountGlobal.value),
       promotions: promosToActivate
     })
 
