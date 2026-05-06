@@ -1865,6 +1865,10 @@ const buildFiltersPayload = () => {
 
 const executeBulkStock = async () => {
   bulkLoading.value = true
+  const selectedIds = selectAllFiltered.value
+    ? []
+    : selectedItems.value.filter(r => r.logistic_type !== 'fulfillment' && !r.is_full).map(r => r.item_id)
+
   try {
     const payload = selectAllFiltered.value
       ? { select_all: true, filters: buildFiltersPayload(), quantity: bulkStockForm.quantity }
@@ -1880,6 +1884,18 @@ const executeBulkStock = async () => {
     showBulkStockDialog.value = false
     bulkStockForm.quantity = null
     clearSelection()
+
+    // Atualiza a tabela após os workers do GCP Tasks processarem (~2,5s/item)
+    const INTERVAL = 2500
+    const MAX_STAGGER = 15
+    if (selectedIds.length > 0) {
+      selectedIds.forEach((id, i) => {
+        const delay = Math.min(i, MAX_STAGGER) * INTERVAL + 3000
+        if (i === selectedIds.length - 1) setTimeout(() => refreshData(), delay)
+      })
+    } else {
+      setTimeout(() => refreshData(), 5000)
+    }
   } catch (e) {
     $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao enfileirar atualização de estoque.' })
   } finally {
