@@ -117,6 +117,22 @@
         <q-chip :color="isOnline ? 'positive' : 'negative'" text-color="white" icon="wifi" size="sm">
           {{ isOnline ? 'Online' : 'Offline' }}
         </q-chip>
+
+        <q-chip
+          v-if="orBalance !== null"
+          color="grey-8"
+          text-color="white"
+          icon="account_balance_wallet"
+          size="sm"
+          :title="orUsage !== null ? `Usado: $${orUsage}` : ''"
+          class="cursor-pointer"
+          @click="fetchBalance"
+        >
+          ${{ orBalance }}
+        </q-chip>
+        <q-chip v-else-if="orBalanceError" color="orange-8" text-color="white" icon="warning" size="sm" :title="orBalanceError">
+          Saldo indisponível
+        </q-chip>
       </div>
     </div>
 
@@ -389,6 +405,9 @@ const messages = ref([])
 const inputMessage = ref('')
 const isLoading = ref(false)
 const isOnline = ref(false)
+const orBalance = ref(null)
+const orUsage = ref(null)
+const orBalanceError = ref(null)
 const messagesArea = ref(null)
 const VALID_MODEL_IDS = new Set(MODELS.map(m => m.id))
 const _savedModel = localStorage.getItem('sellerbot_model')
@@ -649,6 +668,28 @@ const checkHealth = async () => {
     }
   } catch {
     isOnline.value = false
+  }
+}
+
+// ===========================================================================
+// OpenRouter balance
+// ===========================================================================
+const fetchBalance = async () => {
+  try {
+    const res = await api.get('/sellerbot-ai/balance/')
+    const d = res.data
+    if (d.balance_usd !== null && d.balance_usd !== undefined) {
+      orBalance.value = d.balance_usd.toFixed(2)
+      orUsage.value = d.usage_usd.toFixed(4)
+    } else {
+      // Sem limite configurado (pay-as-you-go) — mostra só o gasto
+      orBalance.value = null
+      orUsage.value = d.usage_usd.toFixed(4)
+      orBalanceError.value = `Usado: $${d.usage_usd.toFixed(4)} (sem limite definido)`
+    }
+    orBalanceError.value = null
+  } catch (e) {
+    orBalanceError.value = e?.response?.data?.error || 'Erro ao buscar saldo'
   }
 }
 
@@ -973,6 +1014,7 @@ const formatText = (content) => {
 // ===========================================================================
 onMounted(() => {
   checkHealth()
+  fetchBalance()
   loadSessions()
 })
 </script>
