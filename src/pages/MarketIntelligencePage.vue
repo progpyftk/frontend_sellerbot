@@ -289,6 +289,94 @@
       </div>
     </div>
 
+    <!-- ══════════ ABA: COBERTURA FULL ══════════════════════════════════════ -->
+    <div v-show="activeTab === 'full-coverage'" class="tab-content">
+
+      <div class="section-intro">
+        <q-icon name="inventory_2" size="15px" class="q-mr-xs text-teal-6" />
+        Anúncios Full ordenados por dias de cobertura estimados (estoque ÷ velocidade de vendas). Itens em vermelho têm excedente no CD e precisam de publicidade mais agressiva.
+      </div>
+
+      <div class="controls-row">
+        <q-btn unelevated color="teal-7" label="Carregar / Atualizar" icon="refresh"
+          :loading="loadingCoverage" @click="loadCoverage" size="sm" />
+      </div>
+
+      <template v-if="coverageData">
+        <!-- Resumo -->
+        <div class="cov-summary">
+          <div class="cov-stat cov-stat--total">
+            <div class="cov-val">{{ coverageData.total }}</div>
+            <div class="cov-label">Itens Full</div>
+          </div>
+          <div class="cov-stat cov-stat--red">
+            <div class="cov-val">{{ coverageData.critical }}</div>
+            <div class="cov-label">🔴 Crítico ≥ 90d</div>
+          </div>
+          <div class="cov-stat cov-stat--amber">
+            <div class="cov-val">{{ coverageData.attention }}</div>
+            <div class="cov-label">🟡 Atenção 45-90d</div>
+          </div>
+          <div class="cov-stat cov-stat--green">
+            <div class="cov-val">{{ coverageData.ok }}</div>
+            <div class="cov-label">🟢 OK &lt; 45d</div>
+          </div>
+        </div>
+
+        <!-- Tabela -->
+        <div class="cov-table-wrap">
+          <table class="cov-table">
+            <thead>
+              <tr>
+                <th>Anúncio</th>
+                <th>Conta</th>
+                <th class="right">Estoque Full</th>
+                <th class="right">Vendas 30d</th>
+                <th class="right">Vel./dia</th>
+                <th class="right">Dias cobertura</th>
+                <th class="right">GMV 30d</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in coverageData.items" :key="item.item_id"
+                  :class="['cov-row', `cov-row--${item.coverage_color}`]">
+                <td class="cov-title">
+                  <div class="cov-title-text">{{ item.title }}</div>
+                  <div class="cov-item-id">{{ item.item_id }}</div>
+                </td>
+                <td class="cov-account">{{ item.account }}</td>
+                <td class="right cov-num">{{ item.stock_full }}</td>
+                <td class="right cov-num">{{ item.sold_30d }}</td>
+                <td class="right cov-num">{{ item.daily_velocity }}</td>
+                <td class="right">
+                  <span class="cov-days" :class="`cov-days--${item.coverage_color}`">
+                    {{ item.days_coverage >= 999 ? '∞' : item.days_coverage + 'd' }}
+                  </span>
+                </td>
+                <td class="right cov-num">{{ fmtBRL(item.gmv_30d) }}</td>
+                <td>
+                  <span class="cov-badge" :class="`cov-badge--${item.coverage_color}`">
+                    {{ item.coverage_label }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+
+      <div v-else-if="!loadingCoverage" class="empty-state">
+        <q-icon name="inventory_2" size="40px" color="grey-4" />
+        <div>Clique em "Carregar" para ver a cobertura de estoque Full</div>
+      </div>
+      <div v-if="loadingCoverage" class="loading-center">
+        <q-spinner-dots color="teal" size="36px" />
+        <div class="loading-text">Calculando cobertura de estoque...</div>
+      </div>
+
+    </div>
+
   </q-page>
 </template>
 
@@ -298,9 +386,10 @@ import MercadoLivreService from 'src/services/MercadoLivreService'
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 const tabs = [
-  { key: 'trends',     label: 'Tendências',      icon: 'trending_up' },
-  { key: 'highlights', label: 'Mais Vendidos',    icon: 'emoji_events' },
-  { key: 'niche',      label: 'Análise de Nicho', icon: 'manage_search' },
+  { key: 'trends',       label: 'Tendências',       icon: 'trending_up' },
+  { key: 'highlights',   label: 'Mais Vendidos',     icon: 'emoji_events' },
+  { key: 'niche',        label: 'Análise de Nicho',  icon: 'manage_search' },
+  { key: 'full-coverage', label: 'Cobertura Full',   icon: 'inventory_2' },
 ]
 const activeTab = ref('trends')
 
@@ -342,6 +431,10 @@ const loadingHighlights          = ref(false)
 const nicheQuery    = ref('')
 const nicheData     = ref(null)
 const loadingNiche  = ref(false)
+
+// ── Full Coverage ─────────────────────────────────────────────────────────
+const coverageData    = ref(null)
+const loadingCoverage = ref(false)
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function fmtBRL(v) {
@@ -389,6 +482,19 @@ async function loadNiche() {
     console.error('Niche error', e)
   } finally {
     loadingNiche.value = false
+  }
+}
+
+async function loadCoverage() {
+  loadingCoverage.value = true
+  coverageData.value = null
+  try {
+    const res = await MercadoLivreService.getFullCoverage()
+    coverageData.value = res.data
+  } catch (e) {
+    console.error('Full coverage error', e)
+  } finally {
+    loadingCoverage.value = false
   }
 }
 </script>
@@ -544,4 +650,54 @@ async function loadNiche() {
 .loading-center { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px; }
 .loading-text { font-size: 13px; color: #94a3b8; }
 .muted { color: #94a3b8; }
+
+/* ── Full Coverage ────────────────────────────────────────────────────── */
+.cov-summary {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.cov-stat {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 12px 18px; min-width: 110px; text-align: center;
+}
+.cov-stat--red   { border-color: #fca5a5; background: #fff5f5; }
+.cov-stat--amber { border-color: #fcd34d; background: #fffbeb; }
+.cov-stat--green { border-color: #6ee7b7; background: #f0fdf9; }
+.cov-val   { font-size: 22px; font-weight: 800; color: #1e293b; }
+.cov-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+.cov-table-wrap { overflow-x: auto; }
+.cov-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+  background: #fff; border-radius: 10px; overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+.cov-table th {
+  padding: 8px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+  color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: .3px;
+}
+.cov-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+.cov-table tr:last-child td { border-bottom: none; }
+.cov-row--red   { background: #fff8f8; }
+.cov-row--amber { background: #fffdf0; }
+
+.cov-title-text { font-weight: 600; color: #1e293b; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cov-item-id    { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+.cov-account    { font-size: 11px; color: #64748b; white-space: nowrap; }
+.cov-num        { font-variant-numeric: tabular-nums; }
+
+.cov-days {
+  display: inline-block; padding: 2px 8px; border-radius: 6px;
+  font-weight: 700; font-size: 12px;
+}
+.cov-days--red   { background: #fee2e2; color: #991b1b; }
+.cov-days--amber { background: #fef3c7; color: #92400e; }
+.cov-days--green { background: #d1fae5; color: #065f46; }
+
+.cov-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 5px;
+  font-size: 10px; font-weight: 700; white-space: nowrap;
+}
+.cov-badge--red   { background: #fee2e2; color: #991b1b; }
+.cov-badge--amber { background: #fef3c7; color: #92400e; }
+.cov-badge--green { background: #d1fae5; color: #065f46; }
 </style>

@@ -151,4 +151,7 @@ export default {
   getMarketNiche(params) {
     return api.get('/mercadolivre/market/niche/', { params })
   },
+  getFullCoverage() {
+    return api.get('/mercadolivre/market/full-coverage/')
+  },
 }
