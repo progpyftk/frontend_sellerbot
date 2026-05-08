@@ -853,12 +853,14 @@
                         {{ a.shop_name }}
                       </td>
                       <td class="right">{{ fmt(a.gmv) }}</td>
-                      <td class="right warn">—</td>
+                      <td class="right warn">
+                        <span :title="'Comissão + taxas Shopee + frete líquido'">{{ fmt(a.gmv - a.net_revenue) }}</span>
+                      </td>
                       <td class="right">{{ fmt(a.net_revenue) }}</td>
+                      <td class="right warn">{{ a.gross_profit != null ? fmt(a.net_revenue - a.gross_profit) : '—' }}</td>
+                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
                       <td class="right warn">—</td>
-                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
-                      <td class="right warn">—</td>
-                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
+                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
                       <td class="right">{{ pct(a.gross_profit, a.net_revenue) }}</td>
                     </tr>
                   </template>
@@ -3067,7 +3069,7 @@ const rankingRows = computed(() => {
   // ML accounts
   for (const a of (data.value?.accounts || [])) {
     const key = buildAccountKey('ml', a.account_id)
-    if (selectedAccountKeys.value.length > 0 && !selectedAccountKeys.value.includes(key) && selectedAccountKeys.value.length < allAccountKeys.value.length) continue
+    if (!selectedAccountKeys.value.includes(key)) continue
     const gmv = a.gmv || 0
     const net = a.net_revenue || 0
     const gp  = a.gross_profit || 0
@@ -3093,7 +3095,7 @@ const rankingRows = computed(() => {
   // Shopee accounts
   for (const a of (shopeeData.value?.by_account || [])) {
     const key = buildAccountKey('shopee', a.account_id)
-    if (selectedAccountKeys.value.length > 0 && !selectedAccountKeys.value.includes(key) && selectedAccountKeys.value.length < allAccountKeys.value.length) continue
+    if (!selectedAccountKeys.value.includes(key)) continue
     const gmv = a.gmv || 0
     const net = a.net_revenue || 0
     const gp  = a.gross_profit || 0
