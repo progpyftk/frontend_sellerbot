@@ -829,7 +829,7 @@
                 </thead>
                 <tbody>
                   <template v-if="activeMarketplaces.includes('ml') && data?.accounts">
-                    <tr v-for="a in data.accounts" :key="'dre2-ml-' + a.account_id">
+                    <tr v-for="a in data.accounts.filter(a => selectedAccountKeys.includes('ml:' + a.account_id))" :key="'dre2-ml-' + a.account_id">
                       <td><span class="mkt-badge mkt-badge--ml">ML</span></td>
                       <td class="bold">
                         <span class="acct-dot-inline" :style="{ background: accountColor('ml:' + a.account_id) }"></span>
@@ -846,7 +846,7 @@
                     </tr>
                   </template>
                   <template v-if="activeMarketplaces.includes('shopee') && shopeeData?.by_account">
-                    <tr v-for="a in shopeeData.by_account" :key="'dre2-sh-' + a.account_id">
+                    <tr v-for="a in shopeeData.by_account.filter(a => selectedAccountKeys.includes('shopee:' + a.account_id))" :key="'dre2-sh-' + a.account_id">
                       <td><span class="mkt-badge mkt-badge--shopee">Shopee</span></td>
                       <td class="bold">
                         <span class="acct-dot-inline" :style="{ background: accountColor('shopee:' + a.account_id) }"></span>
@@ -1756,7 +1756,7 @@ const filteredMlOp = computed(() => {
     gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, lucro_liquido: ll,
     orders_count: orders, units_sold: units,
     avg_ticket: orders ? +(gmv / orders).toFixed(2) : null,
-    total_fees: s('total_fees'), cmv_total: s('cmv_total'),
+    total_fees: +(gmv - net).toFixed(2), cmv_total: s('cmv_total'),
     lucro_liquido_pct: net ? +(ll / net * 100).toFixed(2) : null,
     gross_margin_pct: net ? +(gp / net * 100).toFixed(2) : null,
     roas: ads ? +(gmv / ads).toFixed(2) : null,
