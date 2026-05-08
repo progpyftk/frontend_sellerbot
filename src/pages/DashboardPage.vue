@@ -1691,13 +1691,16 @@ function toggleDayExpand(date) {
 // Per-account breakdown for a given date
 function dayAccountRows(date) {
   const rows = []
+  const selected = new Set(selectedAccountKeys.value)
   for (const a of knownMlAccounts.value) {
+    if (!selected.has(a.key)) continue
     const day = (accountDailyData.value[a.key] || []).find(d => d.date === date)
     if (day && (day.gmv || day.orders_count)) {
       rows.push({ ...day, label: a.label, color: a.color, marketplace: 'ml' })
     }
   }
   for (const a of knownShopeeAccounts.value) {
+    if (!selected.has(a.key)) continue
     const shopeeDaily = shopeeData.value?.daily || []
     const day = shopeeDaily.find(d => d.date === date)
     if (day && (day.gmv || day.orders_count)) {
@@ -1733,8 +1736,10 @@ const filteredMlOp = computed(() => {
   const accounts = data.value.accounts || []
   const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
   const allMlKeys = knownMlAccounts.value.map(a => a.key)
-  // All selected or no per-account data → use aggregate operation
-  if (!mlKeys.length || mlKeys.length === allMlKeys.length || !accounts.length) {
+  // Nenhuma conta ML na seleção → sem dados ML
+  if (!mlKeys.length) return null
+  // Todas ML selecionadas ou sem breakdown por conta → usa agregado da API
+  if (mlKeys.length === allMlKeys.length || !accounts.length) {
     return data.value.operation || null
   }
   // Single account selected → API already filtered, use operation directly
@@ -1770,7 +1775,10 @@ const filteredShopeeOp = computed(() => {
   const byAccount = shopeeData.value.by_account || []
   const shopeeKeys = selectedAccountKeys.value.filter(k => k.startsWith('shopee:'))
   const allShopeeKeys = knownShopeeAccounts.value.map(a => a.key)
-  if (!shopeeKeys.length || shopeeKeys.length === allShopeeKeys.length || !byAccount.length) {
+  // Nenhuma conta Shopee na seleção → sem dados Shopee
+  if (!shopeeKeys.length) return null
+  // Todas Shopee selecionadas ou sem breakdown por conta → usa agregado
+  if (shopeeKeys.length === allShopeeKeys.length || !byAccount.length) {
     return shopeeData.value || null
   }
   const selectedIds = new Set(shopeeKeys.map(k => k.replace('shopee:', '')))
@@ -1786,8 +1794,10 @@ const filteredMlDaily = computed(() => {
   const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
   const allMlKeys = knownMlAccounts.value.map(a => a.key)
   const hasAccountData = Object.keys(accountDailyData.value).length > 0
-  // All ML accounts selected, or no per-account data yet → use API aggregate directly
-  if (!mlKeys.length || mlKeys.length === allMlKeys.length || !hasAccountData) {
+  // Nenhuma conta ML na seleção → sem dados diários ML
+  if (!mlKeys.length) return []
+  // Todas ML selecionadas ou sem dados por conta ainda → usa agregado da API
+  if (mlKeys.length === allMlKeys.length || !hasAccountData) {
     return data.value?.daily || []
   }
   // Partial selection (1 or more accounts) → sum from accountDailyData for selected accounts only
@@ -1898,8 +1908,9 @@ const metricStats = computed(() => {
 // Ascendente (esquerda = mais antigo) — usado no gráfico
 // Mescla dados diários ML + Shopee por data
 const chartData = computed(() => {
-  const mlDaily      = activeMarketplace.value !== 'shopee' ? filteredMlDaily.value : []
-  const shopeeDaily  = activeMarketplace.value !== 'ml'     ? (shopeeData.value?.daily || []) : []
+  const hasShopeeSelected = selectedAccountKeys.value.some(k => k.startsWith('shopee:'))
+  const mlDaily     = filteredMlDaily.value
+  const shopeeDaily = hasShopeeSelected ? (shopeeData.value?.daily || []) : []
 
   // Indexa por data e soma os campos
   const byDate = {}
