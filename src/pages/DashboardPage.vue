@@ -1744,9 +1744,7 @@ const filteredMlOp = computed(() => {
   if (mlKeys.length === allMlKeys.length || !accounts.length) {
     return data.value.operation || null
   }
-  // Single account selected → API already filtered, use operation directly
-  if (mlKeys.length === 1) return data.value.operation || null
-  // Partial multi-account → sum from per-account data
+  // Partial selection (1 or more accounts) → sum from per-account data
   const selectedIds = new Set(mlKeys.map(k => k.replace('ml:', '')))
   const selected = accounts.filter(a => selectedIds.has(String(a.account_id)))
   if (!selected.length) return data.value.operation || null
