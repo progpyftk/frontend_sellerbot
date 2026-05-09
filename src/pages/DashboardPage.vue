@@ -1706,8 +1706,7 @@ function dayAccountRows(date) {
     const shopeeDaily = shopeeData.value?.daily || []
     const day = shopeeDaily.find(d => d.date === date)
     if (day && (day.gmv || day.orders_count)) {
-      rows.push({ ...day, label: a.label, color: a.color, marketplace: 'shopee',
-        lucro_liquido: day.gross_profit, ads_cost: 0 })
+      rows.push({ ...day, label: a.label, color: a.color, marketplace: 'shopee' })
     }
   }
   return rows
@@ -1786,7 +1785,9 @@ const filteredShopeeOp = computed(() => {
   if (!selected.length) return null
   const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
   const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
-  return { gmv, net_revenue: net, gross_profit: gp, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
+  const ads = s('ads_cost')
+  const ll  = selected.reduce((acc, a) => acc + (a.lucro_liquido != null ? a.lucro_liquido : (a.gross_profit || 0) - (a.ads_cost || 0)), 0)
+  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, lucro_liquido: ll, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
 })
 
 // Filtered ML daily: sums selected accounts from accountDailyData (when partial multi-account selection)
@@ -1926,11 +1927,13 @@ const chartData = computed(() => {
     }
   }
   for (const d of shopeeDaily) {
+    const sh_ll = d.lucro_liquido != null ? d.lucro_liquido : (d.gross_profit || 0)
     if (byDate[d.date]) {
       byDate[d.date].gmv          += d.gmv || 0
       byDate[d.date].net_revenue  += d.net_revenue || 0
       byDate[d.date].gross_profit  = (byDate[d.date].gross_profit || 0) + (d.gross_profit || 0)
-      byDate[d.date].lucro_liquido = (byDate[d.date].lucro_liquido || 0) + (d.gross_profit || 0)
+      byDate[d.date].ads_cost     += d.ads_cost || 0
+      byDate[d.date].lucro_liquido = (byDate[d.date].lucro_liquido || 0) + sh_ll
       byDate[d.date].orders_count += d.orders_count || 0
     } else {
       byDate[d.date] = {
@@ -1938,8 +1941,8 @@ const chartData = computed(() => {
         gmv:           d.gmv || 0,
         net_revenue:   d.net_revenue || 0,
         gross_profit:  d.gross_profit || 0,
-        ads_cost:      0,
-        lucro_liquido: d.gross_profit || 0,
+        ads_cost:      d.ads_cost || 0,
+        lucro_liquido: sh_ll,
         orders_count:  d.orders_count || 0,
       }
     }
@@ -2286,14 +2289,14 @@ const combinedOp = computed(() => {
     gmv:          sh.gmv,
     net_revenue:  sh.net_revenue,
     gross_profit: sh.gross_profit || 0,
-    lucro_liquido: sh.gross_profit || 0,
+    lucro_liquido: sh.lucro_liquido != null ? sh.lucro_liquido : (sh.gross_profit || 0),
     orders_count: sh.orders_count,
     avg_ticket:   sh.avg_ticket,
     units_sold:   sh.units_sold,
-    ads_cost:     0,
+    ads_cost:     sh.ads_cost || 0,
     total_fees:   0,
     cmv_total:    0,
-    lucro_liquido_pct: sh.net_revenue ? +((sh.gross_profit || 0) / sh.net_revenue * 100).toFixed(2) : null,
+    lucro_liquido_pct: sh.net_revenue ? +((sh.lucro_liquido ?? sh.gross_profit ?? 0) / sh.net_revenue * 100).toFixed(2) : null,
     gross_margin_pct:  null,
     vs_prev: null,
   }
@@ -2302,11 +2305,11 @@ const combinedOp = computed(() => {
     gmv:           (ml.gmv || 0) + (sh.gmv || 0),
     net_revenue:   (ml.net_revenue || 0) + (sh.net_revenue || 0),
     gross_profit:  (ml.gross_profit || 0) + (sh.gross_profit || 0),
-    lucro_liquido: (ml.lucro_liquido || 0) + (sh.gross_profit || 0),
+    lucro_liquido: (ml.lucro_liquido || 0) + (sh.lucro_liquido != null ? sh.lucro_liquido : (sh.gross_profit || 0)),
     orders_count:  (ml.orders_count || 0) + (sh.orders_count || 0),
     units_sold:    (ml.units_sold || 0) + (sh.units_sold || 0),
     avg_ticket:    null,
-    ads_cost:      ml.ads_cost || 0,
+    ads_cost:      (ml.ads_cost || 0) + (sh.ads_cost || 0),
     total_fees:    ml.total_fees || 0,
     cmv_total:     ml.cmv_total || 0,
     lucro_liquido_pct: null,
