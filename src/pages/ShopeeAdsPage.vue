@@ -401,7 +401,9 @@ function getBarHeight(val) {
 function statusLabel(s) {
   const map = {
     ongoing:   'Em andamento',
+    paused:    'Pausada',
     suspended: 'Suspensa',
+    closed:    'Encerrada',
     ended:     'Encerrada',
     pending:   'Pendente',
     deleted:   'Deletada',
@@ -410,9 +412,9 @@ function statusLabel(s) {
 }
 
 function adTypeLabel(t) {
-  if (t === 1) return 'CPC Manual'
-  if (t === 2) return 'CPC Auto'
-  return '—'
+  if (t === 'manual' || t === 1) return 'CPC Manual'
+  if (t === 'auto'   || t === 2) return 'CPC Auto'
+  return t || '—'
 }
 
 // ── Formatters ─────────────────────────────────────────────────────────────────
@@ -559,7 +561,9 @@ function formatTick(val) {
 /* Badges */
 .status-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
 .status-badge--ongoing   { background: #d1fae5; color: #065f46; }
+.status-badge--paused    { background: #fef3c7; color: #92400e; }
 .status-badge--suspended { background: #fef3c7; color: #92400e; }
+.status-badge--closed    { background: #f3f4f6; color: #6b7280; }
 .status-badge--ended     { background: #f3f4f6; color: #6b7280; }
 .status-badge--pending   { background: #e0e7ff; color: #3730a3; }
 .status-badge--deleted   { background: #fee2e2; color: #991b1b; }
