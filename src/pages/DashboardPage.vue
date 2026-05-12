@@ -6056,20 +6056,46 @@ tr.pareto-line-95 td {
     padding: 3px 8px;
   }
 
-  /* ── Today banner ── */
+  /* ── Today banner — grid 3×2 ── */
   .today-kpis {
-    gap: 10px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 4px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px 0;
+    overflow-x: visible;
+    flex-wrap: unset;
+    padding-bottom: 0;
+  }
+
+  /* 6 métricas = 2 linhas × 3 colunas perfeitas; oculta Unidades */
+  .today-kpis > .today-kpi:last-child {
+    display: none;
+  }
+
+  .today-kpi {
+    min-width: 0;
+    padding: 0 6px;
+    border-right: 1px solid rgba(13, 148, 136, .15);
+  }
+
+  /* remove borda da 3ª coluna (nth-of-type conta apenas .today-kpi) */
+  .today-kpi:nth-of-type(3n) {
+    border-right: none;
   }
 
   .today-sep {
     display: none;
   }
 
+  .today-kpi-label {
+    font-size: 9px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .today-kpi-val {
     font-size: 13px;
+    white-space: nowrap;
   }
 
   .today-note {
@@ -6209,14 +6235,16 @@ tr.pareto-line-95 td {
 
   /* ── Today banner ── */
   .today-banner {
-    padding: 10px 12px;
+    flex-direction: column;
     gap: 10px;
-    flex-wrap: nowrap;
+    padding: 10px 14px;
   }
 
   .today-label {
     font-size: 10px;
     letter-spacing: .4px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid rgba(13, 148, 136, .15);
   }
 
   /* ── CMV Alert ── */
