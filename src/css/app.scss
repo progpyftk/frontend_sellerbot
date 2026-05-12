@@ -1,1 +1,44 @@
-// app global css in SCSS form
+// SellerBot — Global Styles v2
+
+// ── Page background ──────────────────────────────────────────────────────────
+.q-page-container {
+  background: #f4f6f9;
+}
+
+// ── Font rendering ────────────────────────────────────────────────────────────
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html { scroll-behavior: smooth; }
+
+// ── Quasar overrides globais ──────────────────────────────────────────────────
+.q-btn {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.q-tooltip {
+  font-size: 12px;
+  background: #0f172a;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+
+// ── Scrollbar minimalista ─────────────────────────────────────────────────────
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(0,0,0,.12); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.22); }
+
+// ── Input / Select Quasar refinements ────────────────────────────────────────
+.q-field--outlined .q-field__control               { border-radius: 8px !important; }
+.q-field--outlined .q-field__control:before        { border-color: #e2e8f0 !important; }
+.q-field--outlined:hover .q-field__control:before  { border-color: #0d9488 !important; }
+
+// ── Notificações ─────────────────────────────────────────────────────────────
+.q-notification {
+  border-radius: 10px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.14) !important;
+}

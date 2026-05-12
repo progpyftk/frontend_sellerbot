@@ -1,12 +1,13 @@
-// SellerBot — Quasar color variables
-$primary   : #0d9488;   // teal-600 — cor principal do app
-$secondary : #0f766e;   // teal-700
-$accent    : #f59e0b;   // amber — destaques/badges
+// SellerBot — Design System v2 (Clean Premium)
+// Inspired by Linear, Vercel, Stripe Dashboard
+$primary   : #0d9488;   // teal-600 — identidade da marca
+$secondary : #0f766e;   // teal-700 — hover / secundário
+$accent    : #f59e0b;   // amber — destaques / badges
 
-$dark      : #0f172a;
-$dark-page : #020617;
+$dark      : #0c1117;   // slate quase-preto — sidebar bg
+$dark-page : #0c1117;
 
-$positive  : #22c55e;
-$negative  : #ef4444;
-$info      : #38bdf8;
-$warning   : #f59e0b;
+$positive  : #10b981;   // emerald-500
+$negative  : #ef4444;   // red-500
+$info      : #3b82f6;   // blue-500
+$warning   : #f59e0b;   // amber-500

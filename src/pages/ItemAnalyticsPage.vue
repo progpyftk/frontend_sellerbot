@@ -385,26 +385,30 @@ onMounted(() => loadItems())
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px 14px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
   background: #fff;
-  border-bottom: 1px solid #e8edf3;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 .header-left { display: flex; align-items: center; gap: 12px; }
 .header-icon {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, #0d9488, #0891b2);
+  width: 34px; height: 34px;
+  background: #0d9488;
   border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff;
+  flex-shrink: 0;
 }
-.header-eyebrow { font-size: 10px; color: #7c8db5; text-transform: uppercase; letter-spacing: .5px; }
-.header-title { font-size: 16px; font-weight: 700; color: #1a1f36; }
+.header-eyebrow { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: .8px; font-weight: 600; }
+.header-title { font-size: 16px; font-weight: 700; color: #0f172a; letter-spacing: -.2px; }
 .header-right { display: flex; align-items: center; gap: 10px; }
 
-.date-range-group { display: flex; gap: 4px; }
+.date-range-group { display: flex; gap: 4px; background: #f1f5f9; border-radius: 8px; padding: 3px; }
 .date-preset-btn {
-  padding: 4px 10px; border-radius: 6px; border: 1.5px solid #e8edf3;
-  background: transparent; font-size: 12px; color: #7c8db5; cursor: pointer; transition: all .15s;
+  padding: 4px 10px; border-radius: 6px; border: 1px solid transparent;
+  background: transparent; font-size: 12px; color: #64748b; cursor: pointer; transition: all .15s; font-weight: 500;
 }
-.date-preset-btn--on { background: #0d9488; border-color: #0d9488; color: #fff; font-weight: 600; }
+.date-preset-btn--on { background: #fff; border-color: transparent; color: #0f172a; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 
 /* ── Layout ── */
 .analytics-layout {
@@ -496,16 +500,17 @@ onMounted(() => loadItems())
 .metric-btn--on { font-weight: 600; }
 
 .chart-card {
-  background: #1a202c;
-  border-radius: 12px;
+  background: #0f172a;
+  border-radius: 10px;
   overflow: hidden;
   min-height: 380px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,.12);
 }
-.chart-loading, .chart-error { display: flex; gap: 10px; align-items: center; color: #e2e8f0; font-size: 13px; }
-.chart-error { color: #fc8181; }
+.chart-loading, .chart-error { display: flex; gap: 10px; align-items: center; color: #94a3b8; font-size: 13px; }
+.chart-error { color: #f87171; }
 .plotly-container { width: 100%; min-height: 380px; }
 
 /* ── Causal section ── */

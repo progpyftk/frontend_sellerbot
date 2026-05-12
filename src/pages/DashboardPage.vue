@@ -3351,10 +3351,11 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 24px;
-  background: #fff;
-  border: 1.5px solid #e8edf3;
-  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
   padding: 14px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .04);
 }
 
 .header-left {
@@ -3364,27 +3365,30 @@ onMounted(() => {
 }
 
 .header-icon {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #0d9488, #0891b2);
+  width: 34px;
+  height: 34px;
+  background: #0d9488;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  flex-shrink: 0;
 }
 
 .header-eyebrow {
-  font-size: 11px;
+  font-size: 10px;
   color: #9aa0ac;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: .8px;
+  font-weight: 600;
 }
 
 .header-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: #1a1f36;
+  color: #0f172a;
+  letter-spacing: -.2px;
 }
 
 .header-right {
@@ -3428,7 +3432,7 @@ onMounted(() => {
   border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
-  color: #6b7280;
+  color: #64748b;
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
@@ -3437,12 +3441,13 @@ onMounted(() => {
 
 .date-preset-btn--on {
   background: #0d9488;
-  color: white;
+  color: #ffffff;
+  border-color: #0d9488;
 }
 
 .date-preset-btn:hover:not(.date-preset-btn--on) {
   background: #e8edf3;
-  color: #374151;
+  color: #1e293b;
 }
 
 .date-inputs {
@@ -3479,15 +3484,17 @@ onMounted(() => {
 
 /* ── Today banner ───────────────────────────────────────────────────────── */
 .today-banner {
-  background: linear-gradient(135deg, #f0fdf9, #e8faf6);
-  border: 1.5px solid #0d9488;
-  border-radius: 12px;
-  padding: 14px 20px;
+  background: #ffffff;
+  border: 1px solid #e8edf3;
+  border-left: 3px solid #0d9488;
+  border-radius: 10px;
+  padding: 12px 20px;
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 
 .today-label {
@@ -3593,78 +3600,68 @@ onMounted(() => {
 /* ── KPI Grid ──────────────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
   margin-bottom: 24px;
 }
 
 .kpi-card {
   background: #ffffff;
-  border-radius: 14px;
-  padding: 18px 20px;
-  border: 1.5px solid #e8edf3;
+  border-radius: 10px;
+  padding: 16px 18px 14px;
+  border: 1px solid #e8edf3;
+  border-left-width: 3px;
   position: relative;
-  overflow: hidden;
-  transition: transform .15s, box-shadow .15s;
+  transition: box-shadow .18s, transform .18s;
 }
 
 .kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(13, 148, 136, .08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .07);
+  transform: translateY(-1px);
 }
 
-.kpi-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-}
-
-.kpi-gmv::before    { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
-.kpi-net::before    { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
-.kpi-gp::before     { background: linear-gradient(90deg, #10b981, #34d399); }
-.kpi-ll::before     { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
-.kpi-ads::before    { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-.kpi-orders::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
-.kpi-units::before  { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-.kpi-roas::before   { background: linear-gradient(90deg, #0ea5e9, #06b6d4); }
-.kpi-margin::before { background: linear-gradient(90deg, #2dd4bf, #34d399); }
-.kpi-canc::before   { background: linear-gradient(90deg, #ef4444, #f87171); }
+/* Accent esquerdo por métrica — mais limpo que top bar */
+.kpi-gmv    { border-left-color: #6366f1; }
+.kpi-net    { border-left-color: #0ea5e9; }
+.kpi-gp     { border-left-color: #10b981; }
+.kpi-ll     { border-left-color: #0d9488; }
+.kpi-ads    { border-left-color: #f59e0b; }
+.kpi-orders { border-left-color: #ec4899; }
+.kpi-units  { border-left-color: #8b5cf6; }
+.kpi-roas   { border-left-color: #0ea5e9; }
+.kpi-margin { border-left-color: #2dd4bf; }
+.kpi-canc   { border-left-color: #ef4444; }
 
 .kpi-label {
-  font-size: 11px;
-  color: #9aa0ac;
+  font-size: 10.5px;
+  color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: .7px;
-  margin-bottom: 8px;
-  font-weight: 600;
+  letter-spacing: .6px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .kpi-value {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: #1a1f36;
+  color: #0f172a;
   line-height: 1.1;
+  letter-spacing: -.5px;
 }
 
-.kpi-highlight {
-  color: #0d9488;
-}
+.kpi-highlight { color: #0d9488; }
+.kpi-warn      { color: #d97706; }
 
-.kpi-warn {
-  color: #f59e0b;
-}
-
-.kpi-warn-card .kpi-value {
-  color: #f59e0b;
-}
+.kpi-warn-card .kpi-value { color: #d97706; }
 
 .kpi-sub {
   font-size: 11px;
-  color: #9aa0ac;
-  margin-top: 4px;
+  color: #94a3b8;
+  margin-top: 5px;
+  font-weight: 500;
 }
 
 .kpi-delta {
@@ -3672,24 +3669,17 @@ onMounted(() => {
   align-items: center;
   gap: 3px;
   font-size: 11px;
-  margin-top: 8px;
+  margin-top: 10px;
+  font-weight: 500;
 }
 
-.delta-pos {
-  color: #0d9488;
-}
-
-.delta-neg {
-  color: #ef4444;
-}
-
-.delta-neutral {
-  color: #9aa0ac;
-}
+.delta-pos     { color: #0d9488; }
+.delta-neg     { color: #ef4444; }
+.delta-neutral { color: #94a3b8; }
 
 .kpi-info {
   cursor: help;
-  opacity: 0.5;
+  opacity: 0.45;
   vertical-align: middle;
 }
 
@@ -3700,20 +3690,21 @@ onMounted(() => {
 /* ── Tabs ──────────────────────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
-  gap: 4px;
-  background: #fff;
-  border-radius: 10px;
-  padding: 4px;
+  gap: 2px;
+  background: #f1f5f9;
+  border-radius: 9px;
+  padding: 3px;
   margin-bottom: 20px;
-  border: 1.5px solid #e8edf3;
+  border: 1px solid #e8edf3;
+  width: fit-content;
 }
 
 .tab-btn {
-  padding: 8px 16px;
+  padding: 7px 16px;
   border-radius: 7px;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: #64748b;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -3723,23 +3714,25 @@ onMounted(() => {
 }
 
 .tab-btn--on {
-  background: #0d9488;
-  color: white;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,.09);
 }
 
 .tab-btn:hover:not(.tab-btn--on) {
-  background: #f0f2f5;
+  background: rgba(255,255,255,.5);
   color: #374151;
 }
 
 /* ── Chart ─────────────────────────────────────────────────────────────── */
 .chart-card {
   background: #fff;
-  border: 1.5px solid #e8edf3;
-  border-radius: 16px;
-  padding: 24px 20px 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  padding: 22px 20px 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
 }
 
 .chart-header {
@@ -3869,16 +3862,18 @@ onMounted(() => {
 /* ── Tables ────────────────────────────────────────────────────────────── */
 .table-card {
   background: #fff;
-  border: 1.5px solid #e8edf3;
-  border-radius: 14px;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
   padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 
 .table-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1f36;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
   margin-bottom: 16px;
+  letter-spacing: -.1px;
 }
 
 .table-wrap {

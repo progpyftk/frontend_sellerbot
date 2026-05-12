@@ -97,13 +97,6 @@
 
         <q-space />
 
-        <!-- Wordmark -->
-        <div class="header-wordmark">
-          <span class="header-wordmark-seller">Seller</span><span class="header-wordmark-bot">Bot</span>
-        </div>
-
-        <q-space />
-
         <!-- User chip -->
         <div class="header-user-chip" v-if="currentUser">
           <q-btn-dropdown flat no-caps dense auto-close class="user-chip-btn">
@@ -227,11 +220,11 @@ const redirectToLogin = () => router.push("/login")
 
 <style scoped>
 /* ══════════════════════════════════════════════════════════════════════════
-   SIDEBAR
+   SIDEBAR — Clean slate dark (sem roxo, accent teal puro)
 ══════════════════════════════════════════════════════════════════════════ */
 :deep(.sidebar) {
-  background: linear-gradient(170deg, #1a1740 0%, #111030 55%, #0b0e24 100%) !important;
-  border-right: 1px solid rgba(139, 92, 246, .12) !important;
+  background: #0c1117 !important;
+  border-right: 1px solid rgba(255, 255, 255, .06) !important;
 }
 
 /* ── Brand ── */
@@ -249,7 +242,7 @@ const redirectToLogin = () => router.push("/login")
   left: 16px;
   right: 16px;
   height: 1px;
-  background: linear-gradient(90deg, rgba(139,92,246,.3), rgba(45,212,191,.2), transparent);
+  background: linear-gradient(90deg, rgba(13,148,136,.35), rgba(45,212,191,.15), transparent);
 }
 
 .brand-icon {
@@ -278,7 +271,7 @@ const redirectToLogin = () => router.push("/login")
 
 .brand-sub {
   font-size: 9.5px;
-  color: #4e4b7a;
+  color: rgba(255, 255, 255, .32);
   font-weight: 600;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -312,16 +305,16 @@ const redirectToLogin = () => router.push("/login")
   padding: 7px 10px 7px 8px;
   border-radius: 9px;
   transition: background .15s;
-  background: rgba(255,255,255,.03);
+  background: transparent;
   margin-bottom: 2px;
 }
 
 .nav-parent:hover {
-  background: rgba(var(--s-accent, 139,92,246), .08);
+  background: rgba(255, 255, 255, .05);
 }
 
 .nav-parent--open {
-  background: rgba(255,255,255,.04);
+  background: rgba(255, 255, 255, .03);
 }
 
 .nav-parent-label {
@@ -398,7 +391,7 @@ const redirectToLogin = () => router.push("/login")
   opacity: 0;
   margin-left: 6px;
   padding-left: 10px;
-  border-left: 2px solid rgba(255,255,255,.06);
+  border-left: 1.5px solid rgba(20, 184, 166, .15);
 }
 
 .nav-children--open {
@@ -474,14 +467,14 @@ const redirectToLogin = () => router.push("/login")
 .nav-label {
   font-size: 12.5px;
   font-weight: 500;
-  color: #6e7ab8;
+  color: rgba(255, 255, 255, .45);
   flex: 1;
   transition: color .15s;
   white-space: nowrap;
 }
 
 .nav-item:hover:not(.nav-item--active) .nav-label {
-  color: #c7d2fe;
+  color: rgba(255, 255, 255, .82);
 }
 
 .nav-item--active .nav-label {
@@ -500,7 +493,7 @@ const redirectToLogin = () => router.push("/login")
 
 .nav-sep {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(139,92,246,.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
   margin: 6px 4px;
 }
 
@@ -510,8 +503,8 @@ const redirectToLogin = () => router.push("/login")
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(10, 9, 30, .9);
-  border-top: 1px solid rgba(139, 92, 246, .12);
+  background: rgba(8, 10, 14, .92);
+  border-top: 1px solid rgba(255, 255, 255, .07);
   backdrop-filter: blur(8px);
 }
 
@@ -544,7 +537,7 @@ const redirectToLogin = () => router.push("/login")
 
 .sidebar-user-role {
   font-size: 9.5px;
-  color: #3d3a68;
+  color: rgba(255, 255, 255, .28);
   margin-top: 2px;
   font-weight: 600;
   text-transform: uppercase;
@@ -552,7 +545,7 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .sidebar-logout {
-  color: #3d3a68 !important;
+  color: rgba(255, 255, 255, .25) !important;
   transition: color .15s !important;
 }
 
@@ -561,22 +554,22 @@ const redirectToLogin = () => router.push("/login")
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   HEADER (top bar branco/claro)
+   HEADER — Minimal clean (sem wordmark, sem ruído)
 ══════════════════════════════════════════════════════════════════════════ */
 .app-header {
   background: #ffffff !important;
-  box-shadow: 0 1px 0 #e2e8f0, 0 2px 8px rgba(15, 23, 42, .06) !important;
+  box-shadow: 0 1px 0 #e8edf3 !important;
 }
 
 .app-toolbar {
-  min-height: 54px !important;
+  min-height: 52px !important;
   padding: 0 16px;
 }
 
 .menu-toggle {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
   border: none;
   background: transparent;
   color: #94a3b8;
@@ -589,22 +582,6 @@ const redirectToLogin = () => router.push("/login")
 
 .menu-toggle:hover {
   background: #f0fdfa;
-  color: #0d9488;
-}
-
-/* Wordmark */
-.header-wordmark {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -.5px;
-  user-select: none;
-}
-
-.header-wordmark-seller {
-  color: #0f172a;
-}
-
-.header-wordmark-bot {
   color: #0d9488;
 }
 
@@ -622,10 +599,10 @@ const redirectToLogin = () => router.push("/login")
 .user-chip-inner {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px 5px 8px;
+  gap: 7px;
+  padding: 4px 10px 4px 6px;
   border-radius: 20px;
-  border: 1.5px solid #e2e8f0;
+  border: 1px solid #e8edf3;
   background: #f8fafc;
   transition: border-color .14s, background .14s, box-shadow .14s;
   cursor: pointer;
@@ -634,16 +611,16 @@ const redirectToLogin = () => router.push("/login")
 .user-chip-inner:hover {
   border-color: #0d9488;
   background: #f0fdfa;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, .12);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, .1);
 }
 
 .chip-avatar {
-  border: 1.5px solid rgba(13, 148, 136, .4);
+  border: 1.5px solid rgba(13, 148, 136, .35);
   flex-shrink: 0;
 }
 
 .chip-name {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: #1e293b;
   max-width: 110px;
@@ -658,10 +635,10 @@ const redirectToLogin = () => router.push("/login")
 
 /* Dropdown */
 .user-dd {
-  min-width: 220px;
+  min-width: 224px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, .12);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, .1), 0 0 0 1px rgba(0,0,0,.06);
 }
 
 .dd-header {
@@ -669,8 +646,8 @@ const redirectToLogin = () => router.push("/login")
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, #f0fdf9, #f8fafc);
-  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-bottom: 1px solid #e8edf3;
 }
 
 .dd-avatar {
@@ -701,20 +678,19 @@ const redirectToLogin = () => router.push("/login")
 
 /* Login btn */
 .header-login-btn {
-  padding: 6px 18px;
-  border-radius: 8px;
+  padding: 6px 16px;
+  border-radius: 7px;
   border: none;
-  background: linear-gradient(135deg, #0d9488, #0f766e);
+  background: #0d9488;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, .3);
-  transition: opacity .14s;
+  transition: background .14s;
 }
 
 .header-login-btn:hover {
-  opacity: .88;
+  background: #0f766e;
 }
 
 :deep(.q-btn) {
