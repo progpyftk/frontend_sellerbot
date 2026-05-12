@@ -2441,6 +2441,8 @@ async function renderPlotlyChart() {
     await nextTick()
     if (!plotlyContainer.value) return
 
+    const isMobile = window.innerWidth <= 600
+
     const traces = []
     let hasRightAxis = false
 
@@ -2478,16 +2480,18 @@ async function renderPlotlyChart() {
           y: rawVals,
           name: acc.label + '  ·  ' + fmtS(total),
           type: 'scatter',
-          mode: 'lines+markers+text',
-          line:   { color: acc.color, width: 2.5, shape: 'spline' },
+          mode: isMobile ? 'lines+markers' : 'lines+markers+text',
+          line:   { color: acc.color, width: isMobile ? 2 : 2.5, shape: 'spline' },
           marker: {
-            size:  rawVals.map((_, i) => i === maxIdx ? 9 : i === lastIdx ? 7 : 4),
+            size:  rawVals.map((_, i) => i === maxIdx ? (isMobile ? 6 : 9) : i === lastIdx ? (isMobile ? 5 : 7) : (isMobile ? 3 : 4)),
             color: rawVals.map((_, i) => i === maxIdx ? '#fff' : acc.color),
             line:  { color: rawVals.map((_, i) => i === maxIdx ? acc.color : 'transparent'), width: rawVals.map((_, i) => i === maxIdx ? 2.5 : 0) },
           },
-          text:         rawVals.map((v, i) => lblSet.has(i) ? fmtS(v) : ''),
-          textposition: 'top center',
-          textfont:     { size: 10, color: acc.color, family: 'Inter, sans-serif' },
+          ...(isMobile ? {} : {
+            text:         rawVals.map((v, i) => lblSet.has(i) ? fmtS(v) : ''),
+            textposition: 'top center',
+            textfont:     { size: 10, color: acc.color, family: 'Inter, sans-serif' },
+          }),
           fill:      'tozeroy',
           fillcolor: acc.color + '10',
           hovertemplate:
@@ -2589,16 +2593,18 @@ async function renderPlotlyChart() {
           y:    vals,
           name: legendName,
           type: 'scatter',
-          mode: 'lines+markers+text',
-          line:    { color: m.color, width: 2.5, shape: 'spline' },
+          mode: isMobile ? 'lines+markers' : 'lines+markers+text',
+          line:    { color: m.color, width: isMobile ? 2 : 2.5, shape: 'spline' },
           marker: {
-            size:  markerSizes,
+            size:  isMobile ? markerSizes.map(s => s > 4 ? 6 : 3) : markerSizes,
             color: markerColors,
             line:  { color: rawVals.map((_, i) => i === maxIdx ? m.color : 'transparent'), width: rawVals.map((_, i) => i === maxIdx ? 2.5 : 0) },
           },
-          text:         textArr,
-          textposition: 'top center',
-          textfont:     { size: 10, color: m.color, family: 'Inter, sans-serif' },
+          ...(isMobile ? {} : {
+            text:         textArr,
+            textposition: 'top center',
+            textfont:     { size: 10, color: m.color, family: 'Inter, sans-serif' },
+          }),
           fill:      'tozeroy',
           fillcolor: m.color + '12',
           yaxis: isAds ? 'y2' : 'y',
@@ -2652,35 +2658,41 @@ async function renderPlotlyChart() {
     const layout = {
       paper_bgcolor: 'transparent',
       plot_bgcolor:  '#fafbfd',
-      // Margem direita grande para acomodar as labels de fim de linha
-      margin: { t: 32, r: isWeekdayMode ? 20 : 155, b: 60, l: isWeekdayMode ? 16 : 80 },
-      height: 460,
+      margin: {
+        t: isMobile ? 12 : 32,
+        r: isMobile ? 8  : (isWeekdayMode ? 20 : 155),
+        b: isMobile ? 50 : 60,
+        l: isMobile ? 52 : (isWeekdayMode ? 16 : 80),
+      },
+      height: isMobile ? 260 : 460,
 
-      annotations,
+      // Annotations de fim-de-linha apenas no desktop (precisam de margem direita grande)
+      annotations: (isMobile || isWeekdayMode) ? [] : annotations,
 
-      // Sem legenda — as annotations já identificam as linhas
-      showlegend: isWeekdayMode,
+      // No mobile mostra legenda compacta; no desktop só no modo weekday
+      showlegend: isMobile ? true : isWeekdayMode,
       legend: {
         orientation: 'h',
-        y: -0.22,
+        y: isMobile ? -0.32 : -0.22,
         x: 0,
-        font: { size: 11, color: '#374151', family: 'Inter, sans-serif' },
+        font: { size: isMobile ? 10 : 11, color: '#374151', family: 'Inter, sans-serif' },
         bgcolor: 'transparent',
         bordercolor: 'transparent',
+        itemwidth: isMobile ? 30 : 40,
       },
 
       hovermode: isWeekdayMode ? 'closest' : 'x unified',
       hoverlabel: {
         bgcolor: '#1e293b',
         bordercolor: '#334155',
-        font: { size: 12, color: '#f1f5f9', family: 'Inter, sans-serif' },
+        font: { size: isMobile ? 11 : 12, color: '#f1f5f9', family: 'Inter, sans-serif' },
         align: 'left',
       },
 
       xaxis: isWeekdayMode ? {
         gridcolor: 'transparent',
         linecolor: '#e0e5ed',
-        tickfont: { size: 13, color: '#374151', family: 'Inter, sans-serif' },
+        tickfont: { size: isMobile ? 11 : 13, color: '#374151', family: 'Inter, sans-serif' },
         showgrid: false,
         fixedrange: true,
       } : {
@@ -2688,12 +2700,12 @@ async function renderPlotlyChart() {
         tickformat: nPts <= 14 ? '%d/%m' : (nPts <= 60 ? '%d/%m' : '%b/%y'),
         gridcolor: '#eef0f4',
         linecolor: '#e0e5ed',
-        tickfont: { size: 10, color: '#94a3b8', family: 'Inter, sans-serif' },
+        tickfont: { size: isMobile ? 9 : 10, color: '#94a3b8', family: 'Inter, sans-serif' },
         showgrid: true,
         gridwidth: 1,
-        tickangle: nPts > 20 ? -35 : 0,
-        nticks: Math.min(nPts, 20),
-        fixedrange: false,
+        tickangle: isMobile ? -45 : (nPts > 20 ? -35 : 0),
+        nticks: isMobile ? Math.min(nPts, 7) : Math.min(nPts, 20),
+        fixedrange: isMobile,
       },
 
       yaxis: isWeekdayMode ? {
@@ -2704,10 +2716,12 @@ async function renderPlotlyChart() {
         gridwidth: 1,
         tickprefix: normalizeChart.value ? '' : 'R$',
         ticksuffix: normalizeChart.value ? '%' : '',
-        tickfont: { size: 10, color: '#94a3b8', family: 'Inter, sans-serif' },
+        tickformat: isMobile ? (normalizeChart.value ? '.0f' : '~s') : '',
+        tickfont: { size: isMobile ? 9 : 10, color: '#94a3b8', family: 'Inter, sans-serif' },
         hoverformat: ',.0f',
         zeroline: false,
         automargin: true,
+        nticks: isMobile ? 5 : undefined,
       },
 
       ...(hasRightAxis ? {
@@ -2715,23 +2729,25 @@ async function renderPlotlyChart() {
           overlaying: 'y',
           side: 'right',
           tickprefix: 'R$',
-          tickfont: { size: 10, color: '#d97706', family: 'Inter, sans-serif' },
+          tickformat: isMobile ? '~s' : '',
+          tickfont: { size: isMobile ? 9 : 10, color: '#d97706', family: 'Inter, sans-serif' },
           gridcolor: 'transparent',
           showgrid: false,
           zeroline: false,
           title: { text: 'Ads', font: { color: '#d97706', size: 10 } },
           automargin: true,
+          nticks: isMobile ? 5 : undefined,
         }
       } : {}),
     }
 
     window.Plotly.react(plotlyContainer.value, traces, layout, {
       responsive: true,
-      displayModeBar: true,
+      displayModeBar: !isMobile,
       displaylogo: false,
       modeBarButtonsToRemove: ['toImage', 'sendDataToCloud', 'lasso2d', 'select2d', 'autoScale2d'],
       modeBarButtonsToAdd: [],
-      scrollZoom: true,
+      scrollZoom: !isMobile,
       doubleClick: 'reset',
     })
   } finally {
@@ -2741,6 +2757,7 @@ async function renderPlotlyChart() {
 
 // Watch metric toggles to re-render
 watch(activeMetrics, renderPlotlyChart)
+watch(() => $q.screen.lt.sm, renderPlotlyChart)
 
 function setTopGroupBy(val) {
   if (topGroupBy.value === val) return
@@ -6089,8 +6106,17 @@ tr.pareto-line-95 td {
 
   /* ── Chart card ── */
   .chart-card {
-    padding: 14px 12px 12px;
+    padding: 14px 8px 8px;
     border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .plotly-chart-container {
+    min-height: 260px;
+  }
+
+  .plotly-wrap {
+    min-height: 260px;
   }
 
   /* ── Waterfall P&L — colunas menores ── */
@@ -6184,7 +6210,13 @@ tr.pareto-line-95 td {
   /* ── Today banner ── */
   .today-banner {
     padding: 10px 12px;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+
+  .today-label {
+    font-size: 10px;
+    letter-spacing: .4px;
   }
 
   /* ── CMV Alert ── */
