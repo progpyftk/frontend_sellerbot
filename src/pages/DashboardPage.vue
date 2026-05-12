@@ -2247,13 +2247,13 @@ const combinedToday = computed(() => {
   // all: soma ML + Shopee
   if (!ml && !sh) return null
   return {
-    gmv:          (ml?.gmv || 0) + (sh?.faturamento || 0),
+    gmv:          (ml?.gmv || 0) + (sh?.gmv || 0),          // GMV bruto: total_amount (igual ao dashboard_stats)
     orders_count: (ml?.orders_count || 0) + (sh?.count_paid || 0),
-    net_revenue:  (ml?.net_revenue || 0) + (sh?.faturamento || 0),
+    net_revenue:  (ml?.net_revenue || 0) + (sh?.faturamento || 0),  // net: escrow real ou estimado
     gross_profit: (ml?.gross_profit || 0) + (sh?.lucro_apos_cmp || 0),
     lucro_liquido: (ml?.lucro_liquido || 0) + (sh?.lucro_apos_cmp || 0),
     units_sold:   (ml?.units_sold || 0),
-    avg_ticket:   null, // recalculado abaixo
+    avg_ticket:   null,
     _ml: ml,
     _shopee: sh,
   }
@@ -2261,9 +2261,9 @@ const combinedToday = computed(() => {
 
 function shopeeToMLFormat(sh) {
   return {
-    gmv:          sh.faturamento || 0,
+    gmv:          sh.gmv || 0,          // GMV bruto (total_amount), consistente com dashboard_stats
     orders_count: sh.count_paid || 0,
-    net_revenue:  sh.faturamento || 0,
+    net_revenue:  sh.faturamento || 0,  // receita líquida (escrow real ou estimado)
     gross_profit: sh.lucro_apos_cmp || 0,
     lucro_liquido: sh.lucro_apos_cmp || 0,
     units_sold:   0,
