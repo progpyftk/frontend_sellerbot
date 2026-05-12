@@ -576,4 +576,9 @@ onMounted(() => loadItems())
 
 .delta-pos { color: #0d9488; }
 .delta-neg { color: #ef4444; }
+
+@media (max-width: 600px) {
+  .page-header { padding: 10px 12px; }
+  .content-body { padding: 12px; }
+}
 </style>

@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-md flex flex-center">
-    <q-card class="q-pa-lg" style="width: 400px">
+    <q-card class="q-pa-lg" style="width: min(400px, 95vw)">
       <q-card-section>
         <div class="text-h6 text-center">Configurações do Usuário</div>
       </q-card-section>

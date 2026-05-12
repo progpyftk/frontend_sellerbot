@@ -1398,4 +1398,10 @@ onMounted(loadAccounts)
 .slide-fade-leave-active { transition: all .2s cubic-bezier(1, .5, .8, 1); }
 .slide-fade-enter-from,
 .slide-fade-leave-to     { transform: translateY(-10px); opacity: 0; }
+
+@media (max-width: 600px) {
+  .page-header { padding: 10px 12px; }
+  .fb-search { max-width: 100%; min-width: 0; }
+  .fadv-section { padding: 10px 12px; }
+}
 </style>

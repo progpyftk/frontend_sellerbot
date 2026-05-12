@@ -1094,4 +1094,46 @@ watch(activeTab, (tab) => {
   background: linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);
   background-size: 200% 100%; animation: shimmer 1.2s infinite;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .page-header {
+    padding: 10px 12px;
+  }
+
+  .stats-bar {
+    padding: 8px 12px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    gap: 8px;
+  }
+
+  .stats-bar::-webkit-scrollbar { display: none; }
+
+  .stat-card {
+    min-width: 130px;
+    padding: 7px 10px;
+    flex-shrink: 0;
+  }
+
+  .tab-body {
+    padding: 12px 12px;
+  }
+
+  .items-search-wrap {
+    max-width: 100%;
+  }
+
+  .date-inp {
+    width: 90px;
+  }
+
+  .camp-detail-card {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+}
 </style>

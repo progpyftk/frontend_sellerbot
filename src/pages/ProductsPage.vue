@@ -461,4 +461,9 @@ onMounted(loadMlAccounts)
 }
 
 .text-mono { font-family: monospace; }
+
+@media (max-width: 600px) {
+  .page-header { padding: 10px 12px; }
+  .content-body { padding: 12px; }
+}
 </style>

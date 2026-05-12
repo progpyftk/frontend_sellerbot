@@ -316,4 +316,9 @@ onMounted(load)
 .detail-table th { padding: 5px 8px; text-align: left; color: #475569; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .detail-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
 .detail-table tr:last-child td { border-bottom: none; }
+
+@media (max-width: 600px) {
+  .page-header { padding: 10px 12px; }
+  .content-body { padding: 12px; }
+}
 </style>

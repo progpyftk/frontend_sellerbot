@@ -2840,4 +2840,45 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .t-value.delivered { color: #276749; font-weight: 600; }
 .t-sub      { color: #9aa0ac; font-size: 10px; }
 .mono       { font-family: 'Roboto Mono', monospace; font-size: 11px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .page-header {
+    padding: 10px 12px;
+  }
+
+  .today-bar {
+    padding: 8px 12px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    gap: 8px;
+  }
+
+  .today-bar::-webkit-scrollbar { display: none; }
+
+  .today-card {
+    min-width: 130px;
+    padding: 7px 10px;
+    flex-shrink: 0;
+  }
+
+  .today-card-val {
+    font-size: 13px;
+  }
+
+  .fb {
+    padding: 10px 12px 12px;
+  }
+
+  .table-wrapper {
+    padding: 8px 12px;
+  }
+
+  .detail-panel {
+    width: 100vw !important;
+  }
+}
 </style>

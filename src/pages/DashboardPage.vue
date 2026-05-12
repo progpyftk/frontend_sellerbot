@@ -1567,8 +1567,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useQuasar } from 'quasar'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
+
+const $q = useQuasar()
 
 // ── State ─────────────────────────────────────────────────────────────────
 const loading = ref(false)
@@ -1578,7 +1581,7 @@ const shopeeData = ref(null)     // dados Shopee para o período
 const shopeeTodayData = ref(null) // dados Shopee de hoje
 
 // ── Layout ────────────────────────────────────────────────────────────────
-const showFilters = ref(true)   // sidebar de filtros visível por padrão
+const showFilters = ref($q.screen.gt.sm)  // aberto no desktop, fechado no mobile
 
 // ── Multi-select account filter ─────────────────────────────────────────
 const showAccountPicker = ref(false)
@@ -5931,5 +5934,263 @@ tr.pareto-line-95 td {
 }
 .rh-loser {
   font-size: 11px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE — @media (max-width: 768px) e (max-width: 600px)
+══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Filter sidebar → Bottom Sheet no mobile ─────────────────────────── */
+@media (max-width: 768px) {
+  .filter-sidebar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-height: 78vh;
+    border-radius: 20px 20px 0 0;
+    z-index: 2000;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transform: translateY(110%);
+    box-shadow: 0 -8px 40px rgba(0,0,0,.18);
+  }
+
+  .filter-sidebar--open {
+    transform: translateY(0) !important;
+    width: 100% !important;
+  }
+
+  .fs-inner {
+    width: 100% !important;
+    max-height: 78vh;
+    border-radius: 20px 20px 0 0;
+  }
+
+  /* Handle visual para o bottom sheet */
+  .fs-inner::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: rgba(255,255,255,.3);
+    border-radius: 2px;
+    margin: 10px auto 0;
+  }
+
+  /* Overlay escuro atrás do bottom sheet */
+  .dash-main-layout.has-sidebar::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1999;
+  }
+
+  /* Sidebar não ocupa espaço horizontal no layout */
+  .dash-main-layout {
+    flex-direction: column;
+  }
+
+  .filter-sidebar.filter-sidebar--open ~ .dash-content,
+  .dash-main-layout.has-sidebar .dash-content {
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 600px) {
+  /* ── Página ── */
+  .dash-page {
+    padding: 12px 12px 40px;
+  }
+
+  /* Impede que flex column filho expanda além do viewport */
+  .dash-main-layout {
+    width: 100%;
+    overflow-x: hidden;
+  }
+  .dash-content {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .header-title {
+    font-size: 15px;
+  }
+
+  .active-period-badge,
+  .active-accts-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  /* ── Today banner ── */
+  .today-kpis {
+    gap: 10px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .today-sep {
+    display: none;
+  }
+
+  .today-kpi-val {
+    font-size: 13px;
+  }
+
+  .today-note {
+    display: none;
+  }
+
+  /* ── KPI Grid — 2 colunas ── */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .kpi-card {
+    padding: 12px 12px;
+  }
+
+  .kpi-value {
+    font-size: 18px;
+  }
+
+  .kpi-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+
+  .kpi-delta {
+    font-size: 10px;
+  }
+
+  .kpi-sub {
+    font-size: 10px;
+  }
+
+  /* ── Chart card ── */
+  .chart-card {
+    padding: 14px 12px 12px;
+    border-radius: 12px;
+  }
+
+  /* ── Waterfall P&L — colunas menores ── */
+  .waterfall-card {
+    padding: 14px 12px 12px;
+  }
+
+  .wf-step {
+    grid-template-columns: 110px 1fr 130px;
+    gap: 8px;
+  }
+
+  .wf-label {
+    font-size: 11px;
+  }
+
+  .wf-arrow {
+    margin-left: 110px;
+  }
+
+  .projection-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  /* ── Tabela DRE diária ── */
+  .daily-table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px 12px 10px;
+  }
+
+  .daily-table thead th,
+  .daily-table td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .daily-table thead th {
+    font-size: 9.5px;
+  }
+
+  /* ── Ranking grids — 1 coluna ── */
+  .ranking-highlights {
+    grid-template-columns: 1fr;
+  }
+
+  .cnpj-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .saz-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .saz-kpi-card {
+    padding: 12px 12px;
+  }
+
+  /* ── Filtros presets (bottom sheet) — 3 colunas ── */
+  .fs-presets {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* ── Table card genérico ── */
+  .table-card {
+    border-radius: 12px;
+  }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    white-space: nowrap;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  /* ── Today banner ── */
+  .today-banner {
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  /* ── CMV Alert ── */
+  .cmv-alert {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
 }
 </style>

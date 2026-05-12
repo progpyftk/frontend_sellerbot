@@ -1,1 +1,21 @@
 // app global css in SCSS form
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE UTILITIES — aplicadas globalmente
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* Touch targets mínimos para acessibilidade */
+  .q-btn:not(.q-btn--dense) {
+    min-height: 40px;
+  }
+
+  /* Dialogs não devem ter min-width maior que a tela */
+  .q-dialog__inner > div {
+    max-width: 95vw !important;
+  }
+
+  /* Menus dropdown não devem sair da tela */
+  .q-menu {
+    max-width: 95vw !important;
+  }
+}

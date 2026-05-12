@@ -840,7 +840,7 @@
 
     <!-- ══ DIALOG 1: PREÇOS (AJUSTE · EXATO · ATACADO) ══════════════════ -->
     <q-dialog v-model="showBulkPriceDialog" persistent>
-      <q-card style="min-width:500px; max-width:95vw">
+      <q-card style="min-width:min(500px, 95vw); max-width:95vw">
 
         <!-- Header -->
         <q-card-section class="bg-indigo-6 text-white row items-center q-pb-sm">
@@ -967,7 +967,7 @@
 
     <!-- ══ DIALOG 2: GERENCIAR PROMOÇÕES ══════════════════════════════════ -->
     <q-dialog v-model="showBulkPromoDialog" persistent>
-      <q-card style="min-width:460px; max-width:95vw">
+      <q-card style="min-width:min(460px, 95vw); max-width:95vw">
         <q-card-section class="bg-orange-7 text-white row items-center">
           <q-icon name="local_offer" size="sm" class="q-mr-sm" />
           <span class="text-h6">Gerenciar Promoções</span>
@@ -1022,7 +1022,7 @@
 
     <!-- ══ DIALOG 3: ALTERAR TIPO DE ANÚNCIO ═════════════════════════════ -->
     <q-dialog v-model="showBulkListingTypeDialog" persistent>
-      <q-card style="min-width:400px; max-width:95vw">
+      <q-card style="min-width:min(400px, 95vw); max-width:95vw">
         <q-card-section class="bg-teal-7 text-white row items-center">
           <q-icon name="rocket_launch" size="sm" class="q-mr-sm" />
           <span class="text-h6">Alterar Tipo de Anúncio</span>
@@ -1060,7 +1060,7 @@
 
     <!-- ══ DIALOG 4: ADICIONAR ESTOQUE EM MASSA ═══════════════════════════ -->
     <q-dialog v-model="showBulkStockDialog" persistent>
-      <q-card style="min-width:360px;max-width:480px">
+      <q-card style="min-width:min(360px, 95vw);max-width:min(480px, 95vw)">
         <q-card-section class="q-pb-none">
           <div class="text-h6 row items-center gap-sm">
             <q-icon name="inventory_2" color="green-7" size="22px" class="q-mr-sm" />
@@ -1106,7 +1106,7 @@
 
     <!-- ── BULK REATIVAR ──────────────────────────────────────────────────── -->
     <q-dialog v-model="showBulkReactivateDialog" persistent>
-      <q-card style="min-width:360px;max-width:480px">
+      <q-card style="min-width:min(360px, 95vw);max-width:min(480px, 95vw)">
         <q-card-section class="q-pb-none">
           <div class="text-h6 row items-center">
             <q-icon name="add_shopping_cart" color="orange-8" size="22px" class="q-mr-sm" />
@@ -2232,4 +2232,27 @@ const reactivateItem = (row) => {
 /* ── Fade transition ── */
 .fade-enter-active, .fade-leave-active { transition: opacity .2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .page-header {
+    padding: 10px 12px;
+  }
+
+  .fb-toolbar {
+    padding: 8px 12px;
+    flex-wrap: wrap;
+  }
+
+  .fb-search {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .fadv-input--sm {
+    width: 60px;
+  }
+}
 </style>

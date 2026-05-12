@@ -700,4 +700,9 @@ async function loadCoverage() {
 .cov-badge--red   { background: #fee2e2; color: #991b1b; }
 .cov-badge--amber { background: #fef3c7; color: #92400e; }
 .cov-badge--green { background: #d1fae5; color: #065f46; }
+
+@media (max-width: 600px) {
+  .page-header { padding: 10px 12px; }
+  .content-body { padding: 12px; }
+}
 </style>

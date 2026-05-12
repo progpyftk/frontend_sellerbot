@@ -27,17 +27,17 @@
 
         <q-space />
 
-        <!-- Deslogado -->
+        <!-- Deslogado (só desktop) -->
         <template v-if="!store.isAuthenticated">
-          <q-btn flat no-caps label="Entrar" class="nav-btn q-mr-xs" @click="goToLogin" />
-          <q-btn unelevated color="primary" no-caps label="Criar conta" class="cta-btn" @click="goToSignup" />
+          <q-btn flat no-caps label="Entrar" class="gt-sm nav-btn q-mr-xs" @click="goToLogin" />
+          <q-btn unelevated color="primary" no-caps label="Criar conta" class="gt-sm cta-btn" @click="goToSignup" />
         </template>
 
-        <!-- Logado -->
+        <!-- Logado (só desktop) -->
         <template v-else>
           <span class="gt-sm welcome-text q-mr-sm">{{ store.currentUser?.username }}</span>
-          <q-btn unelevated color="primary" no-caps label="SellerBot" icon="smart_toy" class="cta-btn q-mr-xs" @click="goToApp" />
-          <q-btn flat no-caps icon="logout" class="nav-btn" @click="handleLogout" :loading="loggingOut">
+          <q-btn unelevated color="primary" no-caps label="SellerBot" icon="smart_toy" class="gt-sm cta-btn q-mr-xs" @click="goToApp" />
+          <q-btn flat no-caps icon="logout" class="gt-sm nav-btn" @click="handleLogout" :loading="loggingOut">
             <q-tooltip>Sair</q-tooltip>
           </q-btn>
         </template>
@@ -185,6 +185,11 @@ const handleLogout = async () => {
 }
 
 .mobile-brand { font-size: 1.1rem; font-weight: 800; color: #f1f5f9; }
+
+@media (max-width: 600px) {
+  .header-inner { padding: 0 12px; }
+  .header-inner .q-toolbar { min-height: 54px; }
+}
 
 .mobile-links {
   display: flex;

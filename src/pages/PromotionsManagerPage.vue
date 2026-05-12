@@ -712,4 +712,8 @@ onMounted(() => {
 }
 .header-eyebrow-promos { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
 .header-title-promos   { font-size: 16px; font-weight: 700; color: #1a1f36; }
+
+@media (max-width: 600px) {
+  .page-header { padding: 10px 12px; }
+}
 </style>

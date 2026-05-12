@@ -180,6 +180,15 @@ const goToSignup = () => {
   max-width: 400px;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    margin: 0 16px;
+    width: calc(100% - 32px);
+    max-width: 100%;
+  }
 }
 
 .q-field {

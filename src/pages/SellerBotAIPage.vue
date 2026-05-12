@@ -417,7 +417,7 @@ const selectedModel = ref(VALID_MODEL_IDS.has(_savedModel) ? _savedModel : 'deep
 const currentSessionId = ref(null)
 const sessions = ref([])
 const showHistory = ref(false)
-const sidebarOpen = ref(true)
+const sidebarOpen = ref($q.screen.gt.sm)
 
 const selectedModelName = computed(() => {
   const m = MODELS.find(m => m.id === selectedModel.value)
@@ -1735,4 +1735,32 @@ onMounted(() => {
   50% { opacity: 0; }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .suggestion-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-container {
+    padding: 10px 10px;
+  }
+
+  .messages-area {
+    padding: 12px;
+  }
+
+  .empty-chat {
+    padding: 24px 16px 20px;
+  }
+
+  .empty-title {
+    font-size: 17px;
+  }
+
+  .input-area {
+    padding: 10px 12px;
+  }
+}
 </style>

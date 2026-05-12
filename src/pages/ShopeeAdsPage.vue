@@ -646,4 +646,14 @@ function formatTick(val) {
 .detail-config-row    { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 8px; }
 .detail-config-label  { font-size: 12px; color: #6b7280; }
 .detail-config-val    { font-size: 12px; font-weight: 700; color: #1a1f36; }
+
+@media (max-width: 600px) {
+  .page-header { padding: 10px 12px; }
+  .stats-bar { padding: 8px 12px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .stats-bar::-webkit-scrollbar { display: none; }
+  .stat-card { flex-shrink: 0; }
+  .ads-tabs { padding: 0 12px; overflow-x: auto; flex-wrap: nowrap; }
+  .tab-body { padding: 12px 12px; }
+  .camp-kpis { grid-template-columns: 1fr 1fr; }
+}
 </style>

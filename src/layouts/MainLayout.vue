@@ -157,10 +157,12 @@
 import { ref, computed } from "vue"
 import { useStore } from "src/stores/store"
 import { useRouter } from "vue-router"
+import { useQuasar } from "quasar"
 
 const store = useStore()
 const router = useRouter()
-const drawer = ref(true)
+const $q = useQuasar()
+const drawer = ref($q.screen.gt.sm)
 const currentUser = computed(() => store.currentUser)
 const defaultAvatar = "https://cdn.quasar.dev/img/boy-avatar.png"
 
@@ -719,5 +721,30 @@ const redirectToLogin = () => router.push("/login")
 
 :deep(.q-btn) {
   text-transform: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .app-toolbar {
+    padding: 0 8px;
+  }
+
+  .header-wordmark {
+    font-size: 16px;
+  }
+
+  .chip-name {
+    display: none;
+  }
+
+  .user-chip-inner {
+    padding: 5px 8px;
+  }
+
+  .chip-chevron {
+    display: none;
+  }
 }
 </style>

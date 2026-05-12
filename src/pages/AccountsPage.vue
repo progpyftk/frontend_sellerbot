@@ -973,4 +973,10 @@ onMounted(() => {
   padding: 4px 8px;
   letter-spacing: .04em;
 }
+
+@media (max-width: 600px) {
+  .page-header { padding: 10px 12px; }
+  .accounts-list { padding: 0 12px; }
+  .content-area { padding: 12px; }
+}
 </style>
