@@ -243,6 +243,12 @@
               </div>
 
               <div class="chart-header-actions">
+                <!-- Botão filtros — só mobile, evita scroll de volta ao header -->
+                <button class="lt-sm chart-filter-btn" @click="showFilters = true">
+                  <q-icon name="tune" size="14px" />
+                  Filtros
+                </button>
+
                 <span v-if="chartLoading || loadingAccountData" class="chart-loading-badge">
                   <q-spinner-dots size="14px" color="teal" />
                 </span>
@@ -5669,6 +5675,23 @@ tr.pareto-line-95 td {
   flex-wrap: wrap;
 }
 
+.chart-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid #0d9488;
+  background: #f0fdf9;
+  color: #0d9488;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.chart-filter-btn:active { background: #ccfbf1; }
+
 /* Agregado / Por Conta toggle */
 .chart-mode-toggle {
   display: flex;
@@ -6109,25 +6132,45 @@ tr.pareto-line-95 td {
     margin-bottom: 14px;
   }
 
+  /* ── KPI cards — barra lateral colorida, sem sparkline ── */
   .kpi-card {
-    padding: 12px 12px;
+    padding: 10px 10px 10px 14px;
+    border-radius: 10px;
   }
 
-  .kpi-value {
-    font-size: 18px;
+  /* Converte barra do topo em barra lateral esquerda */
+  .kpi-card::before {
+    right: auto;
+    width: 4px;
+    height: auto;
+    bottom: 0;
+    border-radius: 10px 0 0 10px;
+  }
+
+  .sparkline {
+    display: none;
   }
 
   .kpi-label {
-    font-size: 10px;
-    margin-bottom: 4px;
+    font-size: 9px;
+    margin-bottom: 3px;
+    letter-spacing: .5px;
+  }
+
+  .kpi-value {
+    font-size: 17px;
+    line-height: 1.15;
+  }
+
+  .kpi-sub {
+    font-size: 9px;
   }
 
   .kpi-delta {
     font-size: 10px;
-  }
-
-  .kpi-sub {
-    font-size: 10px;
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   /* ── Chart card ── */
