@@ -33,6 +33,20 @@
     <!-- ══════════════════════════════════════════════════════ CONTENT -->
     <div class="content-wrap">
 
+      <!-- ==================== BANNER TINY DESCONECTADO ==================== -->
+      <q-banner
+        v-if="tinyDisconnectedAccounts.length > 0"
+        class="bg-amber-1 text-amber-9 q-mb-md rounded-borders"
+        dense
+      >
+        <template v-slot:avatar>
+          <q-icon name="warning" color="amber-8" />
+        </template>
+        <strong>Tiny ERP desconectado</strong> em
+        {{ tinyDisconnectedAccounts.map(a => formatCNPJ(a.cnpj)).join(', ') }}.
+        Clique no ícone <q-icon name="link" size="14px" /> de cada conta para reconectar.
+      </q-banner>
+
       <!-- ==================== TAB MERCADO LIVRE ==================== -->
       <div v-show="activeTab === 'ml'" class="tab-content">
         <div class="tab-header">
@@ -340,7 +354,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { api } from 'src/boot/axios'
 import { useQuasar } from 'quasar'
 import { DateTime } from 'luxon'
@@ -354,6 +368,11 @@ const activeTab = ref('ml')
 const loadingML = ref(true)
 const mlAccounts = ref([])
 const isAuthenticating = ref(false)
+
+// Contas ML com CNPJ definido mas sem Tiny conectado
+const tinyDisconnectedAccounts = computed(() =>
+  mlAccounts.value.filter(a => a.cnpj && !a.is_tiny_connected)
+)
 const deleteDialogML = ref(false)
 const mlAccountToDelete = ref(null)
 

@@ -145,6 +145,41 @@
         </div>
       </div>
 
+      <!-- ═══ TINY ERP ══════════════════════════════════════════════════════ -->
+      <div class="section-title" style="margin-top: 24px;">Contas Tiny ERP</div>
+
+      <div v-if="!data.tiny_accounts || data.tiny_accounts.length === 0" class="tiny-empty">
+        Nenhuma conta Tiny configurada.
+      </div>
+
+      <div v-else class="infra-grid" style="padding: 0 24px;">
+        <div
+          v-for="ta in data.tiny_accounts" :key="ta.cnpj"
+          class="infra-card"
+          :class="tinyCardClass(ta)"
+        >
+          <div class="infra-icon">
+            <q-icon :name="ta.is_connected ? 'link' : 'link_off'" size="22px"
+              :style="{ color: ta.is_connected ? '#22c55e' : '#ef4444' }" />
+          </div>
+          <div class="infra-body">
+            <div class="infra-label">CNPJ {{ fmtCnpj(ta.cnpj) }}</div>
+            <div class="infra-value" :class="ta.is_connected ? 'val--ok' : 'val--error'">
+              {{ ta.is_connected ? 'Conectado' : 'Desconectado' }}
+            </div>
+            <div class="infra-meta">
+              <span v-if="ta.has_refresh_token">
+                Token expira em:
+                <strong :class="tinyExpiryClass(ta.hours_until_expiry)">
+                  {{ fmtHours(ta.hours_until_expiry) }}
+                </strong>
+              </span>
+              <span v-else class="val--error">Sem refresh_token — re-autenticação necessária</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </template>
   </q-page>
 </template>
@@ -200,6 +235,31 @@ function fmtDuration(s) {
   return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`
 }
 
+function fmtCnpj(v) {
+  if (!v) return ''
+  return v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+}
+
+function fmtHours(h) {
+  if (h == null) return '—'
+  if (h < 0) return 'expirado'
+  if (h < 1) return `${Math.round(h * 60)}min`
+  return `${h}h`
+}
+
+function tinyCardClass(ta) {
+  if (!ta.is_connected) return 'card--error'
+  if (!ta.has_refresh_token) return 'card--warn'
+  if (ta.hours_until_expiry != null && ta.hours_until_expiry < 1) return 'card--warn'
+  return 'card--ok'
+}
+
+function tinyExpiryClass(h) {
+  if (h == null || h < 0) return 'val--error'
+  if (h < 1) return 'val--warn'
+  return ''
+}
+
 onMounted(load)
 </script>
 
@@ -248,13 +308,16 @@ onMounted(load)
   border-radius: 10px; padding: 16px; display: flex; gap: 14px; align-items: flex-start;
 }
 .card--ok    { border-left: 3px solid #22c55e; }
+.card--warn  { border-left: 3px solid #f59e0b; }
 .card--error { border-left: 3px solid #ef4444; }
 .infra-icon { color: #94a3b8; padding-top: 2px; }
 .infra-label { font-size: 11px; color: #64748b; margin-bottom: 3px; }
 .infra-value { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #e2e8f0; }
 .infra-meta { font-size: 11px; color: #64748b; }
 .val--ok    { color: #22c55e; }
+.val--warn  { color: #f59e0b; }
 .val--error { color: #ef4444; }
+.tiny-empty { padding: 12px 24px; font-size: 13px; color: #64748b; }
 
 /* ── Routines table ── */
 .routines-table { padding: 0 24px; }
