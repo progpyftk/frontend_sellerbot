@@ -64,6 +64,18 @@
           </div>
 
           <div class="chat-header-actions">
+            <!-- Nova conversa — só mobile (sidebar colapsada não tem o botão visível) -->
+            <q-btn
+              flat round dense
+              icon="edit_note"
+              size="sm"
+              color="teal-7"
+              class="lt-sm"
+              @click="newChat"
+            >
+              <q-tooltip>Nova conversa</q-tooltip>
+            </q-btn>
+
             <!-- Model Selector -->
         <q-btn-dropdown
           flat
@@ -1022,7 +1034,7 @@ onMounted(() => {
 <style scoped>
 .sellerbot-ai-page {
   background: #f5f7fa;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1739,28 +1751,99 @@ onMounted(() => {
    MOBILE
 ══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .suggestion-groups {
-    grid-template-columns: 1fr;
+  /* ── Fix layout height: 100dvh não desconta o header do MainLayout ── */
+  .sellerbot-ai-page {
+    height: calc(100dvh - 54px); /* 54px = header mobile */
+  }
+
+  .ai-layout {
+    min-height: 0;
+  }
+
+  .ai-main {
+    min-height: 0;
   }
 
   .chat-container {
-    padding: 10px 10px;
+    padding: 8px 10px;
+    min-height: 0;
   }
 
   .messages-area {
     padding: 12px;
+    min-height: 0;
+  }
+
+  /* ── Carrossel de sugestões ── */
+  .suggestion-groups {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 12px;
+    padding-bottom: 8px;
+    /* alinha ao início para não centralizar grupo parcial */
+    align-items: stretch;
+  }
+
+  .suggestion-groups::-webkit-scrollbar { display: none; }
+
+  .suggestion-group {
+    min-width: 272px;
+    max-width: 280px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  /* hint de scroll — "deslize" */
+  .suggestion-groups::after {
+    content: '';
+    min-width: 1px;
+    flex-shrink: 0;
   }
 
   .empty-chat {
-    padding: 24px 16px 20px;
+    padding: 20px 12px 16px;
+  }
+
+  .empty-subtitle {
+    font-size: 13px;
   }
 
   .empty-title {
     font-size: 17px;
   }
 
+  /* ── Input area sempre visível ── */
   .input-area {
     padding: 10px 12px;
+    border-radius: 0 0 12px 12px;
+    flex-shrink: 0;
+  }
+
+  /* Oculta hint de teclado no mobile (ocupa espaço desnecessário) */
+  .input-hint {
+    display: none;
+  }
+
+  /* Model chip compacto */
+  .active-model-chip span {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Header: model selector mais compacto */
+  .model-selector-btn {
+    font-size: 11px;
+  }
+
+  .chat-header {
+    padding: 8px 12px;
+    gap: 8px;
   }
 }
 </style>
