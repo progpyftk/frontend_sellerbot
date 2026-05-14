@@ -628,10 +628,11 @@ const openTinySetup = async (account) => {
     client_id: '',
     client_secret: '',
   }
-  // Pré-preenche client_id se já existir na conta Tiny
+  // Pré-preenche credenciais se a conta Tiny já existir
   try {
     const { data } = await api.get('/api/erps/tiny/status/', { params: { cnpj: account.cnpj } })
-    if (data.client_id) tinyForm.value.client_id = data.client_id
+    if (data.client_id)     tinyForm.value.client_id     = data.client_id
+    if (data.client_secret) tinyForm.value.client_secret = data.client_secret
   } catch {
     // Conta Tiny ainda não existe — form fica em branco mesmo
   }
