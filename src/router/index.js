@@ -21,8 +21,8 @@ export default route(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
-  // Guarda de navegação global (Sem async, pois agora é síncrono)
-  Router.beforeEach((to, from, next) => {
+  // Guarda de navegação global
+  Router.beforeEach(async (to, from, next) => {
     const store = useStore(); // Acessa o store Pinia
 
     const requiresAuth = to.path.startsWith("/app"); // Rotas que exigem autenticação
@@ -39,6 +39,11 @@ export default route(function (/* { store, ssrContext } */) {
     // Regra de Ouro: Se o usuário já está logado e tenta voltar pra tela de login, joga ele pro /app
     if ((to.path === '/login' || to.path === '/signup') && isLoggedIn) {
        return next('/app');
+    }
+
+    // Garante que currentUser.id está carregado (compatibilidade com sessões antigas sem id)
+    if (isLoggedIn && !store.currentUser?.id) {
+      await store.fetchCurrentUser();
     }
 
     // Se passou por tudo, deixa a navegação seguir normalmente

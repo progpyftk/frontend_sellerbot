@@ -151,7 +151,12 @@
                     <q-tooltip>Sync Custos (Tiny)</q-tooltip>
                   </q-btn>
 
-                  <q-btn flat round size="sm" color="negative" icon="delete" @click="confirmDeleteML(props.row)">
+                  <q-btn v-if="props.row.user === currentUserId" flat round dense size="sm" color="indigo-5" icon="group"
+                    @click="openShareDialog('ml', props.row)">
+                    <q-tooltip>Compartilhar conta</q-tooltip>
+                  </q-btn>
+
+                  <q-btn v-if="props.row.user === currentUserId" flat round size="sm" color="negative" icon="delete" @click="confirmDeleteML(props.row)">
                     <q-tooltip>Excluir conta ML</q-tooltip>
                   </q-btn>
                 </q-td>
@@ -227,7 +232,12 @@
                     <q-tooltip>Renovar Token</q-tooltip>
                   </q-btn>
 
-                  <q-btn flat round size="sm" color="negative" icon="delete" @click="confirmDeleteShopee(props.row)">
+                  <q-btn v-if="props.row.user === currentUserId" flat round dense size="sm" color="indigo-5" icon="group"
+                    @click="openShareDialog('shopee', props.row)">
+                    <q-tooltip>Compartilhar conta</q-tooltip>
+                  </q-btn>
+
+                  <q-btn v-if="props.row.user === currentUserId" flat round size="sm" color="negative" icon="delete" @click="confirmDeleteShopee(props.row)">
                     <q-tooltip>Excluir conta Shopee</q-tooltip>
                   </q-btn>
                 </q-td>
@@ -315,6 +325,60 @@
       </q-card>
     </q-dialog>
 
+    <!-- Share Dialog -->
+    <q-dialog v-model="shareDialog" persistent>
+      <q-card style="min-width: 420px; border-radius: 12px">
+        <div class="dialog-header">
+          <div class="header-icon" style="background: linear-gradient(135deg, #4f46e5, #818cf8)">
+            <q-icon name="group" size="18px" />
+          </div>
+          <div>
+            <div style="font-size: 15px; font-weight: 700; color: #1a1f36">Compartilhar Conta</div>
+            <div style="font-size: 11px; color: #9aa0ac">{{ shareAccount?.account_nickname || shareAccount?.shop_name }}</div>
+          </div>
+        </div>
+        <q-separator />
+        <q-card-section class="q-gutter-sm">
+          <!-- Usuários com acesso -->
+          <div style="font-size:12px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px">
+            Acesso compartilhado
+          </div>
+          <div v-if="!shareAccount?.shared_with_users?.length" style="color:#9aa0ac; font-size:13px">
+            Nenhum usuário com acesso compartilhado ainda.
+          </div>
+          <div v-for="u in (shareAccount?.shared_with_users || [])" :key="u.id"
+            class="row items-center q-pa-xs" style="background:#f8fafc; border-radius:8px; margin-bottom:4px">
+            <q-icon name="person" size="16px" color="indigo-5" class="q-mr-sm" />
+            <div style="flex:1">
+              <div style="font-size:13px; font-weight:600; color:#1a1f36">{{ u.username }}</div>
+              <div style="font-size:11px; color:#9aa0ac">{{ u.email }}</div>
+            </div>
+            <q-btn flat round dense size="xs" color="negative" icon="close"
+              :loading="removingShare === u.id"
+              @click="removeShare(u.id)">
+              <q-tooltip>Remover acesso</q-tooltip>
+            </q-btn>
+          </div>
+
+          <q-separator class="q-my-sm" />
+
+          <!-- Adicionar novo usuário -->
+          <div style="font-size:12px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px">
+            Adicionar usuário
+          </div>
+          <div class="row q-gutter-sm items-center">
+            <q-input v-model="shareEmail" label="E-mail do usuário" outlined dense style="flex:1"
+              @keyup.enter="addShare" hint="Digite o e-mail e pressione Enter ou clique em Adicionar" />
+            <q-btn unelevated color="indigo-5" label="Adicionar" size="sm"
+              :loading="addingShare" @click="addShare" />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Fechar" color="grey-7" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Tiny Dialog -->
     <q-dialog v-model="tinyDialog" persistent>
       <q-card style="min-width: 420px; border-radius: 12px">
@@ -358,8 +422,11 @@ import { ref, computed, onMounted } from 'vue'
 import { api } from 'src/boot/axios'
 import { useQuasar } from 'quasar'
 import { DateTime } from 'luxon'
+import { useStore } from 'src/stores/store'
 
 const $q = useQuasar()
+const authStore = useStore()
+const currentUserId = computed(() => authStore.currentUser?.id)
 
 // --- TABS ---
 const activeTab = ref('ml')
@@ -702,6 +769,70 @@ const syncCustoMedioProduto = async (account) => {
     $q.notify({ message: 'Erro ao sincronizar produtos do Tiny.', color: 'negative', position: 'top' })
   } finally {
     syncingCnpj.value = null
+  }
+}
+
+// ==================== Share ====================
+
+const shareDialog = ref(false)
+const shareAccount = ref(null)
+const shareMarketplace = ref(null) // 'ml' | 'shopee'
+const shareEmail = ref('')
+const addingShare = ref(false)
+const removingShare = ref(null)
+
+const openShareDialog = (marketplace, account) => {
+  shareMarketplace.value = marketplace
+  shareAccount.value = { ...account }
+  shareEmail.value = ''
+  shareDialog.value = true
+}
+
+const addShare = async () => {
+  if (!shareEmail.value.trim()) return
+  addingShare.value = true
+  try {
+    const url = shareMarketplace.value === 'ml'
+      ? `/mercadolivre/accounts/${shareAccount.value.account_id}/share/`
+      : `/shopee/accounts/${shareAccount.value.id}/share/`
+    await api.post(url, { email: shareEmail.value.trim() })
+    shareEmail.value = ''
+    $q.notify({ message: 'Acesso concedido!', color: 'positive', position: 'top', timeout: 2000 })
+    // Recarrega os dados da conta para atualizar shared_with_users
+    await refreshShareAccount()
+  } catch (error) {
+    const msg = error.response?.data?.error || 'Erro ao compartilhar.'
+    $q.notify({ message: msg, color: 'negative', position: 'top' })
+  } finally {
+    addingShare.value = false
+  }
+}
+
+const removeShare = async (userId) => {
+  removingShare.value = userId
+  try {
+    const url = shareMarketplace.value === 'ml'
+      ? `/mercadolivre/accounts/${shareAccount.value.account_id}/share/${userId}/`
+      : `/shopee/accounts/${shareAccount.value.id}/share/${userId}/`
+    await api.delete(url)
+    $q.notify({ message: 'Acesso removido.', color: 'positive', position: 'top', timeout: 2000 })
+    await refreshShareAccount()
+  } catch (error) {
+    $q.notify({ message: 'Erro ao remover acesso.', color: 'negative', position: 'top' })
+  } finally {
+    removingShare.value = null
+  }
+}
+
+const refreshShareAccount = async () => {
+  if (shareMarketplace.value === 'ml') {
+    await getMLAccounts()
+    const updated = mlAccounts.value.find(a => a.account_id === shareAccount.value.account_id)
+    if (updated) shareAccount.value = { ...updated }
+  } else {
+    await getShopeeAccounts()
+    const updated = shopeeAccounts.value.find(a => a.id === shareAccount.value.id)
+    if (updated) shareAccount.value = { ...updated }
   }
 }
 
