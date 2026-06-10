@@ -341,8 +341,8 @@ async function loadAccounts() {
     api.get('/mercadolivre/accounts/'),
     api.get('/shopee/accounts/'),
   ])
-  mlAccounts.value = ml.data
-  shopeeAccounts.value = sh.data
+  mlAccounts.value = Array.isArray(ml.data) ? ml.data : (ml.data.results || [])
+  shopeeAccounts.value = Array.isArray(sh.data) ? sh.data : (sh.data.results || [])
 }
 
 function openEditClient() {

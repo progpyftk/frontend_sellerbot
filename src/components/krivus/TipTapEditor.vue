@@ -40,15 +40,20 @@ import Typography from '@tiptap/extension-typography'
 import Placeholder from '@tiptap/extension-placeholder'
 
 const props = defineProps({
-  modelValue: { type: Object, default: () => ({}) },
+  modelValue: { type: Object, default: () => null },
   readonly: { type: Boolean, default: false },
   placeholder: { type: String, default: 'Escreva aqui...' },
 })
 
 const emit = defineEmits(['update:modelValue'])
 
+function normalizeContent(val) {
+  if (!val || typeof val !== 'object' || !val.type) return null
+  return val
+}
+
 const editor = useEditor({
-  content: props.modelValue,
+  content: normalizeContent(props.modelValue),
   editable: !props.readonly,
   extensions: [
     StarterKit,
@@ -63,8 +68,9 @@ const editor = useEditor({
 watch(() => props.modelValue, (val) => {
   if (!editor.value) return
   const current = editor.value.getJSON()
-  if (JSON.stringify(current) !== JSON.stringify(val)) {
-    editor.value.commands.setContent(val || {}, false)
+  const normalized = normalizeContent(val)
+  if (JSON.stringify(current) !== JSON.stringify(normalized)) {
+    editor.value.commands.setContent(normalized, false)
   }
 })
 
