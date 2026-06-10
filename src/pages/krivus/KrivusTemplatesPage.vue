@@ -5,7 +5,7 @@
       <div class="page-header q-mb-lg">
         <div>
           <h1 class="page-title">Templates de Documentos</h1>
-          <p class="page-subtitle">Modelos reutilizáveis com variáveis: <code>{{'{{'}}cliente{{'}}'}}</code>, <code>{{'{{'}}data_inicio{{'}}'}}</code>, <code>{{'{{'}}mensalidade{{'}}'}}</code>, <code>{{'{{'}}data_hoje{{'}}'}}</code></p>
+          <p class="page-subtitle" v-pre>Modelos reutilizáveis com variáveis: <code>{{cliente}}</code>, <code>{{data_inicio}}</code>, <code>{{mensalidade}}</code>, <code>{{data_hoje}}</code></p>
         </div>
         <q-btn unelevated color="indigo-6" label="Novo Template" icon="add" no-caps @click="openNew" />
       </div>
