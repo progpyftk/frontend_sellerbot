@@ -241,6 +241,7 @@ function freshClient() {
 const newClient = ref(freshClient())
 
 function autoSlug(nome) {
+  if (!nome) { newClient.value.slug = ''; return }
   newClient.value.slug = nome
     .toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
