@@ -106,6 +106,29 @@ const routes = [
       },
     ],
   },
+  // Krivus CRM — acesso exclusivo para is_staff
+  {
+    path: "/krivus",
+    component: () => import("layouts/KrivusLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "krivus-overview",
+        component: () => import("pages/krivus/KrivusOverviewPage.vue"),
+      },
+      {
+        path: ":slug",
+        name: "krivus-client",
+        component: () => import("pages/krivus/KrivusClientPage.vue"),
+      },
+      {
+        path: "templates",
+        name: "krivus-templates",
+        component: () => import("pages/krivus/KrivusTemplatesPage.vue"),
+      },
+    ],
+  },
+
   {
     path: "/ml-redirect",
     component: () => import("pages/MLRedirect.vue"),

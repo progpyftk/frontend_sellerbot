@@ -69,6 +69,20 @@
         </nav>
       </q-scroll-area>
 
+      <!-- Krivus CRM link (staff only) -->
+      <div class="krivus-sidebar-btn q-px-md q-pb-sm" v-if="currentUser?.is_staff">
+        <q-btn
+          unelevated
+          no-caps
+          label="Krivus CRM"
+          icon="business_center"
+          color="indigo-6"
+          class="full-width"
+          style="border-radius: 8px; font-size: 12px; font-weight: 600;"
+          @click="$router.push('/krivus')"
+        />
+      </div>
+
       <!-- User -->
       <div class="sidebar-footer" v-if="currentUser">
         <div class="sidebar-user">

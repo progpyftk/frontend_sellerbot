@@ -12,6 +12,11 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.16.12",
+    "@tiptap/extension-placeholder": "^3.26.0",
+    "@tiptap/extension-table": "^3.26.0",
+    "@tiptap/extension-typography": "^3.26.0",
+    "@tiptap/starter-kit": "^3.26.0",
+    "@tiptap/vue-3": "^3.26.0",
     "actioncable": "^5.2.8-1",
     "axios": "^1.2.1",
     "chart.js": "^4.5.1",

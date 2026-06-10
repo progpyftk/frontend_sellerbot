@@ -46,6 +46,11 @@ export default route(function (/* { store, ssrContext } */) {
       await store.fetchCurrentUser();
     }
 
+    // Krivus CRM: apenas staff
+    if (to.path.startsWith('/krivus') && !store.currentUser?.is_staff) {
+      return next('/app');
+    }
+
     // Se passou por tudo, deixa a navegação seguir normalmente
     next();
   });
