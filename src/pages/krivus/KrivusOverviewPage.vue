@@ -19,7 +19,7 @@
             style="min-width: 130px"
             @update:model-value="loadData"
           />
-          <q-btn color="indigo-6" label="Novo Cliente" icon="add" no-caps unelevated @click="newClientDialog = true" />
+          <q-btn color="indigo-6" label="Novo Cliente" icon="add" no-caps unelevated @click="openNewClient" />
         </div>
       </div>
 
@@ -108,21 +108,100 @@
     </div>
 
     <!-- New Client Dialog -->
-    <q-dialog v-model="newClientDialog">
-      <q-card style="min-width: 400px">
-        <q-card-section>
+    <q-dialog v-model="newClientDialog" persistent>
+      <q-card style="min-width: 520px; max-width: 580px">
+        <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Novo Cliente</div>
+          <q-space />
+          <q-btn flat round dense icon="close" color="grey" v-close-popup />
         </q-card-section>
+
         <q-card-section class="q-gutter-sm">
-          <q-input v-model="newClient.nome" label="Nome" outlined dense autofocus />
-          <q-input v-model="newClient.slug" label="Slug (ex: mogivitta)" outlined dense />
-          <q-input v-model="newClient.data_inicio" label="Data de início" type="date" outlined dense />
-          <q-input v-model="newClient.mensalidade" label="Mensalidade (R$)" type="number" outlined dense />
-          <q-input v-model="newClient.cor_hex" label="Cor" type="color" outlined dense />
+          <!-- Nome + auto-slug -->
+          <q-input
+            v-model="newClient.nome"
+            label="Nome do cliente"
+            outlined dense autofocus
+            @update:model-value="autoSlug"
+          />
+          <q-input
+            v-model="newClient.slug"
+            label="Slug (identificador único)"
+            outlined dense
+            hint="Gerado automaticamente. Ex: mogivitta"
+          />
+
+          <div class="row q-gutter-sm">
+            <q-input
+              v-model="newClient.data_inicio"
+              label="Início do contrato"
+              type="date" outlined dense style="flex:1"
+            />
+            <q-input
+              v-model.number="newClient.mensalidade"
+              label="Mensalidade (R$)"
+              type="number" outlined dense style="flex:1"
+            />
+          </div>
+
+          <!-- Cor -->
+          <div class="row items-center q-gutter-sm">
+            <div class="text-caption text-grey-6">Cor de identificação:</div>
+            <div class="row q-gutter-xs">
+              <div
+                v-for="cor in coresSugeridas"
+                :key="cor"
+                class="color-swatch"
+                :style="`background:${cor}; outline: ${newClient.cor_hex === cor ? '2px solid #1e293b' : 'none'}`"
+                @click="newClient.cor_hex = cor"
+              />
+            </div>
+          </div>
+
+          <!-- Contas ML -->
+          <div>
+            <div class="text-caption text-grey-6 q-mb-xs">Contas Mercado Livre</div>
+            <div v-if="loadingAccounts" class="text-caption text-grey-4">Carregando contas...</div>
+            <div v-else class="accounts-checklist">
+              <q-checkbox
+                v-for="acc in mlAccounts"
+                :key="acc.id"
+                v-model="newClient.ml_accounts"
+                :val="acc.id"
+                :label="acc.account_nickname"
+                color="orange"
+                dense
+              />
+              <div v-if="!mlAccounts.length" class="text-caption text-grey-4">Nenhuma conta ML conectada.</div>
+            </div>
+          </div>
+
+          <!-- Contas Shopee -->
+          <div>
+            <div class="text-caption text-grey-6 q-mb-xs">Contas Shopee</div>
+            <div class="accounts-checklist">
+              <q-checkbox
+                v-for="acc in shopeeAccounts"
+                :key="acc.id"
+                v-model="newClient.shopee_accounts"
+                :val="acc.id"
+                :label="acc.shop_name"
+                color="deep-orange"
+                dense
+              />
+              <div v-if="!shopeeAccounts.length" class="text-caption text-grey-4">Nenhuma conta Shopee conectada.</div>
+            </div>
+          </div>
         </q-card-section>
-        <q-card-actions align="right">
+
+        <q-card-actions align="right" class="q-pa-md">
           <q-btn flat label="Cancelar" color="grey" v-close-popup />
-          <q-btn unelevated label="Criar" color="indigo-6" :loading="saving" @click="createClient" />
+          <q-btn
+            unelevated label="Criar Cliente" color="indigo-6"
+            :loading="saving"
+            :disable="!newClient.nome || !newClient.slug"
+            @click="createClient"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -131,7 +210,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
+import { api } from 'src/boot/axios'
+
+const $q = useQuasar()
 
 const days = ref(30)
 const daysOptions = [
@@ -140,13 +223,30 @@ const daysOptions = [
   { label: 'Últimos 90 dias', value: 90 },
 ]
 
+const coresSugeridas = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b']
+
 const stats = ref({})
 const clients = ref([])
+const mlAccounts = ref([])
+const shopeeAccounts = ref([])
 const loadingStats = ref(true)
 const loadingClients = ref(true)
+const loadingAccounts = ref(false)
 const newClientDialog = ref(false)
 const saving = ref(false)
-const newClient = ref({ nome: '', slug: '', data_inicio: '', mensalidade: 0, cor_hex: '#6366f1' })
+
+function freshClient() {
+  return { nome: '', slug: '', data_inicio: '', mensalidade: 0, cor_hex: '#6366f1', ml_accounts: [], shopee_accounts: [] }
+}
+const newClient = ref(freshClient())
+
+function autoSlug(nome) {
+  newClient.value.slug = nome
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 async function loadData() {
   loadingStats.value = true
@@ -168,13 +268,36 @@ async function loadClients() {
   }
 }
 
+async function loadAccounts() {
+  loadingAccounts.value = true
+  try {
+    const [ml, sh] = await Promise.all([
+      api.get('/mercadolivre/accounts/'),
+      api.get('/shopee/accounts/'),
+    ])
+    mlAccounts.value = ml.data
+    shopeeAccounts.value = sh.data
+  } finally {
+    loadingAccounts.value = false
+  }
+}
+
+function openNewClient() {
+  newClient.value = freshClient()
+  newClientDialog.value = true
+  if (!mlAccounts.value.length && !shopeeAccounts.value.length) loadAccounts()
+}
+
 async function createClient() {
   saving.value = true
   try {
-    await KrivusService.createClient(newClient.value)
+    const created = await KrivusService.createClient(newClient.value)
     newClientDialog.value = false
-    newClient.value = { nome: '', slug: '', data_inicio: '', mensalidade: 0, cor_hex: '#6366f1' }
     await loadClients()
+    $q.notify({ type: 'positive', message: `Cliente "${created.data.nome}" criado!` })
+  } catch (e) {
+    const detail = e.response?.data
+    $q.notify({ type: 'negative', message: detail ? JSON.stringify(detail) : 'Erro ao criar cliente.' })
   } finally {
     saving.value = false
   }
@@ -236,4 +359,9 @@ onMounted(() => {
 .client-name { font-size: 16px; font-weight: 600; color: #1e293b; }
 .meta-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
 .meta-value { font-size: 13px; font-weight: 600; color: #334155; }
+
+.color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
+.color-swatch:hover { transform: scale(1.15); }
+
+.accounts-checklist { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; }
 </style>

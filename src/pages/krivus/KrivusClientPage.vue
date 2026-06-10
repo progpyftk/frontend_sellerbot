@@ -8,6 +8,9 @@
           <div class="color-dot" :style="`background: ${client.cor_hex}`" />
           <h1 class="page-title">{{ client.nome }}</h1>
           <q-chip dense :color="statusColor(client.status)" text-color="white" :label="client.status" size="sm" />
+          <q-btn flat round dense icon="edit" color="grey-5" size="sm" @click="openEditClient">
+            <q-tooltip>Editar cliente</q-tooltip>
+          </q-btn>
         </div>
         <div class="row items-center q-gutter-md q-mt-xs">
           <span class="meta-item"><q-icon name="calendar_today" size="14px" /> desde {{ formatDate(client.data_inicio) }}</span>
@@ -20,6 +23,76 @@
           </span>
         </div>
       </div>
+
+      <!-- Edit Client Dialog -->
+      <q-dialog v-model="editClientDialog" persistent>
+        <q-card style="min-width: 520px; max-width: 580px">
+          <q-card-section class="row items-center q-pb-none">
+            <div class="text-h6">Editar Cliente</div>
+            <q-space />
+            <q-btn flat round dense icon="close" color="grey" v-close-popup />
+          </q-card-section>
+
+          <q-card-section class="q-gutter-sm" v-if="editForm">
+            <q-input v-model="editForm.nome" label="Nome" outlined dense />
+            <div class="row q-gutter-sm">
+              <q-input v-model="editForm.data_inicio" label="Início do contrato" type="date" outlined dense style="flex:1" />
+              <q-input v-model.number="editForm.mensalidade" label="Mensalidade (R$)" type="number" outlined dense style="flex:1" />
+            </div>
+            <q-select
+              v-model="editForm.status"
+              :options="[{label:'Ativo',value:'ativo'},{label:'Pausado',value:'pausado'},{label:'Encerrado',value:'encerrado'}]"
+              emit-value map-options label="Status" outlined dense
+            />
+
+            <div class="row items-center q-gutter-sm">
+              <div class="text-caption text-grey-6">Cor:</div>
+              <div class="row q-gutter-xs">
+                <div
+                  v-for="cor in coresSugeridas"
+                  :key="cor"
+                  class="color-swatch"
+                  :style="`background:${cor}; outline: ${editForm.cor_hex === cor ? '2px solid #1e293b' : 'none'}`"
+                  @click="editForm.cor_hex = cor"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div class="text-caption text-grey-6 q-mb-xs">Contas Mercado Livre</div>
+              <div class="accounts-checklist">
+                <q-checkbox
+                  v-for="acc in mlAccounts"
+                  :key="acc.id"
+                  v-model="editForm.ml_accounts"
+                  :val="acc.id"
+                  :label="acc.account_nickname"
+                  color="orange" dense
+                />
+              </div>
+            </div>
+
+            <div>
+              <div class="text-caption text-grey-6 q-mb-xs">Contas Shopee</div>
+              <div class="accounts-checklist">
+                <q-checkbox
+                  v-for="acc in shopeeAccounts"
+                  :key="acc.id"
+                  v-model="editForm.shopee_accounts"
+                  :val="acc.id"
+                  :label="acc.shop_name"
+                  color="deep-orange" dense
+                />
+              </div>
+            </div>
+          </q-card-section>
+
+          <q-card-actions align="right" class="q-pa-md">
+            <q-btn flat label="Cancelar" color="grey" v-close-popup />
+            <q-btn unelevated label="Salvar" color="indigo-6" :loading="savingClient" @click="saveClient" />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
 
       <!-- KPI cards -->
       <div class="kpi-grid q-mb-xl">
@@ -236,6 +309,7 @@ import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
 import TipTapEditor from 'src/components/krivus/TipTapEditor.vue'
+import { api } from 'src/boot/axios'
 
 const route = useRoute()
 const $q = useQuasar()
@@ -254,6 +328,50 @@ const daysOptions = [
   { label: '30 dias', value: 30 },
   { label: '90 dias', value: 90 },
 ]
+
+const editClientDialog = ref(false)
+const editForm = ref(null)
+const savingClient = ref(false)
+const mlAccounts = ref([])
+const shopeeAccounts = ref([])
+const coresSugeridas = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b']
+
+async function loadAccounts() {
+  const [ml, sh] = await Promise.all([
+    api.get('/mercadolivre/accounts/'),
+    api.get('/shopee/accounts/'),
+  ])
+  mlAccounts.value = ml.data
+  shopeeAccounts.value = sh.data
+}
+
+function openEditClient() {
+  editForm.value = {
+    nome: client.value.nome,
+    data_inicio: client.value.data_inicio,
+    mensalidade: client.value.mensalidade,
+    status: client.value.status,
+    cor_hex: client.value.cor_hex,
+    ml_accounts: (client.value.ml_accounts_detail || []).map(a => a.id),
+    shopee_accounts: (client.value.shopee_accounts_detail || []).map(a => a.id),
+  }
+  editClientDialog.value = true
+  if (!mlAccounts.value.length && !shopeeAccounts.value.length) loadAccounts()
+}
+
+async function saveClient() {
+  savingClient.value = true
+  try {
+    const res = await KrivusService.updateClient(route.params.slug, editForm.value)
+    client.value = res.data
+    editClientDialog.value = false
+    $q.notify({ type: 'positive', message: 'Cliente atualizado!' })
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Erro ao salvar.' })
+  } finally {
+    savingClient.value = false
+  }
+}
 
 const drawerOpen = ref(false)
 const activeMilestone = ref(null)
@@ -440,6 +558,9 @@ onMounted(() => {
 .krivus-container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
 
 .color-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
+.color-swatch:hover { transform: scale(1.15); }
+.accounts-checklist { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; }
 .page-title { font-size: 24px; font-weight: 700; color: #1e293b; margin: 0; }
 .meta-item { font-size: 13px; color: #64748b; display: flex; align-items: center; gap: 4px; }
 .section-title { font-size: 16px; font-weight: 600; color: #1e293b; margin: 0; }
