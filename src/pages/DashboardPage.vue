@@ -1715,8 +1715,7 @@ function dayAccountRows(date) {
     const shopeeDaily = shopeeData.value?.daily || []
     const day = shopeeDaily.find(d => d.date === date)
     if (day && (day.gmv || day.orders_count)) {
-      rows.push({ ...day, label: a.label, color: a.color, marketplace: 'shopee',
-        lucro_liquido: day.gross_profit, ads_cost: 0 })
+      rows.push({ ...day, label: a.label, color: a.color, marketplace: 'shopee' })
     }
   }
   return rows
