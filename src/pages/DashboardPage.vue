@@ -1795,7 +1795,8 @@ const filteredShopeeOp = computed(() => {
   if (!selected.length) return null
   const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
   const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
-  return { gmv, net_revenue: net, gross_profit: gp, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
+  const ads = s('ads_cost'), ll = s('lucro_liquido')
+  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, lucro_liquido: ll || null, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
 })
 
 // Filtered ML daily: sums selected accounts from accountDailyData (when partial multi-account selection)
@@ -2244,23 +2245,49 @@ async function loadToday() {
 }
 
 // ── Dados combinados (ML + Shopee) ────────────────────────────────────────
+
+// Filtra o hoje do ML pelas contas selecionadas usando o breakdown por conta
+function mlFilteredToday(ml) {
+  if (!ml) return null
+  const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
+  // Sem filtro ou todas selecionadas → usa totais globais da resposta
+  if (mlKeys.length === 0 || mlKeys.length >= knownMlAccounts.value.length) return ml
+  const selectedIds = new Set(mlKeys.map(k => k.split(':')[1]))
+  const accounts = (ml.accounts || []).filter(a => selectedIds.has(String(a.account_id)))
+  const sum = (field) => accounts.reduce((s, a) => s + (a[field] || 0), 0)
+  return {
+    ...ml,
+    gmv:           sum('gmv'),
+    total_fees:    sum('total_fees'),
+    net_revenue:   sum('net_revenue'),
+    cmv_total:     sum('cmv_total'),
+    units_sold:    sum('units_sold'),
+    gross_profit:  sum('gross_profit'),
+    ads_cost:      sum('ads_cost'),
+    lucro_liquido: sum('lucro_liquido'),
+    orders_count:  sum('orders_count'),
+    avg_ticket:    null,
+  }
+}
+
 const combinedToday = computed(() => {
   const ml = todayData.value
   const sh = shopeeTodayData.value
-  if (activeMarketplace.value === 'ml')     return ml ? { ...ml } : null
+  if (activeMarketplace.value === 'ml')     return mlFilteredToday(ml)
   if (activeMarketplace.value === 'shopee') return sh ? shopeeToMLFormat(sh) : null
 
-  // all: soma ML + Shopee
+  // all: soma ML filtrado + Shopee
   if (!ml && !sh) return null
+  const fml = mlFilteredToday(ml)
   return {
-    gmv:          (ml?.gmv || 0) + (sh?.gmv || 0),          // GMV bruto: total_amount (igual ao dashboard_stats)
-    orders_count: (ml?.orders_count || 0) + (sh?.count_paid || 0),
-    net_revenue:  (ml?.net_revenue || 0) + (sh?.faturamento || 0),  // net: escrow real ou estimado
-    gross_profit: (ml?.gross_profit || 0) + (sh?.lucro_apos_cmp || 0),
-    lucro_liquido: (ml?.lucro_liquido || 0) + (sh?.lucro_apos_cmp || 0),
-    units_sold:   (ml?.units_sold || 0),
-    avg_ticket:   null,
-    _ml: ml,
+    gmv:           (fml?.gmv || 0) + (sh?.gmv || 0),
+    orders_count:  (fml?.orders_count || 0) + (sh?.count_paid || 0),
+    net_revenue:   (fml?.net_revenue || 0) + (sh?.faturamento || 0),
+    gross_profit:  (fml?.gross_profit || 0) + (sh?.lucro_apos_cmp || 0),
+    lucro_liquido: (fml?.lucro_liquido || 0) + (sh?.lucro_apos_cmp || 0),
+    units_sold:    (fml?.units_sold || 0),
+    avg_ticket:    null,
+    _ml: fml,
     _shopee: sh,
   }
 })
@@ -2295,14 +2322,14 @@ const combinedOp = computed(() => {
     gmv:          sh.gmv,
     net_revenue:  sh.net_revenue,
     gross_profit: sh.gross_profit || 0,
-    lucro_liquido: sh.gross_profit || 0,
+    lucro_liquido: sh.lucro_liquido ?? sh.gross_profit ?? 0,
     orders_count: sh.orders_count,
     avg_ticket:   sh.avg_ticket,
     units_sold:   sh.units_sold,
-    ads_cost:     0,
+    ads_cost:     sh.ads_cost || 0,
     total_fees:   0,
     cmv_total:    0,
-    lucro_liquido_pct: sh.net_revenue ? +((sh.gross_profit || 0) / sh.net_revenue * 100).toFixed(2) : null,
+    lucro_liquido_pct: sh.net_revenue ? +((sh.lucro_liquido ?? sh.gross_profit ?? 0) / sh.net_revenue * 100).toFixed(2) : null,
     gross_margin_pct:  null,
     vs_prev: null,
   }
@@ -2311,11 +2338,11 @@ const combinedOp = computed(() => {
     gmv:           (ml.gmv || 0) + (sh.gmv || 0),
     net_revenue:   (ml.net_revenue || 0) + (sh.net_revenue || 0),
     gross_profit:  (ml.gross_profit || 0) + (sh.gross_profit || 0),
-    lucro_liquido: (ml.lucro_liquido || 0) + (sh.gross_profit || 0),
+    lucro_liquido: (ml.lucro_liquido || 0) + (sh.lucro_liquido ?? sh.gross_profit ?? 0),
     orders_count:  (ml.orders_count || 0) + (sh.orders_count || 0),
     units_sold:    (ml.units_sold || 0) + (sh.units_sold || 0),
     avg_ticket:    null,
-    ads_cost:      ml.ads_cost || 0,
+    ads_cost:      (ml.ads_cost || 0) + (sh.ads_cost || 0),
     total_fees:    ml.total_fees || 0,
     cmv_total:     ml.cmv_total || 0,
     lucro_liquido_pct: null,
