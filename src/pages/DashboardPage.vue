@@ -1940,7 +1940,8 @@ const chartData = computed(() => {
       byDate[d.date].gmv          += d.gmv || 0
       byDate[d.date].net_revenue  += d.net_revenue || 0
       byDate[d.date].gross_profit  = (byDate[d.date].gross_profit || 0) + (d.gross_profit || 0)
-      byDate[d.date].lucro_liquido = (byDate[d.date].lucro_liquido || 0) + (d.gross_profit || 0)
+      byDate[d.date].ads_cost     += d.ads_cost || 0
+      byDate[d.date].lucro_liquido = (byDate[d.date].lucro_liquido || 0) + (d.lucro_liquido ?? d.gross_profit ?? 0)
       byDate[d.date].orders_count += d.orders_count || 0
     } else {
       byDate[d.date] = {
@@ -1948,8 +1949,8 @@ const chartData = computed(() => {
         gmv:           d.gmv || 0,
         net_revenue:   d.net_revenue || 0,
         gross_profit:  d.gross_profit || 0,
-        ads_cost:      0,
-        lucro_liquido: d.gross_profit || 0,
+        ads_cost:      d.ads_cost || 0,
+        lucro_liquido: d.lucro_liquido ?? d.gross_profit ?? 0,
         orders_count:  d.orders_count || 0,
       }
     }
