@@ -31,6 +31,17 @@
           </div>
         </div>
 
+        <!-- Filtro de conta (visível só com >1 conta) -->
+        <div v-if="allAccounts.length > 1" class="account-filter">
+          <button
+            :class="['acc-filter-btn', selectedAccountId === null && 'acc-filter-btn--on']"
+            @click="selectedAccountId = null; load()">Todas</button>
+          <button
+            v-for="a in allAccounts" :key="a.account_id"
+            :class="['acc-filter-btn', selectedAccountId === a.account_id && 'acc-filter-btn--on']"
+            @click="selectedAccountId = a.account_id; load()">{{ a.shop_name }}</button>
+        </div>
+
         <q-btn flat round icon="refresh" color="orange-7" :loading="loading" @click="load" size="sm">
           <q-tooltip>Atualizar</q-tooltip>
         </q-btn>
@@ -82,6 +93,15 @@
             <div class="stat-sub">atribuída às campanhas</div>
           </div>
         </div>
+
+        <div class="stat-card" :class="(overview.total_broad_roas||0) >= 5 ? 'stat-card--pos' : (overview.total_broad_roas||0) >= 2 ? 'stat-card--warn' : 'stat-card--neg'">
+          <div class="stat-icon"><q-icon name="show_chart" size="16px" /></div>
+          <div class="stat-body">
+            <div class="stat-val">{{ Number(overview.total_broad_roas || 0).toFixed(2) }}x</div>
+            <div class="stat-label">ROAS Broad</div>
+            <div class="stat-sub">receita / investimento</div>
+          </div>
+        </div>
       </template>
     </div>
 
@@ -123,6 +143,7 @@
                   <th>Tipo</th>
                   <th class="th-num">Investido</th>
                   <th class="th-num">Receita Ads</th>
+                  <th class="th-num">ROAS</th>
                   <th class="th-num">ACOS</th>
                   <th class="th-num">Clicks</th>
                   <th class="th-num">Impressões</th>
@@ -138,6 +159,7 @@
                   <td><span class="strategy-badge">{{ adTypeLabel(camp.ad_type) }}</span></td>
                   <td class="td-num">{{ formatCurrency(camp.cost) }}</td>
                   <td class="td-num">{{ formatCurrency(camp.total_amount) }}</td>
+                  <td class="td-num td-muted">{{ camp.broad_roas > 0 ? camp.broad_roas.toFixed(2) + 'x' : '—' }}</td>
                   <td class="td-num">
                     <span :class="['acos-chip', camp.acos <= 10 ? 'acos-chip--pos' : camp.acos <= 20 ? 'acos-chip--warn' : 'acos-chip--neg']">{{ camp.acos }}%</span>
                   </td>
@@ -199,6 +221,7 @@
                   <th>Data</th>
                   <th class="th-num">Investido</th>
                   <th class="th-num">Receita Ads</th>
+                  <th class="th-num">ROAS</th>
                   <th class="th-num">ACOS</th>
                   <th class="th-num">Clicks</th>
                   <th class="th-num">Impressões</th>
@@ -210,6 +233,7 @@
                   <td><span class="date-cell">{{ formatDateBR(d.date) }}</span></td>
                   <td class="td-num">{{ formatCurrency(d.cost) }}</td>
                   <td class="td-num">{{ formatCurrency(d.total_amount) }}</td>
+                  <td class="td-num td-muted">{{ d.broad_roas > 0 ? Number(d.broad_roas).toFixed(2) + 'x' : '—' }}</td>
                   <td class="td-num">
                     <span :class="['acos-chip', d.acos <= 10 ? 'acos-chip--pos' : d.acos <= 20 ? 'acos-chip--warn' : 'acos-chip--neg']">{{ d.acos.toFixed(1) }}%</span>
                   </td>
@@ -255,8 +279,18 @@
               <div class="detail-metric-label">ACOS</div>
             </div>
             <div class="detail-metric">
+              <div class="detail-metric-val" :class="(campDetail.broad_roas||0) >= 5 ? 'val-pos' : (campDetail.broad_roas||0) >= 2 ? 'val-warn' : ''">
+                {{ campDetail.broad_roas > 0 ? campDetail.broad_roas.toFixed(2) + 'x' : '—' }}
+              </div>
+              <div class="detail-metric-label">ROAS Broad</div>
+            </div>
+            <div class="detail-metric">
               <div class="detail-metric-val">{{ formatCurrency(campDetail.total_amount) }}</div>
-              <div class="detail-metric-label">Receita Ads</div>
+              <div class="detail-metric-label">Receita Broad</div>
+            </div>
+            <div class="detail-metric">
+              <div class="detail-metric-val">{{ formatCurrency(campDetail.direct_amount) }}</div>
+              <div class="detail-metric-label">Receita Direta</div>
             </div>
             <div class="detail-metric">
               <div class="detail-metric-val">{{ campDetail.clicks.toLocaleString('pt-BR') }}</div>
@@ -278,11 +312,21 @@
               <span class="detail-config-label">Budget diário</span>
               <span class="detail-config-val">{{ campDetail.budget > 0 ? formatCurrency(campDetail.budget) : 'Automático' }}</span>
             </div>
-            <div class="detail-config-row" v-if="campDetail.roas_target > 0">
+            <div class="detail-config-row" v-if="campDetail.roas_target != null">
               <span class="detail-config-label">ROAS Target</span>
-              <span class="detail-config-val">{{ campDetail.roas_target.toFixed(2) }}x</span>
+              <span class="detail-config-val">{{ campDetail.roas_target > 0 ? campDetail.roas_target.toFixed(2) + 'x' : 'Automático' }}</span>
             </div>
           </div>
+
+          <template v-if="campDetail.item_ids && campDetail.item_ids.length">
+            <div class="detail-section-title">Produtos vinculados</div>
+            <div class="detail-config-rows">
+              <div class="detail-config-row" v-for="iid in campDetail.item_ids" :key="iid">
+                <span class="detail-config-label">Item ID</span>
+                <span class="detail-config-val">{{ iid }}</span>
+              </div>
+            </div>
+          </template>
         </div>
       </q-card>
     </q-dialog>
@@ -312,8 +356,9 @@ const datePresets = [
 const trendMetrics = [
   { key: 'cost',         label: 'Investido',   fmt: v => formatCurrency(v) },
   { key: 'total_amount', label: 'Receita Ads', fmt: v => formatCurrency(v) },
-  { key: 'acos',         label: 'ACOS %',      fmt: v => v.toFixed(1) + '%' },
-  { key: 'clicks',       label: 'Clicks',      fmt: v => v.toLocaleString('pt-BR') },
+  { key: 'broad_roas',   label: 'ROAS',        fmt: v => Number(v).toFixed(2) + 'x' },
+  { key: 'acos',         label: 'ACOS %',      fmt: v => Number(v).toFixed(1) + '%' },
+  { key: 'clicks',       label: 'Clicks',      fmt: v => Number(v).toLocaleString('pt-BR') },
 ]
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -325,8 +370,11 @@ const activeTrendMetric = ref('cost')
 const dateFrom = ref('')
 const dateTo   = ref('')
 
-const overview  = ref(null)
-const dailyData = ref([])
+const overview         = ref(null)
+const dailyData        = ref([])
+const selectedAccountId = ref(null)
+
+const allAccounts = computed(() => overview.value?.accounts || [])
 
 const selectedCampaign = ref(null)
 const campDetail       = ref(null)
@@ -375,6 +423,7 @@ async function load() {
   loading.value = true
   try {
     const params = { date_from: dateFrom.value, date_to: dateTo.value }
+    if (selectedAccountId.value) params.account = selectedAccountId.value
     const [ovRes, dailyRes] = await Promise.all([
       api.get('/shopee/ads/overview/', { params }),
       api.get('/shopee/ads/daily/',    { params }),
@@ -646,6 +695,16 @@ function formatTick(val) {
 .detail-config-row    { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 8px; }
 .detail-config-label  { font-size: 12px; color: #6b7280; }
 .detail-config-val    { font-size: 12px; font-weight: 700; color: #1a1f36; }
+
+/* ─── ACCOUNT FILTER ─────────────────────────────────────────────────────── */
+.account-filter { display: flex; gap: 4px; flex-wrap: wrap; }
+.acc-filter-btn {
+  font-size: 11px; font-weight: 600; padding: 4px 10px;
+  border-radius: 6px; border: 1.5px solid #e8edf3;
+  background: #fff; color: #6b7280; cursor: pointer; transition: all .15s;
+}
+.acc-filter-btn--on { background: #1a1f36; border-color: #1a1f36; color: #fff; }
+.acc-filter-btn:hover:not(.acc-filter-btn--on) { border-color: #1a1f36; }
 
 @media (max-width: 600px) {
   .page-header { padding: 10px 12px; }
