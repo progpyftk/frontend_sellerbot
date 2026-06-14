@@ -1,87 +1,80 @@
 <template>
   <q-page class="shopee-items-page">
 
-    <!-- ══ HEADER ══════════════════════════════════════════════ -->
-    <div class="page-header">
-      <div class="row items-center justify-between no-wrap">
-        <div class="row items-center q-gutter-x-md">
-          <div class="header-icon">
-            <q-icon name="storefront" size="22px" />
-          </div>
-          <div>
-            <div class="header-eyebrow">Shopee</div>
-            <div class="header-title">Meus Anúncios</div>
-          </div>
-          <div v-if="pagination.rowsNumber" class="header-count">
-            {{ pagination.rowsNumber.toLocaleString('pt-BR') }} anúncios
-          </div>
-        </div>
-        <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar"
-          :loading="syncing" :disable="!filters.account?.length && accountOptions.length > 1" size="sm" class="q-px-md"
-          @click="syncItems">
-          <q-tooltip v-if="!filters.account?.length && accountOptions.length > 1">Selecione uma conta primeiro</q-tooltip>
+    <!-- ══ HEADER ═══════════════════════════════════════════════ -->
+    <div class="page-header row items-center q-gutter-sm">
+      <div class="header-icon">
+        <q-icon name="storefront" size="18px" />
+      </div>
+      <div class="column">
+        <div class="header-eyebrow">Shopee</div>
+        <div class="header-title">Anúncios</div>
+      </div>
+      <div v-if="pagination.rowsNumber" class="header-count">{{ pagination.rowsNumber.toLocaleString('pt-BR') }} anúncios</div>
+      <div class="q-ml-auto row items-center q-gutter-xs">
+        <q-btn flat dense icon="refresh" color="grey-6" size="sm" @click="loadItems" :loading="loading">
+          <q-tooltip>Atualizar lista</q-tooltip>
         </q-btn>
+        <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar" size="sm"
+          :loading="syncing" @click="syncItems" class="q-px-md" style="border-radius:8px" />
       </div>
     </div>
 
-    <!-- ══ FILTROS ══════════════════════════════════════════════ -->
+    <!-- ══ FILTER BAR ══════════════════════════════════════════ -->
     <div class="fb">
 
-      <!-- Toolbar -->
       <div class="fb-toolbar">
-        <div class="fb-search" :class="{ focused: searchFocused, filled: !!filters.search }">
-          <q-icon name="search" size="18px" class="fb-search-icon" />
+
+        <!-- Busca -->
+        <div class="fb-search" :class="[searchFocused && 'focused', filters.search && 'filled']">
+          <q-icon name="search" size="15px" class="fb-search-icon" />
           <input
-            v-model="filters.search"
             class="fb-search-input"
-            placeholder="Buscar por título, SKU ou ID..."
+            placeholder="Buscar por nome, SKU ou ID..."
+            v-model="filters.search"
             @focus="searchFocused = true"
             @blur="searchFocused = false"
             @input="onSearch"
           />
-          <transition name="fade">
-            <button v-if="filters.search" class="fb-search-clear" @click="filters.search = ''; loadItems()">
-              <q-icon name="close" size="14px" />
-            </button>
-          </transition>
+          <button v-if="filters.search" class="fb-search-clear" @click="filters.search = ''; loadItems()">
+            <q-icon name="close" size="13px" />
+          </button>
         </div>
 
+        <!-- Ações direita -->
         <div class="fb-toolbar-actions">
-          <div class="fb-btn-group">
-            <q-btn-dropdown flat dense no-icon-animation unelevated
-              :label="currentSortLabel" icon="swap_vert"
-              class="fb-tbtn" color="grey-7" size="sm">
-              <q-list dense style="min-width:200px">
-                <q-item v-for="opt in sortOptions" :key="opt.value"
-                  clickable v-close-popup @click="applySort(opt.value)">
-                  <q-item-section>{{ opt.label }}</q-item-section>
-                  <q-item-section side v-if="currentSort === opt.value">
-                    <q-icon name="check" color="teal-7" size="14px" />
-                  </q-item-section>
+          <!-- Ordenação -->
+          <button class="fb-tbtn">
+            <q-icon name="sort" size="13px" />
+            {{ currentSortLabel }}
+            <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+              <q-list style="min-width:180px">
+                <q-item v-for="opt in sortOptions" :key="opt.value" clickable v-close-popup
+                  :class="['fb-menu-item', currentSort === opt.value && 'fb-menu-item--on']"
+                  @click="applySort(opt.value)">
+                  <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
                 </q-item>
               </q-list>
-            </q-btn-dropdown>
-          </div>
+            </q-menu>
+          </button>
 
-          <div class="fb-btn-group">
-            <button :class="['fb-tbtn', advancedFilterCount > 0 && 'fb-tbtn--active']"
-              @click="showAdvanced = true">
-              <q-icon name="tune" size="15px" />
-              <span>Filtros</span>
-              <span v-if="advancedFilterCount > 0" class="fb-adv-badge">{{ advancedFilterCount }}</span>
-            </button>
-          </div>
+          <!-- Filtros avançados -->
+          <button class="fb-tbtn" :class="advancedFilterCount > 0 && 'fb-tbtn--active'"
+            @click="showAdvanced = true">
+            <q-icon name="tune" size="13px" />
+            Avançado
+            <span v-if="advancedFilterCount > 0" class="fb-adv-badge">{{ advancedFilterCount }}</span>
+          </button>
 
-          <transition name="fade">
-            <button v-if="hasActiveFilters" class="fb-clear-btn" @click="clearFilters">
-              <q-icon name="filter_alt_off" size="14px" />
-              <span>Limpar</span>
-            </button>
-          </transition>
+          <!-- Limpar filtros -->
+          <button v-if="hasActiveFilters" class="fb-clear-btn" @click="clearFilters">
+            <q-icon name="filter_alt_off" size="13px" />Limpar
+          </button>
         </div>
+
       </div>
 
-      <!-- Filterbar -->
+      <!-- Filtros rápidos -->
       <div class="fb-filterbar">
 
         <!-- Conta -->
@@ -346,66 +339,44 @@
             <q-checkbox :model-value="allSelected" :indeterminate="someSelected"
               @update:model-value="toggleAll" color="teal-7" dense />
           </q-th>
-          <q-th auto-width />
           <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">
             {{ col.label }}
           </q-th>
+          <q-th auto-width />
         </q-tr>
       </template>
 
       <template v-slot:body="props">
         <q-tr :props="props"
-          :class="[isSelected(props.row) ? 'row-selected' : (props.expand ? 'row-expanded' : 'hover-row')]"
-          class="cursor-pointer">
+          :class="[isSelected(props.row) ? 'row-selected' : (selectedItem?.item_id === props.row.item_id ? 'row-active' : 'hover-row')]"
+          class="cursor-pointer"
+          @click="openDetail(props.row)">
 
           <!-- Checkbox -->
-          <q-td auto-width>
+          <q-td auto-width @click.stop>
             <q-checkbox :model-value="isSelected(props.row)" @update:model-value="toggleSelect(props.row)"
-              @click.stop color="teal-7" dense />
-          </q-td>
-
-          <!-- Expand -->
-          <q-td auto-width class="q-py-md">
-            <q-btn size="sm" flat round
-              :color="props.expand ? 'teal-7' : 'grey-6'"
-              @click.stop="toggleExpand(props)"
-              :icon="props.expand ? 'expand_less' : 'expand_more'" />
+              color="teal-7" dense />
           </q-td>
 
           <!-- Thumbnail -->
           <q-td key="thumbnail" :props="props" style="width:70px">
             <div class="relative-position">
-              <q-img :src="props.row.thumbnail || ''" style="height:50px;width:50px" fit="contain"
-                class="rounded-borders border-grey">
+              <q-img :src="props.row.thumbnail || ''" style="height:52px;width:52px" fit="contain"
+                class="rounded-borders border-grey thumb-img">
                 <template v-slot:error>
                   <div class="absolute-full flex flex-center bg-grey-2">
                     <q-icon name="image_not_supported" size="20px" color="grey-5" />
                   </div>
                 </template>
               </q-img>
-              <div class="absolute-bottom-right" style="transform:translate(20%,20%)">
-                <q-icon v-if="props.row.status === 'NORMAL'" name="check_circle" color="positive" size="16px"
-                  class="bg-white rounded-borders" />
-                <q-icon v-else-if="props.row.status === 'UNLIST'" name="pause_circle" color="warning" size="16px"
-                  class="bg-white rounded-borders" />
-                <q-icon v-else-if="props.row.status === 'BANNED'" name="cancel" color="negative" size="16px"
-                  class="bg-white rounded-borders" />
-                <q-icon v-else-if="props.row.status === 'DELETED'" name="remove_circle" color="grey-5" size="16px"
-                  class="bg-white rounded-borders" />
-              </div>
+              <div class="thumb-status-dot" :class="`dot--${statusColorClass(props.row.status)}`" />
             </div>
           </q-td>
 
-          <!-- Anúncio: nome, SKU, ID, loja, estoque -->
-          <q-td key="item_name" :props="props" style="max-width:380px;white-space:normal">
+          <!-- Anúncio: nome, SKU, ID, loja -->
+          <q-td key="item_name" :props="props" style="max-width:360px;white-space:normal">
             <div class="column q-gutter-y-xs">
-              <div class="text-grey-9 text-weight-bold cursor-pointer"
-                style="font-size:13px;line-height:1.3"
-                @click.stop="copyText(props.row.item_name)"
-                title="Copiar nome">
-                {{ props.row.item_name }}
-                <q-tooltip class="bg-grey-9">Clique para copiar o nome</q-tooltip>
-              </div>
+              <div class="item-name text-grey-9">{{ props.row.item_name }}</div>
               <div class="row items-center q-gutter-x-sm text-caption">
                 <span v-if="props.row.item_sku"
                   class="badge-mono cursor-pointer"
@@ -414,9 +385,7 @@
                   {{ props.row.item_sku }}
                   <q-tooltip class="bg-grey-9">Copiar SKU</q-tooltip>
                 </span>
-                <span
-                  class="badge-mono cursor-pointer"
-                  @click.stop="copyText(String(props.row.item_id))">
+                <span class="badge-mono cursor-pointer" @click.stop="copyText(String(props.row.item_id))">
                   <q-icon name="content_copy" size="9px" class="q-mr-xs text-grey-4" />
                   ID {{ props.row.item_id }}
                   <q-tooltip class="bg-grey-9">Copiar ID</q-tooltip>
@@ -425,16 +394,16 @@
                   <q-icon name="storefront" size="10px" /> {{ props.row.shop_name }}
                 </span>
               </div>
-              <div class="row items-center text-caption">
-                <q-icon name="inventory" size="xs" class="q-mr-xs text-grey-6" />
-                <span :class="props.row.stock > 0 ? 'text-grey-8' : 'text-red text-weight-bold'">
-                  {{ props.row.stock ?? 0 }} un
+              <!-- Atributos de variação (se houver) -->
+              <div v-if="props.row.variation_attrs?.length" class="row items-center q-gutter-x-xs">
+                <span v-for="attr in props.row.variation_attrs" :key="attr" class="var-attr-chip">
+                  {{ attr }}
                 </span>
               </div>
             </div>
           </q-td>
 
-          <!-- Preço -->
+          <!-- Preço + Estoque -->
           <q-td key="price" :props="props" align="right">
             <div class="text-subtitle1 text-weight-bold price-main">
               {{ formatCurrency(props.row.price) }}
@@ -447,33 +416,35 @@
                 -{{ discountPct(props.row) }}%
               </q-badge>
             </div>
+            <div class="q-mt-xs">
+              <span :class="['stock-badge', props.row.stock > 0 ? 'stock-badge--ok' : 'stock-badge--zero']">
+                <q-icon name="inventory" size="10px" />
+                {{ props.row.stock ?? 0 }} un
+              </span>
+            </div>
           </q-td>
 
           <!-- Analytics: visitas, vendas, avaliação -->
           <q-td key="analytics" :props="props" align="center">
             <div class="analytics-grid">
-              <!-- Visitas -->
               <div class="ag-cell" :class="props.row.views > 0 ? 'ag-cell--views' : 'ag-cell--zero'">
                 <q-icon name="visibility" size="11px" class="ag-icon" />
-                <span class="ag-value">{{ props.row.views > 999 ? (props.row.views / 1000).toFixed(1) + 'k' : (props.row.views || 0) }}</span>
+                <span class="ag-value">{{ fmtNum(props.row.views) }}</span>
                 <q-tooltip class="bg-grey-9">{{ (props.row.views || 0).toLocaleString('pt-BR') }} visitas</q-tooltip>
               </div>
-              <!-- Vendas -->
               <div class="ag-cell" :class="props.row.sales > 0 ? 'ag-cell--sales' : 'ag-cell--zero'">
                 <q-icon name="shopping_bag" size="11px" class="ag-icon" />
-                <span class="ag-value">{{ props.row.sales > 999 ? (props.row.sales / 1000).toFixed(1) + 'k' : (props.row.sales || 0) }}</span>
+                <span class="ag-value">{{ fmtNum(props.row.sales) }}</span>
                 <q-tooltip class="bg-grey-9">{{ (props.row.sales || 0).toLocaleString('pt-BR') }} vendas</q-tooltip>
               </div>
-              <!-- Avaliação -->
               <div class="ag-cell" :class="props.row.rating_count > 0 ? 'ag-cell--rating' : 'ag-cell--zero'">
                 <q-icon name="star" size="11px" class="ag-icon" />
                 <span class="ag-value">{{ props.row.rating_count > 0 ? Number(props.row.rating_star || 0).toFixed(1) : '—' }}</span>
-                <q-tooltip v-if="props.row.rating_count" class="bg-grey-9">{{ Number(props.row.rating_star || 0).toFixed(1) }} estrelas · {{ props.row.rating_count }} avaliações</q-tooltip>
+                <q-tooltip v-if="props.row.rating_count" class="bg-grey-9">{{ Number(props.row.rating_star || 0).toFixed(1) }} ★ · {{ props.row.rating_count }} avaliações</q-tooltip>
               </div>
-              <!-- Avaliações (count) -->
               <div class="ag-cell" :class="props.row.rating_count > 0 ? 'ag-cell--reviews' : 'ag-cell--zero'">
                 <q-icon name="chat_bubble" size="11px" class="ag-icon" />
-                <span class="ag-value">{{ props.row.rating_count > 999 ? (props.row.rating_count / 1000).toFixed(1) + 'k' : (props.row.rating_count || 0) }}</span>
+                <span class="ag-value">{{ fmtNum(props.row.rating_count) }}</span>
                 <q-tooltip class="bg-grey-9">{{ (props.row.rating_count || 0).toLocaleString('pt-BR') }} avaliações</q-tooltip>
               </div>
             </div>
@@ -486,170 +457,237 @@
             </div>
           </q-td>
 
-          <!-- Sincronizado -->
+          <!-- Sync -->
           <q-td key="last_synced_at" :props="props" align="right">
             <span class="text-caption text-grey-5">{{ formatDate(props.row.last_synced_at) }}</span>
           </q-td>
 
-        </q-tr>
-
-        <!-- ── Expand row ── -->
-        <q-tr v-show="props.expand" :props="props">
-          <q-td colspan="100%" class="q-pa-none">
-            <div class="expand-panel">
-
-              <!-- Loading detalhe -->
-              <div v-if="detailLoading[props.row.item_id] || (props.row.has_model && !itemDetails[props.row.item_id])"
-                class="flex flex-center q-py-lg">
-                <q-spinner color="teal-7" size="28px" />
-                <span class="q-ml-sm text-caption text-grey-6">Carregando detalhes...</span>
-              </div>
-
-              <div v-else class="row q-col-gutter-lg">
-
-                <!-- Imagens -->
-                <div class="col-12 col-md-3">
-                  <div class="expand-section-label">Imagens</div>
-                  <div class="row q-gutter-xs">
-                    <template v-if="(itemDetails[props.row.item_id]?.images || props.row.images || []).length">
-                      <q-img
-                        v-for="(img, i) in (showAllImages[props.row.item_id]
-                          ? (itemDetails[props.row.item_id]?.images || props.row.images || [])
-                          : (itemDetails[props.row.item_id]?.images || props.row.images || []).slice(0, 3))"
-                        :key="i"
-                        :src="img"
-                        style="width:60px;height:60px"
-                        fit="cover"
-                        class="rounded-borders border-grey" />
-                      <div
-                        v-if="!showAllImages[props.row.item_id] && (itemDetails[props.row.item_id]?.images || props.row.images || []).length > 3"
-                        class="img-more-tile rounded-borders cursor-pointer"
-                        @click="showAllImages[props.row.item_id] = true">
-                        +{{ (itemDetails[props.row.item_id]?.images || props.row.images || []).length - 3 }}
-                      </div>
-                    </template>
-                    <div v-else class="text-caption text-grey-5 q-pa-sm">Sem imagens</div>
-                  </div>
-                </div>
-
-                <!-- Detalhes -->
-                <div class="col-12 col-md-4">
-                  <div class="expand-section-label">Detalhes</div>
-                  <q-markup-table flat dense class="bg-transparent detail-table">
-                    <tbody>
-                      <tr>
-                        <td class="detail-label">Item ID</td>
-                        <td class="font-mono text-grey-9">{{ props.row.item_id }}</td>
-                      </tr>
-                      <tr v-if="props.row.item_sku">
-                        <td class="detail-label">SKU</td>
-                        <td class="font-mono text-grey-9">{{ props.row.item_sku }}</td>
-                      </tr>
-                      <tr>
-                        <td class="detail-label">Preço atual</td>
-                        <td>
-                          <span class="text-weight-bold price-main">{{ formatCurrency(props.row.price) }}</span>
-                          <span v-if="hasDiscount(props.row)" class="q-ml-xs">
-                            <span class="text-grey-5" style="text-decoration:line-through;font-size:11px">
-                              {{ formatCurrency(props.row.original_price) }}
-                            </span>
-                            <q-badge color="deep-orange" class="q-ml-xs" style="font-size:10px;border-radius:6px">
-                              -{{ discountPct(props.row) }}%
-                            </q-badge>
-                          </span>
-                        </td>
-                      </tr>
-                      <tr v-if="hasDiscount(props.row)">
-                        <td class="detail-label">Preço original</td>
-                        <td class="text-grey-7">{{ formatCurrency(props.row.original_price) }}</td>
-                      </tr>
-                      <tr v-if="hasDiscount(props.row)">
-                        <td class="detail-label">Desconto</td>
-                        <td class="text-weight-bold" style="color:#EE4D2D">{{ discountPct(props.row) }}%</td>
-                      </tr>
-                      <tr>
-                        <td class="detail-label">Estoque</td>
-                        <td :class="(props.row.stock ?? 0) === 0 ? 'text-negative text-weight-bold' : 'text-grey-9'">
-                          {{ props.row.stock ?? 0 }} un
-                        </td>
-                      </tr>
-                      <tr v-if="props.row.views != null">
-                        <td class="detail-label">Visitas</td>
-                        <td class="text-grey-9">{{ (props.row.views || 0).toLocaleString('pt-BR') }}</td>
-                      </tr>
-                      <tr v-if="props.row.sales != null">
-                        <td class="detail-label">Vendas</td>
-                        <td class="text-grey-9">{{ (props.row.sales || 0).toLocaleString('pt-BR') }}</td>
-                      </tr>
-                      <tr v-if="props.row.rating_count">
-                        <td class="detail-label">Avaliação</td>
-                        <td class="text-grey-9">
-                          <q-icon name="star" color="amber" size="12px" />
-                          {{ Number(props.row.rating_star || 0).toFixed(1) }}
-                          <span class="text-grey-5">({{ props.row.rating_count }})</span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </q-markup-table>
-                </div>
-
-                <!-- Variações + link -->
-                <div class="col-12 col-md-5">
-                  <template v-if="itemDetails[props.row.item_id]?.variations?.length">
-                    <div class="expand-section-label">
-                      Variações ({{ itemDetails[props.row.item_id].variations.length }})
-                    </div>
-                    <q-markup-table flat dense class="bg-transparent variation-table">
-                      <thead>
-                        <tr>
-                          <th class="text-left var-th">Variação</th>
-                          <th class="text-left var-th">SKU</th>
-                          <th class="text-right var-th">Preço</th>
-                          <th class="text-right var-th">Estoque</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="v in itemDetails[props.row.item_id].variations" :key="v.model_id"
-                          :class="v.status === 'DELETED' ? 'text-grey-4' : ''">
-                          <td class="text-grey-9 var-td">{{ v.model_name || '—' }}</td>
-                          <td class="font-mono text-grey-6 var-td">{{ v.model_sku || '—' }}</td>
-                          <td class="text-right var-td">
-                            <span class="text-weight-bold price-main" style="font-size:12px">{{ formatCurrency(v.price) }}</span>
-                            <span v-if="hasDiscountV(v)" class="q-ml-xs text-grey-5"
-                              style="text-decoration:line-through;font-size:10px">
-                              {{ formatCurrency(v.original_price) }}
-                            </span>
-                          </td>
-                          <td class="text-right var-td"
-                            :class="(v.stock ?? 0) === 0 ? 'text-red text-weight-bold' : 'text-grey-9'">
-                            {{ v.stock ?? 0 }}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </q-markup-table>
-                  </template>
-                  <template v-else-if="!props.row.has_model">
-                    <div class="expand-section-label">Variações</div>
-                    <div class="text-caption text-grey-5">Produto sem variações</div>
-                  </template>
-
-                  <div class="q-mt-md">
-                    <q-btn outline color="deep-orange" icon="open_in_new" label="Ver na Shopee"
-                      :href="`https://shopee.com.br/product/${props.row.shop_id}/${props.row.item_id}`"
-                      target="_blank" type="a" size="sm" class="q-px-md" style="border-radius:8px" />
-                  </div>
-                </div>
-
-              </div>
-            </div>
+          <!-- Detail button -->
+          <q-td auto-width @click.stop>
+            <q-btn flat dense round size="sm"
+              :color="selectedItem?.item_id === props.row.item_id ? 'teal-7' : 'grey-5'"
+              icon="chevron_right"
+              @click.stop="openDetail(props.row)" />
           </q-td>
-        </q-tr>
 
+        </q-tr>
       </template>
 
     </q-table>
 
-    <!-- ══ FILTROS AVANÇADOS (painel direito) ══════════════════ -->
+    <!-- ══ DETAIL DRAWER ════════════════════════════════════════ -->
+    <q-dialog v-model="showDetail" position="right" :maximized="true"
+      transition-show="slide-left" transition-hide="slide-right">
+      <q-card class="detail-drawer" style="width:560px;max-width:100vw">
+
+        <!-- Header -->
+        <div class="dd-header">
+          <div class="dd-header-meta">
+            <div class="dd-header-eyebrow">Anúncio</div>
+            <div class="dd-header-title">{{ selectedItem?.item_name }}</div>
+          </div>
+          <button class="dd-close" @click="showDetail = false">
+            <q-icon name="close" size="20px" />
+          </button>
+        </div>
+
+        <!-- Status + Link row -->
+        <div class="dd-subheader">
+          <div class="status-pill" :class="`status-pill--${statusColorClass(selectedItem?.status)}`">
+            {{ statusLabel(selectedItem?.status) }}
+          </div>
+          <div class="row items-center q-gutter-xs">
+            <span class="shop-badge">
+              <q-icon name="storefront" size="10px" /> {{ selectedItem?.shop_name }}
+            </span>
+          </div>
+          <q-space />
+          <a :href="`https://shopee.com.br/product/${selectedItem?.shop_id}/${selectedItem?.item_id}`"
+            target="_blank" class="dd-shopee-link">
+            <q-icon name="open_in_new" size="13px" />Ver na Shopee
+          </a>
+        </div>
+
+        <q-scroll-area style="flex:1;height:0">
+          <div class="dd-body">
+
+            <!-- Loading -->
+            <div v-if="detailLoading[selectedItem?.item_id]" class="flex flex-center q-py-xl">
+              <q-spinner color="teal-7" size="32px" />
+              <span class="q-ml-sm text-caption text-grey-6">Carregando detalhes...</span>
+            </div>
+
+            <template v-else-if="selectedItem">
+
+              <!-- ── Imagens ─────────────────────────────────────── -->
+              <div v-if="allImages.length" class="dd-section">
+                <div class="dd-section-label">Imagens ({{ allImages.length }})</div>
+                <div class="img-gallery">
+                  <div v-for="(img, i) in (showAllImages ? allImages : allImages.slice(0, 6))" :key="i"
+                    class="img-tile" :class="i === 0 && 'img-tile--main'">
+                    <q-img :src="img" fit="cover" class="rounded-borders border-grey full-height full-width"
+                      style="min-height:60px" />
+                  </div>
+                  <div v-if="!showAllImages && allImages.length > 6"
+                    class="img-tile img-more-tile rounded-borders cursor-pointer"
+                    @click="showAllImages = true">
+                    +{{ allImages.length - 6 }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Stats ──────────────────────────────────────── -->
+              <div class="dd-section">
+                <div class="dd-stats-row">
+                  <div class="dd-stat">
+                    <div class="dd-stat-value price-main">{{ formatCurrency(selectedItem.price) }}</div>
+                    <div class="dd-stat-label">Preço atual</div>
+                    <div v-if="hasDiscount(selectedItem)" class="dd-stat-sub">
+                      <span style="text-decoration:line-through;color:#94a3b8">{{ formatCurrency(selectedItem.original_price) }}</span>
+                      <q-badge color="deep-orange" class="q-ml-xs" style="font-size:9px">-{{ discountPct(selectedItem) }}%</q-badge>
+                    </div>
+                  </div>
+                  <div class="dd-stat">
+                    <div class="dd-stat-value" :class="(selectedItem.stock ?? 0) === 0 ? 'text-red' : 'text-grey-9'">
+                      {{ (selectedItem.stock ?? 0).toLocaleString('pt-BR') }}
+                    </div>
+                    <div class="dd-stat-label">Estoque</div>
+                  </div>
+                  <div class="dd-stat">
+                    <div class="dd-stat-value text-green-7">{{ (selectedItem.sales || 0).toLocaleString('pt-BR') }}</div>
+                    <div class="dd-stat-label">Vendas</div>
+                  </div>
+                  <div class="dd-stat">
+                    <div class="dd-stat-value text-blue-7">{{ (selectedItem.views || 0).toLocaleString('pt-BR') }}</div>
+                    <div class="dd-stat-label">Visitas</div>
+                  </div>
+                  <div v-if="selectedItem.rating_count" class="dd-stat">
+                    <div class="dd-stat-value text-amber-7">
+                      <q-icon name="star" size="14px" />{{ Number(selectedItem.rating_star || 0).toFixed(1) }}
+                    </div>
+                    <div class="dd-stat-label">{{ selectedItem.rating_count }} aval.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Detalhes ───────────────────────────────────── -->
+              <div class="dd-section">
+                <div class="dd-section-label">Informações</div>
+                <div class="dd-kv-grid">
+                  <div class="dd-kv-row">
+                    <span class="dd-kv-key">Item ID</span>
+                    <span class="font-mono dd-kv-val cursor-pointer" @click="copyText(String(selectedItem.item_id))">
+                      {{ selectedItem.item_id }}
+                      <q-icon name="content_copy" size="10px" class="q-ml-xs text-grey-4" />
+                    </span>
+                  </div>
+                  <div v-if="selectedItem.item_sku" class="dd-kv-row">
+                    <span class="dd-kv-key">SKU</span>
+                    <span class="font-mono dd-kv-val cursor-pointer" @click="copyText(selectedItem.item_sku)">
+                      {{ selectedItem.item_sku }}
+                      <q-icon name="content_copy" size="10px" class="q-ml-xs text-grey-4" />
+                    </span>
+                  </div>
+                  <div v-if="selectedItem.liked" class="dd-kv-row">
+                    <span class="dd-kv-key">Curtidas</span>
+                    <span class="dd-kv-val">{{ (selectedItem.liked || 0).toLocaleString('pt-BR') }}</span>
+                  </div>
+                  <div v-if="selectedItem.category_id" class="dd-kv-row">
+                    <span class="dd-kv-key">Categoria</span>
+                    <span class="dd-kv-val font-mono">{{ selectedItem.category_id }}</span>
+                  </div>
+                  <div class="dd-kv-row">
+                    <span class="dd-kv-key">Sincronizado</span>
+                    <span class="dd-kv-val text-grey-6">{{ formatDate(selectedItem.last_synced_at) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Descrição ───────────────────────────────────── -->
+              <div v-if="selectedItemDetail?.description" class="dd-section">
+                <div class="dd-section-label">Descrição</div>
+                <div class="dd-description" :class="descExpanded ? 'dd-description--expanded' : ''">
+                  {{ selectedItemDetail.description }}
+                </div>
+                <button v-if="selectedItemDetail.description?.length > 300" class="dd-desc-toggle"
+                  @click="descExpanded = !descExpanded">
+                  {{ descExpanded ? 'Ver menos' : 'Ver mais' }}
+                  <q-icon :name="descExpanded ? 'expand_less' : 'expand_more'" size="13px" />
+                </button>
+              </div>
+
+              <!-- ── Variações ───────────────────────────────────── -->
+              <div v-if="selectedItemDetail?.variations?.length" class="dd-section">
+                <div class="dd-section-label row items-center q-gutter-xs">
+                  Variações
+                  <span class="dd-count-badge">{{ selectedItemDetail.variations.length }}</span>
+                  <span v-if="selectedItemDetail?.variation_attrs?.length" class="row q-gutter-xs q-ml-xs">
+                    <span v-for="attr in selectedItemDetail.variation_attrs" :key="attr" class="var-attr-chip var-attr-chip--detail">{{ attr }}</span>
+                  </span>
+                </div>
+
+                <div class="var-table-wrap">
+                  <table class="var-table">
+                    <thead>
+                      <tr>
+                        <!-- Colunas dinâmicas de atributos -->
+                        <th v-for="attr in (selectedItemDetail.variation_attrs || [])" :key="attr">{{ attr }}</th>
+                        <!-- Se não tem variation_attrs mas tem model_name, mostra coluna Variação -->
+                        <th v-if="!selectedItemDetail.variation_attrs?.length">Variação</th>
+                        <th>SKU</th>
+                        <th>Preço</th>
+                        <th>Estoque</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="v in selectedItemDetail.variations" :key="v.model_id"
+                        :class="v.status === 'DELETED' ? 'var-deleted' : ''">
+                        <!-- Atributos dinâmicos -->
+                        <td v-for="attr in (selectedItemDetail.variation_attrs || [])" :key="attr"
+                          class="var-attr-val">
+                          {{ v.attribute_values?.[attr] || '—' }}
+                        </td>
+                        <!-- Fallback model_name -->
+                        <td v-if="!selectedItemDetail.variation_attrs?.length" class="var-attr-val">
+                          {{ v.model_name || '—' }}
+                        </td>
+                        <td class="font-mono text-grey-6 var-sku">{{ v.model_sku || '—' }}</td>
+                        <td class="text-right">
+                          <span class="text-weight-bold price-main" style="font-size:12px">
+                            {{ formatCurrency(v.price) }}
+                          </span>
+                          <div v-if="hasDiscountV(v)" class="text-grey-5" style="text-decoration:line-through;font-size:10px">
+                            {{ formatCurrency(v.original_price) }}
+                          </div>
+                        </td>
+                        <td class="text-right" :class="(v.stock ?? 0) === 0 ? 'text-red text-weight-bold' : 'text-grey-9'">
+                          {{ v.stock ?? 0 }}
+                        </td>
+                        <td class="text-center">
+                          <div class="status-pill status-pill--sm" :class="`status-pill--${statusColorClass(v.status)}`">
+                            {{ statusLabel(v.status) }}
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div v-else-if="!selectedItem.has_model" class="dd-section">
+                <div class="dd-section-label">Variações</div>
+                <div class="text-caption text-grey-5">Produto sem variações</div>
+              </div>
+
+            </template>
+          </div>
+        </q-scroll-area>
+
+      </q-card>
+    </q-dialog>
+
+    <!-- ══ FILTROS AVANÇADOS ════════════════════════════════════ -->
     <q-dialog v-model="showAdvanced" position="right" :maximized="true"
       transition-show="slide-left" transition-hide="slide-right">
       <q-card class="fadv-panel" style="width:360px;max-width:100vw;height:100vh">
@@ -662,7 +700,6 @@
         <q-scroll-area style="height:calc(100vh - 110px)">
           <div class="fadv-body">
 
-            <!-- Estoque -->
             <div class="fadv-section">
               <div class="fadv-section-label">Faixa de Estoque</div>
               <div class="fadv-range-row">
@@ -672,7 +709,6 @@
               </div>
             </div>
 
-            <!-- Preço -->
             <div class="fadv-section">
               <div class="fadv-section-label">Faixa de Preço (R$)</div>
               <div class="fadv-range-row">
@@ -682,13 +718,11 @@
               </div>
             </div>
 
-            <!-- Vendas mínimas -->
             <div class="fadv-section">
               <div class="fadv-section-label">Vendas Mínimas</div>
               <input class="fadv-input fadv-input--full" type="number" placeholder="Ex: 10" v-model.number="filters.salesMin" />
             </div>
 
-            <!-- Avaliação mínima -->
             <div class="fadv-section">
               <div class="fadv-section-label">Avaliação Mínima (0 – 5)</div>
               <input class="fadv-input fadv-input--full" type="number" placeholder="Ex: 4.5"
@@ -721,12 +755,15 @@ const loading        = ref(false)
 const syncing        = ref(false)
 const searchFocused  = ref(false)
 const showAdvanced   = ref(false)
+const showDetail     = ref(false)
+const selectedItem   = ref(null)
 const accountOptions = ref([])
 const currentSort    = ref('-sales')
-const itemDetails    = ref({})   // cache de detalhes completos por item_id
-const detailLoading  = ref({})   // loading state por item_id
-const showAllImages  = ref({})   // per item_id: show all images or just first 3
+const itemDetails    = ref({})
+const detailLoading  = ref({})
 const selectedItems  = ref([])
+const showAllImages  = ref(false)
+const descExpanded   = ref(false)
 
 const pagination = ref({
   sortBy: null,
@@ -742,28 +779,39 @@ const filters = reactive({
   search:      '',
   account:     [],
   status:      [],
-  stockStatus: null,   // null | 'zero' | 'positive' | 'low'
-  hasDiscount: null,   // null | true | false
-  // advanced
+  stockStatus: null,
+  hasDiscount: null,
   stockMin:    null,
   stockMax:    null,
   priceMin:    null,
   priceMax:    null,
   salesMin:    null,
   ratingMin:   null,
+  _ratingZero: false,
+  _hasModel:   false,
 })
 
-// ── Colunas ────────────────────────────────────────────────────────────────
+// ── Computed ────────────────────────────────────────────────────────────────
+const selectedItemDetail = computed(() =>
+  selectedItem.value ? (itemDetails.value[selectedItem.value.item_id] || selectedItem.value) : null
+)
+
+const allImages = computed(() => {
+  const detail = itemDetails.value[selectedItem.value?.item_id]
+  return detail?.images || selectedItem.value?.images || []
+})
+
+// ── Colunas ─────────────────────────────────────────────────────────────────
 const columns = [
   { name: 'thumbnail',      label: '',             field: 'thumbnail',      sortable: false, align: 'left'   },
   { name: 'item_name',      label: 'Anúncio',      field: 'item_name',      sortable: true,  align: 'left'   },
-  { name: 'price',          label: 'Preço',        field: 'price',          sortable: true,  align: 'right'  },
+  { name: 'price',          label: 'Preço / Estoque', field: 'price',       sortable: true,  align: 'right'  },
   { name: 'analytics',      label: 'Analytics',    field: 'views',          sortable: false, align: 'center' },
   { name: 'status',         label: 'Status',       field: 'status',         sortable: false, align: 'center' },
   { name: 'last_synced_at', label: 'Sincronizado', field: 'last_synced_at', sortable: true,  align: 'right'  },
 ]
 
-// ── Opções ─────────────────────────────────────────────────────────────────
+// ── Opções ──────────────────────────────────────────────────────────────────
 const statusOptions = [
   { value: 'NORMAL',  label: 'Ativo'    },
   { value: 'UNLIST',  label: 'Pausado'  },
@@ -790,7 +838,7 @@ const sortOptions = [
   { value: '-views',          label: 'Mais visitados'  },
 ]
 
-// ── Computeds ──────────────────────────────────────────────────────────────
+// ── Computeds ───────────────────────────────────────────────────────────────
 const currentSortLabel = computed(() =>
   sortOptions.find(o => o.value === currentSort.value)?.label || 'Ordenar'
 )
@@ -814,15 +862,12 @@ const hasActiveFilters = computed(() =>
 const allSelected  = computed(() => items.value.length > 0 && selectedItems.value.length === items.value.length)
 const someSelected = computed(() => selectedItems.value.length > 0 && selectedItems.value.length < items.value.length)
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 const statusLabel = (s) =>
   ({ NORMAL: 'Ativo', UNLIST: 'Pausado', BANNED: 'Banido', DELETED: 'Deletado' })[s] || s || '—'
 
 const statusColorClass = (s) =>
   ({ NORMAL: 'active', UNLIST: 'paused', BANNED: 'banned', DELETED: 'deleted' })[s] || 'deleted'
-
-const statusColor = (s) =>
-  ({ NORMAL: 'positive', UNLIST: 'warning', BANNED: 'negative', DELETED: 'grey-6' })[s] || 'grey-6'
 
 const formatCurrency = (v) =>
   v != null ? Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'
@@ -830,8 +875,10 @@ const formatCurrency = (v) =>
 const formatDate = (v) =>
   v ? DateTime.fromISO(v).setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm') : '—'
 
-const hasDiscount  = (row) => row.original_price && Number(row.original_price) > Number(row.price) + 0.01
-const hasDiscountV = (v)   => v.original_price  && Number(v.original_price)  > Number(v.price)  + 0.01
+const fmtNum = (n) => n > 999 ? (n / 1000).toFixed(1) + 'k' : (n || 0)
+
+const hasDiscount  = (row) => row?.original_price && Number(row.original_price) > Number(row.price) + 0.01
+const hasDiscountV = (v)   => v?.original_price  && Number(v.original_price)  > Number(v.price)  + 0.01
 const discountPct  = (row) => Math.round((1 - Number(row.price) / Number(row.original_price)) * 100)
 
 const copyText = (text) => {
@@ -847,7 +894,7 @@ const toggleSelect = (row) => {
 }
 const toggleAll = (val) => { selectedItems.value = val ? [...items.value] : [] }
 
-// ── Filtro toggles ─────────────────────────────────────────────────────────
+// ── Filtros toggles ──────────────────────────────────────────────────────────
 const toggleAccountFilter = (id) => {
   const idx = filters.account.indexOf(id)
   if (idx === -1) filters.account.push(id)
@@ -862,36 +909,14 @@ const toggleStatusFilter = (val) => {
   loadItems()
 }
 
-// ── Smart Views ────────────────────────────────────────────────────────────
-const setViewSemEstoque = () => {
-  clearFilters(false)
-  filters.stockStatus = 'zero'
-  loadItems()
-}
-const setViewComDesconto = () => {
-  clearFilters(false)
-  filters.hasDiscount = true
-  loadItems()
-}
-const setViewSemAvaliacoes = () => {
-  clearFilters(false)
-  // Filtramos via sort e o backend filtrará rating_count=0 via search params
-  // Passamos como param extra via buildParams
-  filters._ratingZero = true
-  loadItems()
-}
-const setViewMaisVendidos = () => {
-  clearFilters(false)
-  currentSort.value = '-sales'
-  loadItems()
-}
-const setViewVariacoes = () => {
-  clearFilters(false)
-  filters._hasModel = true
-  loadItems()
-}
+// ── Smart Views ──────────────────────────────────────────────────────────────
+const setViewSemEstoque = () => { clearFilters(false); filters.stockStatus = 'zero'; loadItems() }
+const setViewComDesconto = () => { clearFilters(false); filters.hasDiscount = true; loadItems() }
+const setViewSemAvaliacoes = () => { clearFilters(false); filters._ratingZero = true; loadItems() }
+const setViewMaisVendidos = () => { clearFilters(false); currentSort.value = '-sales'; loadItems() }
+const setViewVariacoes = () => { clearFilters(false); filters._hasModel = true; loadItems() }
 
-// ── API ────────────────────────────────────────────────────────────────────
+// ── API ──────────────────────────────────────────────────────────────────────
 const loadAccounts = async () => {
   try {
     const { data } = await api.get('/shopee/accounts/')
@@ -903,11 +928,7 @@ const loadAccounts = async () => {
 }
 
 const buildParams = (pg = pagination.value) => {
-  const p = {
-    page:      pg.page,
-    page_size: pg.rowsPerPage,
-    sort:      currentSort.value,
-  }
+  const p = { page: pg.page, page_size: pg.rowsPerPage, sort: currentSort.value }
   if (filters.account?.length)       p.account      = filters.account.join(',')
   if (filters.status?.length)        p.status       = filters.status.join(',')
   if (filters.search)                p.search       = filters.search
@@ -944,22 +965,22 @@ const loadItems = async (pg = null) => {
   }
 }
 
-// Busca detalhe completo (com variações) ao expandir — cacheia por item_id
-const toggleExpand = async (props) => {
-  props.expand = !props.expand
-  const itemId = props.row.item_id
-  if (props.expand && !itemDetails.value[itemId]) {
+const openDetail = async (row) => {
+  selectedItem.value = row
+  showDetail.value   = true
+  showAllImages.value = false
+  descExpanded.value  = false
+  const itemId = row.item_id
+  if (!itemDetails.value[itemId] && row.has_model) {
     detailLoading.value[itemId] = true
     try {
-      const { data } = await api.get(`/shopee/items/${props.row.id}/`)
+      const { data } = await api.get(`/shopee/items/${row.id}/`)
       itemDetails.value[itemId] = data
-      // Atualiza campos de analytics/imagens na linha da tabela
+      // Atualiza variation_attrs na linha da tabela
       const idx = items.value.findIndex(r => r.item_id === itemId)
-      if (idx !== -1) {
-        items.value[idx] = { ...items.value[idx], ...data }
-      }
+      if (idx !== -1) items.value[idx] = { ...items.value[idx], ...data }
     } catch {
-      $q.notify({ message: 'Erro ao carregar detalhes do item.', color: 'negative', position: 'top' })
+      $q.notify({ message: 'Erro ao carregar detalhes.', color: 'negative', position: 'top' })
     } finally {
       detailLoading.value[itemId] = false
     }
@@ -973,10 +994,7 @@ const onSearch = () => {
   searchTimeout = setTimeout(() => loadItems(), 400)
 }
 
-const applySort = (val) => {
-  currentSort.value = val
-  loadItems()
-}
+const applySort = (val) => { currentSort.value = val; loadItems() }
 
 const clearFilters = (andReload = true) => {
   filters.search      = ''
@@ -1078,17 +1096,16 @@ onMounted(loadAccounts)
 .fb-search-clear:hover { color: #0f172a; }
 
 .fb-toolbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
-.fb-btn-group { display: flex; }
 
 .fb-tbtn {
   display: flex; align-items: center; gap: 5px;
   height: 32px; padding: 0 12px; border-radius: 7px;
-  border: 1.5px solid #e2e8f0; background: #fff !important;
-  font-size: 12px !important; font-weight: 500; color: #64748b !important;
+  border: 1.5px solid #e2e8f0; background: #fff;
+  font-size: 12px; font-weight: 500; color: #64748b;
   cursor: pointer; transition: all .15s; white-space: nowrap;
 }
-.fb-tbtn:hover { background: #f8fafc !important; }
-.fb-tbtn--active { border-color: #0d9488 !important; color: #0d9488 !important; background: #f0fdf9 !important; }
+.fb-tbtn:hover { background: #f8fafc; }
+.fb-tbtn--active { border-color: #0d9488; color: #0d9488; background: #f0fdf9; }
 .fb-adv-badge {
   background: #0d9488; color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 10px;
@@ -1233,29 +1250,72 @@ onMounted(loadAccounts)
   background: #e6fdf8 !important;
 }
 
-:deep(.shopee-table tbody tr.row-expanded) {
+:deep(.shopee-table tbody tr.row-active) {
   background: #f0fdf9 !important;
+  border-left: 3px solid #0d9488;
 }
 
 :deep(.shopee-table tbody td) {
   border-bottom: 1px solid #f1f5f9;
-  min-height: 65px; height: auto; vertical-align: top;
+  min-height: 65px; height: auto; vertical-align: middle;
 }
 
+/* ── Thumbnail ────────────────────────────────────────────────────────── */
+.thumb-img { transition: opacity .15s; }
+.hover-row:hover .thumb-img { opacity: .9; }
+
+.thumb-status-dot {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid #fff;
+}
+.dot--active  { background: #22c55e; }
+.dot--paused  { background: #f59e0b; }
+.dot--banned  { background: #ef4444; }
+.dot--deleted { background: #cbd5e1; }
+
 /* ── Células especiais ────────────────────────────────────────────────── */
+.item-name {
+  font-size: 13px; font-weight: 600; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .badge-mono {
   background: #f1f5f9; color: #475569;
   padding: 1px 5px; border-radius: 5px;
   font-family: 'Roboto Mono', monospace;
   letter-spacing: -0.5px; font-size: 11px;
+  display: inline-flex; align-items: center;
 }
 .badge-mono:hover { background: #e2e8f0; }
 
 .shop-badge {
   color: #EE4D2D; font-weight: 700; font-size: 11px;
+  display: inline-flex; align-items: center; gap: 2px;
 }
 
 .price-main { color: #EE4D2D; }
+
+.stock-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 10px;
+  font-size: 10.5px; font-weight: 600;
+}
+.stock-badge--ok   { background: #f0fdf4; color: #16a34a; }
+.stock-badge--zero { background: #fef2f2; color: #dc2626; }
+
+/* ── Variation attribute chips ─────────────────────────────────────── */
+.var-attr-chip {
+  display: inline-flex; align-items: center;
+  padding: 1px 7px; border-radius: 10px;
+  font-size: 10px; font-weight: 600;
+  background: #eff6ff; color: #3b82f6;
+  border: 1px solid #bfdbfe;
+}
+.var-attr-chip--detail {
+  font-size: 11px; padding: 2px 8px;
+}
 
 /* ── Analytics grid ──────────────────────────────────────────────────── */
 .analytics-grid {
@@ -1289,57 +1349,169 @@ onMounted(loadAccounts)
   padding: 3px 10px; border-radius: 20px;
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
 }
+.status-pill--sm { padding: 2px 7px; font-size: 9px; }
 .status-pill--active  { background: #dcfce7; color: #16a34a; }
 .status-pill--paused  { background: #fef3c7; color: #b45309; }
 .status-pill--banned  { background: #fee2e2; color: #dc2626; }
 .status-pill--deleted { background: #f1f5f9; color: #94a3b8; }
 
-/* ── Expand row ───────────────────────────────────────────────────────── */
-.expand-panel {
-  background: #fff;
-  padding: 16px 20px;
-  border-top: 2px solid #0d9488;
+/* ── Detail Drawer ────────────────────────────────────────────────────── */
+.detail-drawer {
+  display: flex; flex-direction: column;
+  border-radius: 0 !important;
+  height: 100vh;
 }
 
-.expand-section-label {
+.dd-header {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #e2e8f0; background: #fff;
+  flex-shrink: 0;
+}
+.dd-header-meta { flex: 1; min-width: 0; }
+.dd-header-eyebrow {
+  font-size: 10px; font-weight: 700; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 3px;
+}
+.dd-header-title {
+  font-size: 14px; font-weight: 700; color: #0f172a;
+  line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.dd-close {
+  background: none; border: none; cursor: pointer; color: #94a3b8;
+  display: flex; align-items: center; flex-shrink: 0; padding: 2px;
+  border-radius: 6px; transition: background .15s;
+}
+.dd-close:hover { color: #0f172a; background: #f1f5f9; }
+
+.dd-subheader {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 20px;
+  border-bottom: 1px solid #f1f5f9; background: #fafafa;
+  flex-shrink: 0;
+}
+.dd-shopee-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: #EE4D2D;
+  text-decoration: none; padding: 3px 10px; border-radius: 6px;
+  border: 1px solid #fca5a5; background: #fff8f7;
+  transition: background .15s;
+}
+.dd-shopee-link:hover { background: #fee2e2; }
+
+.dd-body { padding: 0 0 32px; }
+
+.dd-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dd-section-label {
+  display: flex; align-items: center; gap: 6px;
   font-size: 10px; font-weight: 700; color: #94a3b8;
   text-transform: uppercase; letter-spacing: .5px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-/* ── Image more tile ──────────────────────────────────────────────────── */
+.dd-count-badge {
+  background: #e2e8f0; color: #64748b;
+  font-size: 10px; font-weight: 700; border-radius: 10px;
+  padding: 0 6px; letter-spacing: 0;
+}
+
+/* ── Gallery ──────────────────────────────────────────────────────────── */
+.img-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.img-tile {
+  aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+}
+.img-tile--main { grid-column: span 2; grid-row: span 2; }
 .img-more-tile {
-  width: 60px; height: 60px;
   display: flex; align-items: center; justify-content: center;
   background: #f0fdf9; border: 1.5px dashed #0d9488;
-  color: #0d9488; font-size: 13px; font-weight: 700;
+  color: #0d9488; font-size: 14px; font-weight: 700;
   transition: background .15s;
 }
 .img-more-tile:hover { background: #ccfbf1; }
 
-/* ── Detail table ─────────────────────────────────────────────────────── */
-:deep(.detail-table tbody td) {
-  padding: 4px 8px; border-bottom: 1px solid #f1f5f9; font-size: 12px;
+/* ── Stats ────────────────────────────────────────────────────────────── */
+.dd-stats-row {
+  display: flex; gap: 0; flex-wrap: wrap;
+  background: #f8fafc; border-radius: 10px; overflow: hidden;
+  border: 1px solid #e2e8f0;
 }
-.detail-label { color: #94a3b8; width: 100px; font-size: 12px; }
+.dd-stat {
+  flex: 1; min-width: 80px;
+  padding: 12px 14px;
+  border-right: 1px solid #e2e8f0;
+  text-align: center;
+}
+.dd-stat:last-child { border-right: none; }
+.dd-stat-value {
+  font-size: 16px; font-weight: 700; line-height: 1.2;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+}
+.dd-stat-label { font-size: 10px; color: #94a3b8; font-weight: 600; margin-top: 3px; }
+.dd-stat-sub   { font-size: 10px; margin-top: 3px; display: flex; align-items: center; justify-content: center; }
+
+/* ── Key-value grid ───────────────────────────────────────────────────── */
+.dd-kv-grid { display: flex; flex-direction: column; gap: 0; }
+.dd-kv-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px;
+}
+.dd-kv-row:last-child { border-bottom: none; }
+.dd-kv-key { color: #94a3b8; font-weight: 600; min-width: 100px; flex-shrink: 0; }
+.dd-kv-val { color: #0f172a; display: flex; align-items: center; }
+.dd-kv-val.cursor-pointer:hover { color: #0d9488; }
+
+/* ── Description ──────────────────────────────────────────────────────── */
+.dd-description {
+  font-size: 12px; color: #374151; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 80px; overflow: hidden; transition: max-height .3s;
+}
+.dd-description--expanded { max-height: 2000px; }
+.dd-desc-toggle {
+  display: inline-flex; align-items: center; gap: 3px;
+  margin-top: 8px; font-size: 11px; font-weight: 600; color: #0d9488;
+  background: none; border: none; cursor: pointer; padding: 0;
+}
 
 /* ── Variation table ──────────────────────────────────────────────────── */
-.variation-table { border-radius: 8px; overflow: hidden; }
-
-:deep(.variation-table thead tr th) {
-  background: #0d9488;
-  color: #fff;
-  font-size: 10px; font-weight: 700;
+.var-table-wrap {
+  overflow-x: auto; border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+.var-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.var-table thead tr {
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+}
+.var-table thead th {
+  padding: 8px 12px;
+  color: #fff; font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .4px;
-  padding: 6px 10px;
+  text-align: left; white-space: nowrap;
 }
-:deep(.variation-table tbody td) {
-  padding: 5px 10px; border-bottom: 1px solid #f1f5f9; font-size: 11px;
+.var-table thead th:last-child { text-align: center; }
+.var-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background .1s;
 }
-:deep(.variation-table tbody tr:last-child td) { border-bottom: none; }
-
-.var-th { font-size: 10px !important; }
-.var-td { font-size: 11px; }
+.var-table tbody tr:last-child { border-bottom: none; }
+.var-table tbody tr:hover { background: #f8fafc; }
+.var-table tbody tr.var-deleted { opacity: .45; }
+.var-table tbody td { padding: 8px 12px; }
+.var-attr-val { font-weight: 600; color: #0f172a; }
+.var-sku { font-family: 'Roboto Mono', monospace; font-size: 11px; color: #64748b; }
+.var-table tbody td:nth-last-child(2) { text-align: right; }
 
 /* ── Advanced filters panel ───────────────────────────────────────────── */
 .fadv-panel { display: flex; flex-direction: column; border-radius: 0 !important; }
@@ -1403,5 +1575,7 @@ onMounted(loadAccounts)
   .page-header { padding: 10px 12px; }
   .fb-search { max-width: 100%; min-width: 0; }
   .fadv-section { padding: 10px 12px; }
+  .img-gallery { grid-template-columns: repeat(3, 1fr); }
+  .img-tile--main { grid-column: span 1; grid-row: span 1; }
 }
 </style>
