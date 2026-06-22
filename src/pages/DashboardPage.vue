@@ -944,20 +944,20 @@
             </div>
           </div>
           <!-- Shopee -->
-          <div v-if="activeMarketplace !== 'ml' && shopeeData" class="mp-card mp-card--shopee">
+          <div v-if="activeMarketplace !== 'ml' && filteredShopeeOp" class="mp-card mp-card--shopee">
             <div class="mp-name">
               <q-icon name="shopping_bag" size="16px" class="q-mr-xs text-deep-orange" />
               Shopee
             </div>
             <div class="mp-kpis">
-              <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(shopeeData.gmv) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Rec. Estimada</span> <span class="mp-kpi-val">{{ fmt(shopeeData.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Lucro</span> <span class="mp-kpi-val" :class="(shopeeData.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(shopeeData.gross_profit) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ shopeeData.orders_count }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.gmv) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Rec. Estimada</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.net_revenue) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Lucro</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.gross_profit) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ filteredShopeeOp.orders_count }}</span></div>
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
-              <div class="gmv-bar-fill gmv-bar-fill--shopee" :style="{ width: combinedGmvShare('shopee', shopeeData.gmv) + '%' }"></div>
-              <span class="gmv-bar-pct">{{ combinedGmvShare('shopee', shopeeData.gmv) }}% do GMV total</span>
+              <div class="gmv-bar-fill gmv-bar-fill--shopee" :style="{ width: combinedGmvShare('shopee', filteredShopeeOp.gmv) + '%' }"></div>
+              <span class="gmv-bar-pct">{{ combinedGmvShare('shopee', filteredShopeeOp.gmv) }}% do GMV total</span>
             </div>
           </div>
         </div>
@@ -1001,7 +1001,7 @@
               </template>
               <!-- Shopee accounts -->
               <template v-if="activeMarketplace !== 'ml' && shopeeData?.by_account">
-                <tr v-for="a in shopeeData.by_account" :key="'sh-' + a.account_id">
+                <tr v-for="a in shopeeData.by_account.filter(a => selectedAccountKeys.includes('shopee:' + a.account_id))" :key="'sh-' + a.account_id">
                   <td><span class="mkt-badge mkt-badge--shopee">Shopee</span></td>
                   <td class="bold">{{ a.shop_name }}</td>
                   <td class="muted">—</td>
@@ -1712,8 +1712,8 @@ function dayAccountRows(date) {
   }
   for (const a of knownShopeeAccounts.value) {
     if (!selected.has(a.key)) continue
-    const shopeeDaily = shopeeData.value?.daily || []
-    const day = shopeeDaily.find(d => d.date === date)
+    const shopeeAccountDaily = accountDailyData.value[a.key] || []
+    const day = shopeeAccountDaily.find(d => d.date === date)
     if (day && (day.gmv || day.orders_count)) {
       rows.push({ ...day, label: a.label, color: a.color, marketplace: 'shopee' })
     }
@@ -1825,6 +1825,32 @@ const filteredMlDaily = computed(() => {
   return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
 })
 
+// Filtered Shopee daily: mesma lógica do filteredMlDaily mas para contas Shopee
+const filteredShopeeDaily = computed(() => {
+  const shopeeKeys = selectedAccountKeys.value.filter(k => k.startsWith('shopee:'))
+  const allShopeeKeys = knownShopeeAccounts.value.map(a => a.key)
+  const hasAccountData = Object.keys(accountDailyData.value).length > 0
+  if (!shopeeKeys.length) return []
+  // Todas selecionadas ou dados ainda não carregados → usa agregado
+  if (shopeeKeys.length === allShopeeKeys.length || !hasAccountData) {
+    return shopeeData.value?.daily || []
+  }
+  // Seleção parcial → soma apenas as contas selecionadas usando dados por conta
+  const byDate = {}
+  for (const key of shopeeKeys) {
+    for (const d of (accountDailyData.value[key] || [])) {
+      if (!byDate[d.date]) byDate[d.date] = { date: d.date, gmv: 0, net_revenue: 0, gross_profit: 0, ads_cost: 0, lucro_liquido: 0, orders_count: 0 }
+      byDate[d.date].gmv           += d.gmv || 0
+      byDate[d.date].net_revenue   += d.net_revenue || 0
+      byDate[d.date].gross_profit  += d.gross_profit || 0
+      byDate[d.date].ads_cost      += d.ads_cost || 0
+      byDate[d.date].lucro_liquido += d.lucro_liquido ?? d.gross_profit ?? 0
+      byDate[d.date].orders_count  += d.orders_count || 0
+    }
+  }
+  return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
+})
+
 const today = new Date()
 // Usa data local (não UTC) para evitar problema de fuso horário
 // toISOString() retorna UTC, o que em UTC-3 pode dar o dia seguinte após 21h
@@ -1919,7 +1945,7 @@ const metricStats = computed(() => {
 const chartData = computed(() => {
   const hasShopeeSelected = selectedAccountKeys.value.some(k => k.startsWith('shopee:'))
   const mlDaily     = filteredMlDaily.value
-  const shopeeDaily = hasShopeeSelected ? (shopeeData.value?.daily || []) : []
+  const shopeeDaily = hasShopeeSelected ? filteredShopeeDaily.value : []
 
   // Indexa por data e soma os campos
   const byDate = {}
@@ -2360,7 +2386,7 @@ const op = combinedOp
 
 function combinedGmvShare(marketplace, gmv) {
   const mlGmv     = data.value?.operation?.gmv || 0
-  const shopeeGmv = shopeeData.value?.gmv      || 0
+  const shopeeGmv = filteredShopeeOp.value?.gmv || 0
   const total     = mlGmv + shopeeGmv
   if (!total || !gmv) return 0
   return Math.min(100, Math.round((gmv / total) * 100))
@@ -2455,9 +2481,10 @@ async function loadAccountDailyData() {
     } catch { result[a.key] = [] }
   }))
 
-  // Shopee — use existing daily (aggregated; no per-account daily endpoint yet)
+  // Shopee — usa daily por conta retornado em by_account[].daily
   for (const a of knownShopeeAccounts.value) {
-    result[a.key] = shopeeData.value?.daily?.map(d => ({ ...d })) || []
+    const accData = shopeeData.value?.by_account?.find(b => b.account_id === a.id)
+    result[a.key] = accData?.daily?.map(d => ({ ...d })) || []
   }
 
   accountDailyData.value = result
