@@ -70,6 +70,16 @@ const routes = [
         component: () => import('pages/ShopeeAdsPage.vue')
       },
       {
+        path: 'shopee/discounts',
+        name: 'shopee-discounts',
+        component: () => import('pages/ShopeeDiscountsPage.vue')
+      },
+      {
+        path: 'shopee/vouchers',
+        name: 'shopee-vouchers',
+        component: () => import('pages/ShopeeVouchersPage.vue')
+      },
+      {
         path: 'dashboard',
         name: 'dashboard',
         component: () => import('pages/DashboardPage.vue')

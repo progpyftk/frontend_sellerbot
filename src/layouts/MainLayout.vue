@@ -198,7 +198,9 @@ const menuSections = [
     items: [
       { label: "Meus Anúncios",      icon: "mdi-storefront", route: "shopee-items",  color: "#ff7043", bg: "rgba(255,112,67,.18)" },
       { label: "Vendas e Pedidos",   icon: "receipt_long",   route: "shopee-orders", color: "#ff7043", bg: "rgba(255,112,67,.18)" },
-      { label: "Publicidade",        icon: "campaign",       route: "shopee-ads",    color: "#ff7043", bg: "rgba(255,112,67,.18)" },
+      { label: "Publicidade",        icon: "campaign",       route: "shopee-ads",       color: "#ff7043", bg: "rgba(255,112,67,.18)" },
+      { label: "Promoções",          icon: "local_offer",         route: "shopee-discounts", color: "#ff7043", bg: "rgba(255,112,67,.18)" },
+      { label: "Cupons",             icon: "confirmation_number", route: "shopee-vouchers",  color: "#ff7043", bg: "rgba(255,112,67,.18)" },
     ],
   },
   {

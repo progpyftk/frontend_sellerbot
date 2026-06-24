@@ -74,4 +74,38 @@ export default {
   getAdsDaily(params = {}) {
     return api.get('/shopee/ads/daily/', { params })
   },
+
+  // Discounts
+  getDiscounts(params = {}) {
+    return api.get('/shopee/discounts/', { params })
+  },
+  getDiscountDetail(discountId, params = {}) {
+    return api.get(`/shopee/discounts/${discountId}/`, { params })
+  },
+  createDiscount(data) {
+    return api.post('/shopee/discounts/create/', data)
+  },
+  endDiscount(discountId, data) {
+    return api.post(`/shopee/discounts/${discountId}/end/`, data)
+  },
+  deleteDiscount(discountId, data) {
+    return api.delete(`/shopee/discounts/${discountId}/delete/`, { data })
+  },
+
+  // Vouchers (Cupons)
+  getVouchers(params = {}) {
+    return api.get('/shopee/vouchers/', { params })
+  },
+  getVoucher(voucherId, params = {}) {
+    return api.get(`/shopee/vouchers/${voucherId}/`, { params })
+  },
+  createVoucher(data) {
+    return api.post('/shopee/vouchers/create/', data)
+  },
+  endVoucher(voucherId, data) {
+    return api.post(`/shopee/vouchers/${voucherId}/end/`, data)
+  },
+  deleteVoucher(voucherId, data) {
+    return api.delete(`/shopee/vouchers/${voucherId}/delete/`, { data })
+  },
 }
