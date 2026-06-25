@@ -276,14 +276,36 @@
     </q-dialog>
 
     <q-dialog v-model="showLogsDialog">
-      <q-card style="width: 800px; max-width: 95vw; height: 80vh;" class="column">
-        <q-card-section class="row items-center bg-blue-grey-9 text-white col-auto">
-          <q-icon name="receipt_long" size="md" class="q-mr-sm" />
-          <div class="text-h6 text-weight-bold">Histórico de Execuções</div>
+      <q-card style="width: 860px; max-width: 96vw; height: 85vh;" class="column">
+
+        <!-- Header -->
+        <q-card-section class="row items-center bg-blue-grey-9 text-white col-auto q-py-sm">
+          <q-icon name="receipt_long" size="sm" class="q-mr-sm" />
+          <div class="text-subtitle1 text-weight-bold">Histórico de Execuções</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
+        <!-- Filtro de tipo de log -->
+        <q-card-section class="col-auto q-py-sm q-px-md bg-grey-1 row items-center" style="border-bottom:1px solid #ddd; gap:8px; flex-wrap:wrap">
+          <span class="text-caption text-grey-6 text-weight-bold">Mostrar:</span>
+          <q-btn-toggle
+            v-model="logFilter"
+            flat dense no-caps
+            :options="[
+              { label: 'Todos',       value: 'all'      },
+              { label: '✅ Ativados', value: 'positive' },
+              { label: '⚠️ Falhas',   value: 'warning'  },
+              { label: '🛡️ Trava',    value: 'info'     },
+              { label: '❌ Erros',    value: 'negative' },
+            ]"
+            toggle-color="blue-grey-8"
+            color="grey-6"
+            class="text-caption"
+          />
+        </q-card-section>
+
+        <!-- Conteúdo -->
         <q-card-section class="col scroll bg-grey-2 q-pa-md">
           <div v-if="groupedLogs.length > 0">
 
@@ -291,50 +313,80 @@
 
               <div class="text-subtitle2 text-blue-grey-8 q-mb-sm q-ml-xs text-weight-bold row items-center">
                 <q-icon name="calendar_month" size="sm" class="q-mr-sm" />
-                Data: {{ group.date }}
+                {{ group.date }}
               </div>
 
               <q-list class="rounded-borders" separator>
-                <q-expansion-item v-for="promo in group.logs" :key="'log-promo-' + promo.account_id + '-' + promo.id"
-                  group="logs" icon="schedule" header-class="bg-white text-blue-grey-9"
-                  expand-icon-class="text-blue-grey-5" class="q-mb-sm shadow-1 rounded-borders overflow-hidden">
+                <q-expansion-item
+                  v-for="promo in group.logs" :key="'log-promo-' + promo.account_id + '-' + promo.id"
+                  group="logs" icon="schedule"
+                  header-class="bg-white text-blue-grey-9"
+                  expand-icon-class="text-blue-grey-5"
+                  class="q-mb-sm shadow-1 rounded-borders overflow-hidden">
+
                   <template v-slot:header>
-                    <q-item-section avatar style="min-width: 40px; padding-right: 0;">
-                      <div class="text-caption text-weight-bold text-blue-grey-7">{{ promo.timeStr }}</div>
+                    <q-item-section avatar style="min-width:44px; padding-right:0">
+                      <div class="text-caption text-weight-bold text-blue-grey-6">{{ promo.timeStr }}</div>
                     </q-item-section>
 
                     <q-item-section>
-                      <q-item-label class="text-weight-bold text-subtitle2">
+                      <q-item-label class="text-weight-bold">
                         <span class="text-orange-9 q-mr-xs">[{{ promo.account_nickname }}]</span>
                         {{ promo.name || promo.id }}
                       </q-item-label>
-                      <q-item-label caption>Trava configurada: {{ promo.max_discount_pct_used }}%</q-item-label>
+                      <q-item-label caption>Trava: {{ promo.max_discount_pct_used }}%</q-item-label>
                     </q-item-section>
 
-                    <q-item-section side>
-                      <q-chip :color="promo.last_activated_count > 0 ? 'green-1' : 'grey-2'"
-                        :text-color="promo.last_activated_count > 0 ? 'green-9' : 'grey-7'" size="sm" square
-                        class="text-weight-bold">
-                        {{ promo.last_activated_count }} ativados
-                      </q-chip>
+                    <!-- Chips de resumo -->
+                    <q-item-section side class="row items-center" style="gap:4px; flex-direction:row">
+                      <template v-if="promoSummary(promo) as s">
+                        <q-chip v-if="s.activated" dense square color="green-1" text-color="green-9" size="sm" class="text-weight-bold">
+                          ✅ {{ s.activated }}
+                        </q-chip>
+                        <q-chip v-if="s.rejected" dense square color="red-1" text-color="red-9" size="sm" class="text-weight-bold">
+                          ⚠️ {{ s.rejected }}
+                        </q-chip>
+                        <q-chip v-if="s.skipped" dense square color="blue-grey-1" text-color="blue-grey-7" size="sm" class="text-weight-bold">
+                          🛡️ {{ s.skipped }}
+                        </q-chip>
+                      </template>
                     </q-item-section>
                   </template>
 
                   <q-card class="bg-grey-1">
+                    <!-- Card resumo (tipo summary) -->
+                    <div v-if="promoSummary(promo)" class="q-pa-sm row items-center" style="background:#f0f4f8; border-bottom:1px solid #dde2e8; gap:12px; flex-wrap:wrap">
+                      <span class="text-caption text-blue-grey-7">
+                        📊 <strong>{{ promoSummary(promo).total }}</strong> candidatos
+                        · <strong class="text-green-9">{{ promoSummary(promo).activated }}</strong> ativados
+                        · <strong class="text-red-9">{{ promoSummary(promo).rejected }}</strong> rejeitados pelo ML
+                        · <strong class="text-blue-grey-6">{{ promoSummary(promo).skipped }}</strong> ignorados pela trava
+                        <template v-if="promoSummary(promo).errors">
+                          · <strong class="text-negative">{{ promoSummary(promo).errors }}</strong> erros de conexão
+                        </template>
+                      </span>
+                    </div>
+
                     <q-card-section class="q-pa-none">
                       <q-list separator dense>
-                        <q-item v-for="(log, i) in promo.execution_logs" :key="i" class="q-py-sm">
-                          <q-item-section avatar style="min-width: 30px;">
-                            <q-icon
-                              :name="log.type === 'positive' ? 'check_circle' : (log.type === 'info' ? 'shield' : 'warning')"
-                              :color="log.type === 'positive' ? 'green' : (log.type === 'info' ? 'blue-grey-4' : 'red')"
-                              size="xs" />
-                          </q-item-section>
-                          <q-item-section>
-                            <q-item-label class="text-caption font-mono"
-                              :class="{ 'text-grey-7': log.type === 'info', 'text-weight-medium text-green-9': log.type === 'positive' }">
-                              {{ log.msg }}
-                            </q-item-label>
+                        <template v-for="(log, i) in promo.execution_logs" :key="i">
+                          <!-- Pula linha de resumo (já exibida acima) e aplica filtro -->
+                          <q-item v-if="log.type !== 'summary' && (logFilter === 'all' || logFilter === log.type)" class="q-py-xs">
+                            <q-item-section avatar style="min-width:28px">
+                              <q-icon :name="logIcon(log.type)" :color="logColor(log.type)" size="xs" />
+                            </q-item-section>
+                            <q-item-section>
+                              <q-item-label class="text-caption"
+                                :class="logTextClass(log.type)"
+                                style="white-space: pre-wrap; word-break: break-word;">
+                                {{ log.msg }}
+                              </q-item-label>
+                            </q-item-section>
+                          </q-item>
+                        </template>
+                        <q-item v-if="filteredCount(promo) === 0" dense>
+                          <q-item-section class="text-caption text-grey-5 q-pa-sm">
+                            Nenhum log deste tipo nesta execução.
                           </q-item-section>
                         </q-item>
                       </q-list>
@@ -349,7 +401,7 @@
           <div v-else class="text-center text-grey-6 q-pa-xl">
             <q-icon name="inventory_2" size="4em" color="grey-4" class="q-mb-md" />
             <div class="text-h6">Nenhum histórico encontrado</div>
-            <p>Os logs aparecerão aqui assim que o robô finalizar a primeira execução.</p>
+            <p class="text-grey-5">Os logs aparecerão aqui após a primeira execução de ativação.</p>
           </div>
         </q-card-section>
       </q-card>
@@ -398,6 +450,43 @@ watch(isAnyPromoProcessing, (newVal, oldVal) => {
 });
 
 // ESTADOS DOS MODAIS
+const logFilter = ref('all')
+
+// ── Helpers para o painel de logs ──────────────────────────────────────────
+function logIcon(type) {
+  return { positive: 'check_circle', warning: 'warning', negative: 'error', info: 'shield', summary: 'bar_chart' }[type] || 'circle'
+}
+function logColor(type) {
+  return { positive: 'green-7', warning: 'orange-8', negative: 'red-7', info: 'blue-grey-4', summary: 'blue-7' }[type] || 'grey'
+}
+function logTextClass(type) {
+  return {
+    positive: 'text-green-9 text-weight-medium',
+    warning:  'text-orange-9',
+    negative: 'text-red-9 text-weight-medium',
+    info:     'text-blue-grey-6',
+  }[type] || ''
+}
+function promoSummary(promo) {
+  const s = (promo.execution_logs || []).find(l => l.type === 'summary')
+  if (s) return s
+  // Compatibilidade com logs antigos (sem bloco summary)
+  const logs = promo.execution_logs || []
+  if (!logs.length) return null
+  return {
+    activated: logs.filter(l => l.type === 'positive').length,
+    rejected:  logs.filter(l => l.type === 'warning').length,
+    skipped:   logs.filter(l => l.type === 'info').length,
+    errors:    logs.filter(l => l.type === 'negative').length,
+    total:     logs.filter(l => l.type !== 'summary').length,
+  }
+}
+function filteredCount(promo) {
+  const logs = (promo.execution_logs || []).filter(l => l.type !== 'summary')
+  if (logFilter.value === 'all') return logs.length
+  return logs.filter(l => l.type === logFilter.value).length
+}
+
 const showActivationDialog = ref(false)
 const selectedPromo = ref(null)
 const selectedAccount = ref(null)
