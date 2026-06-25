@@ -921,28 +921,42 @@
 
         <!-- ── Modo: Atacado (PxQ) ─────────────────────────────────────── -->
         <q-card-section v-else-if="bulkPriceForm.mode === 'wholesale'" class="q-pa-lg column q-gutter-sm">
-          <div class="text-caption text-grey-6 q-mb-xs">Máx. 3 faixas · Disponível apenas para compradores B2B</div>
+          <div class="text-caption text-grey-6 q-mb-xs">Máx. 3 faixas · Disponível apenas para compradores B2B · Preços devem diminuir conforme a quantidade aumenta</div>
 
           <div v-for="(tier, i) in bulkWholesaleForm.tiers" :key="i"
-            class="row q-col-gutter-sm items-center bg-grey-1 q-pa-sm rounded-borders">
+            class="row q-col-gutter-sm items-center q-pa-sm rounded-borders"
+            :class="tier.value && tier.min_quantity ? 'bg-indigo-1' : 'bg-grey-1'">
+            <div class="col-auto" style="min-width:28px">
+              <q-chip dense square :color="tier.value && tier.min_quantity ? 'indigo-6' : 'grey-4'" text-color="white" size="sm">
+                {{ i + 1 }}
+              </q-chip>
+            </div>
             <div class="col-3">
               <q-input v-model.number="tier.min_quantity" type="number" outlined dense
-                :label="`Faixa ${i+1}: Qtd mín.`" color="indigo-6" />
+                label="Qtd mínima" color="indigo-6" min="1" />
             </div>
             <div class="col-4">
               <q-btn-toggle v-model="tier.priceType" dense unelevated
                 :options="[{label:'% off',value:'pct'},{label:'R$ fixo',value:'abs'}]"
                 color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
             </div>
-            <div class="col-5">
+            <div class="col">
               <q-input v-model.number="tier.value" type="number" outlined dense
-                :label="tier.priceType === 'pct' ? 'Desconto %' : 'Preço fixo R$'" color="indigo-6" />
+                :label="tier.priceType === 'pct' ? 'Desconto %' : 'Preço R$'"
+                color="indigo-6" min="0.01"
+                :hint="tier.priceType === 'pct' && tier.value ? `${tier.value}% de desconto` : ''" />
             </div>
           </div>
 
+          <!-- Alerta de validação -->
+          <q-banner v-if="wholesaleValidationError" dense rounded class="bg-red-1 text-red-9 q-mt-xs">
+            <template v-slot:avatar><q-icon name="warning" color="red-7" size="16px" /></template>
+            {{ wholesaleValidationError }}
+          </q-banner>
+
           <q-banner dense class="bg-indigo-1 text-indigo-9 rounded-borders q-mt-xs">
             <template v-slot:avatar><q-icon name="info" color="indigo-6" size="16px" /></template>
-            Faixas % são calculadas sobre o preço atual de cada anúncio.
+            Faixas com "% off" são calculadas sobre o preço atual de cada anúncio. Faixas incompletas são ignoradas.
           </q-banner>
         </q-card-section>
 
@@ -959,6 +973,7 @@
             @click="executeBulkExactPrice" />
           <q-btn v-else-if="bulkPriceForm.mode === 'wholesale'" unelevated label="Aplicar Atacado" color="indigo-6"
             :loading="bulkLoading"
+            :disable="!!wholesaleValidationError"
             @click="executeBulkWholesale" />
         </q-card-actions>
 
@@ -1202,6 +1217,26 @@ const bulkWholesaleForm = reactive({
     { min_quantity: 5,  priceType: 'pct', value: 10   },
     { min_quantity: 10, priceType: 'pct', value: 15   },
   ]
+})
+
+const wholesaleValidFilledTiers = computed(() =>
+  bulkWholesaleForm.tiers.filter(t => t.value && t.min_quantity)
+)
+
+const wholesaleValidationError = computed(() => {
+  const tiers = wholesaleValidFilledTiers.value
+  if (tiers.length === 0) return 'Preencha ao menos uma faixa com quantidade e valor.'
+  // Verifica se as quantidades estão em ordem crescente
+  for (let i = 1; i < tiers.length; i++) {
+    if (tiers[i].min_quantity <= tiers[i-1].min_quantity)
+      return `Faixa ${i+1}: a quantidade mínima deve ser maior que a faixa anterior.`
+  }
+  // Verifica que os preços % não ultrapassam 100%
+  for (const t of tiers) {
+    if (t.priceType === 'pct' && (t.value <= 0 || t.value >= 100))
+      return `Desconto % deve ser entre 1 e 99.`
+  }
+  return null
 })
 const bulkExactPriceForm = reactive({ price: null })
 
