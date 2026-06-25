@@ -139,7 +139,7 @@
 
     <!-- ══ CRIAR CUPOM ══════════════════════════════════════════════════════ -->
     <q-dialog v-model="createOpen" persistent>
-      <q-card class="sv-create-card">
+      <q-card class="sv-create-card column">
         <!-- Header -->
         <q-card-section class="sv-dialog-header">
           <q-icon name="confirmation_number" size="sm" class="q-mr-sm" />
@@ -522,7 +522,7 @@ const accounts          = ref([])
 const vouchers          = ref([])
 const loading           = ref(false)
 const selectedAccountId = ref(null)
-const statusFilter      = ref('ongoing')   // padrão: em andamento
+const statusFilter      = ref('all')
 
 // ── Detalhe ────────────────────────────────────────────────────────────────
 const detailOpen    = ref(false)
@@ -584,10 +584,12 @@ const validationChecklist = computed(() => {
     { ok: (f.usage_quantity || 0) >= 1,label: 'Quantidade de usos ≥ 1' },
     { ok: !!f.start_date,              label: 'Data de início' },
     { ok: !!f.end_date,                label: 'Data de fim' },
-    { ok: diffH >= 1,                  label: 'Fim ≥ 1h após início', hide: !f.start_date || !f.end_date },
-    { ok: diffM <= 3,                  label: 'Validade ≤ 3 meses', hide: !f.start_date || !f.end_date },
-    { ok: !createWarning.value,        label: 'Sem conflito de valores', hide: !createWarning.value && true },
-  ].filter(i => !i.hide)
+    ...(f.start_date && f.end_date ? [
+      { ok: diffH >= 1, label: 'Fim ≥ 1h após início' },
+      { ok: diffM <= 3, label: 'Validade ≤ 3 meses'   },
+    ] : []),
+    ...(createWarning.value ? [{ ok: false, label: 'Corrigir conflito de valores' }] : []),
+  ]
 })
 
 const createValid = computed(() => validationChecklist.value.every(i => i.ok))
@@ -685,11 +687,16 @@ async function submitCreate() {
     // Canais de exibição
     if (f.display_hidden) {
       payload.display_channel_list = []
-      // display_start_time deve ser omitido quando oculto
-    } else {
+      // display_start_time não pode ser enviado quando oculto
+    } else if (f.display_all) {
       payload.display_channel_list = [1]
+      if (f.display_start_date) payload.display_start_time = toTimestamp(f.display_start_date)
+    } else {
+      // "Padrão": não envia display_channel_list (Shopee usa padrão da plataforma)
+      // mas display_start_date requer display_channel_list, então incluímos apenas se necessário
       if (f.display_start_date) {
-        payload.display_start_time = toTimestamp(f.display_start_date)
+        payload.display_channel_list = [1]
+        payload.display_start_time   = toTimestamp(f.display_start_date)
       }
     }
 
