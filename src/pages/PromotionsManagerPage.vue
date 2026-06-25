@@ -259,6 +259,29 @@
               </template>
             </q-input>
           </div>
+          <!-- Desconto fixo opcional -->
+          <div class="bg-indigo-1 q-pa-md rounded-borders q-mb-md" style="border:1px solid #c5cae9">
+            <q-checkbox v-model="useFixedDiscount" color="indigo-8" dense
+              label="Usar o menor desconto ofertado (desconto fixo)"
+              class="text-weight-bold text-indigo-9 q-mb-xs" />
+            <div class="text-caption text-indigo-7 q-mb-sm q-ml-lg">
+              Ignora o desconto sugerido pelo ML e aplica um percentual fixo. Útil para evitar
+              descontos muito agressivos impostos pela plataforma.
+            </div>
+            <q-input v-if="useFixedDiscount" v-model.number="fixedDiscountPct"
+              type="number" label="Aplicar exatamente este desconto" outlined dense
+              bg-color="white" color="indigo-8" min="1" :max="maxDiscountGlobal" suffix="% OFF"
+              hint="Deve ser ≤ à trava global acima">
+              <template v-slot:prepend>
+                <q-icon name="percent" color="indigo-8" />
+              </template>
+            </q-input>
+            <q-banner v-if="useFixedDiscount && fixedDiscountPct > maxDiscountGlobal" dense rounded class="bg-red-1 text-red-9 q-mt-sm">
+              <template v-slot:avatar><q-icon name="warning" color="red-8" /></template>
+              O desconto fixo não pode ultrapassar a trava global ({{ maxDiscountGlobal }}%).
+            </q-banner>
+          </div>
+
           <q-banner rounded class="bg-amber-1 text-amber-10" dense>
             <template v-slot:avatar>
               <q-icon name="speed" color="amber-9" />
@@ -270,6 +293,7 @@
         <q-card-actions align="right" class="bg-grey-1 q-pa-md border-top">
           <q-btn flat label="Cancelar" color="blue-grey-6" v-close-popup class="text-weight-medium" />
           <q-btn unelevated label="Iniciar Robôs" color="orange-8" class="text-weight-bold q-px-md"
+            :disable="useFixedDiscount && fixedDiscountPct > maxDiscountGlobal"
             @click="confirmActivateAll" />
         </q-card-actions>
       </q-card>
@@ -487,6 +511,8 @@ function filteredCount(promo) {
   return logs.filter(l => l.type === logFilter.value).length
 }
 
+const useFixedDiscount = ref(false)
+const fixedDiscountPct = ref(5)
 const showActivationDialog = ref(false)
 const selectedPromo = ref(null)
 const selectedAccount = ref(null)
@@ -694,10 +720,14 @@ const confirmActivateAll = async () => {
   try {
     $q.loading.show({ message: 'Distribuindo tarefas para o robô...' })
 
-    await MercadoLivreService.activateAllPromotions({
+    const payload = {
       max_discount_pct: parseFloat(maxDiscountGlobal.value),
-      promotions: promosToActivate
-    })
+      promotions: promosToActivate,
+    }
+    if (useFixedDiscount.value && fixedDiscountPct.value > 0) {
+      payload.fixed_discount_pct = parseFloat(fixedDiscountPct.value)
+    }
+    await MercadoLivreService.activateAllPromotions(payload)
 
     showActivateAllDialog.value = false
 
