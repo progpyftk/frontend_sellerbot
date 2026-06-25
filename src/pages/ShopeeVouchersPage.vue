@@ -140,6 +140,7 @@
     <!-- ══ CRIAR CUPOM ══════════════════════════════════════════════════════ -->
     <q-dialog v-model="createOpen" persistent>
       <q-card class="sv-create-card">
+        <!-- Header -->
         <q-card-section class="sv-dialog-header">
           <q-icon name="confirmation_number" size="sm" class="q-mr-sm" />
           <span class="text-subtitle1 text-weight-bold">Novo Cupom</span>
@@ -147,165 +148,203 @@
           <q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
 
-        <q-card-section class="sv-form scroll">
+        <!-- Body 2 colunas -->
+        <div class="sv-create-body">
 
-          <!-- Conta -->
-          <div class="sv-form-section">
-            <div class="sv-form-label">Conta Shopee</div>
-            <div class="sv-pills sv-pills--form">
-              <button v-for="a in accounts" :key="a.id"
-                :class="['sv-pill', form.account_id === a.id && 'sv-pill--on']"
-                @click="form.account_id = a.id">{{ a.shop_name }}</button>
-            </div>
-          </div>
+          <!-- COL ESQUERDA: formulário -->
+          <div class="sv-form scroll">
 
-          <!-- Nome e código -->
-          <div class="sv-form-row">
-            <div class="sv-form-field sv-form-field--grow">
-              <div class="sv-form-label">Nome do cupom *</div>
-              <q-input v-model="form.voucher_name" outlined dense
-                placeholder="Ex: Cupom 10% Julho" />
-            </div>
-            <div class="sv-form-field" style="min-width:140px">
-              <div class="sv-form-label">Código *
-                <q-tooltip>Máx 5 caracteres, apenas letras e números</q-tooltip>
-                <q-icon name="info_outline" size="12px" color="grey-5" class="q-ml-xs" />
-              </div>
-              <q-input v-model="form.voucher_code" outlined dense
-                placeholder="JULHO10" maxlength="5"
-                @update:model-value="v => form.voucher_code = v.toUpperCase().replace(/[^A-Z0-9]/g,'')" />
-            </div>
-          </div>
-
-          <!-- Tipo do cupom -->
-          <div class="sv-form-section">
-            <div class="sv-form-label">Tipo de cupom</div>
-            <div class="sv-type-select">
-              <div :class="['sv-type-opt', form.voucher_type === 1 && 'sv-type-opt--on']"
-                @click="form.voucher_type = 1">
-                <q-icon name="storefront" size="20px" />
-                <div class="sv-type-opt-title">Loja</div>
-                <div class="sv-type-opt-desc">Válido para qualquer produto da loja</div>
-              </div>
-              <div :class="['sv-type-opt', form.voucher_type === 2 && 'sv-type-opt--on']"
-                @click="form.voucher_type = 2">
-                <q-icon name="inventory_2" size="20px" />
-                <div class="sv-type-opt-title">Produto</div>
-                <div class="sv-type-opt-desc">Válido apenas para produtos específicos</div>
+            <!-- Conta -->
+            <div class="sv-form-section">
+              <div class="sv-form-label">Conta Shopee</div>
+              <div class="sv-pills sv-pills--form">
+                <button v-for="a in accounts" :key="a.id"
+                  :class="['sv-pill', form.account_id === a.id && 'sv-pill--on']"
+                  @click="form.account_id = a.id">{{ a.shop_name }}</button>
               </div>
             </div>
-          </div>
 
-          <!-- Tipo de recompensa -->
-          <div class="sv-form-section">
-            <div class="sv-form-label">Tipo de desconto</div>
-            <div class="sv-type-select">
-              <div :class="['sv-type-opt', form.reward_type === 1 && 'sv-type-opt--on']"
-                @click="form.reward_type = 1; form.percentage = null; form.max_price = null">
-                <q-icon name="attach_money" size="20px" />
-                <div class="sv-type-opt-title">Valor fixo</div>
-                <div class="sv-type-opt-desc">Ex: R$ 5,00 off</div>
+            <!-- Nome e código -->
+            <div class="sv-form-row">
+              <div class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">Nome do cupom *</div>
+                <q-input v-model="form.voucher_name" outlined dense
+                  placeholder="Ex: Cupom 10% Julho" />
               </div>
-              <div :class="['sv-type-opt', form.reward_type === 2 && 'sv-type-opt--on']"
-                @click="form.reward_type = 2; form.discount_amount = null">
-                <q-icon name="percent" size="20px" />
-                <div class="sv-type-opt-title">Percentual</div>
-                <div class="sv-type-opt-desc">Ex: 10% off</div>
-              </div>
-              <div :class="['sv-type-opt', form.reward_type === 3 && 'sv-type-opt--on']"
-                @click="form.reward_type = 3; form.discount_amount = null">
-                <q-icon name="generating_tokens" size="20px" />
-                <div class="sv-type-opt-title">Coins cashback</div>
-                <div class="sv-type-opt-desc">Devolve % em coins</div>
+              <div class="sv-form-field" style="min-width:130px">
+                <div class="sv-form-label">Código *</div>
+                <q-input v-model="form.voucher_code" outlined dense
+                  placeholder="JULHO10" maxlength="20"
+                  :error="form.voucher_code.length > 0 && !/^[A-Za-z0-9]+$/.test(form.voucher_code)"
+                  error-message="Só letras e números"
+                  @update:model-value="v => form.voucher_code = v.toUpperCase().replace(/[^A-Z0-9]/g,'')" />
               </div>
             </div>
+
+            <!-- Tipo do cupom -->
+            <div class="sv-form-section">
+              <div class="sv-form-label">Tipo de cupom</div>
+              <div class="sv-type-select">
+                <div :class="['sv-type-opt', form.voucher_type === 1 && 'sv-type-opt--on']"
+                  @click="form.voucher_type = 1">
+                  <q-icon name="storefront" size="20px" />
+                  <div class="sv-type-opt-title">Loja</div>
+                  <div class="sv-type-opt-desc">Válido para qualquer produto</div>
+                </div>
+                <div :class="['sv-type-opt', form.voucher_type === 2 && 'sv-type-opt--on']"
+                  @click="form.voucher_type = 2">
+                  <q-icon name="inventory_2" size="20px" />
+                  <div class="sv-type-opt-title">Produto</div>
+                  <div class="sv-type-opt-desc">Produtos específicos</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tipo de recompensa -->
+            <div class="sv-form-section">
+              <div class="sv-form-label">Tipo de desconto</div>
+              <div class="sv-type-select">
+                <div :class="['sv-type-opt', form.reward_type === 1 && 'sv-type-opt--on']"
+                  @click="form.reward_type = 1; form.percentage = null; form.max_price = null">
+                  <q-icon name="attach_money" size="20px" />
+                  <div class="sv-type-opt-title">Valor fixo</div>
+                  <div class="sv-type-opt-desc">Ex: R$ 5 off</div>
+                </div>
+                <div :class="['sv-type-opt', form.reward_type === 2 && 'sv-type-opt--on']"
+                  @click="form.reward_type = 2; form.discount_amount = null">
+                  <q-icon name="percent" size="20px" />
+                  <div class="sv-type-opt-title">Percentual</div>
+                  <div class="sv-type-opt-desc">Ex: 10% off</div>
+                </div>
+                <div :class="['sv-type-opt', form.reward_type === 3 && 'sv-type-opt--on']"
+                  @click="form.reward_type = 3; form.discount_amount = null">
+                  <q-icon name="generating_tokens" size="20px" />
+                  <div class="sv-type-opt-title">Coins</div>
+                  <div class="sv-type-opt-desc">Cashback em coins</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campos condicionais de desconto -->
+            <div class="sv-form-row">
+              <div v-if="form.reward_type === 1" class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">Valor do desconto (R$) *</div>
+                <q-input v-model.number="form.discount_amount" type="number" outlined dense
+                  min="0.01" step="0.01" prefix="R$" placeholder="5.00" />
+              </div>
+              <div v-if="form.reward_type >= 2" class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">{{ form.reward_type === 3 ? 'Cashback %' : 'Desconto %' }} *</div>
+                <q-input v-model.number="form.percentage" type="number" outlined dense
+                  min="1" max="100" step="1" suffix="%" placeholder="10" />
+              </div>
+              <div v-if="form.reward_type >= 2" class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">Desconto máx (R$)</div>
+                <q-input v-model.number="form.max_price" type="number" outlined dense
+                  min="0" step="1" prefix="R$" placeholder="0 = sem limite" />
+              </div>
+            </div>
+
+            <!-- Compra mínima + quantidade -->
+            <div class="sv-form-row">
+              <div class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">Compra mínima (R$)</div>
+                <q-input v-model.number="form.min_basket_price" type="number" outlined dense
+                  min="0" step="0.01" prefix="R$" placeholder="0 = sem mínimo" />
+              </div>
+              <div class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">Qtd de usos *</div>
+                <q-input v-model.number="form.usage_quantity" type="number" outlined dense
+                  min="1" step="1" placeholder="100" />
+              </div>
+            </div>
+
+            <!-- Período de validade -->
+            <div class="sv-form-row">
+              <div class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">Início *</div>
+                <q-input v-model="form.start_date" type="datetime-local" outlined dense />
+              </div>
+              <div class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">Fim *</div>
+                <q-input v-model="form.end_date" type="datetime-local" outlined dense />
+              </div>
+            </div>
+
+            <!-- Onde exibir -->
+            <div class="sv-form-section">
+              <div class="sv-form-label">Visibilidade do cupom</div>
+              <div class="sv-pills sv-pills--form">
+                <button :class="['sv-pill', form.display_all && 'sv-pill--on']"
+                  @click="form.display_all = true; form.display_hidden = false">
+                  Todas as páginas
+                </button>
+                <button :class="['sv-pill', !form.display_all && !form.display_hidden && 'sv-pill--on']"
+                  @click="form.display_all = false; form.display_hidden = false">
+                  Padrão
+                </button>
+                <button :class="['sv-pill', form.display_hidden && 'sv-pill--on']"
+                  @click="form.display_hidden = true; form.display_all = false">
+                  Oculto
+                </button>
+              </div>
+              <div class="text-caption text-grey-5">
+                <span v-if="form.display_all">Exibido em todas as páginas da loja.</span>
+                <span v-else-if="form.display_hidden">Só disponível via link direto — não aparece na loja.</span>
+                <span v-else>Exibição padrão da Shopee.</span>
+              </div>
+            </div>
+
+            <!-- Data de exibição -->
+            <div v-if="!form.display_hidden" class="sv-form-field">
+              <div class="sv-form-label">Resgate disponível a partir de</div>
+              <q-input v-model="form.display_start_date" type="datetime-local" outlined dense />
+              <div class="text-caption text-grey-5 q-mt-xs">Em branco = mesmo início da validade.</div>
+            </div>
           </div>
 
-          <!-- Campos condicionais de desconto -->
-          <div class="sv-form-row">
-            <!-- reward_type = 1: valor fixo -->
-            <div v-if="form.reward_type === 1" class="sv-form-field sv-form-field--grow">
-              <div class="sv-form-label">Valor do desconto (R$) *</div>
-              <q-input v-model.number="form.discount_amount" type="number" outlined dense
-                min="0" step="0.01" prefix="R$" placeholder="5.00" />
+          <!-- COL DIREITA: checklist + regras -->
+          <div class="sv-rules-panel">
+            <!-- Checklist de preenchimento -->
+            <div class="sv-rules-section">
+              <div class="sv-rules-title">
+                <q-icon name="checklist" size="14px" class="q-mr-xs" />
+                Pronto para criar?
+              </div>
+              <div v-for="item in validationChecklist" :key="item.label"
+                :class="['sv-check-item', item.ok && 'sv-check-item--ok']">
+                <q-icon :name="item.ok ? 'check_circle' : 'radio_button_unchecked'"
+                  :color="item.ok ? 'positive' : 'grey-4'" size="14px" class="q-mr-xs flex-shrink-0" />
+                <span>{{ item.label }}</span>
+              </div>
             </div>
 
-            <!-- reward_type = 2 ou 3: percentual -->
-            <div v-if="form.reward_type >= 2" class="sv-form-field">
-              <div class="sv-form-label">{{ form.reward_type === 3 ? 'Cashback %' : 'Desconto %' }} *</div>
-              <q-input v-model.number="form.percentage" type="number" outlined dense
-                min="1" max="100" step="1" suffix="%" placeholder="10" />
+            <!-- Aviso de qualidade -->
+            <div v-if="createWarning" class="sv-warn q-mt-sm">
+              <q-icon name="warning" size="14px" class="q-mr-xs flex-shrink-0" />
+              {{ createWarning }}
             </div>
-            <div v-if="form.reward_type >= 2" class="sv-form-field">
-              <div class="sv-form-label">Desconto máximo (R$)</div>
-              <q-input v-model.number="form.max_price" type="number" outlined dense
-                min="0" step="1" prefix="R$" placeholder="0 = sem limite" />
-            </div>
-          </div>
 
-          <!-- Compra mínima + quantidade -->
-          <div class="sv-form-row">
-            <div class="sv-form-field sv-form-field--grow">
-              <div class="sv-form-label">Compra mínima (R$)</div>
-              <q-input v-model.number="form.min_basket_price" type="number" outlined dense
-                min="0" step="0.01" prefix="R$" placeholder="0.00" />
-            </div>
-            <div class="sv-form-field sv-form-field--grow">
-              <div class="sv-form-label">Qtd de usos disponíveis *</div>
-              <q-input v-model.number="form.usage_quantity" type="number" outlined dense
-                min="1" step="1" placeholder="100" />
-            </div>
-          </div>
-
-          <!-- Período de validade -->
-          <div class="sv-form-row">
-            <div class="sv-form-field sv-form-field--grow">
-              <div class="sv-form-label">Início *</div>
-              <q-input v-model="form.start_date" type="datetime-local" outlined dense />
-            </div>
-            <div class="sv-form-field sv-form-field--grow">
-              <div class="sv-form-label">Fim *</div>
-              <q-input v-model="form.end_date" type="datetime-local" outlined dense />
+            <!-- Regras da Shopee -->
+            <div class="sv-rules-section q-mt-md">
+              <div class="sv-rules-title">
+                <q-icon name="info_outline" size="14px" class="q-mr-xs" />
+                Regras da Shopee
+              </div>
+              <ul class="sv-rules-list">
+                <li>Código: apenas letras e números, sem espaços</li>
+                <li>Validade: fim deve ser no mínimo 1 hora após o início</li>
+                <li>Validade máxima: 3 meses</li>
+                <li v-if="form.reward_type === 1">Compra mínima deve ser maior que o valor fixo (se definida)</li>
+                <li v-if="form.reward_type === 2">Percentual mínimo aceito pela Shopee: ≥ 5%</li>
+                <li v-if="form.reward_type >= 2 && form.max_price > 0">
+                  Teto (R$ {{ form.max_price }}) deve permitir que o comprador aproveite o desconto com a compra mínima
+                </li>
+                <li>Máx 1.000 cupons ativos + agendados simultâneos</li>
+                <li>Para cupom tipo Produto, escolha os itens pelo painel da Shopee após criar</li>
+              </ul>
             </div>
           </div>
-
-          <!-- Onde exibir -->
-          <div class="sv-form-section">
-            <div class="sv-form-label">Exibir em
-              <q-icon name="info_outline" size="12px" color="grey-5" class="q-ml-xs">
-                <q-tooltip>Onde o cupom aparece para o comprador reivindicar</q-tooltip>
-              </q-icon>
-            </div>
-            <div class="sv-pills sv-pills--form">
-              <button :class="['sv-pill', form.display_all && 'sv-pill--on']"
-                @click="form.display_all = !form.display_all">
-                Todas as páginas
-              </button>
-              <button :class="['sv-pill', !form.display_all && !form.display_hidden && 'sv-pill--on']"
-                @click="form.display_all = false; form.display_hidden = false">
-                Padrão
-              </button>
-              <button :class="['sv-pill', form.display_hidden && 'sv-pill--on']"
-                @click="form.display_hidden = !form.display_hidden; form.display_all = false">
-                Oculto (apenas via link)
-              </button>
-            </div>
-          </div>
-
-          <!-- Data de exibição (só se não oculto) -->
-          <div v-if="!form.display_hidden" class="sv-form-field">
-            <div class="sv-form-label">Disponível para resgatar a partir de</div>
-            <q-input v-model="form.display_start_date" type="datetime-local" outlined dense />
-            <div class="text-caption text-grey-5 q-mt-xs">
-              Se em branco, os compradores podem resgatar a partir do início da validade.
-            </div>
-          </div>
-
-          <!-- Aviso reward -->
-          <div v-if="createWarning" class="sv-warn">
-            <q-icon name="info" size="14px" class="q-mr-xs" /> {{ createWarning }}
-          </div>
-        </q-card-section>
+        </div>
 
         <q-card-section class="sv-dialog-footer">
           <div class="text-caption text-grey-5">* campos obrigatórios</div>
@@ -515,24 +554,43 @@ function defaultForm() {
 }
 
 const createWarning = computed(() => {
-  if (form.value.reward_type === 1 && !form.value.discount_amount) return null
-  if (form.value.reward_type === 2 && form.value.percentage && form.value.min_basket_price) {
-    const cap = form.value.max_price || 0
-    const minEnjoy = form.value.min_basket_price * form.value.percentage / 100
-    if (cap && cap < minEnjoy)
-      return `Para compradores aproveitarem o desconto, aumente o máximo para R$ ${minEnjoy.toFixed(0)} ou reduza a compra mínima.`
+  const f = form.value
+  if (f.reward_type === 2 && f.percentage && f.min_basket_price > 0) {
+    const cap      = f.max_price || 0
+    const minEnjoy = f.min_basket_price * f.percentage / 100
+    if (cap > 0 && cap < minEnjoy)
+      return `Teto muito baixo: comprador que gasta R$ ${f.min_basket_price} ganhou R$ ${minEnjoy.toFixed(2)} de desconto mas o máximo é R$ ${cap}. Aumente o teto ou reduza a compra mínima.`
   }
+  if (f.reward_type === 1 && f.discount_amount > 0 && f.min_basket_price > 0 && f.min_basket_price <= f.discount_amount)
+    return `Compra mínima (R$ ${f.min_basket_price}) deve ser maior que o valor do desconto (R$ ${f.discount_amount}).`
   return null
 })
 
-const createValid = computed(() => {
+const validationChecklist = computed(() => {
   const f = form.value
-  if (!f.account_id || !f.voucher_name.trim() || !f.voucher_code.trim()) return false
-  if (!f.start_date || !f.end_date || !f.usage_quantity) return false
-  if (f.reward_type === 1 && !f.discount_amount) return false
-  if (f.reward_type >= 2 && !f.percentage) return false
-  return true
+  const hasDiscount = f.reward_type === 1
+    ? (f.discount_amount > 0)
+    : (f.percentage > 0)
+  const startTs = f.start_date ? new Date(f.start_date).getTime() : 0
+  const endTs   = f.end_date   ? new Date(f.end_date).getTime()   : 0
+  const diffH   = (endTs - startTs) / 3600000
+  const diffM   = (endTs - startTs) / (1000 * 60 * 60 * 24 * 30)
+
+  return [
+    { ok: !!f.account_id,              label: 'Conta selecionada' },
+    { ok: !!f.voucher_name.trim(),     label: 'Nome preenchido' },
+    { ok: !!f.voucher_code.trim(),     label: 'Código preenchido' },
+    { ok: hasDiscount,                 label: f.reward_type === 1 ? 'Valor do desconto > R$ 0' : 'Percentual definido' },
+    { ok: (f.usage_quantity || 0) >= 1,label: 'Quantidade de usos ≥ 1' },
+    { ok: !!f.start_date,              label: 'Data de início' },
+    { ok: !!f.end_date,                label: 'Data de fim' },
+    { ok: diffH >= 1,                  label: 'Fim ≥ 1h após início', hide: !f.start_date || !f.end_date },
+    { ok: diffM <= 3,                  label: 'Validade ≤ 3 meses', hide: !f.start_date || !f.end_date },
+    { ok: !createWarning.value,        label: 'Sem conflito de valores', hide: !createWarning.value && true },
+  ].filter(i => !i.hide)
 })
+
+const createValid = computed(() => validationChecklist.value.every(i => i.ok))
 
 // ── Confirmações ───────────────────────────────────────────────────────────
 const confirmEndOpen    = ref(false)
@@ -627,14 +685,11 @@ async function submitCreate() {
     // Canais de exibição
     if (f.display_hidden) {
       payload.display_channel_list = []
-    } else if (f.display_all) {
-      payload.display_channel_list = [1]
-      if (f.display_start_date) payload.display_start_time = toTimestamp(f.display_start_date)
+      // display_start_time deve ser omitido quando oculto
     } else {
-      // padrão Shopee (sem campo = padrão)
+      payload.display_channel_list = [1]
       if (f.display_start_date) {
-        payload.display_channel_list = [1]
-        payload.display_start_time   = toTimestamp(f.display_start_date)
+        payload.display_start_time = toTimestamp(f.display_start_date)
       }
     }
 
@@ -790,16 +845,28 @@ function usageColor(pct) {
 .sv-card-actions { position: absolute; top: 10px; right: 8px; display: flex; gap: 2px; }
 
 /* ── Create dialog ── */
-.sv-create-card { width: 560px; max-width: 98vw; max-height: 90vh; display: flex; flex-direction: column; }
+.sv-create-card { width: 860px; max-width: 98vw; max-height: 92vh; display: flex; flex-direction: column; }
 .sv-dialog-header { display: flex; align-items: center; background: #e65100; color: #fff; padding: 10px 16px; flex-shrink: 0; }
-.sv-dialog-footer { display: flex; align-items: center; border-top: 1px solid #eee; background: #fafafa; flex-shrink: 0; gap: 8px; }
+.sv-dialog-footer { display: flex; align-items: center; border-top: 1px solid #eee; background: #fafafa; flex-shrink: 0; gap: 8px; padding: 10px 16px; }
 
-.sv-form { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+/* Body 2 colunas */
+.sv-create-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+.sv-form { padding: 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; border-right: 1px solid #f0f0f0; }
 .sv-form-section { display: flex; flex-direction: column; gap: 6px; }
 .sv-form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
 .sv-form-field { display: flex; flex-direction: column; gap: 4px; }
-.sv-form-field--grow { flex: 1; min-width: 140px; }
+.sv-form-field--grow { flex: 1; min-width: 120px; }
 .sv-form-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; }
+
+/* Rules panel */
+.sv-rules-panel { width: 240px; flex-shrink: 0; padding: 16px 14px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; }
+.sv-rules-section { display: flex; flex-direction: column; gap: 6px; }
+.sv-rules-title { font-size: 11px; font-weight: 700; color: #777; text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; margin-bottom: 4px; }
+.sv-check-item { display: flex; align-items: flex-start; font-size: 12px; color: #aaa; padding: 3px 0; transition: color .15s; }
+.sv-check-item--ok { color: #2e7d32; }
+.sv-rules-list { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 5px; }
+.sv-rules-list li { font-size: 11px; color: #888; line-height: 1.4; }
 
 /* Tipo select */
 .sv-type-select { display: flex; gap: 8px; flex-wrap: wrap; }
