@@ -1769,11 +1769,14 @@ const executeBulkPromo = async () => {
   bulkLoading.value = true
   try {
     let res
+    const selectionBase = selectAllFiltered.value
+      ? { select_all: true, filters: buildFiltersPayload() }
+      : { items: _itemsPayload() }
     if (bulkPromoForm.action === 'deactivate') {
-      res = await MercadoLivreService.bulkPromoDeactivate({ items: _itemsPayload() })
+      res = await MercadoLivreService.bulkPromoDeactivate(selectionBase)
     } else {
       res = await MercadoLivreService.bulkPromoActivate({
-        items: _itemsPayload(),
+        ...selectionBase,
         deal_price_type: bulkPromoForm.dealPriceType,
         deal_price_value: bulkPromoForm.dealPriceValue,
         finish_date: bulkPromoForm.finishDate ? `${bulkPromoForm.finishDate}T23:59:59` : null
@@ -1788,10 +1791,10 @@ const executeBulkPromo = async () => {
 const executeBulkListingType = async () => {
   bulkLoading.value = true
   try {
-    const res = await MercadoLivreService.bulkListingType({
-      items: _itemsPayload(),
-      listing_type_id: bulkListingTypeForm.listing_type
-    })
+    const payload = selectAllFiltered.value
+      ? { select_all: true, filters: buildFiltersPayload(), listing_type_id: bulkListingTypeForm.listing_type }
+      : { items: _itemsPayload(), listing_type_id: bulkListingTypeForm.listing_type }
+    const res = await MercadoLivreService.bulkListingType(payload)
     _bulkFinish(res, showBulkListingTypeDialog)
   } catch (e) {
     $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao alterar tipo.' })
