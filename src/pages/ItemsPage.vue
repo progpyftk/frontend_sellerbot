@@ -1754,12 +1754,11 @@ const _bulkFinish = (result, closeRef) => {
 const executeBulkPriceUpdate = async () => {
   bulkLoading.value = true
   try {
-    const res = await MercadoLivreService.bulkPriceUpdate({
-      items: _itemsPayload(),
-      direction: bulkPriceForm.direction,
-      type: bulkPriceForm.type,
-      value: bulkPriceForm.value
-    })
+    const base = { direction: bulkPriceForm.direction, type: bulkPriceForm.type, value: bulkPriceForm.value }
+    const payload = selectAllFiltered.value
+      ? { select_all: true, filters: buildFiltersPayload(), ...base }
+      : { items: _itemsPayload(), ...base }
+    const res = await MercadoLivreService.bulkPriceUpdate(payload)
     _bulkFinish(res, showBulkPriceDialog)
   } catch (e) {
     $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao alterar preços.' })
@@ -1802,14 +1801,15 @@ const executeBulkListingType = async () => {
 const executeBulkWholesale = async () => {
   bulkLoading.value = true
   try {
-    const res = await MercadoLivreService.bulkWholesale({
-      items: _itemsPayload(),
-      tiers: bulkWholesaleForm.tiers.map(t => ({
-        min_quantity: t.min_quantity,
-        price_type: t.priceType,
-        value: t.value
-      })).filter(t => t.value && t.min_quantity)
-    })
+    const tiers = bulkWholesaleForm.tiers.map(t => ({
+      min_quantity: t.min_quantity,
+      price_type: t.priceType,
+      value: t.value
+    })).filter(t => t.value && t.min_quantity)
+    const payload = selectAllFiltered.value
+      ? { select_all: true, filters: buildFiltersPayload(), tiers }
+      : { items: _itemsPayload(), tiers }
+    const res = await MercadoLivreService.bulkWholesale(payload)
     _bulkFinish(res, showBulkPriceDialog)
   } catch (e) {
     $q.notify({ type: 'negative', message: e.response?.data?.error || 'Erro ao definir atacado.' })
@@ -1819,10 +1819,10 @@ const executeBulkWholesale = async () => {
 const executeBulkExactPrice = async () => {
   bulkLoading.value = true
   try {
-    const res = await MercadoLivreService.bulkExactPrice({
-      items: _itemsPayload(),
-      price: bulkExactPriceForm.price,
-    })
+    const payload = selectAllFiltered.value
+      ? { select_all: true, filters: buildFiltersPayload(), price: bulkExactPriceForm.price }
+      : { items: _itemsPayload(), price: bulkExactPriceForm.price }
+    const res = await MercadoLivreService.bulkExactPrice(payload)
     _bulkFinish(res, showBulkPriceDialog)
     bulkExactPriceForm.price = null
   } catch (e) {
