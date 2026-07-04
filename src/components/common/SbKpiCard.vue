@@ -13,6 +13,9 @@
       <q-icon :name="deltaIcon" size="12px" />
       {{ delta }} vs período anterior
     </div>
+    <svg v-if="sparklineData && sparklineData.length" class="sb-kpi-sparkline" viewBox="0 0 100 32" preserveAspectRatio="none">
+      <path :d="sparklinePath" fill="none" :stroke="sparklineColor" stroke-width="1.5" stroke-linecap="round" />
+    </svg>
     <slot />
   </SbCard>
 </template>
@@ -31,6 +34,10 @@ const props = defineProps({
   variant: { type: String, default: 'teal' },
   /** quando true, delta positivo é ruim (ex: cancelamentos, ads) */
   invertDelta: { type: Boolean, default: false },
+  /** dados para sparkline (array de números) */
+  sparklineData: { type: Array, default: null },
+  /** cor do sparkline (hex) */
+  sparklineColor: { type: String, default: '#0f766e' },
 });
 
 const deltaNum = computed(() => {
@@ -50,15 +57,61 @@ const deltaIcon = computed(() => {
   if (!deltaNum.value) return 'remove';
   return deltaNum.value > 0 ? 'arrow_upward' : 'arrow_downward';
 });
+
+// Sparkline path
+const sparklinePath = computed(() => {
+  if (!props.sparklineData || props.sparklineData.length < 2) return '';
+  const data = props.sparklineData;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const w = 100;
+  const h = 32;
+  const padding = 2;
+  
+  const points = data.map((v, i) => {
+    const x = padding + (i / (data.length - 1)) * (w - 2 * padding);
+    const y = h - padding - ((v - min) / range) * (h - 2 * padding);
+    return `${x},${y}`;
+  });
+  
+  // Smooth curve using cardinal spline
+  if (points.length < 2) return `M ${points[0]}`;
+  
+  let path = `M ${points[0]}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const [x0, y0] = points[Math.max(0, i - 1)].split(',').map(Number);
+    const [x1, y1] = points[i].split(',').map(Number);
+    const [x2, y2] = points[i + 1].split(',').map(Number);
+    const [x3, y3] = points[Math.min(points.length - 1, i + 2)].split(',').map(Number);
+    
+    const cp1x = x1 + (x2 - x0) / 6;
+    const cp1y = y1 + (y2 - y0) / 6;
+    const cp2x = x2 - (x3 - x1) / 6;
+    const cp2y = y2 - (y3 - y1) / 6;
+    
+    path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
+  }
+  
+  return path;
+});
 </script>
 
 <style lang="scss" scoped>
+@import 'src/css/tokens';
+
 .sb-kpi {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: $space-2;
   position: relative;
   overflow: hidden;
+  padding: $space-5;
+  transition: box-shadow $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-sm;
+  }
 
   &::before {
     content: '';
@@ -68,68 +121,74 @@ const deltaIcon = computed(() => {
     bottom: 12px;
     width: 3px;
     border-radius: 0 3px 3px 0;
-    background: #e2e8f0;
+    background: $border;
   }
-  &--teal::before   { background: #0d9488; }
+  &--teal::before   { background: #0f766e; }
   &--green::before  { background: #16a34a; }
   &--amber::before  { background: #d97706; }
   &--red::before    { background: #dc2626; }
   &--sky::before    { background: #0284c7; }
-  &--indigo::before { background: #4f46e5; }
+  &--indigo::before { background: #6366f1; }
   &--slate::before  { background: #94a3b8; }
 }
 
 .sb-kpi-label {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  gap: $space-1;
+  font-size: $text-small;
+  font-weight: $font-medium;
+  color: $text-muted;
 }
 
 .sb-kpi-value-row {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  margin-top: 2px;
+  gap: $space-1;
+  margin-top: $space-1;
 }
 
 .sb-kpi-prefix {
   font-size: 16px;
-  font-weight: 600;
-  color: #64748b;
+  font-weight: $font-semibold;
+  color: $text-muted;
 }
 
 .sb-kpi-value {
-  font-size: 26px;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 28px;
+  font-weight: $font-bold;
+  color: $text-primary;
   letter-spacing: -0.5px;
-  line-height: 1.1;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .sb-kpi-sub {
-  font-size: 12px;
-  color: #94a3b8;
-  margin-top: 2px;
+  font-size: $text-xs;
+  color: $text-disabled;
+  margin-top: $space-1;
 }
 
 .sb-kpi-delta {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 6px;
+  font-size: $text-xs;
+  font-weight: $font-semibold;
+  margin-top: $space-2;
   width: fit-content;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 2px 8px;
+  border-radius: $radius-sm;
 
-  &--good { background: #dcfce7; color: #166534; }
-  &--bad  { background: #fee2e2; color: #991b1b; }
-  &--neutral { background: #f1f5f9; color: #475569; }
+  &--good { background: $tint-green-bg; color: $tint-green-text; }
+  &--bad  { background: $tint-red-bg; color: $tint-red-text; }
+  &--neutral { background: $tint-slate-bg; color: $tint-slate-text; }
+}
+
+.sb-kpi-sparkline {
+  width: 100%;
+  height: 32px;
+  margin-top: $space-2;
+  opacity: 0.6;
 }
 </style>

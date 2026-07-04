@@ -347,177 +347,175 @@
           {{ selectedAccountKeys.length }} de {{ allAccountKeys.length }} contas
         </span>
       </div>
-      <div class="kpi-grid">
 
-        <div class="kpi-card kpi-gmv">
-          <div class="kpi-label">
-            GMV
+      <SbKpiGrid :columns="4" :gap="16">
+        <!-- GMV -->
+        <SbKpiCard
+          label="GMV"
+          :value="fmt(op?.gmv)"
+          variant="indigo"
+          :delta="deltaFmt(op?.vs_prev?.gmv)"
+          :sparkline-data="sparklineData('gmv')"
+          sparkline-color="#6366f1"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">Faturamento bruto total — o valor que o comprador pagou. Não desconta tarifas nem custo do produto.</q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value">{{ fmt(op?.gmv) }}</div>
-          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
-            <path :d="sparklinePath('gmv')" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.gmv)">
-            <q-icon :name="deltaIcon(op?.vs_prev?.gmv)" size="12px" />
-            {{ deltaFmt(op?.vs_prev?.gmv) }} vs período anterior
-          </div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-net">
-          <div class="kpi-label">
-            Receita Líquida
+        <!-- Receita Líquida -->
+        <SbKpiCard
+          label="Receita Líquida"
+          :value="fmt(op?.net_revenue)"
+          variant="sky"
+          :delta="deltaFmt(op?.vs_prev?.net_revenue)"
+          :sparkline-data="sparklineData('net_revenue')"
+          sparkline-color="#0284c7"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">GMV menos as tarifas cobradas pelo Mercado Livre. É o que entra na sua conta.</q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value">{{ fmt(op?.net_revenue) }}</div>
-          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
-            <path :d="sparklinePath('net_revenue')" fill="none" stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.net_revenue)">
-            <q-icon :name="deltaIcon(op?.vs_prev?.net_revenue)" size="12px" />
-            {{ deltaFmt(op?.vs_prev?.net_revenue) }} vs período anterior
-          </div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-gp">
-          <div class="kpi-label">
-            Margem de Contribuição
+        <!-- Margem de Contribuição -->
+        <SbKpiCard
+          label="Margem de Contribuição"
+          :value="fmt(op?.gross_profit)"
+          variant="green"
+          :sub="'Margem ' + pct(op?.gross_profit, op?.net_revenue)"
+          :delta="deltaFmt(op?.vs_prev?.gross_profit)"
+          :sparkline-data="sparklineData('gross_profit')"
+          sparkline-color="#16a34a"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">Receita Líquida menos o Custo Médio do Produto (CMV). É o que sobra para cobrir custos fixos e marketing.</q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value">{{ fmt(op?.gross_profit) }}</div>
-          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
-            <path :d="sparklinePath('gross_profit')" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <div class="kpi-sub">Margem {{ pct(op?.gross_profit, op?.net_revenue) }}</div>
-          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.gross_profit)">
-            <q-icon :name="deltaIcon(op?.vs_prev?.gross_profit)" size="12px" />
-            {{ deltaFmt(op?.vs_prev?.gross_profit) }} vs período anterior
-          </div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-ll">
-          <div class="kpi-label">
-            Lucro após Ads
+        <!-- Lucro após Ads -->
+        <SbKpiCard
+          label="Lucro após Ads"
+          :value="fmt(op?.lucro_liquido)"
+          variant="teal"
+          :sub="'Margem ' + pct(op?.lucro_liquido, op?.net_revenue)"
+          :delta="deltaFmt(op?.vs_prev?.lucro_liquido)"
+          :sparkline-data="sparklineData('lucro_liquido')"
+          sparkline-color="#0f766e"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">Margem de Contribuição menos o gasto com Ads. O lucro real da operação.</q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value kpi-highlight">{{ fmt(op?.lucro_liquido) }}</div>
-          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
-            <path :d="sparklinePath('lucro_liquido')" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <div class="kpi-sub">Margem {{ pct(op?.lucro_liquido, op?.net_revenue) }}</div>
-          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.lucro_liquido)">
-            <q-icon :name="deltaIcon(op?.vs_prev?.lucro_liquido)" size="12px" />
-            {{ deltaFmt(op?.vs_prev?.lucro_liquido) }} vs período anterior
-          </div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-ads">
-          <div class="kpi-label">
-            Gasto com Ads
+        <!-- Gasto com Ads -->
+        <SbKpiCard
+          label="Gasto com Ads"
+          :value="fmt(op?.ads_cost)"
+          variant="amber"
+          :sub="'TACoS ' + pctRaw(op?.ads_cost, op?.gmv)"
+          :delta="deltaFmt(op?.vs_prev?.ads_cost)"
+          :invert-delta="true"
+          :sparkline-data="sparklineData('ads_cost')"
+          sparkline-color="#f59e0b"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">Total investido em Ads. TACoS = Ads / GMV total.</q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value kpi-warn">{{ fmt(op?.ads_cost) }}</div>
-          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
-            <path :d="sparklinePath('ads_cost')" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <div class="kpi-sub">TACoS {{ pctRaw(op?.ads_cost, op?.gmv) }}</div>
-          <div class="kpi-delta" :class="deltaClass(-(op?.vs_prev?.ads_cost || 0))">
-            <q-icon :name="deltaIcon(-(op?.vs_prev?.ads_cost || 0))" size="12px" />
-            {{ deltaFmt(op?.vs_prev?.ads_cost) }} vs período anterior
-          </div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-orders">
-          <div class="kpi-label">
-            Pedidos Pagos
+        <!-- Pedidos Pagos -->
+        <SbKpiCard
+          label="Pedidos Pagos"
+          :value="(op?.orders_count || 0).toLocaleString('pt-BR')"
+          variant="indigo"
+          :sub="'Ticket médio ' + fmt(op?.avg_ticket)"
+          :delta="deltaFmt(op?.vs_prev?.orders_count)"
+          :sparkline-data="sparklineData('orders_count')"
+          sparkline-color="#8b5cf6"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">Quantidade de pedidos pagos. Ticket médio = GMV ÷ pedidos.</q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value">{{ (op?.orders_count || 0).toLocaleString('pt-BR') }}</div>
-          <svg class="sparkline" viewBox="0 0 60 20" preserveAspectRatio="none">
-            <path :d="sparklinePath('orders_count')" fill="none" stroke="#ec4899" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <div class="kpi-sub">Ticket médio {{ fmt(op?.avg_ticket) }}</div>
-          <div class="kpi-delta" :class="deltaClass(op?.vs_prev?.orders_count)">
-            <q-icon :name="deltaIcon(op?.vs_prev?.orders_count)" size="12px" />
-            {{ deltaFmt(op?.vs_prev?.orders_count) }} vs período anterior
-          </div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-units">
-          <div class="kpi-label">
-            Unidades Vendidas
+        <!-- Unidades Vendidas -->
+        <SbKpiCard
+          label="Unidades Vendidas"
+          :value="(op?.units_sold || 0).toLocaleString('pt-BR')"
+          variant="slate"
+          :sub="(op?.catalog_orders_count || 0) + ' via catálogo · ' + (op?.flex_orders_count || 0) + ' Flex'"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">
                 Quantidade total de unidades vendidas. Pode ser maior que pedidos quando um pedido contém múltiplos itens.
               </q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value">{{ (op?.units_sold || 0).toLocaleString('pt-BR') }}</div>
-          <div class="kpi-sub">{{ op?.catalog_orders_count || 0 }} via catálogo · {{ op?.flex_orders_count || 0 }} Flex</div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-roas">
-          <div class="kpi-label">
-            ROAS
+        <!-- ROAS -->
+        <SbKpiCard
+          label="ROAS"
+          :value="op?.roas ? op?.roas + 'x' : '—'"
+          variant="sky"
+          :sub="'ACoS ' + (op?.acos != null ? op?.acos + '%' : '—')"
+          :delta="deltaFmt(op?.vs_prev?.tacos)"
+          :invert-delta="true"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">
                 Retorno sobre o investimento em Ads. ROAS = receita atribuída / gasto. ACoS = gasto / receita atribuída × 100.
               </q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value">{{ op?.roas ? op?.roas + 'x' : '—' }}</div>
-          <div class="kpi-sub">ACoS {{ op?.acos != null ? op?.acos + '%' : '—' }}</div>
-          <div class="kpi-delta" :class="deltaClass(-(op?.vs_prev?.tacos || 0))">
-            <q-icon :name="deltaIcon(-(op?.vs_prev?.tacos || 0))" size="12px" />
-            TACoS {{ deltaFmt(op?.vs_prev?.tacos) }} vs anterior
-          </div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-margin">
-          <div class="kpi-label">
-            Margem Líquida
+        <!-- Margem Líquida -->
+        <SbKpiCard
+          label="Margem Líquida"
+          :value="op?.lucro_liquido_pct != null ? op?.lucro_liquido_pct + '%' : '—'"
+          :variant="(op?.lucro_liquido_pct || 0) >= 0 ? 'green' : 'red'"
+          :sub="'Margem bruta ' + (op?.gross_margin_pct != null ? op?.gross_margin_pct + '%' : '—')"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">
                 Lucro Após Ads ÷ Receita Líquida. É a margem real depois de descontar todos os custos operacionais e de marketing.
               </q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value" :class="(op?.lucro_liquido_pct || 0) >= 0 ? 'kpi-highlight' : 'neg'">
-            {{ op?.lucro_liquido_pct != null ? op?.lucro_liquido_pct + '%' : '—' }}
-          </div>
-          <div class="kpi-sub">Margem bruta {{ op?.gross_margin_pct != null ? op?.gross_margin_pct + '%' : '—' }}</div>
-        </div>
+          </template>
+        </SbKpiCard>
 
-        <div class="kpi-card kpi-canc">
-          <div class="kpi-label">
-            Cancelamentos
+        <!-- Cancelamentos -->
+        <SbKpiCard
+          label="Cancelamentos"
+          :value="op?.canceled_count || 0"
+          :variant="(op?.canceled_count || 0) > 0 ? 'red' : 'slate'"
+          :sub="op?.orders_count ? 'Taxa ' + pctRaw(op?.canceled_count, (op?.orders_count || 0) + (op?.canceled_count || 0)) : ''"
+        >
+          <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">
                 Pedidos cancelados no período. Alta taxa de cancelamento pode indicar problemas de estoque ou qualidade do anúncio.
               </q-tooltip>
             </q-icon>
-          </div>
-          <div class="kpi-value" :class="(op?.canceled_count || 0) > 0 ? 'kpi-warn' : ''">
-            {{ op?.canceled_count || 0 }}
-          </div>
-          <div class="kpi-sub" v-if="op?.orders_count">
-            Taxa {{ pctRaw(op?.canceled_count, (op?.orders_count || 0) + (op?.canceled_count || 0)) }}
-          </div>
-        </div>
-
-      </div>
+          </template>
+        </SbKpiCard>
+      </SbKpiGrid>
 
           <!-- ══════════ ABAS ═══════════════════════════════════════════════════ -->
           <div class="tab-bar">
@@ -1576,6 +1574,8 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
+import SbKpiCard from 'src/components/common/SbKpiCard.vue'
+import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
 
 const $q = useQuasar()
 
@@ -1595,7 +1595,8 @@ const selectedAccountKeys = ref([])  // e.g. ['ml:123', 'shopee:456']
 const knownMlAccounts    = ref([])   // { key, id, marketplace, label, color }
 const knownShopeeAccounts = ref([])
 
-const ACCOUNT_COLORS = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ec4899','#8b5cf6','#ef4444','#14b8a6','#f97316','#06b6d4']
+// Nova paleta de cores — tons mais sóbrios e harmoniosos (Redesign Jul/2026)
+const ACCOUNT_COLORS = ['#0f766e','#0284c7','#6366f1','#8b5cf6','#f59e0b','#64748b','#16a34a','#d97706','#0ea5e9','#94a3b8']
 
 function buildAccountKey(marketplace, id) { return `${marketplace}:${id}` }
 
@@ -1887,11 +1888,11 @@ const tabs = [
 ]
 
 const chartMetrics = [
-  { key: 'gmv', label: 'GMV', color: '#6366f1' },
-  { key: 'net_revenue', label: 'Rec. Líquida', color: '#0ea5e9' },
-  { key: 'gross_profit', label: 'Margem de Contribuição', color: '#10b981' },
-  { key: 'lucro_liquido', label: 'Lucro Após Ads', color: '#0d9488' },
-  { key: 'ads_cost', label: 'Ads', color: '#f59e0b' },
+  { key: 'gmv', label: 'GMV', color: '#6366f1' },           // indigo
+  { key: 'net_revenue', label: 'Rec. Líquida', color: '#0284c7' },  // sky-600
+  { key: 'gross_profit', label: 'Margem de Contribuição', color: '#16a34a' },  // green-600
+  { key: 'lucro_liquido', label: 'Lucro Após Ads', color: '#0f766e' },  // teal-700
+  { key: 'ads_cost', label: 'Ads', color: '#f59e0b' },       // amber
 ]
 
 const datePresets = [
@@ -3124,6 +3125,13 @@ function sparklinePath(metric) {
     path += ` C ${mx},${pts[i - 1][1]} ${mx},${pts[i][1]} ${pts[i][0]},${pts[i][1]}`
   }
   return path
+}
+
+// Dados brutos para sparkline (usado pelo componente SbKpiCard)
+function sparklineData(metric) {
+  const data = chartData.value
+  if (!data.length) return null
+  return data.map(d => d[metric] || 0)
 }
 
 // ── Cascata P&L helpers ───────────────────────────────────────────────────

@@ -1,15 +1,15 @@
 // ============================================================
-// SELLERBOT — DESIGN TOKENS
+// SELLERBOT — DESIGN TOKENS v2 (Redesign Dashboard Jul/2026)
 // Substitui o conteúdo de src/css/quasar.variables.scss
 // ============================================================
 
 // ── MARCA ──
-$primary   : #0d9488;   // teal-600 — cor SellerBot
-$secondary : #0f766e;   // teal-700 — hover/secondary
+$primary   : #0f766e;   // teal-700 — cor SellerBot (mais profundo)
+$secondary : #115e59;   // teal-800 — hover/secondary
 $accent    : #f59e0b;   // amber-500 — destaque, ★
 
 // ── SUPERFÍCIE (LIGHT-ONLY) ──
-$background   : #f8fafc;  // slate-50 — fundo da página
+$background   : #f8fafb;  // off-white suave — fundo da página (reduz fadiga)
 $surface      : #ffffff;  // cards, modais, header
 $surface-2    : #f1f5f9;  // slate-100 — hovers, áreas alternadas
 $border       : #e2e8f0;  // slate-200 — bordas
@@ -26,6 +26,14 @@ $positive : #16a34a;  // green-600 — lucro, sucesso
 $negative : #dc2626;  // red-600 — prejuízo, erro
 $info     : #0284c7;  // sky-600 — info neutro
 $warning  : #d97706;  // amber-600 — atenção
+
+// ── DADOS (gráficos e KPIs — máximo 6 cores) ──
+$data-primary  : #0f766e;  // teal-700 — Lucro / Métrica principal
+$data-secondary: #0284c7;  // sky-600 — Receita Líquida
+$data-tertiary : #6366f1;  // indigo-500 — GMV
+$data-quaternary: #8b5cf6; // violet-500 — Pedidos
+$data-quinary  : #f59e0b;  // amber-500 — Ads / Custo
+$data-neutral  : #64748b;  // slate-500 — Neutro / Secundário
 
 // ── MARKETPLACES (cores externas — usar só quando o marketplace é o tema) ──
 $ml-amber       : #FFE600;     // Mercado Livre amarelo (logo)
