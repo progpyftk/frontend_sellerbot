@@ -277,7 +277,7 @@ function toggleAllShopee() {
   display: flex;
   align-items: center;
   gap: $space-2;
-  font-size: $text-h3;
+  font-size: $text-h3-size;
   font-weight: $font-semibold;
   color: $text-primary;
 }
@@ -290,7 +290,7 @@ function toggleAllShopee() {
   display: flex;
   align-items: center;
   gap: $space-2;
-  font-size: $text-small;
+  font-size: $text-small-size;
   font-weight: $font-semibold;
   color: $text-muted;
   text-transform: uppercase;
@@ -308,7 +308,7 @@ function toggleAllShopee() {
 
 .fd-preset-btn {
   padding: $space-1 $space-3;
-  font-size: $text-xs;
+  font-size: $text-xs-size;
   font-weight: $font-medium;
   color: $text-body;
   background: $surface-2;
@@ -343,7 +343,7 @@ function toggleAllShopee() {
 }
 
 .fd-date-label {
-  font-size: $text-xs;
+  font-size: $text-xs-size;
   font-weight: $font-medium;
   color: $text-muted;
   width: 24px;
@@ -352,7 +352,7 @@ function toggleAllShopee() {
 .fd-date-input {
   flex: 1;
   :deep(input) {
-    font-size: $text-small;
+    font-size: $text-small-size;
     padding: $space-1 $space-2;
   }
 }
@@ -387,7 +387,7 @@ function toggleAllShopee() {
 }
 
 .fd-mkt-name {
-  font-size: $text-small;
+  font-size: $text-small-size;
   font-weight: $font-semibold;
   color: $text-body;
 }
@@ -418,7 +418,7 @@ function toggleAllShopee() {
 }
 
 .fd-acct-label {
-  font-size: $text-small;
+  font-size: $text-small-size;
   color: $text-body;
 }
 
@@ -426,7 +426,7 @@ function toggleAllShopee() {
   display: flex;
   align-items: center;
   gap: $space-1;
-  font-size: $text-xs;
+  font-size: $text-xs-size;
   color: $text-muted;
   margin-top: $space-2;
   padding: $space-2;
@@ -448,7 +448,7 @@ function toggleAllShopee() {
   padding: $space-2;
   border-radius: $radius-sm;
   cursor: pointer;
-  font-size: $text-small;
+  font-size: $text-small-size;
   color: $text-body;
   transition: background $transition-fast;
 

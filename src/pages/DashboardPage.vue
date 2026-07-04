@@ -3,7 +3,7 @@
 
     <!-- ══════════ HEADER (slim) ══════════════════════════════════════════ -->
     <DashboardHeader
-      :active-date-preset="activeDatePreset"
+      v-model:preset="activeDatePreset"
       :date-from="dateFrom"
       :date-to="dateTo"
       :date-presets="datePresets"

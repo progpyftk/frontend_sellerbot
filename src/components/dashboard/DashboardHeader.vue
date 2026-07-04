@@ -26,7 +26,7 @@
               :key="p.key"
               clickable
               v-close-popup
-              :active="activeDatePreset === p.key"
+              :active="preset === p.key"
               @click="$emit('update:preset', p.key)"
             >
               <q-item-section>{{ p.label }}</q-item-section>
@@ -111,6 +111,10 @@
               <q-item-section avatar><q-icon name="select_all" size="16px" /></q-item-section>
               <q-item-section>Todas as contas</q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="clearSelection">
+              <q-item-section avatar><q-icon name="deselect" size="16px" /></q-item-section>
+              <q-item-section>Limpar seleção</q-item-section>
+            </q-item>
           </q-list>
         </q-btn-dropdown>
       </div>
@@ -132,7 +136,7 @@
 import { computed } from 'vue';
 
 const props = defineProps({
-  activeDatePreset: { type: String, default: null },
+  preset: { type: String, default: null },
   dateFrom: { type: String, required: true },
   dateTo: { type: String, required: true },
   datePresets: { type: Array, required: true },
@@ -151,10 +155,17 @@ const emit = defineEmits([
 ]);
 
 const periodLabel = computed(() => {
-  const preset = props.datePresets.find(p => p.key === props.activeDatePreset);
+  const preset = props.datePresets.find(p => p.key === props.preset);
   if (preset) return preset.label;
-  return `${props.dateFrom} → ${props.dateTo}`;
+  return `${formatDate(props.dateFrom)} → ${formatDate(props.dateTo)}`;
 });
+
+// Formatar data ISO para pt-BR (dd/mm)
+function formatDate(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, d] = isoDate.split('-');
+  return `${d}/${m}`;
+}
 
 const accountsLabel = computed(() => {
   const total = props.allKeys.length;
@@ -176,6 +187,10 @@ function toggleAccount(key) {
 
 function selectAll() {
   emit('update:selectedKeys', [...props.allKeys]);
+}
+
+function clearSelection() {
+  emit('update:selectedKeys', []);
 }
 </script>
 
@@ -209,7 +224,7 @@ function selectAll() {
 }
 
 .header-eyebrow {
-  font-size: $text-xs;
+  font-size: $text-xs-size;
   font-weight: $font-medium;
   color: $text-muted;
   text-transform: uppercase;
@@ -217,7 +232,7 @@ function selectAll() {
 }
 
 .header-title {
-  font-size: $text-h2;
+  font-size: $text-h2-size;
   font-weight: $font-bold;
   color: $text-primary;
   line-height: 1.2;
@@ -234,7 +249,7 @@ function selectAll() {
     background: $surface;
     border: 1px solid $border;
     border-radius: $radius-sm;
-    font-size: $text-small;
+    font-size: $text-small-size;
     font-weight: $font-medium;
     color: $text-body;
     padding: $space-1 $space-3;
@@ -271,7 +286,7 @@ function selectAll() {
   }
   &--shopee {
     background: $shopee-orange-bg;
-    color: #fff;
+    color: #991b1b;  // tom escuro legível sobre fundo translúcido
   }
 }
 

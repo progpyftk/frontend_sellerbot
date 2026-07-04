@@ -136,7 +136,7 @@ const sparklinePath = computed(() => {
   display: flex;
   align-items: center;
   gap: $space-1;
-  font-size: $text-small;
+  font-size: $text-small-size;
   font-weight: $font-medium;
   color: $text-muted;
 }
@@ -164,7 +164,7 @@ const sparklinePath = computed(() => {
 }
 
 .sb-kpi-sub {
-  font-size: $text-xs;
+  font-size: $text-xs-size;
   color: $text-disabled;
   margin-top: $space-1;
 }
@@ -173,7 +173,7 @@ const sparklinePath = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: $text-xs;
+  font-size: $text-xs-size;
   font-weight: $font-semibold;
   margin-top: $space-2;
   width: fit-content;
