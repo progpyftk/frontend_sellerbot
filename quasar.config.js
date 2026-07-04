@@ -89,17 +89,18 @@ module.exports = configure(function (ctx) {
     framework: {
       config: {
         brand: {
-          primary: "#ff5722", // Cor primária
-          secondary: "#607d8b", // Cor secundária
-          accent: "#03a9f4", // Cor de destaque
-          dark: "#1D1D1D", // Cor para temas escuros (opcional, se você usar temas escuros)
+          // SellerBot v2 — Design System oficial
+          primary: "#0d9488",   // teal-600
+          secondary: "#0f766e", // teal-700
+          accent: "#f59e0b",    // amber-500
+          dark: "#0f172a",      // slate-900
 
-          positive: "#4caf50", // Cor para sucesso
-          negative: "#f44336", // Cor para erros
-          info: "#2196f3", // Cor para informações
-          warning: "#ffeb3b", // Cor para avisos
+          positive: "#16a34a",  // green-600
+          negative: "#dc2626",  // red-600
+          info: "#0284c7",      // sky-600
+          warning: "#d97706",   // amber-600
 
-          background: "#f0f0f0", // Cor de fundo (caso você queira aplicar um fundo global)
+          background: "#f8fafc", // slate-50
         },
       },
 

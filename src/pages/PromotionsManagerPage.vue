@@ -363,7 +363,7 @@
 
                     <!-- Chips de resumo -->
                     <q-item-section side class="row items-center" style="gap:4px; flex-direction:row">
-                      <template v-if="promoSummary(promo) as s">
+                      <template v-for="s in (promoSummary(promo) ? [promoSummary(promo)] : [])" :key="'summary-' + promo.account_id + '-' + promo.id">
                         <q-chip v-if="s.activated" dense square color="green-1" text-color="green-9" size="sm" class="text-weight-bold">
                           ✅ {{ s.activated }}
                         </q-chip>

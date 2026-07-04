@@ -1,12 +1,12 @@
 <template>
-  <q-header class="sb-header">
+  <q-header class="sb-home-header">
     <div class="header-inner">
       <q-toolbar class="q-pa-none">
 
         <!-- Logo Krivos -->
         <q-toolbar-title shrink class="q-mr-lg">
           <router-link to="/" class="brand-link">
-            <div class="brand-logomark">K</div>
+            <div class="brand-mark">K</div>
             <div class="brand-text">
               <span class="brand-name">Krivos</span>
               <span class="brand-sub">Consultoria</span>
@@ -98,11 +98,10 @@ const handleLogout = async () => {
 </script>
 
 <style lang="scss" scoped>
-.sb-header {
-  background: rgba(15, 23, 42, 0.97);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  box-shadow: none;
+.sb-home-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 0 #f1f5f9;
 }
 
 .header-inner {
@@ -119,7 +118,7 @@ const handleLogout = async () => {
   text-decoration: none;
 }
 
-.brand-logomark {
+.brand-mark {
   width: 34px;
   height: 34px;
   border-radius: 9px;
@@ -130,6 +129,7 @@ const handleLogout = async () => {
   font-size: 1rem;
   font-weight: 900;
   color: #fff;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
 }
 
 .brand-text {
@@ -141,16 +141,17 @@ const handleLogout = async () => {
 .brand-name {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #f1f5f9;
-  letter-spacing: -.3px;
+  color: #0f172a;
+  letter-spacing: -0.3px;
 }
 
 .brand-sub {
   font-size: .65rem;
-  color: #64748b;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: .6px;
   margin-top: 1px;
+  font-weight: 600;
 }
 
 .nav-links { display: flex; gap: 2px; }
@@ -158,33 +159,34 @@ const handleLogout = async () => {
 .nav-link {
   font-size: .86rem;
   font-weight: 500;
-  color: #94a3b8;
+  color: #475569;
   text-decoration: none;
   padding: 6px 12px;
   border-radius: 8px;
-  transition: color .2s, background .2s;
+  transition: color 200ms ease, background 200ms ease;
   display: flex;
   align-items: center;
 
-  &:hover { color: #f1f5f9; background: rgba(255,255,255,.07); }
+  &:hover { color: #0f172a; background: #f0fdf9; }
 
   &--product {
-    color: #2dd4bf;
-    &:hover { background: rgba(13,148,136,.15); color: #2dd4bf; }
+    color: #0d9488;
+    font-weight: 600;
+    &:hover { background: #f0fdf9; color: #0d9488; }
   }
 }
 
-.nav-btn { color: #94a3b8; font-size: .86rem; border-radius: 8px; &:hover { color: #f1f5f9; } }
-.cta-btn { font-size: .86rem; font-weight: 700; padding: 8px 18px; border-radius: 8px; }
+.nav-btn { color: #64748b; font-size: .86rem; border-radius: 8px; &:hover { color: #0f172a; } }
+.cta-btn { font-size: .86rem; font-weight: 600; padding: 8px 18px; border-radius: 8px; }
 .welcome-text { font-size: .82rem; color: #64748b; }
 
 .mobile-menu {
   width: 280px;
-  background: #0f172a;
-  border-left: 1px solid rgba(255,255,255,.08);
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
 }
 
-.mobile-brand { font-size: 1.1rem; font-weight: 800; color: #f1f5f9; }
+.mobile-brand { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
 
 @media (max-width: 600px) {
   .header-inner { padding: 0 12px; }
@@ -197,13 +199,13 @@ const handleLogout = async () => {
   gap: 4px;
 
   a {
-    color: #94a3b8;
+    color: #475569;
     text-decoration: none;
     font-size: .95rem;
     padding: 10px 8px;
     border-radius: 8px;
-    transition: color .2s, background .2s;
-    &:hover { color: #f1f5f9; background: rgba(255,255,255,.06); }
+    transition: color 200ms ease, background 200ms ease;
+    &:hover { color: #0f172a; background: #f0fdf9; }
   }
 }
 </style>

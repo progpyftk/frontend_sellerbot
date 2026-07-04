@@ -76,12 +76,12 @@
                 <div class="fs-date-row">
                   <span class="fs-date-label">De</span>
                   <q-input v-model="dateFrom" type="date" dense borderless class="fs-date-inp"
-                    @update:model-value="activeDatePreset = null; load()" />
+                    @update:model-value="activeDatePreset = null; debouncedLoad()" />
                 </div>
                 <div class="fs-date-row">
                   <span class="fs-date-label">Até</span>
                   <q-input v-model="dateTo" type="date" dense borderless class="fs-date-inp"
-                    @update:model-value="activeDatePreset = null; load()" />
+                    @update:model-value="activeDatePreset = null; debouncedLoad()" />
                 </div>
               </div>
             </div>
@@ -212,7 +212,7 @@
               </div>
               <div class="today-sep">|</div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Lucro Bruto</div>
+                <div class="today-kpi-label">Margem de Contribuição</div>
                 <div class="today-kpi-val" :class="(combinedToday.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.gross_profit) }}</div>
               </div>
               <div class="today-sep">|</div>
@@ -385,9 +385,9 @@
 
         <div class="kpi-card kpi-gp">
           <div class="kpi-label">
-            Lucro Bruto
+            Margem de Contribuição
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Receita Líquida menos o CPV. Lucro antes de descontar marketing.</q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Receita Líquida menos o Custo Médio do Produto (CMV). É o que sobra para cobrir custos fixos e marketing.</q-tooltip>
             </q-icon>
           </div>
           <div class="kpi-value">{{ fmt(op?.gross_profit) }}</div>
@@ -405,7 +405,7 @@
           <div class="kpi-label">
             Lucro após Ads
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Lucro Bruto menos o gasto com Ads. O lucro real da operação.</q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Margem de Contribuição menos o gasto com Ads. O lucro real da operação.</q-tooltip>
             </q-icon>
           </div>
           <div class="kpi-value kpi-highlight">{{ fmt(op?.lucro_liquido) }}</div>
@@ -552,7 +552,7 @@
                   <th class="col-date">Data</th>
                   <th class="col-num">GMV</th>
                   <th class="col-num">Rec. Líquida</th>
-                  <th class="col-num">Lucro Bruto</th>
+                  <th class="col-num">Margem de Contribuição</th>
                   <th class="col-num col-ads">Ads</th>
                   <th class="col-num col-ads">TACoS</th>
                   <th class="col-num col-ll">Lucro Após Ads</th>
@@ -657,7 +657,7 @@
               <select v-model="rankingSortKey" class="sort-select">
                 <option value="gmv">Maior GMV</option>
                 <option value="lucro_liquido">Maior Lucro Real</option>
-                <option value="gross_profit">Maior Lucro Bruto</option>
+                <option value="gross_profit">Maior Margem de Contribuição</option>
                 <option value="lucro_liquido_pct">Melhor Margem Líquida</option>
                 <option value="gross_margin_pct">Melhor Margem Bruta</option>
                 <option value="roas">Melhor ROAS</option>
@@ -675,7 +675,7 @@
                   <th>Conta</th>
                   <th class="right">GMV</th>
                   <th class="right">Rec. Líq.</th>
-                  <th class="right">Lucro Bruto</th>
+                  <th class="right">Margem de Contribuição</th>
                   <th class="right">Margem Bruta</th>
                   <th class="right">Ads</th>
                   <th class="right">TACoS</th>
@@ -787,7 +787,7 @@
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--result">
-              <div class="wf-label">= Lucro Bruto</div>
+              <div class="wf-label">= Margem de Contribuição</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--gp" :style="{ width: wfPct(op?.gross_profit, op?.gmv) + '%' }"></div></div>
               <div class="wf-value">{{ fmt(op?.gross_profit) }} <span class="wf-pct">({{ wfPct(op?.gross_profit, op?.gmv).toFixed(1) }}% do GMV)</span></div>
             </div>
@@ -827,7 +827,7 @@
                     <th class="right">Tarifas</th>
                     <th class="right">Rec. Líquida</th>
                     <th class="right">CPV</th>
-                    <th class="right">Lucro Bruto</th>
+                    <th class="right">Margem de Contribuição</th>
                     <th class="right">Ads</th>
                     <th class="right">Lucro Real</th>
                     <th class="right">Margem</th>
@@ -1062,7 +1062,7 @@
                   <th class="right">% Acum.</th>
                   <th class="right">Tarifas</th>
                   <th class="right">CPV</th>
-                  <th class="right">Lucro Bruto</th>
+                  <th class="right">Margem de Contribuição</th>
                   <th class="right">Margem</th>
                   <th class="right" v-if="topGroupBy === 'item' && activeMarketplace !== 'shopee'">
                     <q-tooltip>Visitas → Vendas no período</q-tooltip>
@@ -1285,7 +1285,7 @@
               <select v-model="weekdayMetric" class="sort-select">
                 <option value="gmv">GMV</option>
                 <option value="orders_count">Pedidos</option>
-                <option value="gross_profit">Lucro Bruto</option>
+                <option value="gross_profit">Margem de Contribuição</option>
                 <option value="lucro_liquido">Lucro Após Ads</option>
                 <option value="ads_cost">Ads</option>
               </select>
@@ -1455,7 +1455,7 @@
             <div class="saz-kpi-card" v-for="kpi in [
               { label: 'GMV',          curr: op?.gmv,          prev: lastYearOp?.gmv,          fmt: true },
               { label: 'Rec. Líquida', curr: op?.net_revenue,  prev: lastYearOp?.net_revenue,  fmt: true },
-              { label: 'Lucro Bruto',  curr: op?.gross_profit, prev: lastYearOp?.gross_profit, fmt: true },
+              { label: 'Margem de Contribuição',  curr: op?.gross_profit, prev: lastYearOp?.gross_profit, fmt: true },
               { label: 'Lucro Após Ads', curr: op?.lucro_liquido, prev: lastYearOp?.lucro_liquido, fmt: true },
               { label: 'Pedidos',      curr: op?.orders_count, prev: lastYearOp?.orders_count, fmt: false },
               { label: 'Ads',          curr: op?.ads_cost,     prev: lastYearOp?.ads_cost,     fmt: true },
@@ -1889,7 +1889,7 @@ const tabs = [
 const chartMetrics = [
   { key: 'gmv', label: 'GMV', color: '#6366f1' },
   { key: 'net_revenue', label: 'Rec. Líquida', color: '#0ea5e9' },
-  { key: 'gross_profit', label: 'Lucro Bruto', color: '#10b981' },
+  { key: 'gross_profit', label: 'Margem de Contribuição', color: '#10b981' },
   { key: 'lucro_liquido', label: 'Lucro Após Ads', color: '#0d9488' },
   { key: 'ads_cost', label: 'Ads', color: '#f59e0b' },
 ]
@@ -2183,6 +2183,12 @@ function onChartMouseMove(e) {
 }
 
 // ── Methods ───────────────────────────────────────────────────────────────
+let _loadTimer = null
+function debouncedLoad() {
+  clearTimeout(_loadTimer)
+  _loadTimer = setTimeout(() => load(), 350)
+}
+
 async function load() {
   loading.value = true
   try {
@@ -2259,9 +2265,37 @@ async function load() {
 
 async function loadToday() {
   try {
+    // Passa as contas ML selecionadas como filtro (consistente com DashboardDailyView).
+    // Se nenhuma conta ML estiver selecionada, o backend retorna sem filtro (= todas).
+    const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
+    const allMlKeys = knownMlAccounts.value.map(a => a.key)
+    // Só envia filtro quando for uma seleção PARCIAL — evita chamadas desnecessárias
+    // quando o usuário tem todas as contas marcadas (cenário padrão).
+    const isPartial = mlKeys.length > 0 && mlKeys.length < allMlKeys.length
+    const accountParam = isPartial
+      ? mlKeys.map(k => k.split(':')[1]).join(',')
+      : ''
+
+    const params = accountParam ? { account: accountParam } : {}
+
+    // Idem para Shopee. O endpoint /shopee/orders/today_stats/ lê os IDs via
+    // request.query_params.getlist('account'), que exige a MESMA chave repetida
+    // (?account=1&account=2) — por isso usamos URLSearchParams em vez de um
+    // array no objeto de params (axios serializaria como account[]=1&account[]=2,
+    // que o getlist('account') do Django não enxerga).
+    const shopeeKeys = selectedAccountKeys.value.filter(k => k.startsWith('shopee:'))
+    const allShopeeKeys = knownShopeeAccounts.value.map(a => a.key)
+    const isShopeePartial = shopeeKeys.length > 0 && shopeeKeys.length < allShopeeKeys.length
+    let shopeeParams = {}
+    if (isShopeePartial) {
+      const usp = new URLSearchParams()
+      shopeeKeys.forEach(k => usp.append('account', k.split(':')[1]))
+      shopeeParams = usp
+    }
+
     const [mlRes, shopeeRes] = await Promise.allSettled([
-      MercadoLivreService.getDashboardToday(),
-      ShopeeService.getTodayStats(),
+      MercadoLivreService.getDashboardToday(params),
+      ShopeeService.getTodayStats(shopeeParams),
     ])
     todayData.value      = mlRes.status === 'fulfilled' ? mlRes.value.data : null
     shopeeTodayData.value = shopeeRes.status === 'fulfilled' ? shopeeRes.value.data : null
@@ -2272,14 +2306,26 @@ async function loadToday() {
 
 // ── Dados combinados (ML + Shopee) ────────────────────────────────────────
 
-// Filtra o hoje do ML pelas contas selecionadas usando o breakdown por conta
+// Filtra o hoje do ML pelas contas selecionadas usando o breakdown por conta.
+// O backend (DashboardTodayView) já filtra os totais quando recebe o param `account`
+// via loadToday(), então em geral `ml.accounts` já contém só as contas selecionadas
+// e `ml.gmv` etc. já são os totais filtrados — neste caso retorna `ml` direto.
+// Este filtro client-side existe como fallback para o caso de race condition
+// entre load() e loadToday() (ex: knownMlAccounts ainda vazio quando loadToday roda).
 function mlFilteredToday(ml) {
   if (!ml) return null
   const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
-  // Sem filtro ou todas selecionadas → usa totais globais da resposta
-  if (mlKeys.length === 0 || mlKeys.length >= knownMlAccounts.value.length) return ml
+  const totalMl = knownMlAccounts.value.length
+  // Sem filtro, todas selecionadas, ou knownMlAccounts ainda vazio → ml direto
+  if (mlKeys.length === 0 || mlKeys.length >= totalMl) return ml
   const selectedIds = new Set(mlKeys.map(k => k.split(':')[1]))
-  const accounts = (ml.accounts || []).filter(a => selectedIds.has(String(a.account_id)))
+  const mlAccounts = ml.accounts || []
+  const accounts = mlAccounts.filter(a => selectedIds.has(String(a.account_id)))
+  // Se accounts tem o mesmo tamanho de ml.accounts, o backend JÁ filtrou
+  // (ou todas as contas do backend correspondem à seleção) → ml direto
+  if (accounts.length === mlAccounts.length) return ml
+  // Senão, backend retornou mais contas do que a seleção (race condition
+  // ou cache antigo) → aplica filtro client-side somando os campos
   const sum = (field) => accounts.reduce((s, a) => s + (a[field] || 0), 0)
   return {
     ...ml,
@@ -3416,6 +3462,13 @@ onMounted(() => {
     if (wrap && !wrap.contains(e.target)) showAccountPicker.value = false
   })
 })
+
+// Re-chama loadToday sempre que a seleção de contas muda,
+// para que o banner "Hoje" reflita o filtro escolhido.
+// (Antes o banner só era carregado 1x no onMounted e nunca reagia a filtros.)
+watch(selectedAccountKeys, () => {
+  loadToday()
+}, { deep: true })
 </script>
 
 <style scoped>

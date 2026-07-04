@@ -244,6 +244,31 @@
                 </template>
               </template>
 
+              <!-- ── Card de aprovação de rascunho de anúncio (ListingAgent) ── -->
+              <div v-if="msg.pendingDraft" class="listing-draft-card">
+                <div v-if="msg.pendingDraft.status === 'pending'">
+                  <div class="listing-draft-instructions">{{ msg.pendingDraft.instructions }}</div>
+                  <div class="listing-draft-actions">
+                    <q-btn
+                      unelevated color="positive" label="Aprovar" icon="check" no-caps dense
+                      :loading="msg.pendingDraft.loading"
+                      @click="approveDraft(msg)"
+                    />
+                    <q-btn
+                      flat color="negative" label="Cancelar" icon="close" no-caps dense
+                      :loading="msg.pendingDraft.loading"
+                      @click="cancelDraft(msg)"
+                    />
+                  </div>
+                </div>
+                <div v-else-if="msg.pendingDraft.status === 'approved'" class="listing-draft-status listing-draft-status--approved">
+                  <q-icon name="check_circle" size="16px" /> Rascunho aprovado — peça ao agente para publicar.
+                </div>
+                <div v-else-if="msg.pendingDraft.status === 'cancelled'" class="listing-draft-status listing-draft-status--cancelled">
+                  <q-icon name="cancel" size="16px" /> Rascunho cancelado.
+                </div>
+              </div>
+
               <!-- Cursor piscante enquanto tokens chegam -->
               <span v-if="msg.loading && msg.content" class="streaming-cursor" />
 
@@ -471,7 +496,7 @@ const suggestionGroups = [
     items: [
       {
         short: 'Compare esta semana com a anterior em GMV, pedidos, lucro e custo de ads — aponte o que mais mudou e por quê',
-        full: 'Compare minha semana atual com a semana passada: GMV, pedidos, lucro bruto e custo de ads. Mostre a variação percentual de cada KPI, destaque o que mais subiu e o que mais caiu, e me diga o que devo monitorar.',
+        full: 'Compare minha semana atual com a semana passada: GMV, pedidos, margem de contribuição e custo de ads. Mostre a variação percentual de cada KPI, destaque o que mais subiu e o que mais caiu, e me diga o que devo monitorar.',
       },
       {
         short: 'Mostre a evolução diária dos últimos 30 dias com gráfico, e identifique dias com queda ou pico fora do padrão',
@@ -483,7 +508,7 @@ const suggestionGroups = [
       },
       {
         short: 'Faça o waterfall completo do meu faturamento: GMV → fees → frete → ads → lucro, com percentual de cada dedução',
-        full: 'Faça um waterfall completo do meu faturamento dos últimos 30 dias: GMV → fees ML → frete → custo de ads → lucro bruto. Mostre o percentual que cada dedução representa sobre o GMV e gere o gráfico de breakdown.',
+        full: 'Faça um waterfall completo do meu faturamento dos últimos 30 dias: GMV → fees ML → frete → custo de ads → margem de contribuição. Mostre o percentual que cada dedução representa sobre o GMV e gere o gráfico de breakdown.',
       },
     ],
   },
@@ -537,7 +562,7 @@ const suggestionGroups = [
     items: [
       {
         short: 'Qual minha margem de lucro real do mês, já descontando fees, frete, ads e CMV? Onde estou perdendo mais margem?',
-        full: 'Calcule minha margem de lucro bruto real do último mês descontando fees ML, frete, custo de ads e CMV. Qual produto tem a melhor margem? Qual tem a pior? Onde estou perdendo mais margem e o que posso fazer? Mostre o gráfico de tendência de margem.',
+        full: 'Calcule minha margem de contribuição real do último mês descontando fees ML, frete, custo de ads e CMV. Qual produto tem a melhor margem? Qual tem a pior? Onde estou perdendo mais margem e o que posso fazer? Mostre o gráfico de tendência de margem.',
       },
       {
         short: 'Com base nos últimos 7 dias, projeto meu GMV do mês — vou bater o mês passado ou estou abaixo do pace?',
@@ -832,6 +857,15 @@ const handleStreamEvent = (index, event) => {
       msg.logs.push({ type: 'tool_result', text: '✅ Dados recebidos' })
       break
 
+    case 'listing_draft_ready':
+      msg.pendingDraft = {
+        draft: event.draft || null,
+        instructions: event.instructions || '',
+        status: 'pending', // pending | approved | cancelled
+      }
+      msg.logs.push({ type: 'tool_result', text: '📋 Rascunho de anúncio pronto para revisão' })
+      break
+
     case 'token':
       // Streaming token a token em tempo real
       msg.content = (msg.content || '') + event.text
@@ -1019,6 +1053,45 @@ const formatText = (content) => {
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
   html = html.replace(/\n/g, '<br />')
   return html
+}
+
+// ===========================================================================
+// Aprovação / cancelamento de rascunho de anúncio (ListingAgent)
+// ===========================================================================
+const approveDraft = async (msg) => {
+  const draftId = msg.pendingDraft?.draft?.draft_id
+  if (!draftId) {
+    $q.notify({ type: 'negative', message: 'Rascunho não foi salvo — peça ao agente para gerar o preview novamente.' })
+    return
+  }
+  msg.pendingDraft.loading = true
+  try {
+    await api.post(`/sellerbot-ai/drafts/${draftId}/approve/`)
+    msg.pendingDraft.status = 'approved'
+    $q.notify({ type: 'positive', message: 'Rascunho aprovado. Peça ao agente para publicar.' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Falha ao aprovar rascunho.' })
+  } finally {
+    msg.pendingDraft.loading = false
+  }
+}
+
+const cancelDraft = async (msg) => {
+  const draftId = msg.pendingDraft?.draft?.draft_id
+  if (!draftId) {
+    msg.pendingDraft.status = 'cancelled'
+    return
+  }
+  msg.pendingDraft.loading = true
+  try {
+    await api.post(`/sellerbot-ai/drafts/${draftId}/cancel/`)
+    msg.pendingDraft.status = 'cancelled'
+    $q.notify({ type: 'info', message: 'Rascunho cancelado.' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Falha ao cancelar rascunho.' })
+  } finally {
+    msg.pendingDraft.loading = false
+  }
 }
 
 // ===========================================================================
@@ -1507,6 +1580,34 @@ onMounted(() => {
 .trail-step--active.trail-tool_call .trail-dot { background: #d97706; color: #fff; box-shadow: 0 0 0 3px rgba(217,119,6,.15); }
 .trail-tool_result .trail-dot { background: #d1fae5; color: #059669; }
 .trail-step--active.trail-tool_result .trail-dot { background: #059669; color: #fff; box-shadow: 0 0 0 3px rgba(5,150,105,.15); }
+
+/* Card de aprovação de rascunho de anúncio */
+.listing-draft-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.listing-draft-instructions {
+  font-size: 13px;
+  color: #166534;
+  margin-bottom: 8px;
+  white-space: pre-line;
+}
+.listing-draft-actions {
+  display: flex;
+  gap: 8px;
+}
+.listing-draft-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.listing-draft-status--approved { color: #059669; }
+.listing-draft-status--cancelled { color: #b91c1c; }
 
 /* Live log panel */
 .live-log-panel {

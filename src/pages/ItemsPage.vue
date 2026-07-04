@@ -1178,9 +1178,15 @@ const reactivatingItems = reactive({}) // item_id → true enquanto reativação
 const selectedItems = ref([])
 const selectAllFiltered = ref(false)  // true = todos os itens do filtro (além da página atual)
 
-const allSelected = computed(() => items.value.length > 0 && selectedItems.value.length === items.value.length)
-const someSelected = computed(() => selectedItems.value.length > 0 && selectedItems.value.length < items.value.length)
-const isSelected = (row) => selectedItems.value.some(r => r.item_id === row.item_id)
+// Set dos IDs selecionados — usado para checar a página atual contra a
+// seleção acumulada de todas as páginas (ver toggleAll abaixo).
+const selectedIdSet = computed(() => new Set(selectedItems.value.map(r => r.item_id)))
+// "Selecionar todos" reflete se TODOS os itens desta página já estão na
+// seleção acumulada (que pode incluir itens de outras páginas), não se o
+// tamanho de selectedItems bate com o da página atual.
+const allSelected = computed(() => items.value.length > 0 && items.value.every(r => selectedIdSet.value.has(r.item_id)))
+const someSelected = computed(() => !allSelected.value && items.value.some(r => selectedIdSet.value.has(r.item_id)))
+const isSelected = (row) => selectedIdSet.value.has(row.item_id)
 
 const toggleSelect = (row) => {
   selectAllFiltered.value = false
@@ -1191,7 +1197,17 @@ const toggleSelect = (row) => {
 
 const toggleAll = (val) => {
   selectAllFiltered.value = false
-  selectedItems.value = val ? [...items.value] : []
+  // Soma/remove só os itens desta página à seleção acumulada — não substitui
+  // o array inteiro, senão marcar "selecionar todos" em outra página descarta
+  // a seleção feita em páginas anteriores.
+  if (val) {
+    const currentIds = new Set(items.value.map(r => r.item_id))
+    const kept = selectedItems.value.filter(r => !currentIds.has(r.item_id))
+    selectedItems.value = [...kept, ...items.value]
+  } else {
+    const currentIds = new Set(items.value.map(r => r.item_id))
+    selectedItems.value = selectedItems.value.filter(r => !currentIds.has(r.item_id))
+  }
 }
 
 const clearSelection = () => {

@@ -1,11 +1,15 @@
 <template>
-  <q-layout view="hHh lpR fFf">
+  <q-layout view="hHh lpR fFf" class="sb-auth-layout">
     <HomeToolbar />
     <q-page-container>
-      <q-page class="flex flex-center bg-grey-1">
+      <q-page class="sb-auth-page">
         <q-card class="login-card q-pa-lg">
-          <q-card-section class="text-center">
-            <h5 class="text-h5 q-mt-sm q-mb-md">Login</h5>
+          <q-card-section class="text-center sb-auth-head">
+            <div class="sb-auth-mark">
+              <q-icon name="rocket_launch" size="20px" />
+            </div>
+            <h5 class="sb-auth-title">Entrar no SellerBot</h5>
+            <p class="sb-auth-sub">Acesse seu painel de inteligência de vendas</p>
           </q-card-section>
 
           <q-card-section>
@@ -13,13 +17,14 @@
               <q-input
                 v-model="formattedUsernameOrEmail"
                 label="Nome de usuário ou Email"
-                filled
+                outlined
                 :rules="[(val) => !!val || 'Campo obrigatório']"
                 :error="!!usernameOrEmailError"
                 :error-message="usernameOrEmailError"
+                class="sb-input"
               >
                 <template v-slot:prepend>
-                  <q-icon name="person" />
+                  <q-icon name="person" color="grey-6" />
                 </template>
               </q-input>
 
@@ -27,18 +32,20 @@
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 label="Senha"
-                filled
+                outlined
                 :rules="[(val) => !!val || 'Campo obrigatório']"
                 :error="!!passwordError"
                 :error-message="passwordError"
+                class="sb-input"
               >
                 <template v-slot:prepend>
-                  <q-icon name="lock" />
+                  <q-icon name="lock" color="grey-6" />
                 </template>
                 <template v-slot:append>
                   <q-icon
                     :name="showPassword ? 'visibility_off' : 'visibility'"
                     class="cursor-pointer"
+                    color="grey-6"
                     @click="showPassword = !showPassword"
                   />
                 </template>
@@ -49,21 +56,24 @@
                   label="Entrar"
                   type="submit"
                   color="primary"
+                  unelevated
                   :loading="loading"
-                  size="lg"
-                  class="full-width"
+                  size="md"
+                  class="full-width sb-btn-primary"
                 />
               </div>
             </q-form>
           </q-card-section>
 
-          <q-card-section class="text-center q-pa-none">
+          <q-card-section class="text-center q-pa-none q-pt-md">
+            <span class="sb-auth-foot">Ainda não tem conta?</span>
             <q-btn
               flat
-              label="Criar uma conta"
+              no-caps
+              label="Criar conta"
               color="primary"
               @click="goToSignup"
-              class="q-mt-sm"
+              class="q-mt-xs"
             />
           </q-card-section>
         </q-card>
@@ -175,34 +185,78 @@ const goToSignup = () => {
 </script>
 
 <style lang="scss" scoped>
+.sb-auth-layout { background: #f8fafc; }
+.sb-auth-page {
+  min-height: calc(100vh - 68px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  background: #f8fafc;
+  background-image:
+    radial-gradient(ellipse 600px 400px at 50% 0%, rgba(13, 148, 136, 0.06), transparent 60%);
+}
+
 .login-card {
   width: 100%;
-  max-width: 400px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  max-width: 420px;
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06) !important;
   overflow: hidden;
+  background: #ffffff;
+}
+
+.sb-auth-head {
+  padding-bottom: 8px;
+}
+
+.sb-auth-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.25);
+}
+
+.sb-auth-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+  letter-spacing: -0.4px;
+}
+
+.sb-auth-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.sb-btn-primary {
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25) !important;
+}
+
+.sb-auth-foot {
+  color: #64748b;
+  font-size: 13px;
+  margin-right: 4px;
 }
 
 @media (max-width: 480px) {
   .login-card {
-    margin: 0 16px;
-    width: calc(100% - 32px);
+    margin: 0;
+    width: 100%;
     max-width: 100%;
   }
-}
-
-.q-field {
-  &::v-deep(.q-field__control) {
-    height: 56px;
-  }
-
-  &::v-deep(.q-field__marginal) {
-    height: 56px;
-  }
-}
-
-.q-btn {
-  text-transform: none;
 }
 </style>
 

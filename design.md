@@ -1,144 +1,138 @@
-# SellerBot — Design System
+# SellerBot — Design System v2.0
 
-Paleta oficial de cores, tipografia e tokens visuais usados no app e na landing page.
+> Identidade visual oficial após redesign (jul/2026). Tema **light-only**.
+> Veja `IDENTIDADE_VISUAL_PLANO.md` para o diagnóstico completo e plano de implementação.
+
+---
+
+## Conceito
+
+**"Pro, leve, inteligente, confiável"** — plataforma financeira séria para e-commerce.
+
+**Pilares**:
+- Clareza (alto contraste para dados)
+- Foco (1 cor dominante: teal)
+- Calma (sem gradientes saturados ou efeitos "neon")
+- Profundidade (sombras sutis, não brilho)
 
 ---
 
 ## Paleta de Cores
 
-### 🟢 Teal — Cor Principal
-
-A identidade do SellerBot. Usada em botões primários, ícones de ação, bordas de destaque e gradientes de fundo.
+### 🟢 Teal — Cor da Marca
 
 | Token | Hex | Uso |
 |---|---|---|
-| `teal-400` (florescente) | `#2dd4bf` | Headlines em fundo escuro, badges de destaque, brilhos |
-| `teal-500` | `#14b8a6` | Badge dot animado, hover states |
-| `teal-600` **← primary** | `#0d9488` | Botões primários, ícones, bordas de card em destaque |
-| `teal-700` | `#0f766e` | Hover de botão primário, secondary no Quasar |
-| `teal-50` (surface) | `#f0fdf9` | Background de seções alternadas (claro) |
-| `teal-100` | `#ccfbf1` | Chips, badges sutis |
+| `teal-50` (surface) | `#f0fdf9` | Background de seções alternadas, sidebar ativa |
+| `teal-100` | `#ccfbf1` | Chips, badges sutis, hover de item ativo |
+| `teal-600` **← primary** | `#0d9488` | Botões primários, ícones, bordas de destaque |
+| `teal-700` | `#0f766e` | Hover de botão primário, texto em fundo teal-50 |
 
 ```scss
-// Quasar variables
 $primary   : #0d9488;
 $secondary : #0f766e;
 ```
 
+> **Regra**: use teal-600 para fundos sólidos (botões), teal-700 para texto em fundos claros, teal-50 para áreas de destaque, teal-100 para badges.
+
 ---
 
-### 🟠 Amber — Cor de Destaque / Acento
-
-Usada para badges "Mais popular", estrelas de avaliação, avisos e elementos que precisam de atenção visual sem urgência.
+### 🟠 Amber — Sotaque
 
 | Token | Hex | Uso |
 |---|---|---|
-| `amber-400` **← accent** | `#f59e0b` | Badge, estrelas, decoração geométrica, warnings |
-| `amber-100` | `#fef9c3` | Badge status "Pausado" em anúncios |
+| `amber-500` **← accent** | `#f59e0b` | Badges "novo", estrelas, decoração pontual |
+| `amber-600` | `#d97706` | Texto de warning |
 
-```scss
-$accent : #f59e0b;
-```
+> **Regra**: amber é **sotaque**, nunca cor dominante. Limite: 1 elemento amber por tela.
 
 ---
 
-### ⬛ Slate — Fundos Escuros e Texto
-
-O escuro do SellerBot. Não é preto puro — tem um toque de azul que harmoniza com o teal.
+### ⬜ Slate — Texto e Superfícies
 
 | Token | Hex | Uso |
 |---|---|---|
-| `slate-950` | `#020617` | Fundo da página escura (dark-page) |
-| `slate-900` **← dark** | `#0f172a` | Hero, toolbar, footer, seção de depoimentos |
-| `slate-800` | `#1e293b` | Cards em fundo escuro |
-| `slate-700` | `#334155` | Headers de cards, títulos secundários |
-| `slate-600` | `#475569` | Texto de corpo |
-| `slate-500` | `#64748b` | Subtítulos, labels, descrições |
-| `slate-400` | `#94a3b8` | Texto secundário em fundo escuro, placeholders |
-| `slate-300` | `#cbd5e1` | Quotes em fundo escuro |
-| `slate-200` | `#e2e8f0` | Bordas de card no tema claro |
-| `slate-100` | `#f1f5f9` | Títulos em fundo escuro, texto claro |
-| `slate-50`  | `#f8fafc` | Background de seções alternadas (cinza quase branco) |
-
-```scss
-$dark      : #0f172a;
-$dark-page : #020617;
-```
+| `slate-900` | `#0f172a` | Títulos, texto primário |
+| `slate-700` | `#334155` | Corpo de texto |
+| `slate-500` | `#64748b` | Labels, descrições, placeholders |
+| `slate-400` | `#94a3b8` | Texto desabilitado, ícones secundários |
+| `slate-300` | `#cbd5e1` | Bordas fortes, divisores |
+| `slate-200` | `#e2e8f0` | Bordas de card |
+| `slate-100` | `#f1f5f9` | Hovers, áreas alternadas |
+| `slate-50`  | `#f8fafc` | Background da página |
+| `white`     | `#ffffff` | Cards, modais, header, sidebar |
 
 ---
 
-### ✅ Status / Semântico
-
-Cores usadas para indicar estado em tabelas, badges e alertas.
+### ✅ Cores Semânticas
 
 | Token | Hex | Uso |
 |---|---|---|
-| `green-500` | `#22c55e` | Positivo, lucro, anúncio ativo, check |
-| `red-500`   | `#ef4444` | Negativo, erro, custo, dedução |
-| `blue-500`  | `#38bdf8` | Info, destaque informativo |
-| `indigo-500` | `#6366f1` | Acento roxo-azulado (Pedidos/Vendas) |
+| `green-600` | `#16a34a` | Lucro, sucesso, status "Conectado/Ativo" |
+| `red-600`   | `#dc2626` | Prejuízo, erro, status "Erro" |
+| `sky-600`   | `#0284c7` | Info neutro, links, badges informativos |
+| `amber-600` | `#d97706` | Atenção, aviso, "Token expira em breve" |
 
-```scss
-$positive : #22c55e;
-$negative : #ef4444;
-$info     : #38bdf8;
-$warning  : #f59e0b;
-```
+**Tintas para badges/chips** (sempre `bg + text` da mesma família):
+
+| Variante | bg | text |
+|---|---|---|
+| teal | `#ccfbf1` | `#0f766e` |
+| green | `#dcfce7` | `#166534` |
+| red | `#fee2e2` | `#991b1b` |
+| amber | `#fef3c7` | `#92400e` |
+| sky | `#e0f2fe` | `#075985` |
+| indigo | `#e0e7ff` | `#3730a3` |
+| slate | `#f1f5f9` | `#475569` |
 
 ---
 
-## Gradientes
+### 🟡🟠 Cores de Marketplace (uso restrito)
 
-Usados em heroes, CTAs, footer e seções de depoimentos.
+| Marketplace | Cor | Quando usar |
+|---|---|---|
+| Mercado Livre | `#FFE600` (amarelo) | **Apenas** no logo/badge de identificação de conta ML |
+| Shopee | `#EE4D2D` (laranja) | **Apenas** no logo/badge de identificação de conta Shopee |
 
-```scss
-// Hero / CTA principal — escuro com teal
-background: linear-gradient(135deg, #0f172a 0%, #134e4a 55%, #0d9488 100%);
-
-// Toolbar glass
-background: rgba(15, 23, 42, 0.96);
-backdrop-filter: blur(12px);
-
-// Glow radial (decoração de fundo)
-background: radial-gradient(ellipse 700px 500px at 85% 40%, rgba(13,148,136,.20) 0%, transparent 70%);
-
-// Surface claro (seções alternadas)
-background: #f0fdf9;  // teal-50
-background: #f8fafc;  // slate-50
-background: #ffffff;
-```
+> **Regra**: nunca usar essas cores como destaque de UI. São cores de marca externa.
 
 ---
 
 ## Tipografia
 
-**Fonte**: Roboto (já inclusa via Quasar extras)
+**Fonte única**: **Inter** (carregada via Google Fonts em `index.html`).
 
-| Uso | Size | Weight | Color |
-|---|---|---|---|
-| H1 Hero | `clamp(2.4rem, 5vw, 3.8rem)` | 800 | `#f1f5f9` |
-| H2 Seção | `clamp(1.8rem, 3.5vw, 2.6rem)` | 800 | `#0f172a` |
-| H3 Card | `1.1–1.15rem` | 700 | `#0f172a` |
-| Eyebrow (label acima do título) | `0.75rem` | 700 | `#0d9488` |
-| Corpo | `0.9–1rem` | 400 | `#64748b` |
-| Caption / sub | `0.72–0.82rem` | 400 | `#94a3b8` |
+| Uso | Size | Weight | Color | Letter-spacing |
+|---|---|---|---|---|
+| Page title (H1) | 24px | 700 | `#0f172a` | -0.4px |
+| Section title (H2) | 18px | 700 | `#0f172a` | -0.2px |
+| Card title (H3) | 15px | 600 | `#0f172a` | 0 |
+| Eyebrow | 11px | 700 UPPERCASE | `#0d9488` | +0.8px |
+| Body | 14px | 400 | `#334155` | 0 |
+| Label | 12px | 500 | `#64748b` | 0 |
+| KPI value | 28px | 700 | `#0f172a` | -0.5px |
+| Tabela header | 11px | 600 UPPERCASE | `#64748b` | +0.5px |
 
-**Letter-spacing**:
-- H1/H2: `-0.5px` a `-1.5px` (tight)
-- Eyebrows: `+1.2px` (wide, uppercase)
+```html
+<!-- index.html -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+```
 
 ---
 
-## Espaçamento de Seções
+## Espaçamento
 
-Todas as seções da landing page usam padding vertical consistente:
-
-```scss
-padding: 96px 20px;  // seções normais
-padding: 90px 20px;  // hero
-padding: 100px 20px; // CTA
-padding: 72px 20px 40px; // footer
-```
+| Token | Valor | Uso típico |
+|---|---|---|
+| `$space-1` | 4px | gaps internos |
+| `$space-2` | 8px | entre ícone e label |
+| `$space-3` | 12px | padding de chip |
+| `$space-4` | 16px | padding de card, gap padrão |
+| `$space-6` | 24px | padding de seção |
+| `$space-8` | 32px | entre cards |
+| `$space-12` | 48px | margem entre seções |
 
 ---
 
@@ -146,77 +140,82 @@ padding: 72px 20px 40px; // footer
 
 | Uso | Valor |
 |---|---|
-| Cards principais | `border-radius: 16–18px` |
-| Ícone/avatar wrap | `border-radius: 12–14px` |
-| Botões | `border-radius: 8–12px` |
-| Pills / badges | `border-radius: 20px` |
-| Botão CTA principal | `border-radius: 10–12px` |
+| Inputs, chips pequenos | `6px` |
+| Botões | `8px` |
+| Cards | `14px` |
+| Modais, hero cards | `20px` |
+| Avatares | `50%` (circular) |
 
-Borda padrão de card: `1.5px solid #e2e8f0`
-Borda de card em destaque: `1.5px solid #0d9488`
+**Bordas**: `1px solid #e2e8f0` (padrão) · `1.5px solid #0d9488` (em destaque)
 
 ---
 
 ## Sombras
 
 ```scss
-// Card padrão (hover)
-box-shadow: 0 12px 40px rgba(13, 148, 136, 0.10);
-
-// Card popular / hero mock
-box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
-
-// Card popular com borda teal
-box-shadow: 0 8px 32px rgba(13, 148, 136, 0.18);
+$shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);                // hover sutil
+$shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px ...;  // card default
+$shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);               // dropdown
+$shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10);              // modal, popover
+$shadow-xl: 0 24px 60px rgba(15, 23, 42, 0.12);              // hero
 ```
+
+> **Regra**: nunca use glow (`box-shadow: 0 0 ...`) — é coisa de tema escuro.
 
 ---
 
-## Tokens de Ícone
+## Componentes Padrão
 
-Cada "domínio" do app tem uma cor e background associados:
-
-| Domínio | Ícone | Cor | Background |
-|---|---|---|---|
-| Anúncios / Gestão | `inventory_2`, `sell` | `#0d9488` | `rgba(13,148,136,.10)` |
-| Financeiro / CMV | `account_balance_wallet`, `percent` | `#f59e0b` | `rgba(245,158,11,.10)` |
-| Pedidos / Vendas | `receipt_long` | `#6366f1` | `rgba(99,102,241,.10)` |
-| Positivo / Lucro | `trending_up`, `check_circle` | `#22c55e` | `rgba(34,197,94,.10)` |
-| Frete / Logística | `local_shipping` | `#6366f1` | `rgba(99,102,241,.10)` |
-| Integrações | `webhook`, `corporate_fare` | varia | varia |
+| Componente | Spec |
+|---|---|
+| **Botão primário** | `bg #0d9488`, texto `#fff`, `radius 8px`, `padding 8px 16px`, hover `#0f766e` |
+| **Botão secundário** | `bg #fff`, borda `1px #e2e8f0`, texto `#0f172a`, hover `bg #f8fafc` |
+| **Botão ghost** | sem fundo, texto `#0d9488`, hover `bg #f0fdf9` |
+| **Botão danger** | `bg #fff`, borda `1px #dc2626`, texto `#dc2626` |
+| **Card** | `bg #fff`, `border 1px #e2e8f0`, `radius 14px`, `shadow-xs` |
+| **Input** | `bg #fff`, `border 1.5px #e2e8f0`, focus `border #0d9488` + ring `0 0 0 3px rgba(13,148,136,0.15)` |
+| **Badge** | `radius 6px`, `padding 2px 8px`, `font 11px 600`, sempre com par `tint-X-bg/text` |
+| **Tabela header** | `bg #f8fafc`, `font 11px 600 UPPERCASE #64748b`, `padding 12px 16px` |
+| **Tabela row** | `border-bottom 1px #f1f5f9`, hover `bg #f8fafc` |
+| **Tabs** | underline `2px` teal no ativo, `1px` transparente no inativo |
 
 ---
 
-## Quasar Brand (quasar.config.js)
+## Regras de Ouro
 
-Para sobrescrever os defaults do Quasar globalmente:
-
-```js
-// quasar.config.js → framework.config.brand
-brand: {
-  primary:   '#0d9488',
-  secondary: '#0f766e',
-  accent:    '#f59e0b',
-  dark:      '#0f172a',
-  positive:  '#22c55e',
-  negative:  '#ef4444',
-  info:      '#38bdf8',
-  warning:   '#f59e0b',
-}
-```
+1. **Light-only**: nada de tema escuro. O app é claro por padrão.
+2. **1 cor de destaque por tela**: além das cores semânticas (verde/vermelho/âmbar).
+3. **Marketplace cores = só logos**: amarelo ML e laranja Shopee só onde o marketplace é o assunto.
+4. **Cores de ícones do menu = teal tint**: nunca 9+ cores diferentes.
+5. **Sidebar claro, conteúdo claro**: contraste visual vem de sombras e bordas, não de cores.
+6. **Tudo com estado**: loading, empty, error — usar `SbEmptyState`.
+7. **WCAG AA mínimo**: contraste 4.5:1 para texto, 3:1 para UI.
+8. **Animações discretas**: fade 200ms, sem "bounce" ou scale exagerado.
+9. **Mobile-first**: tudo funciona em 360px, desktop amplia.
+10. **Componentes `Sb*`**: usar `SbCard`, `SbBadge`, `SbKpiCard`, `SbTable` — não recriar.
 
 ---
 
 ## Resumo Visual Rápido
 
 ```
-ESCURO    ████  #0f172a  slate-900
-TEAL      ████  #0d9488  primary
-FLORESCENTE ████  #2dd4bf  teal-400
-LARANJA   ████  #f59e0b  amber / accent
-BRANCO    ████  #f1f5f9  texto em fundo escuro
-SURFACE   ████  #f0fdf9  fundo seção clara
+PRIMARY    ████  #0d9488  teal-600
+SURFACE    ████  #ffffff  cards
+BACKGROUND ████  #f8fafc  página
+TEXTO      ████  #0f172a  títulos
+BORDER     ████  #e2e8f0  divisórias
+SUCCESS    ████  #16a34a  lucro
+DANGER     ████  #dc2626  prejuízo
+WARNING    ████  #d97706  atenção
+INFO       ████  #0284c7  info
 ```
 
-> **Regra de ouro**: fundos escuros pedem `#2dd4bf` (teal florescente).
-> Fundos claros pedem `#0d9488` (teal primário). Amber aparece apenas como sotaque — nunca como cor dominante.
+> **Antes** (v1, design com tema escuro + múltiplas cores): dispersão visual, sem coesão.
+> **Depois** (v2, light-only + semântica): 1 cor de marca, 4 cores semânticas, 2 cores externas de marketplace.
+
+---
+
+## Histórico
+
+- **v1.0** (~2024-2025): sidebar roxa/azul escuro, gradientes neon, 9+ cores de ícones no menu. Documentado em `design.md` original mas não aplicado.
+- **v2.0** (jul/2026): redesign completo. Sidebar claro, 1 cor de marca (teal), 4 cores semânticas, 2 cores de marketplace. Componentes `Sb*` reutilizáveis. Ver `IDENTIDADE_VISUAL_PLANO.md` para o diagnóstico completo.

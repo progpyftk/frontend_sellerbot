@@ -1,21 +1,101 @@
 // app global css in SCSS form
 
+@import './tokens.scss';
+
 /* ══════════════════════════════════════════════════════════════════════════
-   MOBILE UTILITIES — aplicadas globalmente
+   BASE
+══════════════════════════════════════════════════════════════════════════ */
+body {
+  font-family: $font-family;
+  background: $background;
+  color: $text-body;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: $text-primary;
+  font-family: $font-family;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   QUASAR OVERRIDES
+══════════════════════════════════════════════════════════════════════════ */
+.q-page {
+  background: $background;
+  padding: $space-6;
+  min-height: 100%;
+}
+
+.q-page-container {
+  background: $background;
+}
+
+.q-card {
+  border-radius: $radius-lg !important;
+  box-shadow: $shadow-xs !important;
+  border: 1px solid $border;
+}
+
+.q-btn {
+  font-family: $font-family;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 600;
+  border-radius: $radius-md;
+}
+
+.q-btn[unelevated] {
+  box-shadow: none;
+}
+
+.q-input .q-field__control {
+  border-radius: $radius-md;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+══════════════════════════════════════════════════════════════════════════ */
+.sb-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  color: $primary;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.sb-page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: $text-primary;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.sb-text-muted { color: $text-muted; }
+.sb-text-primary { color: $text-primary; }
+.sb-text-positive { color: $positive; }
+.sb-text-negative { color: $negative; }
+.sb-text-warning { color: $warning; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE UTILITIES
 ══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  /* Touch targets mínimos para acessibilidade */
   .q-btn:not(.q-btn--dense) {
     min-height: 40px;
   }
-
-  /* Dialogs não devem ter min-width maior que a tela */
   .q-dialog__inner > div {
     max-width: 95vw !important;
   }
-
-  /* Menus dropdown não devem sair da tela */
   .q-menu {
     max-width: 95vw !important;
+  }
+  .q-page {
+    padding: $space-3;
   }
 }
