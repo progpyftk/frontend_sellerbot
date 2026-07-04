@@ -2,39 +2,21 @@
   <q-page class="dash-page">
 
     <!-- ══════════ HEADER (slim) ══════════════════════════════════════════ -->
-    <div class="page-header">
-      <div class="header-left">
-        <div class="header-icon"><q-icon name="dashboard" size="20px" /></div>
-        <div>
-          <div class="header-eyebrow">SellerBot</div>
-          <div class="header-title">Dashboard da Operação</div>
-        </div>
-      </div>
-      <div class="header-right">
-        <!-- Indicador do período ativo -->
-        <div class="active-period-badge" v-if="activeDatePreset">
-          <q-icon name="calendar_today" size="12px" />
-          {{ datePresets.find(p => p.key === activeDatePreset)?.label || activeDatePreset }}
-          <span class="muted" style="font-size:10px">{{ dateFrom }} → {{ dateTo }}</span>
-        </div>
-        <div class="active-period-badge" v-else>
-          <q-icon name="calendar_today" size="12px" />
-          {{ dateFrom }} → {{ dateTo }}
-        </div>
-        <!-- Indicador de contas -->
-        <div class="active-accts-badge" v-if="selectedAccountKeys.length && selectedAccountKeys.length < allAccountKeys.length">
-          <span v-for="k in selectedAccountKeys.slice(0,3)" :key="k" class="acct-chip-dot" :style="{ background: accountColor(k) }"></span>
-          <span v-if="selectedAccountKeys.length > 3" class="muted" style="font-size:10px">+{{ selectedAccountKeys.length - 3 }}</span>
-        </div>
-        <q-btn flat round icon="refresh" color="teal-7" :loading="loading" @click="load" size="sm">
-          <q-tooltip>Atualizar</q-tooltip>
-        </q-btn>
-        <button class="filter-toggle-btn" :class="{ 'filter-toggle-btn--on': showFilters }" @click="showFilters = !showFilters">
-          <q-icon name="tune" size="16px" />
-          Filtros
-        </button>
-      </div>
-    </div>
+    <DashboardHeader
+      :active-date-preset="activeDatePreset"
+      :date-from="dateFrom"
+      :date-to="dateTo"
+      :date-presets="datePresets"
+      :ml-accounts="knownMlAccounts"
+      :shopee-accounts="knownShopeeAccounts"
+      :selected-keys="selectedAccountKeys"
+      :all-keys="allAccountKeys"
+      :loading="loading"
+      @update:preset="applyPreset"
+      @update:selected-keys="onSelectedKeysChange"
+      @refresh="load"
+      @open-filters="showFilters = true"
+    />
 
     <!-- ══════════ LOADING ═════════════════════════════════════════════════ -->
     <div v-if="loading" class="loading-center">
@@ -44,147 +26,30 @@
 
     <template v-else-if="data || shopeeData">
 
+      <!-- ══════════ FILTROS DRAWER ════════════════════════════════════════ -->
+      <FiltersDrawer
+        v-model="showFilters"
+        :active-date-preset="activeDatePreset"
+        :date-from="dateFrom"
+        :date-to="dateTo"
+        :date-presets="datePresets"
+        :ml-accounts="knownMlAccounts"
+        :shopee-accounts="knownShopeeAccounts"
+        :selected-keys="selectedAccountKeys"
+        :all-keys="allAccountKeys"
+        :chart-metrics="chartMetrics"
+        :active-metrics="activeMetrics"
+        @update:preset="applyPreset"
+        @update:date-from="dateFrom = $event; activeDatePreset = null; debouncedLoad()"
+        @update:date-to="dateTo = $event; activeDatePreset = null; debouncedLoad()"
+        @update:selected-keys="onSelectedKeysChange"
+        @toggle-metric="toggleMetric"
+        @clear="clearFilters"
+        @apply="showFilters = false"
+      />
+
       <!-- ══════════ LAYOUT PRINCIPAL ════════════════════════════════════ -->
-      <div class="dash-main-layout" :class="{ 'has-sidebar': showFilters }">
-
-        <!-- ── SIDEBAR DE FILTROS ──────────────────────────────────────── -->
-        <aside class="filter-sidebar" :class="{ 'filter-sidebar--open': showFilters }">
-          <div class="fs-inner">
-
-            <!-- Cabeçalho da sidebar -->
-            <div class="fs-header">
-              <div class="fs-header-title">
-                <q-icon name="tune" size="15px" style="opacity:.7" />
-                Filtros
-              </div>
-              <button class="fs-header-close" @click="showFilters = false">
-                <q-icon name="chevron_left" size="16px" />
-              </button>
-            </div>
-
-            <!-- ── PERÍODO ── -->
-            <div class="fs-section">
-              <div class="fs-section-title">
-                <q-icon name="calendar_today" size="11px" />Período
-              </div>
-              <div class="fs-presets">
-                <button v-for="p in datePresets" :key="p.key"
-                  :class="['fs-preset-btn', activeDatePreset === p.key && 'fs-preset-btn--on']"
-                  @click="applyPreset(p.key)">{{ p.label }}</button>
-              </div>
-              <div class="fs-dates">
-                <div class="fs-date-row">
-                  <span class="fs-date-label">De</span>
-                  <q-input v-model="dateFrom" type="date" dense borderless class="fs-date-inp"
-                    @update:model-value="activeDatePreset = null; debouncedLoad()" />
-                </div>
-                <div class="fs-date-row">
-                  <span class="fs-date-label">Até</span>
-                  <q-input v-model="dateTo" type="date" dense borderless class="fs-date-inp"
-                    @update:model-value="activeDatePreset = null; debouncedLoad()" />
-                </div>
-              </div>
-            </div>
-
-            <!-- ── CONTAS & VISUALIZAÇÃO (seção unificada) ── -->
-            <div class="fs-section">
-              <div class="fs-section-title">
-                <q-icon name="manage_accounts" size="11px" />Contas
-              </div>
-
-              <!-- Mercado Livre -->
-              <div v-if="knownMlAccounts.length" class="fs-mkt-group">
-                <label class="fs-mkt-header" @change="toggleAllMl">
-                  <span class="fs-custom-check" :class="{ 'is-checked': allMlSelected, 'is-indeterminate': someMlSelected && !allMlSelected }">
-                    <input type="checkbox" :checked="allMlSelected" :indeterminate.prop="someMlSelected && !allMlSelected" style="display:none" />
-                    <span class="fs-check-inner"></span>
-                  </span>
-                  <span class="fs-mkt-logo fs-mkt-logo--ml">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" fill="#FFE600"/>
-                      <path d="M7 9l5 6 5-6" stroke="#1a1a2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    ML
-                  </span>
-                  <span class="fs-mkt-name">Mercado Livre</span>
-                </label>
-                <label v-for="a in knownMlAccounts" :key="a.key" class="fs-acct-item"
-                  :class="{ 'fs-acct-item--on': selectedAccountKeys.includes(a.key) }">
-                  <span class="fs-custom-check" :class="{ 'is-checked': selectedAccountKeys.includes(a.key) }">
-                    <input type="checkbox" :value="a.key" v-model="selectedAccountKeys" @change="onFilterChange" style="display:none" />
-                    <span class="fs-check-inner"></span>
-                  </span>
-                  <span class="fs-acct-color" :style="{ background: a.color }"></span>
-                  <span class="fs-acct-label">{{ a.label }}</span>
-                </label>
-              </div>
-
-              <!-- Shopee -->
-              <div v-if="knownShopeeAccounts.length" class="fs-mkt-group">
-                <label class="fs-mkt-header" @change="toggleAllShopee">
-                  <span class="fs-custom-check" :class="{ 'is-checked': allShopeeSelected, 'is-indeterminate': someShopeeSelected && !allShopeeSelected }">
-                    <input type="checkbox" :checked="allShopeeSelected" :indeterminate.prop="someShopeeSelected && !allShopeeSelected" style="display:none" />
-                    <span class="fs-check-inner"></span>
-                  </span>
-                  <span class="fs-mkt-logo fs-mkt-logo--shopee">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 3C7 3 3.5 6.5 3.5 11c0 2.5 1.2 4.7 3 6.1V20l2.5-1.2C10 19.6 11 19.8 12 19.8c5 0 8.5-3.5 8.5-8 0-4.8-3.5-8.8-8.5-8.8z" fill="#EE4D2D"/>
-                      <path d="M9 11.5c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" fill="white"/>
-                    </svg>
-                    Shopee
-                  </span>
-                  <span class="fs-mkt-name">Shopee</span>
-                </label>
-                <label v-for="a in knownShopeeAccounts" :key="a.key" class="fs-acct-item"
-                  :class="{ 'fs-acct-item--on': selectedAccountKeys.includes(a.key) }">
-                  <span class="fs-custom-check" :class="{ 'is-checked': selectedAccountKeys.includes(a.key) }">
-                    <input type="checkbox" :value="a.key" v-model="selectedAccountKeys" @change="onFilterChange" style="display:none" />
-                    <span class="fs-check-inner"></span>
-                  </span>
-                  <span class="fs-acct-color" :style="{ background: a.color }"></span>
-                  <span class="fs-acct-label">{{ a.label }}</span>
-                </label>
-              </div>
-
-              <div v-if="isComparativeMode" class="fs-comparative-hint">
-                <q-icon name="compare_arrows" size="12px" />
-                {{ selectedAccountKeys.length }} contas selecionadas
-              </div>
-            </div>
-
-            <!-- ── MÉTRICAS ── -->
-            <div class="fs-section">
-              <div class="fs-section-title">
-                <q-icon name="show_chart" size="11px" />Métricas
-                <span class="fs-mode-hint" :class="{ 'fs-mode-hint--active': chartMode !== 'metrics' }">
-                  modo Agregado
-                  <q-icon name="info_outline" size="10px">
-                    <q-tooltip max-width="180px" anchor="top right" self="bottom right" class="fs-hint-tooltip">
-                      A seleção de métricas só funciona no modo <strong>Agregado</strong>.<br>No modo <em>Por Conta</em>, use as pílulas no cabeçalho do gráfico.
-                    </q-tooltip>
-                  </q-icon>
-                </span>
-              </div>
-              <div class="fs-metric-list" :class="{ 'fs-metric-list--disabled': chartMode !== 'metrics' }">
-                <label v-for="m in chartMetrics" :key="m.key" class="fs-metric-item"
-                  :class="{ 'fs-metric-item--on': activeMetrics.includes(m.key), 'fs-metric-item--locked': chartMode !== 'metrics' }">
-                  <span class="fs-metric-pip" :style="{ background: activeMetrics.includes(m.key) && chartMode === 'metrics' ? m.color : 'rgba(255,255,255,.15)' }"></span>
-                  <input type="checkbox" :checked="activeMetrics.includes(m.key)" @change="chartMode === 'metrics' && toggleMetric(m.key)" style="display:none" />
-                  {{ m.label }}
-                </label>
-              </div>
-
-              <!-- Toggle Semana -->
-              <label class="fs-weekday-toggle" :class="{ 'fs-weekday-toggle--on': chartMode === 'weekday' }"
-                @click="setChartMode(chartMode === 'weekday' ? 'metrics' : 'weekday')">
-                <span class="fs-weekday-icon"><q-icon name="event_note" size="13px" /></span>
-                <span class="fs-weekday-label">Média por dia da semana</span>
-                <span class="fs-weekday-switch" :class="{ 'fs-weekday-switch--on': chartMode === 'weekday' }"></span>
-              </label>
-            </div>
-
-          </div><!-- /fs-inner -->
-        </aside>
+      <div class="dash-main-layout">
 
         <!-- ── ÁREA DE CONTEÚDO ────────────────────────────────────────── -->
         <div class="dash-content">
@@ -1576,6 +1441,8 @@ import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
+import DashboardHeader from 'src/components/dashboard/DashboardHeader.vue'
+import FiltersDrawer from 'src/components/dashboard/FiltersDrawer.vue'
 
 const $q = useQuasar()
 
@@ -1664,6 +1531,20 @@ function onFilterChange() {
   // Sem chamada à API — todos os computeds (filteredMlOp, filteredMlDaily, chartData)
   // já reagem ao selectedAccountKeys. Só precisa re-renderizar o Plotly.
   renderPlotlyChart()
+}
+
+// Handler para mudança de contas selecionadas (usado pelos novos componentes)
+function onSelectedKeysChange(keys) {
+  selectedAccountKeys.value = keys
+  onFilterChange()
+}
+
+// Limpar todos os filtros
+function clearFilters() {
+  activeDatePreset.value = '30d'
+  applyPreset('30d')
+  selectedAccountKeys.value = [...allAccountKeys.value]
+  onFilterChange()
 }
 
 // ── DRE ───────────────────────────────────────────────────────────────────
