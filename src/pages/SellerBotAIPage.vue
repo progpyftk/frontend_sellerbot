@@ -1,60 +1,16 @@
 <template>
   <q-page class="sellerbot-ai-page">
 
-    <!-- ── Layout dois painéis ── -->
+    <!-- ── Layout ── -->
     <div class="ai-layout">
-
-      <!-- ══ SIDEBAR ══ -->
-      <div :class="['ai-sidebar', { 'ai-sidebar--collapsed': !sidebarOpen }]">
-        <!-- Logo + toggle -->
-        <div class="sidebar-header">
-          <div class="sidebar-brand">
-            <div class="sidebar-icon"><q-icon name="psychology" size="16px" /></div>
-            <span class="sidebar-brand-name">SellerBot AI</span>
-          </div>
-          <q-btn flat round dense icon="menu" size="sm" color="grey-5" @click="sidebarOpen = !sidebarOpen" />
-        </div>
-
-        <!-- Nova conversa -->
-        <div class="sidebar-new">
-          <button class="new-chat-btn" @click="newChat">
-            <q-icon name="add" size="16px" />
-            <span>Nova conversa</span>
-          </button>
-        </div>
-
-        <!-- Lista de conversas agrupadas -->
-        <div class="sidebar-sessions">
-          <div v-if="sessions.length === 0" class="sidebar-empty">
-            <q-icon name="chat_bubble_outline" size="28px" color="grey-6" />
-            <span>Nenhuma conversa ainda</span>
-          </div>
-
-          <template v-for="group in groupedSessions" :key="group.label">
-            <div class="session-group-label">{{ group.label }}</div>
-            <div
-              v-for="s in group.items"
-              :key="s.id"
-              :class="['session-item', { 'session-item--active': currentSessionId === s.id }]"
-              @click="loadSession(s.id)"
-            >
-              <q-icon name="chat_bubble_outline" size="13px" class="session-icon" />
-              <span class="session-title">{{ s.title }}</span>
-              <button class="session-delete" @click.stop="deleteSession(s.id)">
-                <q-icon name="delete_outline" size="14px" />
-              </button>
-            </div>
-          </template>
-        </div>
-      </div>
-      <!-- ══ fim SIDEBAR ══ -->
 
       <!-- ══ CHAT AREA ══ -->
       <div class="ai-main">
-        <!-- Header interno -->
+        <!-- Header -->
         <div class="chat-header">
-          <!-- Toggle sidebar (mobile / collapsed) -->
-          <q-btn v-if="!sidebarOpen" flat round dense icon="menu" size="sm" color="grey-6" @click="sidebarOpen = true" class="q-mr-sm" />
+          <q-btn flat round dense icon="history" size="sm" color="grey-6" @click="showHistory = true">
+            <q-tooltip>Conversas recentes</q-tooltip>
+          </q-btn>
 
           <div class="chat-header-title">
             <span v-if="currentSessionId" class="current-session-title">
@@ -64,15 +20,7 @@
           </div>
 
           <div class="chat-header-actions">
-            <!-- Nova conversa — só mobile (sidebar colapsada não tem o botão visível) -->
-            <q-btn
-              flat round dense
-              icon="edit_note"
-              size="sm"
-              color="teal-7"
-              class="lt-sm"
-              @click="newChat"
-            >
+            <q-btn flat round dense icon="edit_note" size="sm" color="teal-7" @click="newChat">
               <q-tooltip>Nova conversa</q-tooltip>
             </q-btn>
 
@@ -156,7 +104,7 @@
           <div class="empty-icon">
             <q-icon name="psychology" size="48px" color="grey-5" />
           </div>
-          <div class="empty-title">F5 SellerBot</div>
+          <div class="empty-title">SellerBot AI</div>
           <div class="empty-subtitle">
             Seu analista de e-commerce com IA. Faça perguntas complexas sobre<br />
             vendas, anúncios, concorrência, finanças e campanhas de ads.
@@ -202,6 +150,10 @@
                 <span class="message-name">{{ msg.role === 'user' ? 'Você' : 'F5 SellerBot' }}</span>
                 <span class="message-time">{{ msg.time }}</span>
                 <q-badge v-if="msg.agent" outline color="grey-6" :label="msg.agent" class="q-ml-xs" />
+              </div>
+
+              <div v-if="msg.images?.length" class="message-images">
+                <img v-for="(imgUrl, ii) in msg.images" :key="ii" :src="imgUrl" class="message-image-thumb" />
               </div>
 
               <!-- ── Thinking trail: ao vivo enquanto não há conteúdo ── -->
@@ -301,6 +253,15 @@
         </div>
       </div>
 
+      <!-- Image Preview Bar -->
+      <div v-if="pendingImages.length" class="image-preview-bar">
+        <div v-for="(img, i) in pendingImages" :key="i" class="image-preview-item">
+          <img :src="img.preview" />
+          <q-btn flat round dense icon="close" size="xs" color="negative"
+            class="image-preview-remove" @click="removeImage(i)" />
+        </div>
+      </div>
+
       <!-- Input Area -->
       <div class="input-area">
         <div class="input-container">
@@ -315,7 +276,10 @@
             class="input-field"
           >
             <template v-slot:prepend>
-              <q-icon name="chat" color="grey-6" />
+              <q-btn flat round dense icon="attach_file" color="grey-6" size="sm" @click="$refs.fileInput.click()">
+                <q-tooltip>Anexar imagem</q-tooltip>
+              </q-btn>
+              <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="handleFileSelect" />
             </template>
           </q-input>
           <q-btn
@@ -333,10 +297,6 @@
             <q-icon name="info" size="12px" />
             <span>Enter para enviar · Ctrl+Enter para nova linha</span>
           </div>
-          <div class="active-model-chip">
-            <q-icon name="smart_toy" size="12px" />
-            <span>{{ selectedModelName }}</span>
-          </div>
         </div>
       </div>
       </div>
@@ -346,6 +306,47 @@
       <!-- ══ fim ai-main ══ -->
     </div>
     <!-- ══ fim ai-layout ══ -->
+
+    <!-- ══ HISTORY PANEL (sliding overlay) ══ -->
+    <transition name="history-slide">
+      <div v-if="showHistory" class="history-backdrop" @click="showHistory = false" />
+    </transition>
+    <transition name="history-slide">
+      <div v-if="showHistory" class="history-panel">
+        <div class="history-panel-header">
+          <span class="history-panel-title">Conversas recentes</span>
+          <q-btn flat round dense icon="close" size="sm" color="grey-6" @click="showHistory = false" />
+        </div>
+        <div class="history-panel-new">
+          <button class="history-new-btn" @click="newChat(); showHistory = false">
+            <q-icon name="add" size="16px" />
+            <span>Nova conversa</span>
+          </button>
+        </div>
+        <div class="history-panel-list">
+          <div v-if="sessions.length === 0" class="history-empty">
+            <q-icon name="chat_bubble_outline" size="28px" color="grey-4" />
+            <span>Nenhuma conversa ainda</span>
+          </div>
+          <template v-for="group in groupedSessions" :key="group.label">
+            <div class="history-group-label">{{ group.label }}</div>
+            <div
+              v-for="s in group.items"
+              :key="s.id"
+              :class="['history-item', { 'history-item--active': currentSessionId === s.id }]"
+              @click="loadSession(s.id); showHistory = false"
+            >
+              <q-icon name="chat_bubble_outline" size="13px" class="history-item-icon" />
+              <span class="history-item-title">{{ s.title }}</span>
+              <button class="history-item-delete" @click.stop="deleteSession(s.id)">
+                <q-icon name="delete_outline" size="14px" />
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </transition>
+    <!-- ══ fim HISTORY PANEL ══ -->
 
   </q-page>
 </template>
@@ -490,7 +491,10 @@ const selectedModel = ref(VALID_MODEL_IDS.value.has(_savedModel) ? _savedModel :
 const currentSessionId = ref(null)
 const sessions = ref([])
 const showHistory = ref(false)
-const sidebarOpen = ref($q.screen.gt.sm)
+
+// Upload de imagens
+const pendingImages = ref([])  // [{file: File, preview: string(base64)}]
+const fileInput = ref(null)
 
 const selectedModelName = computed(() => {
   const m = MODELS.value.find(m => m.id === selectedModel.value)
@@ -531,20 +535,12 @@ const suggestionGroups = [
     icon: 'trending_up',
     items: [
       {
-        short: 'Compare esta semana com a anterior em GMV, pedidos, lucro e custo de ads — aponte o que mais mudou e por quê',
+        short: 'Compare semana atual vs anterior — GMV, pedidos e margem',
         full: 'Compare minha semana atual com a semana passada: GMV, pedidos, margem de contribuição e custo de ads. Mostre a variação percentual de cada KPI, destaque o que mais subiu e o que mais caiu, e me diga o que devo monitorar.',
       },
       {
-        short: 'Mostre a evolução diária dos últimos 30 dias com gráfico, e identifique dias com queda ou pico fora do padrão',
+        short: 'Evolução diária dos últimos 30 dias com gráfico',
         full: 'Mostre a evolução do meu GMV, margem e pedidos nos últimos 30 dias com gráfico de linha. Identifique se há tendência de alta ou queda, aponte os dias com anomalias e me explique possíveis causas.',
-      },
-      {
-        short: 'Qual dia da semana vendo mais? Analise o padrão dos últimos 90 dias para saber quando concentrar esforço e ads',
-        full: 'Analise meu padrão de vendas por dia da semana nos últimos 90 dias: qual dia tem mais pedidos, maior GMV e maior ticket médio? Qual semana do mês é mais forte? Use isso para me recomendar quando colocar promoção e aumentar o budget de ads.',
-      },
-      {
-        short: 'Faça o waterfall completo do meu faturamento: GMV → fees → frete → ads → lucro, com percentual de cada dedução',
-        full: 'Faça um waterfall completo do meu faturamento dos últimos 30 dias: GMV → fees ML → frete → custo de ads → margem de contribuição. Mostre o percentual que cada dedução representa sobre o GMV e gere o gráfico de breakdown.',
       },
     ],
   },
@@ -553,24 +549,12 @@ const suggestionGroups = [
     icon: 'storefront',
     items: [
       {
-        short: 'Pegue meu produto mais vendido e analise os concorrentes: preço, Full, frete grátis e onde estou posicionado',
-        full: 'Identifique meu produto mais vendido nos últimos 30 dias e faça uma análise completa dos concorrentes no Mercado Livre: faixa de preço, quantos são Full, quantos têm frete grátis, descrição e atributos dos líderes, e onde meu preço se posiciona no ranking.',
-      },
-      {
-        short: 'Faça um diagnóstico completo dos meus anúncios: quais têm problema agora — estoque crítico, qualidade baixa ou sem visitas',
+        short: 'Diagnóstico completo dos meus anúncios agora',
         full: 'Faça um diagnóstico completo de saúde dos meus anúncios: quais estão com estoque crítico, quais têm qualidade baixa, quais estão pausados, quais ficaram sem visitas nos últimos 7 dias. Me dê uma lista de ações prioritárias.',
       },
       {
-        short: 'Compare ROAS, conversão e GMV dos meus anúncios Full vs não-Full — vale migrar mais produtos para o Full?',
-        full: 'Compare a performance dos meus anúncios Full vs não-Full nos últimos 30 dias: ROAS de ads, ACOS, taxa de conversão, GMV médio e visitas por anúncio. Com base nos dados, vale a pena migrar mais produtos para o Mercado Envios Full?',
-      },
-      {
-        short: 'Liste os anúncios com mais de 100 visitas mas conversão abaixo de 1% — o que pode estar travando as vendas?',
-        full: 'Quais meus anúncios têm mais de 100 visitas mas taxa de conversão abaixo de 1% nos últimos 30 dias? Liste-os com visitas, pedidos e conversão. Analise possíveis causas: preço, concorrência, fotos, frete, promoção.',
-      },
-      {
-        short: 'Algum anúncio sofreu queda brusca de visitas ou conversão nos últimos 3 dias? Detecte anomalias e aponte as causas',
-        full: 'Detecte anomalias nos meus anúncios: algum sofreu queda brusca de visitas, conversão ou GMV nos últimos 3 dias comparado ao baseline das duas semanas anteriores? Liste os casos mais graves e me ajude a entender o que pode ter causado.',
+        short: 'Meu top produto vs concorrentes — preço e posição',
+        full: 'Identifique meu produto mais vendido nos últimos 30 dias e faça uma análise completa dos concorrentes no Mercado Livre: faixa de preço, quantos são Full, quantos têm frete grátis, e onde meu preço se posiciona no ranking.',
       },
     ],
   },
@@ -579,16 +563,12 @@ const suggestionGroups = [
     icon: 'inventory_2',
     items: [
       {
-        short: 'Quais produtos vão zerar o estoque esta semana ou nos próximos 14 dias? Calcule a cobertura com base nas vendas recentes',
-        full: 'Calcule a cobertura de estoque em dias para todos os meus anúncios ativos, com base na velocidade de venda dos últimos 30 dias. Quais produtos vão zerar nos próximos 7 dias? Nos próximos 14 dias? Ordene por urgência e me diga o que repor primeiro.',
+        short: 'Quais produtos vão zerar estoque esta semana?',
+        full: 'Calcule a cobertura de estoque em dias para todos os meus anúncios ativos, com base na velocidade de venda dos últimos 30 dias. Quais produtos vão zerar nos próximos 7 dias? Ordene por urgência e me diga o que repor primeiro.',
       },
       {
-        short: 'Quais anúncios estão ativos mas com estoque zerado ou abaixo de 5 unidades — estou perdendo vendas agora?',
+        short: 'Anúncios ativos com estoque abaixo de 5 unidades',
         full: 'Verifique quais anúncios estão "ativos" no Mercado Livre mas com estoque zerado ou abaixo de 5 unidades. Para cada um, mostre o volume de vendas recente para estimar quanto de GMV estou deixando de faturar.',
-      },
-      {
-        short: 'Faça um diagnóstico completo: estoque crítico, qualidade baixa, pausados e sem visitas — me dê a lista de prioridades',
-        full: 'Faça um diagnóstico completo de saúde dos meus anúncios agora: estoque zerado ou crítico, anúncios com performance_score baixo, anúncios pausados e anúncios sem visitas nos últimos 7 dias. Consolide tudo em uma lista de ações prioritárias.',
       },
     ],
   },
@@ -597,16 +577,12 @@ const suggestionGroups = [
     icon: 'account_balance',
     items: [
       {
-        short: 'Qual minha margem de lucro real do mês, já descontando fees, frete, ads e CMV? Onde estou perdendo mais margem?',
-        full: 'Calcule minha margem de contribuição real do último mês descontando fees ML, frete, custo de ads e CMV. Qual produto tem a melhor margem? Qual tem a pior? Onde estou perdendo mais margem e o que posso fazer? Mostre o gráfico de tendência de margem.',
+        short: 'Margem real do mês — descontando fees, frete, ads e CMV',
+        full: 'Calcule minha margem de contribuição real do último mês descontando fees ML, frete, custo de ads e CMV. Qual produto tem a melhor margem? Qual tem a pior? Onde estou perdendo mais margem e o que posso fazer?',
       },
       {
-        short: 'Com base nos últimos 7 dias, projeto meu GMV do mês — vou bater o mês passado ou estou abaixo do pace?',
+        short: 'Projeção de GMV do mês com base nos últimos 7 dias',
         full: 'Com base no meu GMV dos últimos 7 dias, calcule a projeção de faturamento para o mês completo. Estou no pace para bater o mês anterior? Quais foram os melhores e piores dias e o que explica a diferença?',
-      },
-      {
-        short: 'Quais são meus 10 produtos com maior lucro estimado? Mostre margem, faturamento e quantidade vendida com gráfico',
-        full: 'Quais são meus 10 produtos com maior lucro estimado nos últimos 30 dias? Mostre para cada um: faturamento, margem aproximada e quantidade vendida. Gere o gráfico de barras horizontais e me diga em quais devo concentrar esforço.',
       },
     ],
   },
@@ -615,30 +591,12 @@ const suggestionGroups = [
     icon: 'campaign',
     items: [
       {
-        short: 'Analise meu ROAS e ACOS dos últimos 30 dias — quais produtos estão com retorno abaixo do ideal e devo pausar?',
-        full: 'Analise a eficiência dos meus ads nos últimos 30 dias: ROAS total, ACOS médio, custo de ads vs receita atribuída. Quais produtos têm ROAS abaixo de 5x? Alguma campanha está consumindo budget sem retorno? Me dê uma recomendação de o que pausar ou ajustar.',
+        short: 'ROAS dos últimos 30 dias — o que pausar?',
+        full: 'Analise a eficiência dos meus ads nos últimos 30 dias: ROAS total, ACOS médio, custo de ads vs receita atribuída. Quais produtos têm ROAS abaixo de 5x? Me dê uma recomendação de o que pausar ou ajustar.',
       },
       {
-        short: 'Anúncios Full têm ROAS melhor que não-Full? Mostre os números e me diga se vale investir mais em ads no Full',
-        full: 'Compare o ROAS médio dos meus anúncios Full com os não-Full no último mês. Anúncios Full realmente convertem melhor com ads? O custo por pedido é menor no Full? Mostre os dados e me dê uma recomendação de alocação de budget.',
-      },
-      {
-        short: 'Qual o melhor dia da semana para aumentar o budget de ads? Cruze o padrão de vendas com os dados de ROAS por período',
-        full: 'Analise meu padrão de vendas por dia da semana nos últimos 90 dias e cruce com os dados de ROAS dos meus ads. Em quais dias o retorno de ads é melhor? Quando devo aumentar o budget para maximizar o ROAS?',
-      },
-    ],
-  },
-  {
-    label: 'Operações',
-    icon: 'local_shipping',
-    items: [
-      {
-        short: 'Quais pedidos estão pendentes agora? Algum corre risco de atraso e pode afetar minha reputação no ML?',
-        full: 'Quais pedidos estão pendentes de envio agora? Algum está próximo do prazo limite e corre risco de atraso? Mostre o resumo operacional de hoje e me alerte sobre qualquer situação que possa impactar minha reputação.',
-      },
-      {
-        short: 'Qual foi minha taxa de cancelamento no mês? Quais produtos cancelam mais e isso afeta minha reputação?',
-        full: 'Qual foi minha taxa de cancelamento no último mês? Quais produtos tiveram mais cancelamentos? Isso está impactando minha reputação no Mercado Livre? Me dê recomendações para reduzir cancelamentos.',
+        short: 'Full vs não-Full — onde investir mais em ads?',
+        full: 'Compare o ROAS médio dos meus anúncios Full com os não-Full no último mês. Anúncios Full realmente convertem melhor com ads? Mostre os dados e me dê uma recomendação de alocação de budget.',
       },
     ],
   },
@@ -656,6 +614,30 @@ const selectModel = (model) => {
     position: 'top-right',
     timeout: 2000,
   })
+}
+
+// ===========================================================================
+// Image upload
+// ===========================================================================
+const handleFileSelect = (e) => {
+  const files = Array.from(e.target.files)
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue
+    if (file.size > 10 * 1024 * 1024) {
+      $q.notify({ message: `${file.name} excede 10MB`, color: 'negative' })
+      continue
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      pendingImages.value.push({ file, preview: ev.target.result })
+    }
+    reader.readAsDataURL(file)
+  }
+  e.target.value = ''
+}
+
+const removeImage = (index) => {
+  pendingImages.value.splice(index, 1)
 }
 
 // ===========================================================================
@@ -689,6 +671,7 @@ const loadSession = async (id) => {
     messages.value = msgs.map(m => ({
       role: m.role,
       content: m.content,
+      images: m.images || [],
       agent: m.agent || null,
       logs: m.logs || [],
       logsOpen: false,
@@ -770,14 +753,19 @@ const fetchBalance = async () => {
 // Send message — streaming SSE
 // ===========================================================================
 const sendMessage = async () => {
-  if (!inputMessage.value.trim() || isLoading.value) return
+  if ((!inputMessage.value.trim() && !pendingImages.value.length) || isLoading.value) return
 
   const userMessage = inputMessage.value.trim()
   inputMessage.value = ''
 
+  // Capturar imagens pendentes e limpar preview
+  const imageData = pendingImages.value.map(img => img.preview)
+  pendingImages.value = []
+
   messages.value.push({
     role: 'user',
-    content: userMessage,
+    content: userMessage || (imageData.length ? `${imageData.length} imagem(ns) enviada(s)` : ''),
+    images: imageData,
     time: nowTime(),
   })
 
@@ -810,10 +798,12 @@ const sendMessage = async () => {
   const doStreamFetch = async () => {
     const makeRequest = () => {
       const token = getAccessToken() || store.authToken
+      const body = { message: userMessage, model_id: selectedModel.value, session_id: currentSessionId.value }
+      if (imageData.length) body.images = imageData
       return fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: userMessage, model_id: selectedModel.value, session_id: currentSessionId.value }),
+        body: JSON.stringify(body),
       })
     }
 
@@ -1168,160 +1158,6 @@ onMounted(() => {
   height: 100%;
 }
 
-/* ── Sidebar ── */
-.ai-sidebar {
-  width: 260px;
-  min-width: 260px;
-  background: #111827;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: width 0.2s ease, min-width 0.2s ease;
-  border-right: 1px solid #1f2937;
-}
-.ai-sidebar--collapsed {
-  width: 0;
-  min-width: 0;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 12px 10px;
-  border-bottom: 1px solid #1f2937;
-}
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.sidebar-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #0d9488, #2dd4bf);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
-}
-.sidebar-brand-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: #f9fafb;
-  white-space: nowrap;
-}
-
-.sidebar-new {
-  padding: 10px 10px 6px;
-}
-.new-chat-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 8px;
-  color: #e5e7eb;
-  font-size: 13px;
-  font-family: inherit;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.new-chat-btn:hover {
-  background: rgba(255,255,255,0.10);
-}
-
-.sidebar-sessions {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px 0 12px;
-}
-.sidebar-sessions::-webkit-scrollbar {
-  width: 4px;
-}
-.sidebar-sessions::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
-  border-radius: 4px;
-}
-
-.sidebar-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 32px 16px;
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.session-group-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #4b5563;
-  padding: 10px 14px 4px;
-}
-
-.session-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  margin: 1px 6px;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: background 0.15s;
-  color: #d1d5db;
-  font-size: 13px;
-  position: relative;
-}
-.session-item:hover {
-  background: rgba(255,255,255,0.07);
-}
-.session-item--active {
-  background: rgba(13, 148, 136, 0.20) !important;
-  color: #5eead4;
-}
-.session-icon {
-  flex-shrink: 0;
-  opacity: 0.6;
-}
-.session-title {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 13px;
-  font-weight: 400;
-}
-.session-item--active .session-title {
-  font-weight: 600;
-  color: #5eead4;
-}
-.session-delete {
-  display: none;
-  background: none;
-  border: none;
-  padding: 2px;
-  cursor: pointer;
-  color: #6b7280;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-.session-item:hover .session-delete {
-  display: flex;
-}
-.session-delete:hover {
-  color: #ef4444;
-  background: rgba(239,68,68,0.1);
-}
-
 /* ── Main chat area ── */
 .ai-main {
   flex: 1;
@@ -1501,6 +1337,7 @@ onMounted(() => {
   background: rgba(13, 148, 136, 0.06);
   border-color: #0d9488;
   color: #0f766e;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.08);
 }
 
 .message {
@@ -1820,13 +1657,56 @@ onMounted(() => {
   color: #9aa0ac;
 }
 
-.active-model-chip {
+/* Image preview bar */
+.image-preview-bar {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #0d9488;
-  font-weight: 500;
+  gap: 8px;
+  padding: 8px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.image-preview-bar::-webkit-scrollbar { display: none; }
+
+.image-preview-item {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #e8edf3;
+  flex-shrink: 0;
+}
+.image-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.image-preview-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(255,255,255,0.85) !important;
+  border-radius: 50%;
+}
+
+/* Images in messages */
+.message-images {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.message-image-thumb {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e8edf3;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.message-image-thumb:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
 }
 
 /* Tabelas markdown */
@@ -1894,6 +1774,152 @@ onMounted(() => {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HISTORY PANEL (sliding overlay)
+══════════════════════════════════════════════════════════════════════════ */
+.history-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.25);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.history-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 85vw;
+  background: #fff;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.25s ease;
+}
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.history-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #e8edf3;
+}
+.history-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1f36;
+}
+
+.history-panel-new {
+  padding: 12px 16px 8px;
+}
+.history-new-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: transparent;
+  border: 1.5px solid #e8edf3;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.history-new-btn:hover {
+  background: #f0fdf4;
+  border-color: #0d9488;
+}
+
+.history-panel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 16px;
+}
+.history-panel-list::-webkit-scrollbar { width: 4px; }
+.history-panel-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 4px; }
+
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.history-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #9ca3af;
+  padding: 12px 16px 4px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  color: #374151;
+  font-size: 13px;
+  position: relative;
+}
+.history-item:hover { background: #f3f4f6; }
+.history-item--active {
+  background: rgba(13, 148, 136, 0.08);
+  color: #0d9488;
+}
+.history-item-icon { flex-shrink: 0; opacity: 0.45; }
+.history-item-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history-item--active .history-item-title {
+  font-weight: 600;
+  color: #0d9488;
+}
+.history-item-delete {
+  display: none;
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: #9ca3af;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.history-item:hover .history-item-delete { display: flex; }
+.history-item-delete:hover {
+  color: #ef4444;
+  background: rgba(239,68,68,0.1);
+}
+
+/* History panel transition (Vue <transition>) */
+.history-slide-enter-active { transition: opacity 0.2s ease; }
+.history-slide-leave-active { transition: opacity 0.15s ease; }
+.history-slide-enter-from,
+.history-slide-leave-to { opacity: 0; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    MOBILE
@@ -1974,14 +2000,6 @@ onMounted(() => {
   /* Oculta hint de teclado no mobile (ocupa espaço desnecessário) */
   .input-hint {
     display: none;
-  }
-
-  /* Model chip compacto */
-  .active-model-chip span {
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   /* Header: model selector mais compacto */

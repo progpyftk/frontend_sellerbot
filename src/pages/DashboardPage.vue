@@ -58,47 +58,43 @@
 
           <!-- ══ HOJE EM DESTAQUE (acima do gráfico) ════════════════════ -->
           <div v-if="combinedToday && activeDatePreset !== 'hoje'" class="today-banner">
-            <div class="today-label">
-              <span class="live-dot"></span>
-              Hoje
+            <div class="today-label" title="Tempo real — leitura direta dos pedidos">
+              <div class="today-label-row">
+                <span class="live-dot"></span>
+                <span class="today-label-text">Hoje</span>
+              </div>
+              <span class="today-label-caption">tempo real</span>
             </div>
             <div class="today-kpis">
               <div class="today-kpi">
                 <div class="today-kpi-label">GMV</div>
-                <div class="today-kpi-val today-gmv">{{ fmt(combinedToday.gmv) }}</div>
+                <div class="today-kpi-val">{{ fmt(combinedToday.gmv) }}</div>
               </div>
-              <div class="today-sep">|</div>
               <div class="today-kpi">
                 <div class="today-kpi-label">Pedidos</div>
                 <div class="today-kpi-val">{{ combinedToday.orders_count || 0 }}</div>
               </div>
-              <div class="today-sep">|</div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Rec. Líquida</div>
+                <div class="today-kpi-label">Rec. líquida</div>
                 <div class="today-kpi-val">{{ fmt(combinedToday.net_revenue) }}</div>
               </div>
-              <div class="today-sep">|</div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Margem de Contribuição</div>
+                <div class="today-kpi-label">Margem de contribuição</div>
                 <div class="today-kpi-val" :class="(combinedToday.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.gross_profit) }}</div>
               </div>
-              <div class="today-sep">|</div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Lucro Após Ads</div>
+                <div class="today-kpi-label">Lucro após Ads</div>
                 <div class="today-kpi-val" :class="(combinedToday.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.lucro_liquido) }}</div>
               </div>
-              <div class="today-sep">|</div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Ticket Médio</div>
+                <div class="today-kpi-label">Ticket médio</div>
                 <div class="today-kpi-val">{{ fmt(combinedToday.avg_ticket) }}</div>
               </div>
-              <div class="today-sep">|</div>
               <div class="today-kpi">
                 <div class="today-kpi-label">Unidades</div>
                 <div class="today-kpi-val">{{ combinedToday.units_sold || 0 }}</div>
               </div>
             </div>
-            <div class="today-note">Tempo real — leitura direta dos pedidos</div>
           </div>
 
           <!-- ══ GRÁFICO HERO ════════════════════════════════════════════ -->
@@ -215,7 +211,7 @@
         </span>
       </div>
 
-      <SbKpiGrid :columns="4" :gap="16">
+      <SbKpiGrid :columns="4" :gap="12">
         <!-- GMV -->
         <SbKpiCard
           label="GMV"
@@ -2993,27 +2989,6 @@ const weekdayTableRows = computed(() => {
 })
 
 // ── Sparklines ────────────────────────────────────────────────────────────
-function sparklinePath(metric) {
-  const data = chartData.value
-  if (!data.length) return ''
-  const vals = data.map(d => d[metric] || 0)
-  const min = Math.min(...vals)
-  const max = Math.max(...vals)
-  const span = max - min || 1
-  const n = vals.length
-  const pts = vals.map((v, i) => {
-    const x = n <= 1 ? 30 : (i / (n - 1)) * 60
-    const y = 20 - ((v - min) / span) * 18
-    return [x, y]
-  })
-  if (pts.length === 1) return `M ${pts[0][0]},${pts[0][1]}`
-  let path = `M ${pts[0][0]},${pts[0][1]}`
-  for (let i = 1; i < pts.length; i++) {
-    const mx = (pts[i - 1][0] + pts[i][0]) / 2
-    path += ` C ${mx},${pts[i - 1][1]} ${mx},${pts[i][1]} ${pts[i][0]},${pts[i][1]}`
-  }
-  return path
-}
 
 // Dados brutos para sparkline (usado pelo componente SbKpiCard)
 function sparklineData(metric) {
@@ -3384,85 +3359,100 @@ watch(selectedAccountKeys, () => {
 }
 
 /* ── Today banner ───────────────────────────────────────────────────────── */
+/* Faixa slim: bloco "Hoje" à esquerda + KPIs separados por divisores de 1px.
+   Superfície neutra; cor só no live-dot e no semântico pos/neg. */
 .today-banner {
-  background: linear-gradient(135deg, #f0fdf9, #e8faf6);
-  border: 1.5px solid #0d9488;
-  border-radius: 12px;
-  padding: 14px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 16px;
   margin-bottom: 20px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .today-label {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #0d9488;
-  text-transform: uppercase;
-  letter-spacing: .8px;
+  flex-direction: column;
+  gap: 1px;
+  padding-right: 16px;
+  margin-right: 4px;
+  border-right: 1px solid #eef2f6;
   white-space: nowrap;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.today-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.today-label-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.today-label-caption {
+  font-size: 10px;
+  color: #94a3b8;
 }
 
 .live-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #0d9488;
+  background: #16a34a;
   animation: pulse-dot 2s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
 .today-kpis {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  align-items: stretch;
   flex: 1;
-}
-
-.today-sep {
-  color: #d1d5db;
-  font-size: 20px;
-  line-height: 1;
+  min-width: 0;
 }
 
 .today-kpi {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 16px;
+  white-space: nowrap;
+  flex: 1; /* distribui as células por toda a largura da faixa */
+}
+
+.today-kpi + .today-kpi {
+  border-left: 1px solid #eef2f6;
 }
 
 .today-kpi-label {
-  font-size: 10px;
-  color: #9aa0ac;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-  margin-bottom: 2px;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.3;
 }
 
 .today-kpi-val {
   font-size: 15px;
-  font-weight: 700;
-  color: #1a1f36;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.01em;
 }
 
-.today-gmv { color: #6366f1; }
-.today-pos { color: #0d9488; }
-.today-neg { color: #ef4444; }
-
-.today-note {
-  font-size: 10px;
-  color: #94a3b8;
-  margin-left: auto;
-  white-space: nowrap;
-}
+.today-pos { color: #16a34a; }
+.today-neg { color: #dc2626; }
 
 /* ── KPI Grid header ────────────────────────────────────────────────────── */
 .kpi-grid-header {
@@ -5447,7 +5437,6 @@ tr.pareto-line-95 td {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px 0;
     overflow-x: visible;
-    flex-wrap: unset;
     padding-bottom: 0;
   }
 
@@ -5459,16 +5448,17 @@ tr.pareto-line-95 td {
   .today-kpi {
     min-width: 0;
     padding: 0 6px;
-    border-right: 1px solid rgba(13, 148, 136, .15);
+    border-right: 1px solid #eef2f6;
+  }
+
+  /* no grid, o divisor via `& + &` (border-left) do desktop vira ruído */
+  .today-kpi + .today-kpi {
+    border-left: none;
   }
 
   /* remove borda da 3ª coluna (nth-of-type conta apenas .today-kpi) */
   .today-kpi:nth-of-type(3n) {
     border-right: none;
-  }
-
-  .today-sep {
-    display: none;
   }
 
   .today-kpi-label {
@@ -5481,10 +5471,6 @@ tr.pareto-line-95 td {
   .today-kpi-val {
     font-size: 13px;
     white-space: nowrap;
-  }
-
-  .today-note {
-    display: none;
   }
 
   /* ── KPI Grid — 2 colunas ── */
@@ -5636,15 +5622,20 @@ tr.pareto-line-95 td {
   /* ── Today banner ── */
   .today-banner {
     flex-direction: column;
+    align-items: stretch;
     gap: 10px;
     padding: 10px 14px;
   }
 
   .today-label {
-    font-size: 10px;
-    letter-spacing: .4px;
-    padding-bottom: 2px;
-    border-bottom: 1px solid rgba(13, 148, 136, .15);
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+    padding-right: 0;
+    padding-bottom: 6px;
+    margin-right: 0;
+    border-right: none;
+    border-bottom: 1px solid #eef2f6;
   }
 
   /* ── CMV Alert ── */

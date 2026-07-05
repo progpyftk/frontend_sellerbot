@@ -1,19 +1,32 @@
 <template>
-  <SbCard hover :class="['sb-kpi', `sb-kpi--${variant}`]">
+  <SbCard hover :padded="false" :class="['sb-kpi', `sb-kpi--${variant}`]">
     <div class="sb-kpi-label">
       <span>{{ label }}</span>
       <slot name="info" />
     </div>
-    <div v-if="prefix || value" class="sb-kpi-value-row">
+
+    <div class="sb-kpi-value-row">
       <span v-if="prefix" class="sb-kpi-prefix">{{ prefix }}</span>
       <span class="sb-kpi-value">{{ value }}</span>
+      <span
+        v-if="hasDelta"
+        class="sb-kpi-delta"
+        :class="deltaClass"
+        :title="`${deltaPrefix ? deltaPrefix + ' ' : ''}${delta} vs período anterior`"
+      >
+        <q-icon :name="deltaIcon" size="11px" />
+        <template v-if="deltaPrefix">{{ deltaPrefix }} </template>{{ delta }}
+      </span>
     </div>
+
     <div v-if="sub" class="sb-kpi-sub">{{ sub }}</div>
-    <div v-if="delta !== null && delta !== undefined" class="sb-kpi-delta" :class="deltaClass">
-      <q-icon :name="deltaIcon" size="12px" />
-      <template v-if="deltaPrefix">{{ deltaPrefix }} </template>{{ delta }} vs período anterior
-    </div>
-    <svg v-if="sparklineData && sparklineData.length" class="sb-kpi-sparkline" viewBox="0 0 100 32" preserveAspectRatio="none">
+
+    <svg
+      v-if="sparklineData && sparklineData.length > 1"
+      class="sb-kpi-sparkline"
+      viewBox="0 0 100 28"
+      preserveAspectRatio="none"
+    >
       <path :d="sparklinePath" fill="none" :stroke="sparklineColor" stroke-width="1.5" stroke-linecap="round" />
     </svg>
     <slot />
@@ -42,8 +55,14 @@ const props = defineProps({
   sparklineColor: { type: String, default: '#0f766e' },
 });
 
+// Sem dado de comparação (null/undefined/'—'), o pill não renderiza —
+// um "—" inline ao lado do valor é só ruído visual.
+const hasDelta = computed(() =>
+  props.delta !== null && props.delta !== undefined && props.delta !== '—'
+);
+
 const deltaNum = computed(() => {
-  if (props.delta === null || props.delta === undefined) return 0;
+  if (!hasDelta.value) return 0;
   if (typeof props.delta === 'number') return props.delta;
   return parseFloat(String(props.delta).replace(/[^\d.-]/g, '')) || 0;
 });
@@ -60,7 +79,7 @@ const deltaIcon = computed(() => {
   return deltaNum.value > 0 ? 'arrow_upward' : 'arrow_downward';
 });
 
-// Sparkline path
+// Sparkline path (spline Catmull-Rom)
 const sparklinePath = computed(() => {
   if (!props.sparklineData || props.sparklineData.length < 2) return '';
   const data = props.sparklineData;
@@ -68,33 +87,30 @@ const sparklinePath = computed(() => {
   const min = Math.min(...data);
   const range = max - min || 1;
   const w = 100;
-  const h = 32;
+  const h = 28;
   const padding = 2;
-  
+
   const points = data.map((v, i) => {
     const x = padding + (i / (data.length - 1)) * (w - 2 * padding);
     const y = h - padding - ((v - min) / range) * (h - 2 * padding);
     return `${x},${y}`;
   });
-  
-  // Smooth curve using cardinal spline
-  if (points.length < 2) return `M ${points[0]}`;
-  
+
   let path = `M ${points[0]}`;
   for (let i = 0; i < points.length - 1; i++) {
     const [x0, y0] = points[Math.max(0, i - 1)].split(',').map(Number);
     const [x1, y1] = points[i].split(',').map(Number);
     const [x2, y2] = points[i + 1].split(',').map(Number);
     const [x3, y3] = points[Math.min(points.length - 1, i + 2)].split(',').map(Number);
-    
+
     const cp1x = x1 + (x2 - x0) / 6;
     const cp1y = y1 + (y2 - y0) / 6;
     const cp2x = x2 - (x3 - x1) / 6;
     const cp2y = y2 - (y3 - y1) / 6;
-    
+
     path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
   }
-  
+
   return path;
 });
 </script>
@@ -102,27 +118,31 @@ const sparklinePath = computed(() => {
 <style lang="scss" scoped>
 @import 'src/css/tokens';
 
+// Stat tile compacto: label / valor+delta / sub em ~90px de altura.
+// A sparkline é overlay absoluto no rodapé — não adiciona altura.
 .sb-kpi {
-  display: flex;
-  flex-direction: column;
-  gap: $space-2;
   position: relative;
   overflow: hidden;
-  padding: $space-5;
-  transition: box-shadow $transition-base;
+  padding: $space-3 $space-4;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 
-  &:hover {
-    box-shadow: $shadow-sm;
+  // o conteúdo do slot vive dentro de .sb-card-body — o empilhamento é dele
+  :deep(.sb-card-body) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   &::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 12px;
-    bottom: 12px;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
+    top: 0;
+    bottom: 0;
+    width: 2.5px;
     background: $border;
   }
   &--teal::before   { background: #0f766e; }
@@ -138,59 +158,68 @@ const sparklinePath = computed(() => {
   display: flex;
   align-items: center;
   gap: $space-1;
-  font-size: $text-small-size;
+  font-size: $text-xs-size;
   font-weight: $font-medium;
   color: $text-muted;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
 }
 
 .sb-kpi-value-row {
   display: flex;
   align-items: baseline;
-  gap: $space-1;
-  margin-top: $space-1;
+  gap: $space-2;
+  flex-wrap: wrap; // em cards estreitos (mobile 2 col) o pill quebra p/ baixo sem estourar
+  position: relative;
+  z-index: 1;
 }
 
 .sb-kpi-prefix {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: $font-semibold;
   color: $text-muted;
 }
 
 .sb-kpi-value {
-  font-size: 28px;
-  font-weight: $font-bold;
+  font-size: 21px;
+  font-weight: $font-semibold;
   color: $text-primary;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-}
-
-.sb-kpi-sub {
-  font-size: $text-xs-size;
-  color: $text-disabled;
-  margin-top: $space-1;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .sb-kpi-delta {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: $text-xs-size;
+  gap: 1px;
+  font-size: 11px;
   font-weight: $font-semibold;
-  margin-top: $space-2;
-  width: fit-content;
-  padding: 2px 8px;
-  border-radius: $radius-sm;
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: default;
 
   &--good { background: $tint-green-bg; color: $tint-green-text; }
   &--bad  { background: $tint-red-bg; color: $tint-red-text; }
   &--neutral { background: $tint-slate-bg; color: $tint-slate-text; }
 }
 
+.sb-kpi-sub {
+  font-size: 11px;
+  color: $text-disabled;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
+}
+
 .sb-kpi-sparkline {
-  width: 100%;
-  height: 32px;
-  margin-top: $space-2;
-  opacity: 0.6;
+  position: absolute;
+  right: $space-3;
+  bottom: $space-2;
+  width: 72px;
+  height: 22px;
+  opacity: 0.3;
+  pointer-events: none;
 }
 </style>
