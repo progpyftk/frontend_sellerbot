@@ -11,7 +11,7 @@
     <div v-if="sub" class="sb-kpi-sub">{{ sub }}</div>
     <div v-if="delta !== null && delta !== undefined" class="sb-kpi-delta" :class="deltaClass">
       <q-icon :name="deltaIcon" size="12px" />
-      {{ delta }} vs período anterior
+      <template v-if="deltaPrefix">{{ deltaPrefix }} </template>{{ delta }} vs período anterior
     </div>
     <svg v-if="sparklineData && sparklineData.length" class="sb-kpi-sparkline" viewBox="0 0 100 32" preserveAspectRatio="none">
       <path :d="sparklinePath" fill="none" :stroke="sparklineColor" stroke-width="1.5" stroke-linecap="round" />
@@ -30,6 +30,8 @@ const props = defineProps({
   prefix: { type: String, default: '' },
   sub: { type: String, default: '' },
   delta: { type: [String, Number], default: null },
+  /** rótulo antes do delta quando ele mede outra métrica (ex: "TACoS" no card ROAS) */
+  deltaPrefix: { type: String, default: '' },
   /** teal | green | amber | red | sky | indigo | slate */
   variant: { type: String, default: 'teal' },
   /** quando true, delta positivo é ruim (ex: cancelamentos, ads) */

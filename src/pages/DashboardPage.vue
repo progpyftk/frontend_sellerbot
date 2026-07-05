@@ -3,7 +3,7 @@
 
     <!-- ══════════ HEADER (slim) ══════════════════════════════════════════ -->
     <DashboardHeader
-      v-model:preset="activeDatePreset"
+      :preset="activeDatePreset"
       :date-from="dateFrom"
       :date-to="dateTo"
       :date-presets="datePresets"
@@ -29,7 +29,7 @@
       <!-- ══════════ FILTROS DRAWER ════════════════════════════════════════ -->
       <FiltersDrawer
         v-model="showFilters"
-        :active-date-preset="activeDatePreset"
+        :preset="activeDatePreset"
         :date-from="dateFrom"
         :date-to="dateTo"
         :date-presets="datePresets"
@@ -39,10 +39,12 @@
         :all-keys="allAccountKeys"
         :chart-metrics="chartMetrics"
         :active-metrics="activeMetrics"
+        :chart-mode="chartMode"
         @update:preset="applyPreset"
         @update:date-from="dateFrom = $event; activeDatePreset = null; debouncedLoad()"
         @update:date-to="dateTo = $event; activeDatePreset = null; debouncedLoad()"
         @update:selected-keys="onSelectedKeysChange"
+        @update:chart-mode="setChartMode"
         @toggle-metric="toggleMetric"
         @clear="clearFilters"
         @apply="showFilters = false"
@@ -338,6 +340,7 @@
           variant="sky"
           :sub="'ACoS ' + (op?.acos != null ? op?.acos + '%' : '—')"
           :delta="deltaFmt(op?.vs_prev?.tacos)"
+          delta-prefix="TACoS"
           :invert-delta="true"
         >
           <template #info>
@@ -3362,126 +3365,6 @@ watch(selectedAccountKeys, () => {
 
 <style scoped>
 
-/* ── Header ────────────────────────────────────────────────────────────── */
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 24px;
-  background: #fff;
-  border: 1.5px solid #e8edf3;
-  border-radius: 14px;
-  padding: 14px 20px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-icon {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #0d9488, #0891b2);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.header-eyebrow {
-  font-size: 11px;
-  color: #9aa0ac;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.header-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1a1f36;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-/* ── Marketplace filter ────────────────────────────────────────────────── */
-.mkt-filter-group {
-  display: flex; align-items: center; gap: 4px;
-  background: #f1f5f9; border-radius: 8px;
-  padding: 3px;
-}
-.mkt-btn {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 10px; border-radius: 6px;
-  font-size: 12px; font-weight: 500; color: #64748b;
-  border: none; background: transparent; cursor: pointer;
-  transition: all .15s;
-}
-.mkt-btn:hover { background: #e2e8f0; color: #334155; }
-.mkt-btn--on { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,.1); font-weight: 700; }
-.mkt-btn--ml.mkt-btn--on { color: #FFE600; background: #1a1a2e; }
-.mkt-btn--shopee.mkt-btn--on { color: #EE4D2D; background: #fff7f5; }
-
-/* ── Date range ────────────────────────────────────────────────────────── */
-.date-range-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f5f7fa;
-  border-radius: 10px;
-  padding: 6px 10px;
-  border: 1.5px solid #e8edf3;
-}
-
-.date-preset-btn {
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #6b7280;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all .15s;
-}
-
-.date-preset-btn--on {
-  background: #0d9488;
-  color: white;
-}
-
-.date-preset-btn:hover:not(.date-preset-btn--on) {
-  background: #e8edf3;
-  color: #374151;
-}
-
-.date-inputs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 6px;
-}
-
-.date-sep {
-  color: #d1d5db;
-  font-size: 12px;
-}
-
-.date-inp {
-  font-size: 12px;
-  color: #374151;
-  min-width: 100px;
-}
-
 /* ── Loading ───────────────────────────────────────────────────────────── */
 .loading-center {
   display: flex;
@@ -4735,17 +4618,6 @@ watch(selectedAccountKeys, () => {
   padding-left: 28px;
 }
 
-/* ── Sidebar hint note ──────────────────────────────────────────────────── */
-.fs-hint-note {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  color: rgba(255,255,255,.3);
-  margin-top: 8px;
-  padding: 0 8px;
-}
-
 /* ── TACoS badge ────────────────────────────────────────────────────────── */
 .tacos-ok   { color: #0d9488; font-weight: 600; }
 .tacos-med  { color: #f59e0b; font-weight: 600; }
@@ -5033,7 +4905,6 @@ tr.pareto-line-95 td {
 }
 .acct-picker-btn:hover { border-color: #0d9488; }
 .acct-chip-inline { display: inline-flex; align-items: center; gap: 3px; }
-.acct-chip-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .acct-chip-more  { font-size: 11px; color: #64748b; margin-left: 2px; }
 
 .acct-picker-dropdown {
@@ -5207,410 +5078,6 @@ tr.pareto-line-95 td {
   gap: 14px;
 }
 
-/* ── Filter sidebar ──────────────────────────────────────────────────────── */
-.filter-sidebar {
-  width: 0;
-  flex-shrink: 0;
-  overflow: hidden;
-  position: sticky;
-  top: 16px;
-  max-height: calc(100vh - 100px);
-  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 16px;
-}
-.filter-sidebar--open { width: 262px; }
-.fs-inner {
-  width: 262px;
-  height: 100%;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: #fff;
-  border-radius: 16px;
-  padding: 0 0 20px 0;
-  scrollbar-width: thin;
-  scrollbar-color: #d1d5db transparent;
-  border: 1.5px solid #e2e8f0;
-  box-shadow: 0 4px 20px rgba(15,23,42,.1), 0 1px 4px rgba(15,23,42,.06);
-}
-.fs-inner::-webkit-scrollbar { width: 3px; }
-.fs-inner::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-
-/* ── Sidebar header ── */
-.fs-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px 12px;
-  background: linear-gradient(135deg, #0f172a, #1e3a5f);
-  border-radius: 14px 14px 0 0;
-}
-.fs-header-title {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-}
-.fs-header-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,.2);
-  background: rgba(255,255,255,.1);
-  color: rgba(255,255,255,.7);
-  cursor: pointer;
-  transition: all .15s;
-}
-.fs-header-close:hover { background: rgba(255,255,255,.2); color: #fff; }
-
-/* ── Sections ── */
-.fs-section {
-  padding: 14px 16px 12px;
-  border-bottom: 1.5px solid #f1f5f9;
-}
-.fs-section:last-child { border-bottom: none; padding-bottom: 10px; }
-.fs-section-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 9.5px;
-  font-weight: 800;
-  color: #0f172a;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  margin-bottom: 12px;
-}
-.fs-section-title .q-icon { color: #0d9488; }
-
-/* ── Period presets ── */
-.fs-presets {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
-  margin-bottom: 12px;
-}
-.fs-preset-btn {
-  padding: 7px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 8px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  color: #374151;
-  cursor: pointer;
-  transition: all .15s;
-  white-space: nowrap;
-  text-align: center;
-}
-.fs-preset-btn:hover {
-  border-color: #0d9488;
-  color: #0d9488;
-  background: #f0fdfa;
-}
-.fs-preset-btn--on {
-  background: #0d9488;
-  color: #fff;
-  border-color: #0d9488;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(13,148,136,.35);
-}
-
-/* ── Date inputs ── */
-.fs-dates { display: flex; flex-direction: column; gap: 6px; }
-.fs-date-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 9px;
-  padding: 7px 12px;
-  transition: border-color .15s, background .15s;
-}
-.fs-date-row:focus-within {
-  border-color: #0d9488;
-  background: #f0fdfa;
-}
-.fs-date-label {
-  font-size: 9.5px;
-  font-weight: 800;
-  color: #0f172a;
-  text-transform: uppercase;
-  letter-spacing: .8px;
-  min-width: 22px;
-}
-.fs-date-inp {
-  font-size: 12px;
-  color: #1e293b !important;
-  flex: 1;
-}
-.fs-date-inp :deep(input) { color: #1e293b; }
-
-/* ── Marketplace groups ── */
-.fs-mkt-group {
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 8px;
-  border: 1.5px solid #e8edf3;
-}
-.fs-mkt-group:last-of-type { margin-bottom: 0; }
-.fs-mkt-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  cursor: pointer;
-  transition: background .15s;
-  background: #f8fafc;
-}
-.fs-mkt-header:hover { background: #f1f5f9; }
-.fs-mkt-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: #1e293b;
-  flex: 1;
-}
-
-/* ── Marketplace logo pills ── */
-.fs-mkt-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px 2px 5px;
-  border-radius: 6px;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: .3px;
-}
-.fs-mkt-logo--ml { background: #FFE600; color: #1a1a2e; }
-.fs-mkt-logo--shopee {
-  background: linear-gradient(135deg, #EE4D2D, #ff7043);
-  color: #fff;
-}
-
-/* ── Account items ── */
-.fs-acct-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px 6px 14px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  transition: background .12s;
-  margin: 0;
-  background: #fff;
-  border-bottom: 1px solid #f8fafc;
-}
-.fs-acct-item:last-child { border-bottom: none; }
-.fs-acct-item:hover { background: #f0fdfa; color: #0f766e; }
-.fs-acct-item--on { color: #0f172a; font-weight: 600; }
-.fs-acct-color {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(0,0,0,.08);
-}
-.fs-acct-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* ── Custom checkboxes ── */
-.fs-custom-check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 5px;
-  border: 1.5px solid #cbd5e1;
-  background: #fff;
-  flex-shrink: 0;
-  transition: all .15s;
-  position: relative;
-}
-.fs-custom-check.is-checked {
-  background: #0d9488;
-  border-color: #0d9488;
-  box-shadow: 0 1px 5px rgba(13,148,136,.4);
-}
-.fs-custom-check.is-indeterminate {
-  background: #ccfbf1;
-  border-color: #0d9488;
-}
-.fs-custom-check.is-checked .fs-check-inner::after {
-  content: '';
-  display: block;
-  width: 4px;
-  height: 7px;
-  border: 1.5px solid #fff;
-  border-top: none;
-  border-left: none;
-  transform: rotate(45deg) translate(-1px, -1px);
-}
-.fs-custom-check.is-indeterminate .fs-check-inner::after {
-  content: '';
-  display: block;
-  width: 7px;
-  height: 1.5px;
-  background: #0d9488;
-  border-radius: 1px;
-}
-
-.fs-comparative-hint {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: #0d9488;
-  font-weight: 600;
-  margin-top: 8px;
-  padding: 6px 10px;
-  background: #f0fdfa;
-  border-radius: 8px;
-  border: 1.5px solid #99f6e4;
-}
-
-/* ── Weekday toggle ── */
-.fs-weekday-toggle {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 11px;
-  border-radius: 10px;
-  cursor: pointer;
-  margin-top: 10px;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  transition: all .2s;
-}
-.fs-weekday-toggle:hover { background: #f1f5f9; border-color: #0d9488; }
-.fs-weekday-toggle--on {
-  background: #f0fdfa;
-  border-color: #0d9488;
-}
-.fs-weekday-icon { color: #0d9488; display: flex; }
-.fs-weekday-label {
-  flex: 1;
-  font-size: 12px;
-  font-weight: 500;
-  color: #374151;
-}
-.fs-weekday-toggle--on .fs-weekday-label { color: #0f766e; font-weight: 600; }
-.fs-weekday-switch {
-  width: 32px;
-  height: 18px;
-  border-radius: 9px;
-  background: #cbd5e1;
-  position: relative;
-  flex-shrink: 0;
-  transition: background .2s;
-}
-.fs-weekday-switch::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,.2);
-  transition: transform .2s;
-}
-.fs-weekday-switch--on { background: #0d9488; }
-.fs-weekday-switch--on::after { transform: translateX(14px); }
-
-/* ── Metric items ── */
-.fs-metric-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 6px;
-  transition: opacity .2s;
-}
-.fs-metric-list--disabled { opacity: .35; pointer-events: none; }
-.fs-metric-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 9px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  transition: all .15s;
-}
-.fs-metric-item:hover { background: #f1f5f9; color: #0f172a; }
-.fs-metric-item--on { color: #0f172a; font-weight: 600; background: #f0fdfa; }
-.fs-metric-pip {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: all .2s;
-}
-.fs-metric-item--on .fs-metric-pip { box-shadow: 0 0 6px currentColor; }
-.fs-normalize-item { gap: 7px; }
-.fs-sub-label {
-  font-size: 9.5px;
-  font-weight: 800;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin: 8px 0 4px 9px;
-}
-
-/* ── Filter toggle button in header ─────────────────────────────────────── */
-.filter-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 13px;
-  border-radius: 9px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  transition: all .2s;
-}
-.filter-toggle-btn:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfb; }
-.filter-toggle-btn--on {
-  background: linear-gradient(135deg, #0f172a, #162032);
-  color: rgba(255,255,255,.85);
-  border-color: #0f172a;
-  box-shadow: 0 2px 8px rgba(15,23,42,.25);
-}
-
-.active-period-badge {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 4px 10px;
-  border-radius: 6px;
-}
-.active-accts-badge {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 4px 8px;
-  background: #f1f5f9;
-  border-radius: 6px;
-}
-
 /* ── Hero chart ──────────────────────────────────────────────────────────── */
 .hero-chart {
   border: 1.5px solid #e8edf3;
@@ -5770,34 +5237,6 @@ tr.pareto-line-95 td {
   color: #64748b;
   font-size: 10.5px;
   margin-left: 2px;
-}
-
-/* Hint no título "Métricas" da sidebar */
-.fs-mode-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 9.5px;
-  font-weight: 500;
-  color: #8faec8;
-  margin-left: 4px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.12);
-  cursor: default;
-  transition: all .2s;
-}
-.fs-mode-hint--active {
-  color: #fbbf24;
-  background: rgba(251,191,36,.1);
-  border-color: rgba(251,191,36,.25);
-}
-
-/* Tooltip da sidebar */
-.fs-hint-tooltip {
-  font-size: 11.5px !important;
-  line-height: 1.5 !important;
 }
 
 /* Metric pills (visíveis no header quando em modo Por Conta / Semana) */
@@ -5976,62 +5415,9 @@ tr.pareto-line-95 td {
    MOBILE — @media (max-width: 768px) e (max-width: 600px)
 ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Filter sidebar → Bottom Sheet no mobile ─────────────────────────── */
 @media (max-width: 768px) {
-  .filter-sidebar {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: auto !important;
-    width: 100% !important;
-    max-height: 78vh;
-    border-radius: 20px 20px 0 0;
-    z-index: 2000;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    transform: translateY(110%);
-    box-shadow: 0 -8px 40px rgba(0,0,0,.18);
-  }
-
-  .filter-sidebar--open {
-    transform: translateY(0) !important;
-    width: 100% !important;
-  }
-
-  .fs-inner {
-    width: 100% !important;
-    max-height: 78vh;
-    border-radius: 20px 20px 0 0;
-  }
-
-  /* Handle visual para o bottom sheet */
-  .fs-inner::before {
-    content: '';
-    display: block;
-    width: 40px;
-    height: 4px;
-    background: rgba(255,255,255,.3);
-    border-radius: 2px;
-    margin: 10px auto 0;
-  }
-
-  /* Overlay escuro atrás do bottom sheet */
-  .dash-main-layout.has-sidebar::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.45);
-    z-index: 1999;
-  }
-
-  /* Sidebar não ocupa espaço horizontal no layout */
   .dash-main-layout {
     flex-direction: column;
-  }
-
-  .filter-sidebar.filter-sidebar--open ~ .dash-content,
-  .dash-main-layout.has-sidebar .dash-content {
-    pointer-events: none;
   }
 }
 
@@ -6049,30 +5435,6 @@ tr.pareto-line-95 td {
   .dash-content {
     width: 100%;
     overflow-x: hidden;
-  }
-
-  /* ── Header ── */
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px 12px;
-  }
-
-  .header-right {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 6px;
-  }
-
-  .header-title {
-    font-size: 15px;
-  }
-
-  .active-period-badge,
-  .active-accts-badge {
-    font-size: 10px;
-    padding: 3px 8px;
   }
 
   /* ── Today banner — grid 3×2 ── */
@@ -6245,11 +5607,6 @@ tr.pareto-line-95 td {
 
   .saz-kpi-card {
     padding: 12px 12px;
-  }
-
-  /* ── Filtros presets (bottom sheet) — 3 colunas ── */
-  .fs-presets {
-    grid-template-columns: repeat(3, 1fr);
   }
 
   /* ── Table card genérico ── */

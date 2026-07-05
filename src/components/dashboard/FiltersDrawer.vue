@@ -30,7 +30,7 @@
           <button
             v-for="p in datePresets"
             :key="p.key"
-            :class="['fd-preset-btn', activeDatePreset === p.key && 'fd-preset-btn--on']"
+            :class="['fd-preset-btn', preset === p.key && 'fd-preset-btn--on']"
             @click="$emit('update:preset', p.key)"
           >
             {{ p.label }}
@@ -73,7 +73,7 @@
 
         <!-- Mercado Livre -->
         <div v-if="mlAccounts.length" class="fd-mkt-group">
-          <label class="fd-mkt-header" @click="toggleAllMl">
+          <label class="fd-mkt-header">
             <q-checkbox
               :model-value="allMlSelected"
               :indeterminate="someMlSelected && !allMlSelected"
@@ -103,7 +103,7 @@
 
         <!-- Shopee -->
         <div v-if="shopeeAccounts.length" class="fd-mkt-group">
-          <label class="fd-mkt-header" @click="toggleAllShopee">
+          <label class="fd-mkt-header">
             <q-checkbox
               :model-value="allShopeeSelected"
               :indeterminate="someShopeeSelected && !allShopeeSelected"
@@ -131,10 +131,40 @@
           </label>
         </div>
 
-        <!-- Hint -->
-        <div v-if="selectedKeys.length > 1" class="fd-comparative-hint">
+        <!-- Hint com breakdown -->
+        <div v-if="selectedKeys.length > 0 && selectedKeys.length < allKeys.length" class="fd-comparative-hint">
           <q-icon name="compare_arrows" size="14px" />
-          {{ selectedKeys.length }} contas selecionadas
+          <span>{{ selectedKeys.length }} de {{ allKeys.length }} contas</span>
+          <span class="fd-hint-breakdown">
+            (<template v-if="mlSelectedCount > 0">{{ mlSelectedCount }} ML</template>
+            <template v-if="mlSelectedCount > 0 && shopeeSelectedCount > 0">, </template>
+            <template v-if="shopeeSelectedCount > 0">{{ shopeeSelectedCount }} Shopee</template>)
+          </span>
+        </div>
+      </div>
+
+      <!-- Status do Pedido -->
+      <div class="fd-section">
+        <div class="fd-section-title">
+          <q-icon name="local_shipping" size="14px" />
+          Status do Pedido
+        </div>
+        <div class="fd-status-list">
+          <label
+            v-for="s in orderStatuses"
+            :key="s.key"
+            class="fd-status-item"
+            :class="{ 'fd-status-item--on': activeStatuses.includes(s.key) }"
+          >
+            <q-checkbox
+              :model-value="activeStatuses.includes(s.key)"
+              @update:model-value="$emit('toggle-status', s.key)"
+              dense
+              size="sm"
+            />
+            <span class="fd-status-dot" :style="{ background: s.color }"></span>
+            <span class="fd-status-label">{{ s.label }}</span>
+          </label>
         </div>
       </div>
 
@@ -143,24 +173,50 @@
         <div class="fd-section-title">
           <q-icon name="show_chart" size="14px" />
           Métricas do Gráfico
+          <span v-if="chartMode !== 'metrics'" class="fd-mode-hint">
+            modo Agregado
+            <q-icon name="info_outline" size="12px">
+              <q-tooltip max-width="180px" anchor="top right" self="bottom right">
+                A seleção de métricas só funciona no modo <strong>Agregado</strong>.<br>
+                No modo <em>Por Conta</em>, use as pílulas no cabeçalho do gráfico.
+              </q-tooltip>
+            </q-icon>
+          </span>
         </div>
-        <div class="fd-metrics-list">
+        <div class="fd-metrics-list" :class="{ 'fd-metrics-list--disabled': chartMode !== 'metrics' }">
           <label
             v-for="m in chartMetrics"
             :key="m.key"
             class="fd-metric-item"
-            :class="{ 'fd-metric-item--on': activeMetrics.includes(m.key) }"
+            :class="{ 'fd-metric-item--on': activeMetrics.includes(m.key) && chartMode === 'metrics' }"
           >
-            <span class="fd-metric-pip" :style="{ background: activeMetrics.includes(m.key) ? m.color : '#e2e8f0' }"></span>
+            <span class="fd-metric-pip" :style="{ background: activeMetrics.includes(m.key) && chartMode === 'metrics' ? m.color : '#e2e8f0' }"></span>
+            <span class="fd-metric-label">{{ m.label }}</span>
+            <q-icon
+              v-if="activeMetrics.includes(m.key) && chartMode === 'metrics'"
+              name="check"
+              size="14px"
+              class="fd-metric-check"
+            />
             <input
               type="checkbox"
               :checked="activeMetrics.includes(m.key)"
-              @change="$emit('toggle-metric', m.key)"
+              @change="chartMode === 'metrics' && $emit('toggle-metric', m.key)"
               style="display:none"
             />
-            {{ m.label }}
           </label>
         </div>
+
+        <!-- Toggle: média por dia da semana -->
+        <label
+          class="fd-weekday-toggle"
+          :class="{ 'fd-weekday-toggle--on': chartMode === 'weekday' }"
+          @click="$emit('update:chartMode', chartMode === 'weekday' ? 'metrics' : 'weekday')"
+        >
+          <span class="fd-weekday-icon"><q-icon name="event_note" size="14px" /></span>
+          <span class="fd-weekday-label">Média por dia da semana</span>
+          <span class="fd-weekday-switch" :class="{ 'fd-weekday-switch--on': chartMode === 'weekday' }"></span>
+        </label>
       </div>
 
       <!-- Ações -->
@@ -177,7 +233,7 @@ import { computed } from 'vue';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  activeDatePreset: { type: String, default: null },
+  preset: { type: String, default: null },
   dateFrom: { type: String, required: true },
   dateTo: { type: String, required: true },
   datePresets: { type: Array, required: true },
@@ -187,6 +243,8 @@ const props = defineProps({
   allKeys: { type: Array, default: () => [] },
   chartMetrics: { type: Array, default: () => [] },
   activeMetrics: { type: Array, default: () => [] },
+  chartMode: { type: String, default: 'metrics' },
+  activeStatuses: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits([
@@ -195,10 +253,22 @@ const emit = defineEmits([
   'update:dateFrom',
   'update:dateTo',
   'update:selectedKeys',
+  'update:chartMode',
   'toggle-metric',
+  'toggle-status',
   'clear',
   'apply',
 ]);
+
+// Status de pedido disponíveis
+const orderStatuses = [
+  { key: 'paid', label: 'Pago', color: '#16a34a' },
+  { key: 'pending', label: 'Pagamento Pendente', color: '#f59e0b' },
+  { key: 'preparing', label: 'Em Preparação', color: '#0284c7' },
+  { key: 'shipped', label: 'Enviado', color: '#6366f1' },
+  { key: 'delivered', label: 'Entregue', color: '#0f766e' },
+  { key: 'canceled', label: 'Cancelado', color: '#dc2626' },
+];
 
 // Computed para seleção de contas
 const allMlSelected = computed(() =>
@@ -212,6 +282,14 @@ const allShopeeSelected = computed(() =>
 );
 const someShopeeSelected = computed(() =>
   props.shopeeAccounts.some(a => props.selectedKeys.includes(a.key))
+);
+
+// Contadores por marketplace
+const mlSelectedCount = computed(() =>
+  props.mlAccounts.filter(a => props.selectedKeys.includes(a.key)).length
+);
+const shopeeSelectedCount = computed(() =>
+  props.shopeeAccounts.filter(a => props.selectedKeys.includes(a.key)).length
 );
 
 function toggleAccount(key) {
@@ -434,11 +512,73 @@ function toggleAllShopee() {
   border-radius: $radius-sm;
 }
 
+.fd-hint-breakdown {
+  font-weight: $font-medium;
+  color: $text-body;
+}
+
+// Status do Pedido
+.fd-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+}
+
+.fd-status-item {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-1 $space-2;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $surface-2;
+  }
+
+  &--on {
+    background: $tint-teal-bg;
+  }
+}
+
+.fd-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fd-status-label {
+  font-size: $text-small-size;
+  color: $text-body;
+}
+
 // Métricas
+.fd-mode-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: $font-medium;
+  color: $warning;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .fd-metrics-list {
   display: flex;
   flex-direction: column;
   gap: $space-1;
+
+  &--disabled {
+    opacity: 0.45;
+
+    .fd-metric-item {
+      cursor: not-allowed;
+    }
+  }
 }
 
 .fd-metric-item {
@@ -462,11 +602,90 @@ function toggleAllShopee() {
   }
 }
 
+.fd-metric-label {
+  flex: 1;
+}
+
+.fd-metric-check {
+  color: $primary;
+  flex-shrink: 0;
+}
+
 .fd-metric-pip {
   width: 10px;
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+// Toggle weekday
+.fd-weekday-toggle {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  cursor: pointer;
+  margin-top: $space-3;
+  background: $surface-2;
+  border: 1px solid transparent;
+  transition: all $transition-base;
+
+  &:hover {
+    border-color: $primary;
+  }
+
+  &--on {
+    background: $tint-teal-bg;
+    border-color: $primary;
+
+    .fd-weekday-label {
+      color: $tint-teal-text;
+      font-weight: $font-semibold;
+    }
+  }
+}
+
+.fd-weekday-icon {
+  color: $primary;
+  display: flex;
+}
+
+.fd-weekday-label {
+  flex: 1;
+  font-size: $text-xs-size;
+  font-weight: $font-medium;
+  color: $text-body;
+}
+
+.fd-weekday-switch {
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  background: $border-strong;
+  position: relative;
+  flex-shrink: 0;
+  transition: background $transition-base;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform $transition-base;
+  }
+
+  &--on {
+    background: $primary;
+
+    &::after {
+      transform: translateX(12px);
+    }
+  }
 }
 
 // Ações
