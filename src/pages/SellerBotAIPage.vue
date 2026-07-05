@@ -364,76 +364,112 @@ const store = useStore()
 const API_BASE = api.defaults.baseURL || 'http://localhost:8000'
 
 // ===========================================================================
-// Modelos disponíveis (espelho do models_catalog.py)
+// Modelos disponíveis — fallback local + fetch dinâmico da API
 // ===========================================================================
-const MODELS = [
+// Fallback local — espelha OPENROUTER_MODELS de models_catalog.py no backend
+// (a lista real vem de GET /sellerbot-ai/models/; manter os dois em sincronia)
+const DEFAULT_MODELS = [
+  {
+    id: 'deepseek/deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro',
+    provider: 'DeepSeek',
+    cost_input: 0.43,
+    cost_output: 0.87,
+    quality: 5,
+    speed: 4,
+    recommended: true,
+    note: 'Recomendado. Geração V4 — raciocínio forte, tool calling confiável, contexto 1M.',
+  },
+  {
+    id: 'deepseek/deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
+    provider: 'DeepSeek',
+    cost_input: 0.09,
+    cost_output: 0.18,
+    quality: 4,
+    speed: 5,
+    recommended: false,
+    note: 'V4 rápido e ultra-barato — ideal para alto volume de consultas simples.',
+  },
+  {
+    id: 'xiaomi/mimo-v2.5-pro',
+    name: 'MiMo 2.5 Pro',
+    provider: 'Xiaomi',
+    cost_input: 0.43,
+    cost_output: 0.87,
+    quality: 5,
+    speed: 4,
+    recommended: false,
+    note: 'Open weights da Xiaomi. Raciocínio forte com tool calling, contexto 1M.',
+  },
+  {
+    id: 'xiaomi/mimo-v2.5',
+    name: 'MiMo 2.5',
+    provider: 'Xiaomi',
+    cost_input: 0.10,
+    cost_output: 0.28,
+    quality: 4,
+    speed: 5,
+    recommended: false,
+    note: 'Versão econômica do MiMo 2.5 — rápido e barato.',
+  },
+  {
+    id: 'minimax/minimax-m3',
+    name: 'MiniMax M3',
+    provider: 'MiniMax',
+    cost_input: 0.30,
+    cost_output: 1.20,
+    quality: 5,
+    speed: 4,
+    recommended: false,
+    note: 'Open weights do MiniMax. Contexto 1M e raciocínio avançado.',
+  },
+  {
+    id: 'z-ai/glm-5.2',
+    name: 'GLM 5.2',
+    provider: 'Z.ai',
+    cost_input: 0.69,
+    cost_output: 2.16,
+    quality: 5,
+    speed: 4,
+    recommended: false,
+    note: 'Open weights da Z.ai. Topo de linha da família GLM, contexto 1M.',
+  },
   {
     id: 'deepseek/deepseek-chat',
     name: 'DeepSeek V3',
     provider: 'DeepSeek',
-    cost_input: 0.27,
-    cost_output: 1.10,
+    cost_input: 0.20,
+    cost_output: 0.80,
     quality: 4,
     speed: 4,
-    recommended: true,
-    note: 'Recomendado. Ótimo custo-benefício, excelente tool calling e bom português.',
+    recommended: false,
+    note: 'Geração anterior — mantido por compatibilidade.',
   },
   {
-    id: 'deepseek/deepseek-r1',
-    name: 'DeepSeek R1',
-    provider: 'DeepSeek',
-    cost_input: 0.55,
-    cost_output: 2.19,
+    id: 'meta-llama/llama-4-maverick',
+    name: 'Llama 4 Maverick',
+    provider: 'Meta',
+    cost_input: 0.17,
+    cost_output: 0.52,
+    quality: 4,
+    speed: 4,
+    recommended: false,
+    note: 'Open source da Meta com visão. Contexto 1M com custo mínimo.',
+  },
+  {
+    id: 'qwen/qwen3-235b-a22b',
+    name: 'Qwen 3 235B',
+    provider: 'Alibaba',
+    cost_input: 0.40,
+    cost_output: 0.60,
     quality: 5,
     speed: 3,
     recommended: false,
-    note: 'Modelo de raciocínio. Excelente para análises complexas.',
-  },
-  {
-    id: 'anthropic/claude-3.5-haiku',
-    name: 'Claude 3.5 Haiku',
-    provider: 'Anthropic',
-    cost_input: 0.80,
-    cost_output: 4.00,
-    quality: 5,
-    speed: 5,
-    recommended: false,
-    note: 'Top em tool calling. Rápido e muito preciso.',
-  },
-  {
-    id: 'anthropic/claude-sonnet-4-5',
-    name: 'Claude Sonnet 4.5',
-    provider: 'Anthropic',
-    cost_input: 3.00,
-    cost_output: 15.00,
-    quality: 5,
-    speed: 4,
-    recommended: false,
-    note: 'Modelo mais poderoso da Anthropic. Para análises complexas.',
-  },
-  {
-    id: 'google/gemini-2.0-flash-001',
-    name: 'Gemini 2.0 Flash',
-    provider: 'Google',
-    cost_input: 0.10,
-    cost_output: 0.40,
-    quality: 4,
-    speed: 5,
-    recommended: false,
-    note: 'Muito rápido e barato. Bom para uso intensivo.',
-  },
-  {
-    id: 'meta-llama/llama-3.3-70b-instruct',
-    name: 'Llama 3.3 70B',
-    provider: 'Meta',
-    cost_input: 0.12,
-    cost_output: 0.30,
-    quality: 3,
-    speed: 4,
-    recommended: false,
-    note: 'Open source. Mais barato da lista.',
+    note: 'Maior modelo open weights do Qwen. Raciocínio avançado e tool calling.',
   },
 ]
+const MODELS = ref(DEFAULT_MODELS)
 
 // ===========================================================================
 // State
@@ -446,9 +482,9 @@ const orBalance = ref(null)
 const orUsage = ref(null)
 const orBalanceError = ref(null)
 const messagesArea = ref(null)
-const VALID_MODEL_IDS = new Set(MODELS.map(m => m.id))
+const VALID_MODEL_IDS = computed(() => new Set(MODELS.value.map(m => m.id)))
 const _savedModel = localStorage.getItem('sellerbot_model')
-const selectedModel = ref(VALID_MODEL_IDS.has(_savedModel) ? _savedModel : 'deepseek/deepseek-chat')
+const selectedModel = ref(VALID_MODEL_IDS.value.has(_savedModel) ? _savedModel : 'deepseek/deepseek-v4-pro')
 
 // Sessões
 const currentSessionId = ref(null)
@@ -457,7 +493,7 @@ const showHistory = ref(false)
 const sidebarOpen = ref($q.screen.gt.sm)
 
 const selectedModelName = computed(() => {
-  const m = MODELS.find(m => m.id === selectedModel.value)
+  const m = MODELS.value.find(m => m.id === selectedModel.value)
   return m ? m.name : selectedModel.value.split('/').pop()
 })
 
@@ -1097,7 +1133,18 @@ const cancelDraft = async (msg) => {
 // ===========================================================================
 // Lifecycle
 // ===========================================================================
+const fetchModels = async () => {
+  try {
+    const res = await api.get('/sellerbot-ai/models/')
+    if (res.data.models?.length) MODELS.value = res.data.models
+    if (!VALID_MODEL_IDS.value.has(selectedModel.value)) {
+      selectedModel.value = MODELS.value[0]?.id || 'deepseek/deepseek-chat'
+    }
+  } catch { /* fallback local já aplicado */ }
+}
+
 onMounted(() => {
+  fetchModels()
   checkHealth()
   fetchBalance()
   loadSessions()
