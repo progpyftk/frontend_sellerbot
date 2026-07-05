@@ -35,9 +35,12 @@
     </q-header>
 
     <!-- Page content -->
-    <q-page-container>
+<q-page-container>
       <router-view />
     </q-page-container>
+
+    <FeedbackFAB />
+
   </q-layout>
 </template>
 
@@ -45,6 +48,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import KrivusService from 'src/services/KrivusService'
+import FeedbackFAB from 'src/components/common/FeedbackFAB.vue'
 
 const router = useRouter()
 const route = useRoute()

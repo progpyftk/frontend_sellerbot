@@ -146,6 +146,8 @@
       <router-view />
     </q-page-container>
 
+    <FeedbackFAB />
+
   </q-layout>
 </template>
 
@@ -154,6 +156,7 @@ import { ref, computed } from "vue"
 import { useStore } from "src/stores/store"
 import { useRouter } from "vue-router"
 import { useQuasar } from "quasar"
+import FeedbackFAB from "src/components/common/FeedbackFAB.vue"
 
 const store = useStore()
 const router = useRouter()
