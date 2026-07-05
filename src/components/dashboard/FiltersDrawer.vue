@@ -143,8 +143,8 @@
         </div>
       </div>
 
-      <!-- Status do Pedido -->
-      <div class="fd-section">
+      <!-- Status do Pedido (desativado — aguarda backend) -->
+      <div v-if="false" class="fd-section">
         <div class="fd-section-title">
           <q-icon name="local_shipping" size="14px" />
           Status do Pedido
@@ -340,6 +340,7 @@ function toggleAllShopee() {
   flex-direction: column;
   height: 100%;
   padding: $space-4;
+  overflow-y: auto;
 }
 
 .fd-header {

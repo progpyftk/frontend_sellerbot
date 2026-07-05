@@ -1465,6 +1465,9 @@ const selectedAccountKeys = ref([])  // e.g. ['ml:123', 'shopee:456']
 const knownMlAccounts    = ref([])   // { key, id, marketplace, label, color }
 const knownShopeeAccounts = ref([])
 
+// Status do pedido (desativado — aguarda backend)
+const activeStatuses = ref([])  // e.g. ['paid', 'pending']
+
 // Nova paleta de cores — tons mais sóbrios e harmoniosos (Redesign Jul/2026)
 const ACCOUNT_COLORS = ['#0f766e','#0284c7','#6366f1','#8b5cf6','#f59e0b','#64748b','#16a34a','#d97706','#0ea5e9','#94a3b8']
 
@@ -1547,6 +1550,7 @@ function clearFilters() {
   activeDatePreset.value = '30d'
   applyPreset('30d')
   selectedAccountKeys.value = [...allAccountKeys.value]
+  activeStatuses.value = []  // Reset status (desativado — aguarda backend)
   onFilterChange()
 }
 
