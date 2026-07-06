@@ -883,6 +883,15 @@ const handleStreamEvent = (index, event) => {
       msg.logs.push({ type: 'tool_result', text: '✅ Dados recebidos' })
       break
 
+    case 'image':
+      // Imagem gerada pelo ImageAgent — adiciona ao array de imagens da mensagem
+      if (event.url) {
+        if (!msg.images) msg.images = []
+        msg.images.push(event.url)
+      }
+      msg.logs.push({ type: 'tool_result', text: '🖼️ Imagem recebida' })
+      break
+
     case 'listing_draft_ready':
       msg.pendingDraft = {
         draft: event.draft || null,
@@ -904,6 +913,13 @@ const handleStreamEvent = (index, event) => {
       if (!msg.content) msg.content = event.response || ''
       msg.agent = event.agent || null
       msg.durationMs = Date.now() - (msg.startedAt || Date.now())
+      // Imagens enviadas pelo ImageAgent (via campo images no done)
+      if (event.images?.length) {
+        if (!msg.images) msg.images = []
+        for (const imgUrl of event.images) {
+          if (!msg.images.includes(imgUrl)) msg.images.push(imgUrl)
+        }
+      }
       msg.loading = false
       // Atualiza preview da sessão no histórico
       loadSessions()
