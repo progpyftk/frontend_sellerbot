@@ -16,7 +16,7 @@
       </h1>
 
       <p class="hero-sub">
-        A <strong>Krivos Consultoria</strong> é especializada em ajudar empresas
+        A <strong>Krivus Consultoria</strong> é especializada em ajudar empresas
         B2B a expandir para o varejo digital — com estruturação completa,
         integração de ERP e gestão contínua nos maiores marketplaces do Brasil.
       </p>

@@ -6,7 +6,7 @@
       <div class="footer-brand">
         <div class="brand-logomark">K</div>
         <div class="brand-text">
-          <span class="brand-name">Krivos</span>
+          <span class="brand-name">Krivus</span>
           <span class="brand-sub">Consultoria</span>
         </div>
         <p class="brand-desc">
@@ -28,7 +28,7 @@
 
       <!-- Links columns -->
       <div class="footer-links-col">
-        <div class="fcol-title">Krivos</div>
+        <div class="fcol-title">Krivus</div>
         <a href="#about">Quem somos</a>
         <a href="#metodologia">Metodologia</a>
         <a href="#plans">Modelos de parceria</a>
@@ -54,7 +54,7 @@
 
     <div class="footer-bottom">
       <div class="content-wrapper footer-bottom-inner">
-        <span>© {{ new Date().getFullYear() }} Krivos Consultoria. Todos os direitos reservados.</span>
+        <span>© {{ new Date().getFullYear() }} Krivus Consultoria. Todos os direitos reservados.</span>
         <div class="footer-bottom-links">
           <a href="#">Privacidade</a>
           <a href="#">Termos de uso</a>

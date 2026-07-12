@@ -2,27 +2,26 @@
   <q-page class="krivus-page">
     <div class="krivus-container">
 
-      <div class="page-header q-mb-lg">
-        <div>
-          <h1 class="page-title">Templates de Documentos</h1>
-          <p class="page-subtitle" v-pre>Modelos reutilizáveis com variáveis: <code>{{cliente}}</code>, <code>{{data_inicio}}</code>, <code>{{mensalidade}}</code>, <code>{{data_hoje}}</code></p>
-        </div>
-        <q-btn unelevated color="indigo-6" label="Novo Template" icon="add" no-caps @click="openNew" />
-      </div>
+      <SbPageHeader title="Templates de Documentos" icon="description">
+        <template #actions>
+          <q-btn unelevated color="primary" label="Novo Template" icon="add" no-caps @click="openNew" />
+        </template>
+      </SbPageHeader>
+      <p class="page-subtitle q-mb-lg" v-pre>Modelos reutilizáveis com variáveis: <code>{{cliente}}</code>, <code>{{data_inicio}}</code>, <code>{{mensalidade}}</code>, <code>{{gmv_30d}}</code>, <code>{{roas}}</code>, <code>{{data_hoje}}</code></p>
 
       <div class="templates-grid" v-if="!loading">
-        <div v-for="t in templates" :key="t.id" class="template-card" @click="openEdit(t)">
+        <SbCard v-for="t in templates" :key="t.id" hover class="template-card" @click="openEdit(t)">
           <div class="row items-center q-mb-sm">
-            <q-icon :name="docIcon(t.tipo)" size="20px" color="indigo-5" class="q-mr-sm" />
+            <q-icon :name="docIcon(t.tipo)" size="20px" color="primary" class="q-mr-sm" />
             <div class="template-name">{{ t.nome }}</div>
             <q-space />
-            <q-chip dense color="indigo-1" text-color="indigo-8" :label="t.tipo" size="xs" />
+            <SbBadge variant="teal">{{ tipoLabel(t.tipo) }}</SbBadge>
           </div>
           <div class="template-meta">v{{ t.versao }} · atualizado {{ formatDate(t.updated_at) }}</div>
-        </div>
+        </SbCard>
       </div>
       <div class="templates-grid" v-else>
-        <q-skeleton v-for="i in 4" :key="i" height="80px" class="template-card" />
+        <q-skeleton v-for="i in 4" :key="i" height="80px" />
       </div>
 
     </div>
@@ -39,13 +38,13 @@
         <q-card-section class="q-gutter-sm">
           <div class="row q-gutter-sm">
             <q-input v-model="activeTemplate.nome" label="Nome do template" outlined dense style="flex:1" />
-            <q-select v-model="activeTemplate.tipo" :options="tipoOptions" emit-value map-options label="Tipo" outlined dense style="width:180px" />
+            <q-select v-model="activeTemplate.tipo" :options="tipoOptions" emit-value map-options label="Tipo" outlined dense style="width:220px" />
           </div>
-          <TipTapEditor v-model="activeTemplate.content" placeholder="Escreva o template aqui. Use {{cliente}}, {{data_inicio}}, {{mensalidade}}, {{data_hoje}} como variáveis." />
+          <TipTapEditor v-model="activeTemplate.content" placeholder="Escreva o template aqui. Use {{cliente}}, {{data_inicio}}, {{mensalidade}}, {{gmv_30d}}, {{roas}}, {{data_hoje}} como variáveis." />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="grey" v-close-popup />
-          <q-btn unelevated label="Salvar" color="indigo-6" :loading="saving" @click="save" />
+          <q-btn unelevated label="Salvar" color="primary" :loading="saving" @click="save" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -57,6 +56,9 @@ import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
 import TipTapEditor from 'src/components/krivus/TipTapEditor.vue'
+import SbPageHeader from 'src/components/common/SbPageHeader.vue'
+import SbCard from 'src/components/common/SbCard.vue'
+import SbBadge from 'src/components/common/SbBadge.vue'
 
 const $q = useQuasar()
 const templates = ref([])
@@ -66,15 +68,26 @@ const saving = ref(false)
 const activeTemplate = ref({ nome: '', tipo: 'outro', content: {} })
 
 const tipoOptions = [
-  { label: 'Contrato', value: 'contrato' },
   { label: 'Proposta', value: 'proposta' },
+  { label: 'Contrato', value: 'contrato' },
+  { label: 'Termo de Entrega', value: 'termo_entrega' },
+  { label: 'Recibo de Pagamento', value: 'recibo_pagamento' },
+  { label: 'Termo de Adesão - Gestão Contínua', value: 'termo_adesao' },
   { label: 'Relatório', value: 'relatorio' },
   { label: 'Faturamento / NF', value: 'nf' },
   { label: 'Outro', value: 'outro' },
 ]
 
+function tipoLabel(tipo) {
+  return tipoOptions.find((t) => t.value === tipo)?.label || tipo
+}
+
 function docIcon(tipo) {
-  return { contrato: 'gavel', proposta: 'handshake', relatorio: 'bar_chart', nf: 'receipt', outro: 'description' }[tipo] || 'description'
+  return {
+    contrato: 'gavel', proposta: 'handshake', relatorio: 'bar_chart', nf: 'receipt',
+    termo_entrega: 'task_alt', recibo_pagamento: 'payments', termo_adesao: 'handshake',
+    outro: 'description',
+  }[tipo] || 'description'
 }
 
 function formatDate(d) {
@@ -133,24 +146,16 @@ function confirmDelete() {
 onMounted(load)
 </script>
 
-<style scoped>
-.krivus-page { background: #f8fafc; }
-.krivus-container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
-.page-header { display: flex; align-items: flex-start; justify-content: space-between; }
-.page-title { font-size: 24px; font-weight: 700; color: #1e293b; margin: 0; }
-.page-subtitle { color: #64748b; font-size: 13px; margin: 4px 0 0; }
-.page-subtitle code { background: #eef2ff; color: #6366f1; padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+<style lang="scss" scoped>
+@import 'src/css/tokens';
 
-.templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-.template-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 16px;
-  cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s;
-}
-.template-card:hover { border-color: #6366f1; box-shadow: 0 2px 12px rgba(99,102,241,0.1); }
-.template-name { font-size: 14px; font-weight: 600; color: #1e293b; }
-.template-meta { font-size: 11px; color: #94a3b8; }
+.krivus-page { background: #f8fafc; }
+.krivus-container { max-width: 1100px; margin: 0 auto; padding: $space-6 $space-6 $space-12; }
+.page-subtitle { color: $text-muted; font-size: $text-small-size; margin-top: -12px; }
+.page-subtitle code { background: $tint-teal-bg; color: $tint-teal-text; padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+
+.templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: $space-4; }
+.template-card { cursor: pointer; }
+.template-name { font-size: $text-small-size + 1; font-weight: $font-semibold; color: $text-primary; }
+.template-meta { font-size: 11px; color: $text-disabled; }
 </style>

@@ -6,7 +6,7 @@
         <span class="eyebrow">Clientes</span>
         <h2 class="section-title">O que dizem quem fez a transição</h2>
         <p class="section-sub">
-          Empresas B2B que expandiram para o varejo online com a Krivos ao lado.
+          Empresas B2B que expandiram para o varejo online com a Krivus ao lado.
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export default defineComponent({
     return {
       testimonials: [
         {
-          quote: 'Éramos uma distribuidora que vendia só para revendedores. A Krivos nos estruturou do zero no Mercado Livre. Em 4 meses já faturávamos mais no B2C do que em alguns distribuidores.',
+          quote: 'Éramos uma distribuidora que vendia só para revendedores. A Krivus nos estruturou do zero no Mercado Livre. Em 4 meses já faturávamos mais no B2C do que em alguns distribuidores.',
           name: 'Carlos Eduardo',
           role: 'Diretor Comercial — Distribuidora de Eletrônicos',
           initials: 'CE',
@@ -58,13 +58,13 @@ export default defineComponent({
           initials: 'FL',
         },
         {
-          quote: 'O diferencial da Krivos é o time dedicado. Não é consultoria que aparece uma vez por mês. É gente de verdade gerenciando a nossa operação como se fosse deles.',
+          quote: 'O diferencial da Krivus é o time dedicado. Não é consultoria que aparece uma vez por mês. É gente de verdade gerenciando a nossa operação como se fosse deles.',
           name: 'Roberto Nunes',
           role: 'CEO — Fabricante de Produtos para Casa',
           initials: 'RN',
         },
         {
-          quote: 'Entrar na Shopee parecia complicado. Com a Krivos, em 45 dias já tínhamos mais de 200 pedidos no mês. Suporte presente em todo o processo de onboarding.',
+          quote: 'Entrar na Shopee parecia complicado. Com a Krivus, em 45 dias já tínhamos mais de 200 pedidos no mês. Suporte presente em todo o processo de onboarding.',
           name: 'Aline Moreira',
           role: 'Gerente de E-commerce — Atacadista de Beleza',
           initials: 'AM',

@@ -9,7 +9,7 @@
           <div class="img-frame">
             <img
               src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=900&q=80&auto=format&fit=crop"
-              alt="Crescimento com método — Krivos Consultoria"
+              alt="Crescimento com método — Krivus Consultoria"
               class="about-img"
             />
           </div>
@@ -19,7 +19,7 @@
               "Nosso objetivo não é ter centenas de clientes. É ter clientes que crescem
               de verdade — com um time que conhece a operação deles tanto quanto eles."
             </p>
-            <span class="quote-author">— Equipe Krivos</span>
+            <span class="quote-author">— Equipe Krivus</span>
           </div>
         </div>
 
@@ -31,7 +31,7 @@
             a <span class="accent">resultado real</span>
           </h2>
           <p class="about-desc">
-            A Krivos nasceu para resolver um problema específico: empresas B2B com
+            A Krivus nasceu para resolver um problema específico: empresas B2B com
             produtos competitivos que não conseguem estruturar a operação digital
             de forma eficiente para chegar ao consumidor final.
           </p>

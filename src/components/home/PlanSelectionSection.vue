@@ -126,7 +126,7 @@ export default defineComponent({
           icon: 'groups',
           iconBg: 'rgba(245,158,11,.1)',
           iconColor: '#f59e0b',
-          name: 'Krivos Consultoria',
+          name: 'Krivus Consultoria',
           tagline: 'Transição B2B → B2C com time dedicado.',
           priceType: 'consult',
           price: null,

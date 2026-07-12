@@ -3,12 +3,12 @@
     <div class="header-inner">
       <q-toolbar class="q-pa-none">
 
-        <!-- Logo Krivos -->
+        <!-- Logo Krivus -->
         <q-toolbar-title shrink class="q-mr-lg">
           <router-link to="/" class="brand-link">
             <div class="brand-mark">K</div>
             <div class="brand-text">
-              <span class="brand-name">Krivos</span>
+              <span class="brand-name">Krivus</span>
               <span class="brand-sub">Consultoria</span>
             </div>
           </router-link>
@@ -51,7 +51,7 @@
     <q-dialog v-model="mobileOpen" position="right">
       <q-card class="mobile-menu">
         <q-card-section class="q-pt-lg">
-          <div class="mobile-brand q-mb-lg">Krivos Consultoria</div>
+          <div class="mobile-brand q-mb-lg">Krivus Consultoria</div>
           <div class="mobile-links">
             <a href="#services" @click="mobileOpen = false">Serviços</a>
             <a href="#sellerbot" @click="mobileOpen = false">SellerBot</a>

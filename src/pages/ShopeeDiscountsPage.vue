@@ -33,7 +33,18 @@
 
         <q-btn unelevated color="orange-7" text-color="white" icon="add" label="Nova Promoção"
           size="sm" class="q-ml-sm" @click="openCreate()" />
+        <q-btn v-if="selectedCount > 0" unelevated color="red-7" text-color="white"
+          icon="stop_circle" :label="`Encerrar ${selectedCount} selecionado(s)`" size="sm"
+          class="q-ml-sm" :disable="isProcessing" :loading="isProcessing" @click="bulkEnd()" />
       </div>
+    </div>
+
+    <!-- ── PROCESSING BANNER (lote) ── -->
+    <div v-if="isProcessing" class="sd-processing">
+      <q-spinner-gears color="white" size="20px" class="q-mr-sm" />
+      <span>Processando {{ processingTotal }} promoção(ões) em lote
+        ({{ processingDone }}/{{ processingTotal }})…</span>
+      <q-linear-progress :value="processingPct" color="white" class="sd-progress" stripe animated />
     </div>
 
     <!-- ── LOADING ── -->
@@ -52,6 +63,10 @@
     <div v-else class="sd-list">
       <div v-for="d in discounts" :key="d.discount_id + '-' + d.account_id" class="sd-card"
         @click="openDetail(d)">
+
+        <!-- Seleção (lote) -->
+        <q-checkbox :model-value="isSelected(d)" @click.stop="toggleSelect(d)"
+          class="sd-select" />
 
         <!-- Status badge -->
         <div :class="['sd-status-badge', `sd-status--${d.status}`]">
@@ -73,9 +88,9 @@
 
           <div class="sd-card-actions" @click.stop>
             <q-btn v-if="d.status === 'ongoing'" flat round icon="stop_circle" color="red-7" size="sm"
-              title="Encerrar agora" @click="confirmEnd(d)" />
+              title="Encerrar agora" :disable="isProcessing" @click="confirmEnd(d)" />
             <q-btn v-if="d.status === 'upcoming'" flat round icon="delete" color="grey-6" size="sm"
-              title="Deletar promoção" @click="confirmDelete(d)" />
+              title="Deletar promoção" :disable="isProcessing" @click="confirmDelete(d)" />
             <q-btn flat round icon="chevron_right" color="grey-5" size="sm" @click="openDetail(d)" />
           </div>
         </div>
@@ -257,7 +272,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
 
@@ -285,6 +300,67 @@ const confirmDeleteOpen = ref(false)
 const confirmTarget     = ref(null)
 const actionLoading     = ref(false)
 
+// ── Processamento em lote (segundo plano) ──────────────────────────────
+const tasks          = ref([])
+const selected       = ref(new Set())
+let   pollTimer      = null
+
+function isSelected(d) {
+  return selected.value.has(`${d.account_id}-${d.discount_id}`)
+}
+function toggleSelect(d) {
+  const key = `${d.account_id}-${d.discount_id}`
+  if (selected.value.has(key)) selected.value.delete(key)
+  else selected.value.add(key)
+  selected.value = new Set(selected.value)
+}
+const selectedCount = computed(() => selected.value.size)
+
+const isProcessing    = computed(() => tasks.value.some(t => t.status === 'processing'))
+const processingTask  = computed(() => tasks.value.find(t => t.status === 'processing') || null)
+const processingTotal  = computed(() => processingTask.value?.total || 0)
+const processingDone   = computed(() => processingTask.value?.processed || 0)
+const processingPct   = computed(() => processingTotal.value ? Math.round(processingDone.value / processingTotal.value * 100) : 0)
+
+async function loadTasks() {
+  try {
+    const res = await ShopeeService.getDiscountTasks()
+    tasks.value = res.data?.tasks || []
+  } catch { tasks.value = [] }
+}
+
+async function bulkEnd() {
+  const items = [...selected.value].map(key => {
+    const [account_id, discount_id] = key.split('-')
+    return { account_id: Number(account_id), discount_id: Number(discount_id), action: 'end' }
+  })
+  if (!items.length) return
+  try {
+    const res = await ShopeeService.bulkDiscounts(items)
+    $q.notify({ type: 'positive', message: res.data?.message || 'Processamento iniciado.' })
+    selected.value = new Set()
+    await loadTasks()
+    startPolling()
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Erro ao iniciar: ' + (e?.response?.data?.error || e.message) })
+  }
+}
+
+function startPolling() {
+  if (pollTimer) return
+  pollTimer = setInterval(async () => {
+    await loadTasks()
+    if (!isProcessing.value && pollTimer) {
+      clearInterval(pollTimer)
+      pollTimer = null
+    }
+  }, 5000)
+}
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+}
+
+
 const statusOptions = [
   { value: 'all',      label: 'Todas'       },
   { value: 'ongoing',  label: 'Em andamento' },
@@ -298,12 +374,16 @@ const accountOptions = computed(() => accounts.value)
 onMounted(async () => {
   await loadAccounts()
   await loadDiscounts()
+  await loadTasks()
+  if (isProcessing.value) startPolling()
 })
+
+onUnmounted(stopPolling)
 
 // ── Loaders ────────────────────────────────────────────────────────────────
 async function loadAccounts() {
   try {
-    const res = await ShopeeService.getAccounts()
+    const res = await ShopeeService.listAccounts()
     accounts.value = res.data || []
   } catch { accounts.value = [] }
 }
@@ -457,6 +537,24 @@ function discountClass(pct) {
 /* Loading / Empty */
 .sd-loading { display: flex; justify-content: center; padding: 60px; }
 .sd-empty { text-align: center; padding: 60px 20px; color: #aaa; }
+
+/* Processing banner (lote) */
+.sd-processing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #e65100, #f57c00);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sd-progress { flex: 1; min-width: 120px; }
+
+/* Seleço de cards (lote) */
+.sd-select { position: absolute; top: 10px; right: 10px; z-index: 2; }
 
 /* Card list */
 .sd-list { display: flex; flex-direction: column; gap: 8px; }

@@ -8,7 +8,7 @@
           Pronto para levar sua empresa<br />ao varejo digital?
         </h2>
         <p class="cta-sub">
-          Escolha como a Krivos pode ajudar você hoje.
+          Escolha como a Krivus pode ajudar você hoje.
         </p>
       </div>
 
@@ -18,7 +18,7 @@
           <div class="ccard-icon" style="background: rgba(13,148,136,.15); color: #14b8a6;">
             <q-icon name="support_agent" size="28px" />
           </div>
-          <h3>Consultoria Krivos</h3>
+          <h3>Consultoria Krivus</h3>
           <p>
             Agende uma conversa com nosso time. Diagnóstico inicial sem custo.
             Entendemos seu negócio antes de propor qualquer coisa.

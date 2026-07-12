@@ -33,7 +33,7 @@
           <div class="arrow-circle">
             <q-icon name="arrow_forward" size="22px" color="white" />
           </div>
-          <span>Com a Krivos</span>
+          <span>Com a Krivus</span>
         </div>
 
         <div class="compare-card compare-after">

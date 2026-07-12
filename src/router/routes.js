@@ -17,6 +17,12 @@ const routes = [
     name: "login",
     component: () => import("pages/LoginPage.vue"),
   },
+  // Portal do cliente Krivus — leitura pública via token, sem login (KRV-14)
+  {
+    path: "/portal/:token",
+    name: "krivus-portal",
+    component: () => import("pages/krivus/KrivusPortalPage.vue"),
+  },
   {
     path: "/app",
     component: () => import("layouts/MainLayout.vue"),
@@ -127,14 +133,29 @@ const routes = [
         component: () => import("pages/krivus/KrivusOverviewPage.vue"),
       },
       {
-        path: ":slug",
-        name: "krivus-client",
-        component: () => import("pages/krivus/KrivusClientPage.vue"),
+        path: "pipeline",
+        name: "krivus-pipeline",
+        component: () => import("pages/krivus/KrivusPipelinePage.vue"),
       },
       {
         path: "templates",
         name: "krivus-templates",
         component: () => import("pages/krivus/KrivusTemplatesPage.vue"),
+      },
+      {
+        path: "cobrancas",
+        name: "krivus-billing",
+        component: () => import("pages/krivus/KrivusBillingPage.vue"),
+      },
+      {
+        path: "alertas",
+        name: "krivus-alerts",
+        component: () => import("pages/krivus/KrivusAlertsPage.vue"),
+      },
+      {
+        path: ":slug",
+        name: "krivus-client",
+        component: () => import("pages/krivus/KrivusJourneyPage.vue"),
       },
     ],
   },

@@ -91,6 +91,13 @@ export default {
   deleteDiscount(discountId, data) {
     return api.delete(`/shopee/discounts/${discountId}/delete/`, { data })
   },
+  // Processamento em lote (segundo plano) — espelha o ML
+  bulkDiscounts(items) {
+    return api.post('/shopee/discounts/bulk/', { items })
+  },
+  getDiscountTasks() {
+    return api.get('/shopee/discounts/tasks/')
+  },
 
   // Vouchers (Cupons)
   getVouchers(params = {}) {

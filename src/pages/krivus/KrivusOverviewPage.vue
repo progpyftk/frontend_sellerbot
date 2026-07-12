@@ -2,75 +2,79 @@
   <q-page class="krivus-page">
     <div class="krivus-container">
 
-      <!-- Page title -->
-      <div class="page-header q-mb-lg">
-        <div>
-          <h1 class="page-title">Visão Geral</h1>
-          <p class="page-subtitle">Performance consolidada de todos os clientes Krivus</p>
-        </div>
-        <div class="row q-gutter-sm">
+      <SbPageHeader title="Visão Geral" subtitle="Performance consolidada de todos os clientes Krivus" icon="dashboard">
+        <template #actions>
           <q-select
             v-model="days"
             :options="daysOptions"
-            dense
-            outlined
-            emit-value
-            map-options
+            dense outlined emit-value map-options
             style="min-width: 130px"
             @update:model-value="loadData"
           />
-          <q-btn color="indigo-6" label="Novo Cliente" icon="add" no-caps unelevated @click="openNewClient" />
-        </div>
-      </div>
+          <q-btn flat color="primary" label="Pipeline" icon="view_kanban" no-caps to="/krivus/pipeline" />
+          <q-btn color="primary" label="Novo Cliente" icon="add" no-caps unelevated @click="openNewClient" />
+        </template>
+      </SbPageHeader>
+
+      <!-- Alertas -->
+      <router-link v-if="!loadingAlerts && alerts.total > 0" to="/krivus/alertas" class="alert-banner q-mb-lg">
+        <q-icon name="warning" size="18px" class="q-mr-sm" />
+        <span>{{ alerts.total }} alerta(s): cobranças atrasadas, tarefas vencidas ou clientes sem contato recente.</span>
+        <q-space />
+        <q-icon name="chevron_right" size="16px" />
+      </router-link>
 
       <!-- Global KPI cards -->
-      <div class="kpi-grid q-mb-xl" v-if="!loadingStats">
-        <div class="kpi-card">
-          <div class="kpi-label">GMV Total</div>
-          <div class="kpi-value">{{ formatCurrency(stats.gmv_total) }}</div>
-          <div class="kpi-sub">últimos {{ days }} dias</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Pedidos</div>
-          <div class="kpi-value">{{ stats.orders_total?.toLocaleString('pt-BR') }}</div>
-          <div class="kpi-sub">últimos {{ days }} dias</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Anúncios Ativos</div>
-          <div class="kpi-value">{{ stats.active_items_total?.toLocaleString('pt-BR') }}</div>
-          <div class="kpi-sub">Mercado Livre</div>
-        </div>
-        <div class="kpi-card kpi-card--accent">
-          <div class="kpi-label">Receita da Krivus</div>
-          <div class="kpi-value">{{ formatCurrency(stats.receita_consultoria_mensal) }}</div>
-          <div class="kpi-sub">mensalidades ativas</div>
-        </div>
+      <SbKpiGrid :columns="4" class="q-mb-xl" v-if="!loadingStats">
+        <SbKpiCard label="GMV Total" variant="teal" prefix="R$" :value="formatNumber(stats.gmv_total)" :sub="`últimos ${days} dias`" />
+        <SbKpiCard label="Pedidos" variant="sky" :value="stats.orders_total?.toLocaleString('pt-BR') || '0'" :sub="`últimos ${days} dias`" />
+        <SbKpiCard label="Anúncios Ativos" variant="indigo" :value="stats.active_items_total?.toLocaleString('pt-BR') || '0'" sub="Mercado Livre" />
+        <SbKpiCard label="Receita da Krivus" variant="green" prefix="R$" :value="formatNumber(stats.receita_consultoria_mensal)" sub="mensalidades ativas" />
+      </SbKpiGrid>
+      <SbKpiGrid :columns="4" class="q-mb-xl" v-else>
+        <q-skeleton v-for="i in 4" :key="i" height="90px" />
+      </SbKpiGrid>
+
+      <!-- Funil de estágios -->
+      <h2 class="section-title q-mb-md">Funil de Clientes</h2>
+      <div class="stage-funnel q-mb-xl" v-if="!loadingStats">
+        <router-link to="/krivus/pipeline" v-for="s in stats.stage_distribution" :key="s.stage" class="funnel-item">
+          <div class="funnel-count">{{ s.total }}</div>
+          <div class="funnel-label">{{ s.label }}</div>
+        </router-link>
       </div>
-      <div class="kpi-grid q-mb-xl" v-else>
-        <q-skeleton v-for="i in 4" :key="i" height="90px" class="kpi-card" />
-      </div>
+
+      <!-- Resumo de cobrança -->
+      <h2 class="section-title q-mb-md">Cobrança</h2>
+      <SbKpiGrid :columns="4" class="q-mb-xl" v-if="!loadingBilling">
+        <SbKpiCard label="Pendente" variant="amber" prefix="R$" :value="formatNumber(billing.pendente_total)" />
+        <SbKpiCard label="Atrasado" variant="red" prefix="R$" :value="formatNumber(billing.atrasado_total)" />
+        <SbKpiCard label="Recebido no mês" variant="green" prefix="R$" :value="formatNumber(billing.recebido_mes_total)" />
+        <SbKpiCard label="Faturas em aberto" variant="slate" :value="String(billing.invoices_pendentes || 0)" />
+      </SbKpiGrid>
+      <SbKpiGrid :columns="4" class="q-mb-xl" v-else>
+        <q-skeleton v-for="i in 4" :key="i" height="90px" />
+      </SbKpiGrid>
 
       <!-- Clients list -->
       <h2 class="section-title q-mb-md">Clientes</h2>
 
       <div class="clients-grid" v-if="!loadingClients">
-        <div
+        <SbCard
           v-for="client in clients"
           :key="client.slug"
+          hover
           class="client-card"
-          :style="`border-left: 4px solid ${client.cor_hex}`"
+          :style="`border-left: 3px solid ${client.cor_hex}`"
           @click="$router.push(`/krivus/${client.slug}`)"
         >
           <div class="row items-center q-mb-sm">
-            <div class="client-name">{{ client.nome }}</div>
+            <div class="health-dot" :style="`background:${healthColorOf(client.slug)}`">
+              <q-tooltip>{{ healthLabelOf(client.slug) }}</q-tooltip>
+            </div>
+            <div class="client-name q-ml-sm">{{ client.nome }}</div>
             <q-space />
-            <q-chip
-              dense
-              :color="statusColor(client.status)"
-              text-color="white"
-              :label="client.status"
-              size="sm"
-            />
+            <SbBadge :variant="statusVariant(client.status)">{{ client.status }}</SbBadge>
           </div>
 
           <div class="client-meta row q-gutter-md q-mt-xs">
@@ -98,7 +102,15 @@
               Último marco: {{ client.last_milestone.titulo }} · {{ formatDate(client.last_milestone.data) }}
             </span>
           </div>
-        </div>
+
+          <div class="last-milestone q-mt-xs" v-if="client.lead_origem || client.valor_proposta_enviada">
+            <q-icon name="campaign" size="12px" color="grey-5" />
+            <span class="q-ml-xs text-grey-6" style="font-size:12px">
+              {{ client.lead_origem ? leadOrigemLabel(client.lead_origem) : '' }}
+              {{ client.valor_proposta_enviada ? '· proposta ' + formatCurrency(client.valor_proposta_enviada) : '' }}
+            </span>
+          </div>
+        </SbCard>
       </div>
 
       <div class="clients-grid" v-else>
@@ -117,7 +129,6 @@
         </q-card-section>
 
         <q-card-section class="q-gutter-sm">
-          <!-- Nome + auto-slug -->
           <q-input
             v-model="newClient.nome"
             label="Nome do cliente"
@@ -132,19 +143,31 @@
           />
 
           <div class="row q-gutter-sm">
-            <q-input
-              v-model="newClient.data_inicio"
-              label="Início do contrato"
-              type="date" outlined dense style="flex:1"
-            />
-            <q-input
-              v-model.number="newClient.mensalidade"
-              label="Mensalidade (R$)"
-              type="number" outlined dense style="flex:1"
-            />
+            <q-input v-model="newClient.data_inicio" label="Início do contrato" type="date" outlined dense style="flex:1" />
+            <q-input v-model.number="newClient.mensalidade" label="Mensalidade (R$)" type="number" outlined dense style="flex:1" />
           </div>
 
-          <!-- Cor -->
+          <div class="row q-gutter-sm">
+            <q-select
+              v-model="newClient.current_stage"
+              :options="stageOptions"
+              emit-value map-options
+              label="Estágio inicial" outlined dense style="flex:1"
+            />
+            <q-select
+              v-model="newClient.lead_origem"
+              :options="leadOrigemOptions"
+              emit-value map-options clearable
+              label="Origem do lead" outlined dense style="flex:1"
+            />
+          </div>
+          <q-input
+            v-if="newClient.current_stage === 'lead' || newClient.current_stage === 'proposta_enviada'"
+            v-model.number="newClient.valor_proposta_enviada"
+            label="Valor da proposta enviada (R$)"
+            type="number" outlined dense
+          />
+
           <div class="row items-center q-gutter-sm">
             <div class="text-caption text-grey-6">Cor de identificação:</div>
             <div class="row q-gutter-xs">
@@ -158,7 +181,6 @@
             </div>
           </div>
 
-          <!-- Contas ML -->
           <div>
             <div class="text-caption text-grey-6 q-mb-xs">Contas Mercado Livre</div>
             <div v-if="loadingAccounts" class="text-caption text-grey-4">Carregando contas...</div>
@@ -169,14 +191,13 @@
                 v-model="newClient.ml_accounts"
                 :val="acc.id"
                 :label="acc.account_nickname"
-                color="orange"
+                color="amber-8"
                 dense
               />
               <div v-if="!mlAccounts.length" class="text-caption text-grey-4">Nenhuma conta ML conectada.</div>
             </div>
           </div>
 
-          <!-- Contas Shopee -->
           <div>
             <div class="text-caption text-grey-6 q-mb-xs">Contas Shopee</div>
             <div class="accounts-checklist">
@@ -197,7 +218,7 @@
         <q-card-actions align="right" class="q-pa-md">
           <q-btn flat label="Cancelar" color="grey" v-close-popup />
           <q-btn
-            unelevated label="Criar Cliente" color="indigo-6"
+            unelevated label="Criar Cliente" color="primary"
             :loading="saving"
             :disable="!newClient.nome || !newClient.slug"
             @click="createClient"
@@ -213,6 +234,12 @@ import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
 import { api } from 'src/boot/axios'
+import SbPageHeader from 'src/components/common/SbPageHeader.vue'
+import SbKpiCard from 'src/components/common/SbKpiCard.vue'
+import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
+import SbBadge from 'src/components/common/SbBadge.vue'
+import SbCard from 'src/components/common/SbCard.vue'
+import { computeHealthMap, HEALTH_COLOR, HEALTH_LABEL, healthOf } from 'src/utils/krivusHealth'
 
 const $q = useQuasar()
 
@@ -223,20 +250,43 @@ const daysOptions = [
   { label: 'Últimos 90 dias', value: 90 },
 ]
 
-const coresSugeridas = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b']
+const coresSugeridas = ['#0d9488', '#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b']
 
 const stats = ref({})
+const billing = ref({})
+const alerts = ref({ total: 0, alerts: [] })
+const healthMap = ref({})
 const clients = ref([])
 const mlAccounts = ref([])
 const shopeeAccounts = ref([])
 const loadingStats = ref(true)
+const loadingBilling = ref(true)
+const loadingAlerts = ref(true)
 const loadingClients = ref(true)
 const loadingAccounts = ref(false)
 const newClientDialog = ref(false)
 const saving = ref(false)
 
+const stageOptions = [
+  { label: 'Lead', value: 'lead' },
+  { label: 'Proposta Enviada', value: 'proposta_enviada' },
+  { label: 'Contrato Assinado', value: 'contrato_assinado' },
+]
+
+const leadOrigemOptions = [
+  { label: 'Indicação', value: 'indicacao' },
+  { label: 'Instagram', value: 'instagram' },
+  { label: 'Google', value: 'google' },
+  { label: 'Evento', value: 'evento' },
+  { label: 'Outro', value: 'outro' },
+]
+
 function freshClient() {
-  return { nome: '', slug: '', data_inicio: '', mensalidade: 0, cor_hex: '#6366f1', ml_accounts: [], shopee_accounts: [] }
+  return {
+    nome: '', slug: '', data_inicio: '', mensalidade: 0, cor_hex: '#0d9488',
+    ml_accounts: [], shopee_accounts: [],
+    current_stage: 'lead', lead_origem: null, valor_proposta_enviada: null,
+  }
 }
 const newClient = ref(freshClient())
 
@@ -258,6 +308,30 @@ async function loadData() {
     loadingStats.value = false
   }
 }
+
+async function loadBilling() {
+  loadingBilling.value = true
+  try {
+    const res = await KrivusService.getBillingOverview()
+    billing.value = res.data
+  } finally {
+    loadingBilling.value = false
+  }
+}
+
+async function loadAlerts() {
+  loadingAlerts.value = true
+  try {
+    const res = await KrivusService.getAlerts()
+    alerts.value = res.data
+    healthMap.value = computeHealthMap(res.data.alerts)
+  } finally {
+    loadingAlerts.value = false
+  }
+}
+
+function healthColorOf(slug) { return HEALTH_COLOR[healthOf(healthMap.value, slug)] }
+function healthLabelOf(slug) { return HEALTH_LABEL[healthOf(healthMap.value, slug)] }
 
 async function loadClients() {
   loadingClients.value = true
@@ -308,6 +382,10 @@ function formatCurrency(v) {
   if (!v && v !== 0) return '—'
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
+function formatNumber(v) {
+  if (!v && v !== 0) return '0,00'
+  return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
+}
 
 function formatDate(d) {
   if (!d) return '—'
@@ -315,54 +393,68 @@ function formatDate(d) {
   return `${day}/${m}/${y}`
 }
 
-function statusColor(s) {
-  return { ativo: 'positive', pausado: 'warning', encerrado: 'negative' }[s] || 'grey'
+function statusVariant(s) {
+  return { ativo: 'green', pausado: 'amber', encerrado: 'red' }[s] || 'slate'
+}
+
+function leadOrigemLabel(value) {
+  return leadOrigemOptions.find((o) => o.value === value)?.label || value
 }
 
 onMounted(() => {
   loadData()
+  loadBilling()
+  loadAlerts()
   loadClients()
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import 'src/css/tokens';
+
 .krivus-page { background: #f8fafc; }
-.krivus-container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+.krivus-container { max-width: 1100px; margin: 0 auto; padding: $space-6 $space-6 $space-12; }
 
-.page-header { display: flex; align-items: flex-start; justify-content: space-between; }
-.page-title { font-size: 24px; font-weight: 700; color: #1e293b; margin: 0; }
-.page-subtitle { color: #64748b; font-size: 13px; margin: 4px 0 0; }
+.section-title { font-size: $text-h3-size; font-weight: $font-semibold; color: $text-primary; margin: $space-8 0 $space-3; }
 
-.section-title { font-size: 16px; font-weight: 600; color: #1e293b; margin: 0; }
-
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.kpi-card {
+.stage-funnel { display: flex; flex-wrap: wrap; gap: $space-3; }
+.funnel-item {
   background: #fff;
-  border-radius: 10px;
-  padding: 20px;
   border: 1px solid #e2e8f0;
+  border-radius: $radius-lg;
+  padding: $space-3 $space-4;
+  min-width: 110px;
+  text-align: center;
+  text-decoration: none;
+  transition: box-shadow $transition-base, transform $transition-base;
 }
-.kpi-card--accent { border-color: #6366f1; background: #eef2ff; }
-.kpi-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-.kpi-value { font-size: 26px; font-weight: 700; color: #1e293b; margin: 4px 0; }
-.kpi-sub { font-size: 11px; color: #94a3b8; }
+.funnel-item:hover { box-shadow: $shadow-sm; transform: translateY(-1px); }
+.funnel-count { font-size: 20px; font-weight: $font-bold; color: #0f766e; }
+.funnel-label { font-size: 11px; color: $text-muted; margin-top: 2px; }
 
-.clients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-.client-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-  transition: box-shadow 0.15s, transform 0.15s;
-}
-.client-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
-.client-name { font-size: 16px; font-weight: 600; color: #1e293b; }
-.meta-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
-.meta-value { font-size: 13px; font-weight: 600; color: #334155; }
+.clients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: $space-4; }
+.client-card { cursor: pointer; }
+.client-name { font-size: 15px; font-weight: $font-semibold; color: $text-primary; }
+.health-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.meta-label { font-size: 10px; color: $text-disabled; text-transform: uppercase; }
+.meta-value { font-size: $text-small-size; font-weight: $font-semibold; color: #334155; }
 
 .color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
 .color-swatch:hover { transform: scale(1.15); }
 
 .accounts-checklist { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; }
+
+.alert-banner {
+  display: flex;
+  align-items: center;
+  background: $tint-amber-bg;
+  border: 1px solid #fde68a;
+  border-radius: $radius-lg;
+  padding: $space-3 $space-4;
+  font-size: $text-small-size;
+  color: $tint-amber-text;
+  text-decoration: none;
+  transition: box-shadow $transition-base;
+}
+.alert-banner:hover { box-shadow: $shadow-sm; }
 </style>

@@ -36,13 +36,13 @@
       <div class="team-img-wrap">
         <img
           src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=80&auto=format&fit=crop"
-          alt="Time Krivos trabalhando com clientes"
+          alt="Time Krivus trabalhando com clientes"
           class="team-img"
         />
         <div class="img-overlay">
           <div class="overlay-text">
             <q-icon name="verified" size="18px" color="teal-4" />
-            Time dedicado da Krivos operando junto com você em cada etapa
+            Time dedicado da Krivus operando junto com você em cada etapa
           </div>
         </div>
       </div>

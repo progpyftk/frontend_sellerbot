@@ -60,6 +60,24 @@
             />
           </div>
 
+          <div class="field-group">
+            <label class="field-label">Anexar print (opcional)</label>
+            <q-file
+              v-model="form.image"
+              outlined dense
+              accept="image/*"
+              :max-file-size="5 * 1024 * 1024"
+              :counter="true"
+              clearable
+              label="Selecionar imagem"
+              class="feedback-file"
+            >
+              <template v-slot:prepend>
+                <q-icon name="image" />
+              </template>
+            </q-file>
+          </div>
+
           <div class="field-row">
             <q-checkbox v-model="form.is_urgent" label="Marcar como urgente" dense color="negative" />
             <q-icon name="info" size="14px" color="grey-5" class="urgent-info-icon">
@@ -125,6 +143,7 @@ const form = reactive({
   title: '',
   description: '',
   is_urgent: false,
+  image: null,
 })
 
 async function submit() {
@@ -132,13 +151,27 @@ async function submit() {
 
   submitting.value = true
   try {
-    const res = await CoreService.submitFeedback({
-      type: form.type,
-      title: form.title,
-      description: form.description,
-      page: currentPage.value,
-      is_urgent: form.is_urgent,
-    })
+    let payload
+    if (form.image) {
+      const fd = new FormData()
+      fd.append('type', form.type)
+      fd.append('title', form.title)
+      fd.append('description', form.description)
+      fd.append('page', currentPage.value)
+      fd.append('is_urgent', String(form.is_urgent))
+      fd.append('image', form.image)
+      payload = fd
+    } else {
+      payload = {
+        type: form.type,
+        title: form.title,
+        description: form.description,
+        page: currentPage.value,
+        is_urgent: form.is_urgent,
+      }
+    }
+
+    const res = await CoreService.submitFeedback(payload)
 
     const sprintId = res.data.sprint_id || 'FB-?'
     $q.notify({
@@ -154,6 +187,7 @@ async function submit() {
     form.description = ''
     form.is_urgent = false
     form.type = 'bug'
+    form.image = null
   } catch (err) {
     $q.notify({
       type: 'negative',
@@ -360,5 +394,11 @@ async function submit() {
   padding: 14px 20px;
   border-top: 1px solid #f1f5f9;
   background: #fafbfc;
+}
+
+.feedback-file {
+  :deep(.q-field__native) {
+    padding-top: 4px;
+  }
 }
 </style>

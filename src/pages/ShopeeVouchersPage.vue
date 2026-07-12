@@ -26,6 +26,14 @@
             @click="selectStatus(s.value)">{{ s.label }}</button>
         </div>
 
+        <!-- Chip-resumo do filtro ativo -->
+        <div v-if="statusFilter !== 'all'" class="sv-filter-chip">
+          <q-icon name="filter_alt" size="14px" class="q-mr-xs" />
+          Filtrando: <strong>{{ activeStatusLabel }}</strong>
+          <q-btn dense flat round icon="close" size="xs" class="q-ml-xs"
+            @click="selectStatus('all')" aria-label="Limpar filtro" />
+        </div>
+
         <q-btn unelevated color="orange-8" text-color="white" icon="add" label="Novo Cupom"
           size="sm" class="q-ml-md" @click="openCreate()" />
       </div>
@@ -73,7 +81,7 @@
         <!-- Top row -->
         <div class="sv-card-top">
           <!-- Status -->
-          <div :class="['sv-status', `sv-status--${v.status}`]">
+          <div v-if="v.status_label" :class="['sv-status', `sv-status--${v.status}`]">
             <span class="sv-status-dot"></span>
             {{ v.status_label }}
           </div>
@@ -523,6 +531,8 @@ const vouchers          = ref([])
 const loading           = ref(false)
 const selectedAccountId = ref(null)
 const statusFilter      = ref('all')
+const activeStatusLabel = computed(() =>
+  STATUS_OPTIONS.find(o => o.value === statusFilter.value)?.label || '')
 
 // ── Detalhe ────────────────────────────────────────────────────────────────
 const detailOpen    = ref(false)
@@ -830,6 +840,20 @@ function usageColor(pct) {
 .sv-status--upcoming .sv-status-dot  { background: #f57f17; }
 .sv-status--expired  { background: #f5f5f5; color: #9e9e9e; }
 .sv-status--expired  .sv-status-dot  { background: #bdbdbd; }
+
+.sv-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #e65100;
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 14px;
+  padding: 3px 6px 3px 10px;
+  margin-left: 8px;
+}
+.sv-filter-chip strong { font-weight: 700; }
 
 .sv-type-badge { font-size: 10px; color: #aaa; display: flex; align-items: center; background: #fafafa; padding: 2px 8px; border-radius: 8px; }
 
