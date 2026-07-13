@@ -88,7 +88,7 @@
           <router-link
             v-for="c in clients.slice(0, 8)"
             :key="c.slug"
-            :to="`/krivus/${c.slug}/jornada`"
+            :to="`/krivus/${c.slug}`"
             custom
             v-slot="{ isActive, navigate }"
           >
@@ -184,7 +184,7 @@ function filterClients(val, update) {
 
 function onSelectClient(slug) {
   if (!slug) return
-  router.push(`/krivus/${slug}/jornada`)
+  router.push(`/krivus/${slug}`)
   searchSlug.value = null
 }
 

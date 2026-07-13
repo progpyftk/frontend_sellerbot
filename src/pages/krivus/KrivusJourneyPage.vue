@@ -388,19 +388,17 @@
     <q-dialog v-model="docDialogOpen" full-width>
       <q-card style="max-width: 860px; width: 100%">
         <q-card-section class="row items-center q-pb-none">
-          <q-input v-model="activeDoc.titulo" borderless placeholder="Título do documento" style="font-size:18px; font-weight:600; flex:1" :readonly="!!activeDoc.readonly" />
+          <q-input v-model="activeDoc.titulo" borderless placeholder="Título do documento" style="font-size:18px; font-weight:600; flex:1" />
           <q-chip :label="activeDoc.tipo" dense color="teal-1" text-color="teal-9" />
           <q-btn flat round icon="close" color="grey" v-close-popup />
         </q-card-section>
         <q-card-section>
-          <TipTapEditor v-model="activeDoc.content" placeholder="Escreva o documento aqui..." :readonly="!!activeDoc.readonly" />
+          <TipTapEditor v-model="activeDoc.content" placeholder="Escreva o documento aqui..." />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-if="activeDoc.readonly" unelevated color="primary" label="Baixar PDF" icon="picture_as_pdf" :loading="downloadingPdf" @click="downloadPdf" />
-          <template v-else>
-            <q-btn flat label="Rascunho" color="grey" @click="saveDoc('rascunho')" />
-            <q-btn unelevated label="Finalizar" color="primary" @click="saveDoc('finalizado')" :loading="savingDoc" />
-          </template>
+          <q-btn v-if="activeDoc.id" flat color="primary" label="Baixar PDF" icon="picture_as_pdf" :loading="downloadingPdf" @click="downloadPdf" />
+          <q-btn flat label="Rascunho" color="grey" @click="saveDoc('rascunho')" />
+          <q-btn unelevated label="Finalizar" color="primary" @click="saveDoc('finalizado')" :loading="savingDoc" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -867,12 +865,12 @@ const savingDoc = ref(false)
 const downloadingPdf = ref(false)
 
 function openNewDoc() {
-  activeDoc.value = { titulo: '', tipo: 'outro', content: {}, status: 'rascunho', milestone: activeMilestone.value?.id, readonly: false }
+  activeDoc.value = { titulo: '', tipo: 'outro', content: {}, status: 'rascunho', milestone: activeMilestone.value?.id }
   docDialogOpen.value = true
 }
 
 function openDocument(doc) {
-  activeDoc.value = { ...doc, readonly: true }
+  activeDoc.value = { ...doc }
   docDialogOpen.value = true
 }
 
@@ -918,10 +916,15 @@ function openTemplateDialog() { templateDialogOpen.value = true }
 async function instantiateTemplate(template) {
   templateDialogOpen.value = false
   try {
+    // Se o drawer de um marco está aberto (ex: "Do template" clicado de dentro
+    // dele), o documento pertence a ESSE marco. Só cai para o marco do estágio
+    // atual quando "Gerar documento" foi clicado fora de qualquer marco aberto.
     const currentStage = stages[currentStageIndex.value]
-    const milestone = stageMilestone(currentStage) || activeMilestone.value
+    const milestone = milestoneDrawerOpen.value
+      ? activeMilestone.value
+      : stageMilestone(currentStage)
     const res = await KrivusService.instantiateTemplate(template.id, client.value.slug, milestone?.id || null)
-    activeDoc.value = { ...res.data, readonly: false }
+    activeDoc.value = { ...res.data }
     docDialogOpen.value = true
     const docsRes = await KrivusService.getDocuments(client.value.slug)
     documents.value = docsRes.data
