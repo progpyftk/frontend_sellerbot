@@ -12,6 +12,7 @@
             style="min-width: 200px"
             @update:model-value="loadInvoices"
           />
+          <q-btn color="primary" label="Nova cobrança" icon="add" no-caps unelevated @click="openNewInvoice" />
         </template>
       </SbPageHeader>
 
@@ -59,11 +60,45 @@
       </SbCard>
 
     </div>
+
+    <!-- Dialog: nova cobrança manual -->
+    <q-dialog v-model="newInvoiceDialog">
+      <q-card style="min-width: 440px">
+        <q-card-section><div class="text-h6">Nova cobrança</div></q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <q-select
+            v-model="newInvoice.client_slug"
+            :options="clientOptions"
+            emit-value map-options
+            label="Cliente" outlined dense autofocus
+          />
+          <q-select
+            v-model="newInvoice.tipo"
+            :options="[{label:'Setup/Implementação',value:'setup'},{label:'Mensalidade Gestão Contínua',value:'mensalidade'}]"
+            emit-value map-options label="Tipo" outlined dense
+          />
+          <div class="row q-gutter-sm">
+            <q-input v-model="newInvoice.competencia" label="Competência" type="date" outlined dense style="flex:1" hint="Mês faturado" />
+            <q-input v-model="newInvoice.data_vencimento" label="Vencimento" type="date" outlined dense style="flex:1" />
+          </div>
+          <q-input v-model.number="newInvoice.valor" label="Valor" prefix="R$" type="number" outlined dense />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey" v-close-popup />
+          <q-btn
+            unelevated color="primary" label="Criar"
+            :loading="savingInvoice"
+            :disable="!newInvoice.client_slug || !newInvoice.valor || !newInvoice.competencia || !newInvoice.data_vencimento"
+            @click="saveInvoice"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
@@ -76,9 +111,15 @@ const $q = useQuasar()
 
 const invoices = ref([])
 const overview = ref({})
+const clients = ref([])
 const loadingInvoices = ref(true)
 const loadingOverview = ref(true)
 const statusFilter = ref(null)
+const newInvoiceDialog = ref(false)
+const savingInvoice = ref(false)
+const newInvoice = ref({})
+
+const clientOptions = computed(() => clients.value.map((c) => ({ label: c.nome, value: c.slug })))
 
 const statusOptions = [
   { label: 'Pendente', value: 'pendente' },
@@ -149,6 +190,42 @@ async function markPaid(invoice) {
     $q.notify({ type: 'positive', message: 'Cobrança marcada como paga — recibo gerado!' })
   } catch (e) {
     $q.notify({ type: 'negative', message: 'Erro ao marcar como pago.' })
+  }
+}
+
+async function loadClients() {
+  try {
+    const res = await KrivusService.getClients()
+    clients.value = res.data
+  } catch { /* noop */ }
+}
+
+function openNewInvoice() {
+  const today = new Date()
+  const firstOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
+  newInvoice.value = {
+    client_slug: null,
+    tipo: 'setup',
+    competencia: firstOfMonth,
+    data_vencimento: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+    valor: null,
+  }
+  newInvoiceDialog.value = true
+  if (!clients.value.length) loadClients()
+}
+
+async function saveInvoice() {
+  savingInvoice.value = true
+  try {
+    const { client_slug: slug, ...payload } = newInvoice.value
+    await KrivusService.createInvoice(slug, payload)
+    await Promise.all([loadInvoices(), loadOverview()])
+    newInvoiceDialog.value = false
+    $q.notify({ type: 'positive', message: 'Cobrança criada!' })
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Erro ao criar cobrança.' })
+  } finally {
+    savingInvoice.value = false
   }
 }
 

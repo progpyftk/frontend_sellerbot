@@ -22,9 +22,11 @@
         </template>
       </SbPageHeader>
 
-      <div class="row items-center q-gutter-md q-mb-lg meta-row">
+      <div class="row items-center q-gutter-md q-mb-md meta-row">
         <span class="meta-item"><q-icon name="calendar_today" size="13px" /> desde {{ formatDate(client.data_inicio) }}</span>
         <span class="meta-item"><q-icon name="payments" size="13px" /> {{ formatCurrency(client.mensalidade) }}/mês</span>
+        <span class="meta-item" v-if="client.contato_telefone"><q-icon name="call" size="13px" /> {{ client.contato_telefone }}</span>
+        <span class="meta-item" v-if="client.contato_email"><q-icon name="mail" size="13px" /> {{ client.contato_email }}</span>
         <span class="meta-item" v-for="acc in client.ml_accounts_detail" :key="'ml' + acc.id">
           <q-icon name="store" size="13px" color="amber-8" /> {{ acc.account_nickname }}
         </span>
@@ -32,6 +34,17 @@
           <q-icon name="store" size="13px" color="deep-orange" /> {{ acc.shop_name }}
         </span>
       </div>
+
+      <!-- Sub-navegação sticky: a página tem 7 seções, isso evita o scroll cego -->
+      <nav class="section-nav q-mb-lg">
+        <a
+          v-for="s in sectionNav"
+          :key="s.id"
+          class="section-nav-link"
+          :class="{ 'section-nav-link--active': activeSection === s.id }"
+          @click="scrollToSection(s.id)"
+        >{{ s.label }}</a>
+      </nav>
 
       <!-- KPIs -->
       <SbKpiGrid :columns="4" class="q-mb-xl">
@@ -57,8 +70,9 @@
       </SbKpiGrid>
 
       <!-- Roadmap do Projeto -->
-      <div class="section-header q-mb-md">
+      <div class="section-header q-mb-md" id="sec-roadmap">
         <h2 class="section-title">Roadmap do Projeto</h2>
+        <q-btn unelevated color="primary" label="Gerar documento" icon="post_add" no-caps size="sm" @click="openWizard()" />
       </div>
 
       <div class="stage-track q-mb-xl">
@@ -94,12 +108,8 @@
         </div>
       </div>
 
-      <div class="row justify-end q-mb-xl">
-        <q-btn unelevated color="primary" label="Gerar documento" icon="add" no-caps size="sm" @click="openTemplateDialog" />
-      </div>
-
       <!-- Lifetime da Conta -->
-      <div class="section-header q-mb-md">
+      <div class="section-header q-mb-md" id="sec-lifetime">
         <h2 class="section-title">Lifetime da Conta (Mercado Livre)</h2>
       </div>
 
@@ -114,7 +124,7 @@
       </div>
 
       <!-- Evolução -->
-      <div class="section-header q-mb-md">
+      <div class="section-header q-mb-md" id="sec-evolucao">
         <h2 class="section-title">Evolução (desde o início da consultoria)</h2>
       </div>
       <SbCard :padded="false" class="q-mb-xl">
@@ -123,7 +133,7 @@
       </SbCard>
 
       <!-- Marcos -->
-      <div class="section-header q-mb-md">
+      <div class="section-header q-mb-md" id="sec-marcos">
         <h2 class="section-title">Marcos</h2>
         <q-btn unelevated color="primary" label="Novo Marco" icon="add" no-caps size="sm" @click="openNewMilestone" />
       </div>
@@ -151,9 +161,12 @@
       <SbEmptyState v-else class="q-mb-xl" title="Nenhum marco ainda" message="Registre reuniões, conquistas e etapas importantes da jornada deste cliente." />
 
       <!-- Cobranças -->
-      <div class="section-header q-mb-md">
+      <div class="section-header q-mb-md" id="sec-cobrancas">
         <h2 class="section-title">Cobranças</h2>
-        <q-btn flat dense no-caps size="sm" label="Ver todas" icon-right="chevron_right" color="primary" to="/krivus/cobrancas" />
+        <div class="row q-gutter-xs">
+          <q-btn flat dense no-caps size="sm" icon="add" label="Nova cobrança" color="primary" @click="openNewInvoice" />
+          <q-btn flat dense no-caps size="sm" label="Ver todas" icon-right="chevron_right" color="primary" to="/krivus/cobrancas" />
+        </div>
       </div>
 
       <SbTable class="q-mb-xl" v-if="invoices.length">
@@ -176,7 +189,7 @@
       <SbEmptyState v-else class="q-mb-xl" message="Nenhuma cobrança gerada ainda." />
 
       <!-- Tarefas -->
-      <div class="section-header q-mb-md">
+      <div class="section-header q-mb-md" id="sec-tarefas">
         <h2 class="section-title">Tarefas</h2>
         <q-btn flat dense no-caps size="sm" icon="add" label="Nova tarefa" color="primary" @click="openNewTask" />
       </div>
@@ -196,7 +209,7 @@
       <SbEmptyState v-else class="q-mb-xl" message="Nenhuma tarefa cadastrada." />
 
       <!-- Interações -->
-      <div class="section-header q-mb-md">
+      <div class="section-header q-mb-md" id="sec-interacoes">
         <h2 class="section-title">Interações</h2>
         <q-btn flat dense no-caps size="sm" icon="add" label="Registrar" color="primary" @click="openNewInteraction" />
       </div>
@@ -232,11 +245,11 @@
           <q-space />
           <q-btn flat round dense icon="close" color="grey" v-close-popup />
         </q-card-section>
-        <q-card-section class="q-gutter-sm" v-if="editForm">
+        <q-card-section class="q-gutter-sm edit-client-body" v-if="editForm">
           <q-input v-model="editForm.nome" label="Nome" outlined dense />
           <div class="row q-gutter-sm">
             <q-input v-model="editForm.data_inicio" label="Início do contrato" type="date" outlined dense style="flex:1" />
-            <q-input v-model.number="editForm.mensalidade" label="Mensalidade (R$)" type="number" outlined dense style="flex:1" />
+            <q-input v-model.number="editForm.mensalidade" label="Mensalidade" prefix="R$" type="number" outlined dense style="flex:1" />
           </div>
           <q-select
             v-model="editForm.status"
@@ -255,6 +268,46 @@
               />
             </div>
           </div>
+
+          <q-expansion-item dense label="Contato e dados fiscais" icon="badge" header-class="text-grey-7">
+            <div class="q-gutter-sm q-pt-sm">
+              <div class="row q-gutter-sm">
+                <q-input v-model="editForm.contato_nome" label="Nome do contato" outlined dense style="flex:1" />
+                <q-input v-model="editForm.contato_telefone" label="Telefone" outlined dense style="flex:1" />
+              </div>
+              <q-input v-model="editForm.contato_email" label="E-mail" type="email" outlined dense />
+              <q-input v-model="editForm.razao_social" label="Razão social" outlined dense />
+              <q-input v-model="editForm.cnpj" label="CNPJ" outlined dense placeholder="00.000.000/0000-00" />
+              <q-input v-model="editForm.endereco" label="Endereço" outlined dense />
+            </div>
+          </q-expansion-item>
+
+          <q-expansion-item dense label="Faixas de cobrança (gestão contínua)" icon="stacked_bar_chart" header-class="text-grey-7">
+            <div class="q-pt-sm">
+              <div class="text-caption text-grey-6 q-mb-sm">
+                Copiadas do contrato assinado. O cron mensal aplica a faixa correspondente ao faturamento do mês.
+              </div>
+              <div v-for="(tier, idx) in editForm.billing_tiers" :key="idx" class="tier-row row items-center q-gutter-xs q-mb-xs">
+                <q-input v-model.number="tier.faturamento_min" label="De" prefix="R$" type="number" outlined dense style="flex:1" />
+                <q-input
+                  :model-value="tier.faturamento_max"
+                  label="Até" prefix="R$" type="number" outlined dense style="flex:1"
+                  :placeholder="idx === editForm.billing_tiers.length - 1 ? 'aberto' : ''"
+                  @update:model-value="(v) => tier.faturamento_max = (v === '' || v === null) ? null : Number(v)"
+                />
+                <q-select
+                  v-model="tier.tipo"
+                  :options="[{label:'Fixo (R$)',value:'fixo'},{label:'% do faturamento',value:'percentual'}]"
+                  emit-value map-options outlined dense style="flex:1.1"
+                />
+                <q-input v-model.number="tier.valor" :label="tier.tipo === 'percentual' ? '%' : 'R$'" type="number" outlined dense style="flex:0.8" />
+                <q-btn flat round dense icon="close" size="xs" color="grey-5" @click="removeTier(idx)" />
+              </div>
+              <q-btn flat size="sm" icon="add" label="Adicionar faixa" color="primary" no-caps @click="addTier" />
+              <div v-if="tierError" class="text-negative text-caption q-mt-xs">{{ tierError }}</div>
+            </div>
+          </q-expansion-item>
+
           <div>
             <div class="text-caption text-grey-6 q-mb-xs">Contas Mercado Livre</div>
             <div class="accounts-checklist">
@@ -270,7 +323,7 @@
         </q-card-section>
         <q-card-actions align="right" class="q-pa-md">
           <q-btn flat label="Cancelar" color="grey" v-close-popup />
-          <q-btn unelevated label="Salvar" color="primary" :loading="savingClient" @click="saveClient" />
+          <q-btn unelevated label="Salvar" color="primary" :loading="savingClient" :disable="!!tierError" @click="saveClient" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -366,7 +419,7 @@
             <div class="drawer-label">Documentos</div>
             <q-space />
             <q-btn flat size="sm" icon="add" label="Novo doc" color="primary" no-caps @click="openNewDoc" />
-            <q-btn flat size="sm" icon="file_copy" label="Do template" color="grey-7" no-caps @click="openTemplateDialog" />
+            <q-btn flat size="sm" icon="file_copy" label="Do template" color="grey-7" no-caps @click="openWizard(null, activeMilestone?.id)" />
           </div>
           <div v-if="milestoneDrawerDocuments.length" class="doc-list">
             <div v-for="doc in milestoneDrawerDocuments" :key="doc.id" class="doc-item row items-center" @click="openDocument(doc)">
@@ -403,22 +456,43 @@
       </q-card>
     </q-dialog>
 
-    <!-- Dialog: escolher template -->
-    <q-dialog v-model="templateDialogOpen">
-      <q-card style="min-width: 380px">
-        <q-card-section><div class="text-h6">Gerar documento</div></q-card-section>
-        <q-card-section>
-          <q-list bordered separator>
-            <q-item v-for="t in templates" :key="t.id" clickable @click="instantiateTemplate(t)">
-              <q-item-section avatar><q-icon name="description" color="primary" /></q-item-section>
-              <q-item-section>
-                <q-item-label>{{ t.nome }}</q-item-label>
-                <q-item-label caption>{{ t.tipo }} · v{{ t.versao }}</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
+    <!-- Wizard de documentos: form derivado das {{variáveis}} do template -->
+    <KrivusDocWizard
+      ref="wizardRef"
+      v-model="wizardOpen"
+      :client="client"
+      :templates="templates"
+      :milestone-id="wizardMilestoneId"
+      :preset-tipo="wizardPresetTipo"
+      @created="onWizardDocCreated"
+      @client-updated="(c) => { client = c }"
+    />
+
+    <!-- Dialog: nova cobrança manual (ex: fatura de setup) -->
+    <q-dialog v-model="newInvoiceDialog">
+      <q-card style="min-width: 420px">
+        <q-card-section><div class="text-h6">Nova cobrança</div></q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <q-select
+            v-model="newInvoice.tipo"
+            :options="[{label:'Setup/Implementação',value:'setup'},{label:'Mensalidade Gestão Contínua',value:'mensalidade'}]"
+            emit-value map-options label="Tipo" outlined dense
+          />
+          <div class="row q-gutter-sm">
+            <q-input v-model="newInvoice.competencia" label="Competência" type="date" outlined dense style="flex:1" hint="Mês faturado" />
+            <q-input v-model="newInvoice.data_vencimento" label="Vencimento" type="date" outlined dense style="flex:1" />
+          </div>
+          <q-input v-model.number="newInvoice.valor" label="Valor" prefix="R$" type="number" outlined dense autofocus />
         </q-card-section>
-        <q-card-actions align="right"><q-btn flat label="Cancelar" v-close-popup /></q-card-actions>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey" v-close-popup />
+          <q-btn
+            unelevated color="primary" label="Criar"
+            :loading="savingInvoice"
+            :disable="!newInvoice.valor || !newInvoice.competencia || !newInvoice.data_vencimento"
+            @click="saveInvoice"
+          />
+        </q-card-actions>
       </q-card>
     </q-dialog>
 
@@ -471,12 +545,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
 import { api } from 'src/boot/axios'
 import TipTapEditor from 'src/components/krivus/TipTapEditor.vue'
+import KrivusDocWizard from 'src/components/krivus/KrivusDocWizard.vue'
+import { STAGE_TEMPLATE_MAP } from 'src/utils/krivusVariables'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
@@ -648,12 +724,46 @@ function openEditClient() {
     mensalidade: client.value.mensalidade,
     status: client.value.status,
     cor_hex: client.value.cor_hex,
+    cnpj: client.value.cnpj || '',
+    razao_social: client.value.razao_social || '',
+    endereco: client.value.endereco || '',
+    contato_nome: client.value.contato_nome || '',
+    contato_email: client.value.contato_email || '',
+    contato_telefone: client.value.contato_telefone || '',
+    billing_tiers: JSON.parse(JSON.stringify(client.value.billing_tiers || [])),
     ml_accounts: (client.value.ml_accounts_detail || []).map((a) => a.id),
     shopee_accounts: (client.value.shopee_accounts_detail || []).map((a) => a.id),
   }
   editClientDialog.value = true
   if (!mlAccounts.value.length && !shopeeAccounts.value.length) loadAccounts()
 }
+
+// Editor de faixas de cobrança — validação espelha validate_billing_tiers do backend
+function addTier() {
+  const tiers = editForm.value.billing_tiers
+  const lastMax = tiers.length ? tiers[tiers.length - 1].faturamento_max : null
+  tiers.push({ faturamento_min: lastMax ?? 0, faturamento_max: null, tipo: 'percentual', valor: null })
+}
+function removeTier(idx) { editForm.value.billing_tiers.splice(idx, 1) }
+
+const tierError = computed(() => {
+  const tiers = editForm.value?.billing_tiers || []
+  if (!tiers.length) return ''
+  const sorted = [...tiers].sort((a, b) => (a.faturamento_min || 0) - (b.faturamento_min || 0))
+  if ((sorted[0].faturamento_min || 0) !== 0) return 'A primeira faixa precisa começar em R$ 0.'
+  for (let i = 0; i < sorted.length; i++) {
+    if (sorted[i].valor === null || sorted[i].valor === '' || sorted[i].valor === undefined) {
+      return 'Toda faixa precisa de um valor.'
+    }
+    if (i < sorted.length - 1) {
+      if (sorted[i].faturamento_max === null) return 'Só a última faixa pode ficar sem limite superior.'
+      if (sorted[i + 1].faturamento_min !== sorted[i].faturamento_max) {
+        return 'Cada faixa precisa começar exatamente onde a anterior termina.'
+      }
+    }
+  }
+  return ''
+})
 
 async function saveClient() {
   savingClient.value = true
@@ -753,11 +863,30 @@ function confirmMoveStage(stage) {
 async function moveStage() {
   savingStage.value = true
   try {
-    const res = await KrivusService.updateStage(client.value.slug, targetStage.value.value)
+    const newStage = targetStage.value.value
+    const res = await KrivusService.updateStage(client.value.slug, newStage)
     client.value = res.data
     moveStageDialog.value = false
     await loadAll()
-    $q.notify({ type: 'positive', message: 'Estágio atualizado!' })
+
+    // Etapa com documento padrão? Oferece gerar na hora, sem obrigar.
+    const templateTipo = STAGE_TEMPLATE_MAP[newStage]
+    const template = templateTipo && templates.value.find((t) => t.tipo === templateTipo)
+    if (template) {
+      $q.notify({
+        type: 'positive',
+        message: 'Estágio atualizado!',
+        timeout: 6000,
+        actions: [{
+          label: `Gerar ${template.nome}`,
+          color: 'white',
+          noCaps: true,
+          handler: () => openWizard(templateTipo),
+        }],
+      })
+    } else {
+      $q.notify({ type: 'positive', message: 'Estágio atualizado!' })
+    }
   } catch (e) {
     $q.notify({ type: 'negative', message: 'Erro ao mover estágio.' })
   } finally {
@@ -909,31 +1038,59 @@ async function downloadPdf() {
   }
 }
 
-// Template / gerar documento
-const templateDialogOpen = ref(false)
-function openTemplateDialog() { templateDialogOpen.value = true }
+// DocWizard: gerar documento com form derivado das {{variáveis}} do template
+const wizardRef = ref(null)
+const wizardOpen = ref(false)
+const wizardMilestoneId = ref(null)
+const wizardPresetTipo = ref(null)
 
-async function instantiateTemplate(template) {
-  templateDialogOpen.value = false
-  try {
-    // Se o drawer de um marco está aberto (ex: "Do template" clicado de dentro
-    // dele), o documento pertence a ESSE marco. Só cai para o marco do estágio
-    // atual quando "Gerar documento" foi clicado fora de qualquer marco aberto.
-    const currentStage = stages[currentStageIndex.value]
-    const milestone = milestoneDrawerOpen.value
-      ? activeMilestone.value
-      : stageMilestone(currentStage)
-    const res = await KrivusService.instantiateTemplate(template.id, client.value.slug, milestone?.id || null)
-    activeDoc.value = { ...res.data }
-    docDialogOpen.value = true
-    const docsRes = await KrivusService.getDocuments(client.value.slug)
-    documents.value = docsRes.data
-  } catch (e) {
-    $q.notify({ type: 'negative', message: 'Erro ao gerar documento.' })
-  }
+async function openWizard(presetTipo = null, milestoneId = null) {
+  // Sem marco explícito, o wizard acha o marco "Estágio: <atual>" sozinho
+  wizardMilestoneId.value = milestoneId
+  wizardPresetTipo.value = presetTipo
+  wizardOpen.value = true
+  await nextTick()
+  wizardRef.value?.start()
+}
+
+async function onWizardDocCreated() {
+  const res = await KrivusService.getDocuments(client.value.slug)
+  documents.value = res.data
+  if (activeMilestone.value?.id) await loadMilestoneDrawerDocuments(activeMilestone.value.id)
 }
 
 // Cobranças
+const newInvoiceDialog = ref(false)
+const savingInvoice = ref(false)
+const newInvoice = ref({})
+
+function openNewInvoice() {
+  const today = new Date()
+  const firstOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
+  newInvoice.value = {
+    tipo: 'setup',
+    competencia: firstOfMonth,
+    data_vencimento: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+    valor: null,
+  }
+  newInvoiceDialog.value = true
+}
+
+async function saveInvoice() {
+  savingInvoice.value = true
+  try {
+    await KrivusService.createInvoice(client.value.slug, newInvoice.value)
+    const res = await KrivusService.getInvoices(client.value.slug)
+    invoices.value = res.data
+    newInvoiceDialog.value = false
+    $q.notify({ type: 'positive', message: 'Cobrança criada!' })
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Erro ao criar cobrança.' })
+  } finally {
+    savingInvoice.value = false
+  }
+}
+
 async function markPaid(invoice) {
   try {
     await KrivusService.markInvoicePaid(client.value.slug, invoice.id)
@@ -1019,6 +1176,32 @@ async function removeInteraction(interaction) {
   }
 }
 
+// Sub-navegação com scrollspy
+const sectionNav = [
+  { id: 'sec-roadmap', label: 'Roadmap' },
+  { id: 'sec-lifetime', label: 'Lifetime' },
+  { id: 'sec-evolucao', label: 'Evolução' },
+  { id: 'sec-marcos', label: 'Marcos' },
+  { id: 'sec-cobrancas', label: 'Cobranças' },
+  { id: 'sec-tarefas', label: 'Tarefas' },
+  { id: 'sec-interacoes', label: 'Interações' },
+]
+const activeSection = ref('sec-roadmap')
+
+function scrollToSection(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function onScrollSpy() {
+  // Seção ativa = última cujo topo já passou do terço superior da viewport
+  let current = sectionNav[0].id
+  for (const s of sectionNav) {
+    const el = document.getElementById(s.id)
+    if (el && el.getBoundingClientRect().top < window.innerHeight / 3) current = s.id
+  }
+  activeSection.value = current
+}
+
 watch(() => route.params.slug, () => {
   selectedSlug.value = route.params.slug
   loadAll()
@@ -1027,6 +1210,11 @@ watch(() => route.params.slug, () => {
 onMounted(() => {
   loadAll()
   loadClientOptions()
+  window.addEventListener('scroll', onScrollSpy, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScrollSpy)
 })
 </script>
 
@@ -1039,7 +1227,37 @@ onMounted(() => {
 .meta-row { margin-top: -$space-2; }
 .meta-item { font-size: $text-small-size; color: $text-muted; display: flex; align-items: center; gap: 4px; }
 .section-title { font-size: $text-h3-size; font-weight: $font-semibold; color: $text-primary; margin: 0; }
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-top: $space-8; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-top: $space-8; scroll-margin-top: 64px; }
+
+/* Sub-navegação sticky */
+.section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: $space-1;
+  background: rgba(248, 250, 252, 0.94);
+  backdrop-filter: blur(4px);
+  padding: $space-2 0;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+.section-nav-link {
+  font-size: $text-xs-size;
+  font-weight: $font-semibold;
+  color: $text-muted;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background $transition-fast, color $transition-fast;
+}
+.section-nav-link:hover { background: #e2e8f0; }
+.section-nav-link--active { background: #0f766e; color: #fff; }
+
+/* Editor de faixas de cobrança */
+.edit-client-body { max-height: 70vh; overflow-y: auto; }
+.tier-row { flex-wrap: nowrap; }
 
 .color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
 .color-swatch:hover { transform: scale(1.15); }

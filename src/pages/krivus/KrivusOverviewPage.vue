@@ -119,129 +119,20 @@
 
     </div>
 
-    <!-- New Client Dialog -->
-    <q-dialog v-model="newClientDialog" persistent>
-      <q-card style="min-width: 520px; max-width: 580px">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">Novo Cliente</div>
-          <q-space />
-          <q-btn flat round dense icon="close" color="grey" v-close-popup />
-        </q-card-section>
-
-        <q-card-section class="q-gutter-sm">
-          <q-input
-            v-model="newClient.nome"
-            label="Nome do cliente"
-            outlined dense autofocus
-            @update:model-value="autoSlug"
-          />
-          <q-input
-            v-model="newClient.slug"
-            label="Slug (identificador único)"
-            outlined dense
-            hint="Gerado automaticamente. Ex: mogivitta"
-          />
-
-          <div class="row q-gutter-sm">
-            <q-input v-model="newClient.data_inicio" label="Início do contrato" type="date" outlined dense style="flex:1" />
-            <q-input v-model.number="newClient.mensalidade" label="Mensalidade (R$)" type="number" outlined dense style="flex:1" />
-          </div>
-
-          <div class="row q-gutter-sm">
-            <q-select
-              v-model="newClient.current_stage"
-              :options="stageOptions"
-              emit-value map-options
-              label="Estágio inicial" outlined dense style="flex:1"
-            />
-            <q-select
-              v-model="newClient.lead_origem"
-              :options="leadOrigemOptions"
-              emit-value map-options clearable
-              label="Origem do lead" outlined dense style="flex:1"
-            />
-          </div>
-          <q-input
-            v-if="newClient.current_stage === 'lead' || newClient.current_stage === 'proposta_enviada'"
-            v-model.number="newClient.valor_proposta_enviada"
-            label="Valor da proposta enviada (R$)"
-            type="number" outlined dense
-          />
-
-          <div class="row items-center q-gutter-sm">
-            <div class="text-caption text-grey-6">Cor de identificação:</div>
-            <div class="row q-gutter-xs">
-              <div
-                v-for="cor in coresSugeridas"
-                :key="cor"
-                class="color-swatch"
-                :style="`background:${cor}; outline: ${newClient.cor_hex === cor ? '2px solid #1e293b' : 'none'}`"
-                @click="newClient.cor_hex = cor"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div class="text-caption text-grey-6 q-mb-xs">Contas Mercado Livre</div>
-            <div v-if="loadingAccounts" class="text-caption text-grey-4">Carregando contas...</div>
-            <div v-else class="accounts-checklist">
-              <q-checkbox
-                v-for="acc in mlAccounts"
-                :key="acc.id"
-                v-model="newClient.ml_accounts"
-                :val="acc.id"
-                :label="acc.account_nickname"
-                color="amber-8"
-                dense
-              />
-              <div v-if="!mlAccounts.length" class="text-caption text-grey-4">Nenhuma conta ML conectada.</div>
-            </div>
-          </div>
-
-          <div>
-            <div class="text-caption text-grey-6 q-mb-xs">Contas Shopee</div>
-            <div class="accounts-checklist">
-              <q-checkbox
-                v-for="acc in shopeeAccounts"
-                :key="acc.id"
-                v-model="newClient.shopee_accounts"
-                :val="acc.id"
-                :label="acc.shop_name"
-                color="deep-orange"
-                dense
-              />
-              <div v-if="!shopeeAccounts.length" class="text-caption text-grey-4">Nenhuma conta Shopee conectada.</div>
-            </div>
-          </div>
-        </q-card-section>
-
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Cancelar" color="grey" v-close-popup />
-          <q-btn
-            unelevated label="Criar Cliente" color="primary"
-            :loading="saving"
-            :disable="!newClient.nome || !newClient.slug"
-            @click="createClient"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+    <KrivusNewClientDialog v-model="newClientDialog" @created="loadClients" />
   </q-page>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
-import { api } from 'src/boot/axios'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
+import KrivusNewClientDialog from 'src/components/krivus/KrivusNewClientDialog.vue'
 import { computeHealthMap, HEALTH_COLOR, HEALTH_LABEL, healthOf } from 'src/utils/krivusHealth'
-
-const $q = useQuasar()
 
 const days = ref(30)
 const daysOptions = [
@@ -250,54 +141,16 @@ const daysOptions = [
   { label: 'Últimos 90 dias', value: 90 },
 ]
 
-const coresSugeridas = ['#0d9488', '#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b']
-
 const stats = ref({})
 const billing = ref({})
 const alerts = ref({ total: 0, alerts: [] })
 const healthMap = ref({})
 const clients = ref([])
-const mlAccounts = ref([])
-const shopeeAccounts = ref([])
 const loadingStats = ref(true)
 const loadingBilling = ref(true)
 const loadingAlerts = ref(true)
 const loadingClients = ref(true)
-const loadingAccounts = ref(false)
 const newClientDialog = ref(false)
-const saving = ref(false)
-
-const stageOptions = [
-  { label: 'Lead', value: 'lead' },
-  { label: 'Proposta Enviada', value: 'proposta_enviada' },
-  { label: 'Contrato Assinado', value: 'contrato_assinado' },
-]
-
-const leadOrigemOptions = [
-  { label: 'Indicação', value: 'indicacao' },
-  { label: 'Instagram', value: 'instagram' },
-  { label: 'Google', value: 'google' },
-  { label: 'Evento', value: 'evento' },
-  { label: 'Outro', value: 'outro' },
-]
-
-function freshClient() {
-  return {
-    nome: '', slug: '', data_inicio: '', mensalidade: 0, cor_hex: '#0d9488',
-    ml_accounts: [], shopee_accounts: [],
-    current_stage: 'lead', lead_origem: null, valor_proposta_enviada: null,
-  }
-}
-const newClient = ref(freshClient())
-
-function autoSlug(nome) {
-  if (!nome) { newClient.value.slug = ''; return }
-  newClient.value.slug = nome
-    .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
 
 async function loadData() {
   loadingStats.value = true
@@ -343,39 +196,8 @@ async function loadClients() {
   }
 }
 
-async function loadAccounts() {
-  loadingAccounts.value = true
-  try {
-    const [ml, sh] = await Promise.all([
-      api.get('/mercadolivre/accounts/'),
-      api.get('/shopee/accounts/'),
-    ])
-    mlAccounts.value = Array.isArray(ml.data) ? ml.data : (ml.data.results || [])
-    shopeeAccounts.value = Array.isArray(sh.data) ? sh.data : (sh.data.results || [])
-  } finally {
-    loadingAccounts.value = false
-  }
-}
-
 function openNewClient() {
-  newClient.value = freshClient()
   newClientDialog.value = true
-  if (!mlAccounts.value.length && !shopeeAccounts.value.length) loadAccounts()
-}
-
-async function createClient() {
-  saving.value = true
-  try {
-    const created = await KrivusService.createClient(newClient.value)
-    newClientDialog.value = false
-    await loadClients()
-    $q.notify({ type: 'positive', message: `Cliente "${created.data.nome}" criado!` })
-  } catch (e) {
-    const detail = e.response?.data
-    $q.notify({ type: 'negative', message: detail ? JSON.stringify(detail) : 'Erro ao criar cliente.' })
-  } finally {
-    saving.value = false
-  }
 }
 
 function formatCurrency(v) {
@@ -438,11 +260,6 @@ onMounted(() => {
 .health-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .meta-label { font-size: 10px; color: $text-disabled; text-transform: uppercase; }
 .meta-value { font-size: $text-small-size; font-weight: $font-semibold; color: #334155; }
-
-.color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
-.color-swatch:hover { transform: scale(1.15); }
-
-.accounts-checklist { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; }
 
 .alert-banner {
   display: flex;

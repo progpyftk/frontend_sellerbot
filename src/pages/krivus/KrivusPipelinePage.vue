@@ -7,7 +7,7 @@
         icon="view_kanban"
       >
         <template #actions>
-          <q-btn color="primary" label="Novo Cliente" icon="add" no-caps unelevated to="/krivus" />
+          <q-btn color="primary" label="Novo Cliente" icon="add" no-caps unelevated @click="newClientDialog = true" />
         </template>
       </SbPageHeader>
 
@@ -45,8 +45,33 @@
                 <span v-if="c.lead_origem" class="q-ml-xs">· {{ c.lead_origem }}</span>
               </div>
               <div class="card-meta" v-else>{{ formatCurrency(c.mensalidade) }}/mês</div>
-              <div class="card-milestone" v-if="c.last_milestone">
-                <q-icon name="flag" size="11px" /> {{ c.last_milestone.titulo }}
+
+              <!-- Documentos da etapa atual: PDF a um clique do Kanban -->
+              <div class="card-docs" v-if="c.current_stage_documents?.length">
+                <div
+                  v-for="doc in c.current_stage_documents"
+                  :key="doc.id"
+                  class="card-doc"
+                  :class="{ 'card-doc--rascunho': doc.status === 'rascunho' }"
+                  @click.stop="downloadDocPdf(c, doc)"
+                >
+                  <q-icon name="picture_as_pdf" size="12px" />
+                  <span class="card-doc-title">{{ doc.titulo }}</span>
+                  <q-tooltip>{{ doc.status === 'rascunho' ? 'Rascunho — ' : '' }}Baixar PDF</q-tooltip>
+                </div>
+              </div>
+
+              <div class="card-footer">
+                <div class="card-milestone" v-if="c.last_milestone">
+                  <q-icon name="flag" size="11px" /> {{ c.last_milestone.titulo }}
+                </div>
+                <q-space />
+                <q-btn
+                  flat round dense size="xs" icon="post_add" color="grey-5"
+                  @click.stop="openWizard(c)"
+                >
+                  <q-tooltip>Gerar documento</q-tooltip>
+                </q-btn>
               </div>
             </div>
 
@@ -59,15 +84,30 @@
         <q-skeleton v-for="i in 4" :key="i" height="400px" width="260px" class="q-mr-md" />
       </div>
     </div>
+
+    <KrivusNewClientDialog v-model="newClientDialog" @created="loadClients" />
+
+    <KrivusDocWizard
+      ref="wizardRef"
+      v-model="wizardOpen"
+      :client="wizardClient"
+      :templates="templates"
+      :preset-tipo="wizardPresetTipo"
+      @created="loadClients"
+      @client-updated="onClientUpdated"
+    />
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
+import KrivusNewClientDialog from 'src/components/krivus/KrivusNewClientDialog.vue'
+import KrivusDocWizard from 'src/components/krivus/KrivusDocWizard.vue'
 import { computeHealthMap, HEALTH_COLOR, HEALTH_LABEL, healthOf } from 'src/utils/krivusHealth'
+import { STAGE_TEMPLATE_MAP } from 'src/utils/krivusVariables'
 
 const $q = useQuasar()
 
@@ -84,8 +124,15 @@ const stages = [
 
 const clients = ref([])
 const healthMap = ref({})
+const templates = ref([])
 const loading = ref(true)
 const draggingClient = ref(null)
+const newClientDialog = ref(false)
+
+const wizardRef = ref(null)
+const wizardOpen = ref(false)
+const wizardClient = ref(null)
+const wizardPresetTipo = ref(null)
 
 const clientsByStage = computed(() => {
   const map = {}
@@ -104,6 +151,29 @@ function formatCurrency(v) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
 
+async function openWizard(client, presetTipo = null) {
+  wizardClient.value = client
+  wizardPresetTipo.value = presetTipo
+  wizardOpen.value = true
+  await nextTick()
+  wizardRef.value?.start()
+}
+
+function onClientUpdated(updated) {
+  const idx = clients.value.findIndex((c) => c.slug === updated.slug)
+  if (idx >= 0) clients.value[idx] = { ...clients.value[idx], ...updated }
+}
+
+async function downloadDocPdf(client, doc) {
+  try {
+    const res = await KrivusService.downloadDocumentPdf(client.slug, doc.id)
+    const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    window.open(blobUrl, '_blank')
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Erro ao gerar PDF.' })
+  }
+}
+
 function onDragStart(client) {
   draggingClient.value = client
 }
@@ -117,8 +187,28 @@ async function onDrop(newStage) {
   client.current_stage = newStage // otimista
 
   try {
-    await KrivusService.updateStage(client.slug, newStage)
-    $q.notify({ type: 'positive', message: `${client.nome} movido para "${stages.find((s) => s.value === newStage)?.label}"` })
+    const res = await KrivusService.updateStage(client.slug, newStage)
+    Object.assign(client, res.data)
+    const stageLabel = stages.find((s) => s.value === newStage)?.label
+
+    // Etapa com documento padrão? Oferece gerar na hora, sem obrigar.
+    const templateTipo = STAGE_TEMPLATE_MAP[newStage]
+    const template = templateTipo && templates.value.find((t) => t.tipo === templateTipo)
+    if (template) {
+      $q.notify({
+        type: 'positive',
+        message: `${client.nome} movido para "${stageLabel}"`,
+        timeout: 6000,
+        actions: [{
+          label: `Gerar ${template.nome}`,
+          color: 'white',
+          noCaps: true,
+          handler: () => openWizard(client, templateTipo),
+        }],
+      })
+    } else {
+      $q.notify({ type: 'positive', message: `${client.nome} movido para "${stageLabel}"` })
+    }
   } catch (e) {
     client.current_stage = previousStage // desfaz em caso de erro
     $q.notify({ type: 'negative', message: 'Erro ao mover cliente.' })
@@ -142,9 +232,17 @@ async function loadHealth() {
   } catch { /* noop */ }
 }
 
+async function loadTemplates() {
+  try {
+    const res = await KrivusService.getTemplates()
+    templates.value = res.data
+  } catch { /* noop */ }
+}
+
 onMounted(() => {
   loadClients()
   loadHealth()
+  loadTemplates()
 })
 </script>
 
@@ -201,5 +299,19 @@ onMounted(() => {
 .health-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 .card-meta { font-size: 11px; color: $text-muted; }
-.card-milestone { font-size: 10.5px; color: $text-disabled; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+
+.card-docs { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+.card-doc {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #0f766e;
+  background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: $radius-sm;
+  padding: 2px 6px; cursor: pointer;
+  transition: background $transition-fast;
+}
+.card-doc:hover { background: #ccfbf1; }
+.card-doc--rascunho { color: $text-muted; background: #f8fafc; border-color: #e2e8f0; }
+.card-doc-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.card-footer { display: flex; align-items: center; margin-top: 4px; }
+.card-milestone { font-size: 10.5px; color: $text-disabled; display: flex; align-items: center; gap: 3px; }
 </style>

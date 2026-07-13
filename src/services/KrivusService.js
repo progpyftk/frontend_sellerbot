@@ -83,11 +83,15 @@ export default {
   deleteTemplate(id) {
     return api.delete(`/api/krivus/templates/${id}/`)
   },
-  instantiateTemplate(templateId, clientSlug, milestoneId = null) {
+  instantiateTemplate(templateId, clientSlug, milestoneId = null, variables = null) {
     return api.post(`/api/krivus/templates/${templateId}/instantiate/`, {
       client_slug: clientSlug,
       milestone_id: milestoneId,
+      variables: variables || undefined,
     })
+  },
+  downloadDocumentPdf(clientSlug, documentId) {
+    return api.get(this.documentPdfUrl(clientSlug, documentId), { responseType: 'blob' })
   },
   documentPdfUrl(clientSlug, documentId) {
     return `/api/krivus/clients/${clientSlug}/documents/${documentId}/pdf/`
