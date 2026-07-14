@@ -83,7 +83,7 @@
                 <div class="today-kpi-val" :class="(combinedToday.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.gross_profit) }}</div>
               </div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Lucro após Ads</div>
+                <div class="today-kpi-label">Margem de Contribuição</div>
                 <div class="today-kpi-val" :class="(combinedToday.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.lucro_liquido) }}</div>
               </div>
               <div class="today-kpi">
@@ -141,7 +141,7 @@
                     <q-tooltip max-width="220px" anchor="bottom right" self="top right" class="chart-hint-tooltip">
                       <div class="cht-tip">
                         <div class="cht-tip-row">
-                          <q-icon name="show_chart" size="12px" /><strong>Agregado</strong> — todas as contas somadas em métricas separadas (GMV, Lucro…)
+                          <q-icon name="show_chart" size="12px" /><strong>Agregado</strong> — todas as contas somadas em métricas separadas (GMV, Margem…)
                         </div>
                         <div class="cht-tip-row">
                           <q-icon name="account_tree" size="12px" /><strong>Por Conta</strong> — uma linha por conta, escolha a métrica nas pílulas acima
@@ -223,7 +223,7 @@
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Faturamento bruto total — o valor que o comprador pagou. Não desconta tarifas nem custo do produto.</q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Valor bruto vendido no período (pedidos pagos), antes de taxas, frete e custos. Não é receita: inclui valores que o marketplace retém.</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
@@ -261,9 +261,9 @@
           </template>
         </SbKpiCard>
 
-        <!-- Lucro após Ads -->
+        <!-- Margem de Contribuição -->
         <SbKpiCard
-          label="Lucro após Ads"
+          label="Margem de Contribuição"
           :value="fmt(op?.lucro_liquido)"
           variant="teal"
           :sub="'Margem ' + pct(op?.lucro_liquido, op?.net_revenue)"
@@ -358,7 +358,7 @@
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Lucro Após Ads ÷ Receita Líquida. É a margem real depois de descontar todos os custos operacionais e de marketing.
+                Margem de Contribuição ÷ Receita Líquida. É a margem real depois de descontar todos os custos operacionais e de marketing.
               </q-tooltip>
             </q-icon>
           </template>
@@ -417,7 +417,7 @@
                   <th class="col-num">Margem de Contribuição</th>
                   <th class="col-num col-ads">Ads</th>
                   <th class="col-num col-ads">TACoS</th>
-                  <th class="col-num col-ll">Lucro Após Ads</th>
+                  <th class="col-num col-ll">Margem de Contribuição</th>
                   <th class="col-num">Pedidos</th>
                   <th class="col-num">Margem</th>
                 </tr>
@@ -518,7 +518,7 @@
             <div class="table-controls">
               <select v-model="rankingSortKey" class="sort-select">
                 <option value="gmv">Maior GMV</option>
-                <option value="lucro_liquido">Maior Lucro Real</option>
+                <option value="lucro_liquido">Maior Margem de Contribuição</option>
                 <option value="gross_profit">Maior Margem de Contribuição</option>
                 <option value="lucro_liquido_pct">Melhor Margem Líquida</option>
                 <option value="gross_margin_pct">Melhor Margem Bruta</option>
@@ -541,7 +541,7 @@
                   <th class="right">Margem Bruta</th>
                   <th class="right">Ads</th>
                   <th class="right">TACoS</th>
-                  <th class="right">Lucro Real</th>
+                  <th class="right">Margem de Contribuição</th>
                   <th class="right">Margem Líq.</th>
                   <th class="right">ROAS</th>
                   <th class="right">Pedidos</th>
@@ -699,7 +699,7 @@
                     <th class="right">CPV</th>
                     <th class="right">Margem de Contribuição</th>
                     <th class="right">Ads</th>
-                    <th class="right">Lucro Real</th>
+                    <th class="right">Margem de Contribuição</th>
                     <th class="right">Margem</th>
                   </tr>
                 </thead>
@@ -778,7 +778,7 @@
                 <div class="cnpj-kpi-val">{{ fmt(c.gmv) }}</div>
               </div>
               <div class="cnpj-kpi">
-                <div class="cnpj-kpi-label">Lucro Após Ads</div>
+                <div class="cnpj-kpi-label">Margem de Contribuição</div>
                 <div class="cnpj-kpi-val" :class="c.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(c.lucro_liquido) }}</div>
               </div>
               <div class="cnpj-kpi">
@@ -805,7 +805,7 @@
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(mp.gmv) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Rec. Líquida</span> <span class="mp-kpi-val">{{ fmt(mp.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Lucro</span> <span class="mp-kpi-val" :class="mp.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(mp.lucro_liquido) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Margem contrib.</span> <span class="mp-kpi-val" :class="mp.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(mp.lucro_liquido) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ mp.orders_count }}</span></div>
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
@@ -822,7 +822,7 @@
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.gmv) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Rec. Estimada</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Lucro</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.gross_profit) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Margem contrib.</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.gross_profit) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ filteredShopeeOp.orders_count }}</span></div>
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
@@ -843,7 +843,7 @@
                 <th>CNPJ</th>
                 <th class="right">GMV</th>
                 <th class="right">Rec. Líq.</th>
-                <th class="right">Lucro</th>
+                <th class="right">Margem contrib.</th>
                 <th class="right">Ads</th>
                 <th class="right">Pedidos</th>
                 <th class="right">Share GMV</th>
@@ -928,7 +928,7 @@
                   <th>#</th>
                   <th>Produto</th>
                   <th class="right">Qtd</th>
-                  <th class="right">Receita</th>
+                  <th class="right">GMV</th>
                   <th class="right">% Acum.</th>
                   <th class="right">Tarifas</th>
                   <th class="right">CPV</th>
@@ -1159,7 +1159,7 @@
                 <option value="gmv">GMV</option>
                 <option value="orders_count">Pedidos</option>
                 <option value="gross_profit">Margem de Contribuição</option>
-                <option value="lucro_liquido">Lucro Após Ads</option>
+                <option value="lucro_liquido">Margem de Contribuição</option>
                 <option value="ads_cost">Ads</option>
               </select>
               <span class="muted" style="font-size:11px">Baseado nos últimos {{ weekdaySourceData.length }} dias carregados</span>
@@ -1286,7 +1286,7 @@
                   <th>Dia</th>
                   <th class="right">GMV</th>
                   <th class="right">Pedidos</th>
-                  <th class="right">Lucro</th>
+                  <th class="right">Margem contrib.</th>
                   <th class="right">Ads</th>
                   <th class="right">TACoS</th>
                 </tr>
@@ -1329,7 +1329,7 @@
               { label: 'GMV',          curr: op?.gmv,          prev: lastYearOp?.gmv,          fmt: true },
               { label: 'Rec. Líquida', curr: op?.net_revenue,  prev: lastYearOp?.net_revenue,  fmt: true },
               { label: 'Margem de Contribuição',  curr: op?.gross_profit, prev: lastYearOp?.gross_profit, fmt: true },
-              { label: 'Lucro Após Ads', curr: op?.lucro_liquido, prev: lastYearOp?.lucro_liquido, fmt: true },
+              { label: 'Margem de Contribuição', curr: op?.lucro_liquido, prev: lastYearOp?.lucro_liquido, fmt: true },
               { label: 'Pedidos',      curr: op?.orders_count, prev: lastYearOp?.orders_count, fmt: false },
               { label: 'Ads',          curr: op?.ads_cost,     prev: lastYearOp?.ads_cost,     fmt: true },
             ]" :key="kpi.label">
@@ -1786,7 +1786,7 @@ const chartMetrics = [
   { key: 'gmv', label: 'GMV', color: '#6366f1' },           // indigo
   { key: 'net_revenue', label: 'Rec. Líquida', color: '#0284c7' },  // sky-600
   { key: 'gross_profit', label: 'Margem de Contribuição', color: '#16a34a' },  // green-600
-  { key: 'lucro_liquido', label: 'Lucro Após Ads', color: '#0f766e' },  // teal-700
+  { key: 'lucro_liquido', label: 'Margem de Contribuição', color: '#0f766e' },  // teal-700
   { key: 'ads_cost', label: 'Ads', color: '#f59e0b' },       // amber
 ]
 

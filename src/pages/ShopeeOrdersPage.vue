@@ -69,7 +69,7 @@
           <div class="today-card-icon"><q-icon name="payments" size="16px" /></div>
           <div class="today-card-body">
             <div class="today-card-val">{{ formatCurrency(todayStats.faturamento) }}</div>
-            <div class="today-card-label">Faturamento</div>
+            <div class="today-card-label">Receita líquida</div>
             <div class="today-card-sub">
               <span v-if="todayStats.faturamento_note === 'escrow'" class="text-teal-6">repasse real (escrow)</span>
               <span v-else class="text-grey-5">
@@ -79,7 +79,7 @@
           </div>
         </div>
 
-        <!-- Lucro pós CMV -->
+        <!-- Margem após CMV -->
         <div class="today-card"
           :class="todayStats.lucro_apos_cmp != null
             ? (todayStats.lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg')
@@ -89,7 +89,7 @@
             <template v-if="todayStats.lucro_apos_cmp != null">
               <div class="today-card-val">{{ formatCurrency(todayStats.lucro_apos_cmp) }}</div>
               <div class="today-card-label">
-                Lucro pós CMV
+                Margem após CMV
                 <span v-if="todayStats.margem_pct != null" class="today-card-badge">
                   {{ todayStats.margem_pct }}%
                 </span>
@@ -103,7 +103,7 @@
             </template>
             <template v-else>
               <div class="today-card-val today-card-val--muted">—</div>
-              <div class="today-card-label">Lucro pós CMV</div>
+              <div class="today-card-label">Margem após CMV</div>
               <div class="today-card-sub text-orange-5">CMV não cadastrado</div>
             </template>
           </div>
@@ -115,7 +115,7 @@
           <div class="today-card-icon"><q-icon name="equalizer" size="16px" /></div>
           <div class="today-card-body">
             <div class="today-card-val">{{ formatCurrency(todayStats.avg_lucro_apos_cmp) }}</div>
-            <div class="today-card-label">Lucro médio / pedido</div>
+            <div class="today-card-label">Margem média / pedido</div>
             <div class="today-card-sub">
               base: {{ todayStats.cmp_count }} pedido{{ todayStats.cmp_count !== 1 ? 's' : '' }} c/ custo
             </div>
@@ -474,7 +474,7 @@
               </div>
             </q-td>
 
-            <!-- ⑧ Lucro pós CMV -->
+            <!-- ⑧ Margem após CMV -->
             <q-td key="lucro" :props="props" align="right">
               <div v-if="props.row.lucro_apos_cmp != null" class="cell-lucro">
                 <div :class="['lucro-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
@@ -802,7 +802,7 @@
               </div>
               <div class="finance-divider" />
               <div class="finance-row finance-row--total">
-                <span class="finance-label-bold">Lucro estimado</span>
+                <span class="finance-label-bold">Margem estimada</span>
                 <span :class="['finance-total', selectedOrder.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
                   {{ formatCurrency(selectedOrder.lucro_apos_cmp) }}
                 </span>

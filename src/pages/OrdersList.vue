@@ -34,14 +34,14 @@
       </template>
 
       <template v-else>
-        <!-- Lucro pós Custo Médio do Produto -->
+        <!-- Margem após CMV do Produto -->
         <div class="today-card" :class="todayStats.lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg'">
           <div class="today-card-icon">
             <q-icon name="trending_up" size="16px" />
           </div>
           <div class="today-card-body">
             <div class="today-card-val">{{ formatCurrency(todayStats.lucro_apos_cmp) }}</div>
-            <div class="today-card-label">Lucro pós Custo Médio</div>
+            <div class="today-card-label">Margem após CMV</div>
             <div class="today-card-sub" v-if="todayStats.cmp_count < todayStats.count">
               {{ todayStats.cmp_count }}/{{ todayStats.count }} vendas com custo
             </div>
@@ -67,7 +67,7 @@
           </div>
           <div class="today-card-body">
             <div class="today-card-val">{{ formatCurrency(todayStats.avg_lucro_apos_cmp) }}</div>
-            <div class="today-card-label">Lucro médio / venda</div>
+            <div class="today-card-label">Margem média / venda</div>
             <div class="today-card-sub" v-if="todayStats.cmp_count">
               base: {{ todayStats.cmp_count }} venda{{ todayStats.cmp_count !== 1 ? 's' : '' }} c/ custo
             </div>
@@ -455,7 +455,7 @@
             </div>
 
             <div v-if="filters.marginMin != null || filters.marginMax != null" class="fb-index-row">
-              <div class="fb-index-cat"><q-icon name="trending_up" size="12px" />Lucro</div>
+              <div class="fb-index-cat"><q-icon name="trending_up" size="12px" />Margem</div>
               <div class="fb-index-pills">
                 <span class="fb-index-pill fb-index-pill--teal"
                   @click="filters.marginMin = null; filters.marginMax = null">
@@ -1290,7 +1290,7 @@
             <div class="fadv-section">
               <div class="fadv-section-title">
                 <q-icon name="trending_up" size="15px" color="teal-7" />
-                Lucro (R$)
+                Margem após CMV (R$)
                 <q-btn-toggle v-model="marginFilterMode"
                   :options="[{label:'Após Custo Médio', value:'lucro_apos_cmp'},{label:'Antes Custo Médio', value:'net_received'}]"
                   dense unelevated toggle-color="teal-7" color="grey-2" text-color="grey-7"
