@@ -489,6 +489,31 @@
 
     </div>
 
+    <!-- ── KPIs DO PERÍODO FILTRADO (feedback #8) ─────────── -->
+    <div v-if="periodKpis" class="period-kpis">
+      <div class="pk-item">
+        <div class="pk-label" title="Valor bruto vendido no período filtrado (pedidos pagos), antes de taxas, frete e custos.">GMV</div>
+        <div class="pk-val">{{ formatCurrency(periodKpis.gmv) }}</div>
+      </div>
+      <div class="pk-item">
+        <div class="pk-label">Pedidos</div>
+        <div class="pk-val">{{ periodKpis.orders_count }}</div>
+      </div>
+      <div class="pk-item">
+        <div class="pk-label">Unidades</div>
+        <div class="pk-val">{{ periodKpis.units_sold }}</div>
+      </div>
+      <div class="pk-item">
+        <div class="pk-label" title="GMV dividido pelo número de pedidos.">Ticket médio</div>
+        <div class="pk-val">{{ formatCurrency(periodKpis.avg_ticket) }}</div>
+      </div>
+      <div class="pk-item" :class="periodKpis.canceled_pct > 5 ? 'pk-item--warn' : ''">
+        <div class="pk-label">Cancelamentos</div>
+        <div class="pk-val">{{ periodKpis.canceled_count }} <span class="pk-sub">({{ periodKpis.canceled_pct }}%)</span></div>
+      </div>
+      <div class="pk-note">KPIs seguem os filtros ativos da tabela</div>
+    </div>
+
     <!-- ── TABELA ─────────────────────────────────────────── -->
     <div class="table-wrapper">
       <q-table :rows="filteredOrders" :columns="columns" row-key="order_id" flat :loading="loading"
@@ -565,6 +590,11 @@
                   </span>
                 </div>
               </div>
+            </q-td>
+
+            <!-- ①b Unidades (ordenável server-side, feedback #14) ─── -->
+            <q-td key="unidades" :props="props" align="center">
+              <span class="units-badge">{{ rowUnits(props.row) }}</span>
             </q-td>
 
             <!-- ② Data ──────────────────────────────── -->
@@ -1432,18 +1462,23 @@ const fetchTodayStats = async () => {
   finally { todayLoading.value = false }
 }
 
+// Labels conforme docs/glossario_metricas.md (feedback #9)
 const columns = [
   { name: 'produto',      label: 'PRODUTO / PEDIDO',   field: 'order_id',      align: 'left',  sortable: true, style: 'min-width:250px' },
+  { name: 'unidades',     label: 'UN.',                field: 'units',         align: 'center', sortable: true, style: 'min-width:52px' },
   { name: 'data_venda',   label: 'DATA',               field: 'date_created',  align: 'left',  sortable: true, style: 'min-width:90px' },
   { name: 'comprador',    label: 'COMPRADOR',          field: 'buyer_nickname',align: 'left',  style: 'min-width:110px' },
   { name: 'status_venda', label: 'STATUS',             field: 'status',        align: 'left',  style: 'min-width:90px' },
   { name: 'logistica',    label: 'LOGÍSTICA',          field: 'shipment',      align: 'left',  style: 'min-width:160px' },
-  { name: 'venda',        label: 'BRUTO',              field: 'total_amount',  align: 'right', sortable: true, style: 'min-width:85px' },
-  { name: 'tarifa',       label: 'TARIFA ML',          field: 'total_fee',     align: 'right', style: 'min-width:90px' },
+  { name: 'venda',        label: 'GMV',                field: 'total_amount',  align: 'right', sortable: true, style: 'min-width:85px' },
+  { name: 'tarifa',       label: 'TAXAS ML',           field: 'total_fee',     align: 'right', style: 'min-width:90px' },
   { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px' },
-  { name: 'liquido',      label: 'LUCRO ANTES DO CUSTO', field: 'net',           align: 'right', style: 'min-width:115px' },
-  { name: 'lucro',        label: 'LUCRO APÓS CUSTO',     field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px' },
+  { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right', style: 'min-width:115px' },
+  { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px' },
 ]
+
+// Soma de unidades do pedido (pack soma todos os sub-orders)
+const rowUnits = (row) => (row.items || []).reduce((s, i) => s + (i.quantity || 0), 0)
 
 // ============================================================================
 // 2. FILTROS
@@ -1683,6 +1718,7 @@ const onRequest = async (props) => {
       fulfilled:               filters.fulfilled  != null      ? filters.fulfilled                 : undefined,
     }
     Object.keys(params).forEach(k => params[k] == null && delete params[k])
+    fetchPeriodKpis(params)  // KPIs do período com os MESMOS filtros (feedback #8)
     const response = await MercadoLivreService.listOrders(params)
     orders.value                = groupPackOrders(response.data.results || [])
     pagination.value.rowsNumber = response.data.count   || 0
@@ -1694,6 +1730,17 @@ const onRequest = async (props) => {
     console.error(error)
     $q.notify({ type: 'negative', message: 'Falha ao buscar pedidos' })
   } finally { loading.value = false }
+}
+
+// KPIs do período filtrado (feedback #8) — mesmo filterset da listagem
+const periodKpis = ref(null)
+const fetchPeriodKpis = async (baseParams) => {
+  try {
+    const p = { ...baseParams }
+    delete p.page; delete p.page_size; delete p.ordering
+    const { data } = await MercadoLivreService.getOrderKpis(p)
+    periodKpis.value = data
+  } catch (e) { console.error('KPIs do período:', e) }
 }
 
 // ============================================================================
@@ -2880,5 +2927,23 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   .detail-panel {
     width: 100vw !important;
   }
+}
+
+/* ── KPIs do período filtrado (feedback #8) ── */
+.period-kpis {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  padding: 10px 20px; margin: 0 20px 4px;
+  background: #fff; border: 1px solid #e8ecf1; border-radius: 10px;
+}
+.pk-item { display: flex; flex-direction: column; }
+.pk-label { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #8a94a6; cursor: help; }
+.pk-val { font-size: 16px; font-weight: 700; color: #1a1f36; }
+.pk-sub { font-size: 11px; font-weight: 600; color: #8a94a6; }
+.pk-item--warn .pk-val { color: #c2410c; }
+.pk-note { margin-left: auto; font-size: 10px; color: #b0b8c4; font-style: italic; }
+.units-badge {
+  display: inline-block; min-width: 26px; text-align: center;
+  background: #eef2f7; color: #3d4a5c; border-radius: 6px;
+  padding: 2px 6px; font-size: 11px; font-weight: 700;
 }
 </style>

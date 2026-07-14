@@ -133,7 +133,7 @@ export default defineComponent({
           popular: false,
           cta: 'Agendar diagnóstico',
           link: null,
-          href: 'mailto:contato@krivos.com.br',
+          href: 'mailto:contato@krivus.com.br',
           features: [
             { text: 'SellerBot Pro incluso', off: false },
             { text: 'Diagnóstico completo da operação', off: false },

@@ -29,7 +29,7 @@
             <li>✓ Estruturação B2B → B2C completa</li>
             <li>✓ Gestão contínua ML + Shopee</li>
           </ul>
-          <a href="mailto:contato@krivos.com.br" class="ccard-btn ccard-btn--primary">
+          <a href="mailto:contato@krivus.com.br" class="ccard-btn ccard-btn--primary">
             Agendar conversa →
           </a>
         </div>

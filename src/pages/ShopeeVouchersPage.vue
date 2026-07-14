@@ -73,76 +73,70 @@
         class="q-mt-lg" size="sm" @click="openCreate()" />
     </div>
 
-    <!-- ══ GRID ══════════════════════════════════════════════════════════════ -->
-    <div v-else class="sv-grid">
-      <div v-for="v in vouchers" :key="`${v.voucher_id}-${v.account_id}`"
-        class="sv-card" @click="openDetail(v)">
-
-        <!-- Top row -->
-        <div class="sv-card-top">
-          <!-- Status -->
-          <div v-if="v.status_label" :class="['sv-status', `sv-status--${v.status}`]">
-            <span class="sv-status-dot"></span>
-            {{ v.status_label }}
-          </div>
-
-          <!-- Tipo de cupom -->
-          <div class="sv-type-badge">
-            <q-icon :name="v.voucher_type === 2 ? 'inventory_2' : 'storefront'" size="11px" class="q-mr-xs" />
-            {{ v.voucher_type_label }}
-          </div>
-        </div>
-
-        <!-- Valor destaque -->
-        <div class="sv-value">{{ v.reward_summary }}</div>
-
-        <!-- Nome e código -->
-        <div class="sv-name">{{ v.voucher_name }}</div>
-        <div class="sv-code-row" @click.stop>
-          <span class="sv-code">{{ v.voucher_code }}</span>
-          <q-btn flat round icon="content_copy" size="xs" color="grey-5"
-            @click.stop="copyCode(v.voucher_code)"
-            title="Copiar código" />
-        </div>
-
-        <!-- Mínimo de compra -->
-        <div v-if="v.min_basket_price" class="sv-min">
-          Compra mín: <strong>{{ fmtBRL(v.min_basket_price) }}</strong>
-        </div>
-
-        <!-- Barra de uso -->
-        <div class="sv-usage-block">
-          <div class="sv-usage-label">
-            <span>{{ v.current_usage || 0 }} usados</span>
-            <span class="text-grey-5">de {{ v.usage_quantity }}</span>
-          </div>
-          <q-linear-progress
-            :value="(v.current_usage || 0) / (v.usage_quantity || 1)"
-            :color="usageColor(v.usage_pct)"
-            track-color="grey-2"
-            rounded size="5px" />
-        </div>
-
-        <!-- Período -->
-        <div class="sv-period">
-          <q-icon name="schedule" size="11px" class="q-mr-xs text-grey-4" />
-          {{ fmtDate(v.start_time) }} → {{ fmtDate(v.end_time) }}
-        </div>
-
-        <!-- Conta (só quando mostrando todas) -->
-        <div v-if="!selectedAccountId" class="sv-account">
-          <q-icon name="storefront" size="11px" class="q-mr-xs text-grey-4" />
-          {{ v.shop_name }}
-        </div>
-
-        <!-- Ações rápidas -->
-        <div class="sv-card-actions" @click.stop>
-          <q-btn v-if="v.status === 'ongoing'" flat round icon="stop_circle"
-            color="red-6" size="xs" title="Encerrar" @click.stop="askEnd(v)" />
-          <q-btn v-if="v.status === 'upcoming'" flat round icon="delete_outline"
-            color="grey-5" size="xs" title="Deletar" @click.stop="askDelete(v)" />
-        </div>
-      </div>
+    <!-- ══ TABELA (feedback #10: lista em vez de cards) ═══════════════════════ -->
+    <div v-else class="sv-table-wrap">
+      <table class="sv-table">
+        <thead>
+          <tr>
+            <th>Cupom</th>
+            <th>Código</th>
+            <th>Tipo</th>
+            <th class="right">Desconto</th>
+            <th class="right">Mín. pedido</th>
+            <th style="min-width:130px">Uso</th>
+            <th>Início</th>
+            <th>Fim</th>
+            <th v-if="!selectedAccountId">Conta</th>
+            <th>Status</th>
+            <th class="right">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="v in vouchers" :key="`${v.voucher_id}-${v.account_id}`"
+            class="sv-tr" @click="openDetail(v)">
+            <td class="sv-td-name">{{ v.voucher_name }}</td>
+            <td @click.stop>
+              <span class="sv-code">{{ v.voucher_code }}</span>
+              <q-btn flat round icon="content_copy" size="xs" color="grey-5"
+                @click.stop="copyCode(v.voucher_code)" title="Copiar código" />
+            </td>
+            <td>
+              <span class="sv-type-badge">
+                <q-icon :name="v.voucher_type === 2 ? 'inventory_2' : 'storefront'" size="11px" class="q-mr-xs" />
+                {{ v.voucher_type_label }}
+              </span>
+            </td>
+            <td class="right sv-td-value">{{ v.reward_summary }}</td>
+            <td class="right">{{ v.min_basket_price ? fmtBRL(v.min_basket_price) : '—' }}</td>
+            <td>
+              <div class="sv-usage-label">
+                <span>{{ v.current_usage || 0 }}</span>
+                <span class="text-grey-5">/ {{ v.usage_quantity }}</span>
+              </div>
+              <q-linear-progress
+                :value="(v.current_usage || 0) / (v.usage_quantity || 1)"
+                :color="usageColor(v.usage_pct)"
+                track-color="grey-2" rounded size="5px" />
+            </td>
+            <td class="sv-td-date">{{ fmtDate(v.start_time) }}</td>
+            <td class="sv-td-date">{{ fmtDate(v.end_time) }}</td>
+            <td v-if="!selectedAccountId" class="sv-td-shop">{{ v.shop_name }}</td>
+            <td>
+              <div v-if="v.status_label" :class="['sv-status', `sv-status--${v.status}`]">
+                <span class="sv-status-dot"></span>
+                {{ v.status_label }}
+              </div>
+            </td>
+            <td class="right" @click.stop>
+              <q-btn v-if="v.status === 'ongoing'" flat round icon="stop_circle"
+                color="red-6" size="xs" title="Encerrar" @click.stop="askEnd(v)" />
+              <q-btn v-if="v.status === 'upcoming'" flat round icon="delete_outline"
+                color="grey-5" size="xs" title="Deletar" @click.stop="askDelete(v)" />
+              <q-btn flat round icon="chevron_right" color="grey-4" size="xs" @click.stop="openDetail(v)" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- ══ CRIAR CUPOM ══════════════════════════════════════════════════════ -->
@@ -666,8 +660,15 @@ function openDetail(v) {
 
 // ── Criação ────────────────────────────────────────────────────────────────
 function openCreate() {
+  if (!accounts.value.length) {
+    $q.notify({
+      type: 'warning',
+      message: 'Nenhuma conta Shopee conectada ou compartilhada com você. Conecte uma conta em Contas Shopee para criar cupons.',
+    })
+    return
+  }
   form.value = defaultForm()
-  if (accounts.value.length) form.value.account_id = accounts.value[0].id
+  form.value.account_id = accounts.value[0].id
   createOpen.value = true
 }
 
@@ -921,4 +922,21 @@ function usageColor(pct) {
 .sv-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; display: flex; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,.2); z-index: 9999; }
 .sv-toast-anim-enter-active, .sv-toast-anim-leave-active { transition: opacity .2s, transform .2s; }
 .sv-toast-anim-enter-from, .sv-toast-anim-leave-to { opacity: 0; transform: translateX(-50%) translateY(10px); }
+
+/* ── Tabela de cupons (feedback #10) ── */
+.sv-table-wrap { background: #fff; border: 1px solid #f0f0f0; border-radius: 12px; overflow-x: auto; }
+.sv-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.sv-table th {
+  text-align: left; font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; color: #8a94a6; padding: 10px 12px;
+  border-bottom: 1px solid #eef1f5; background: #fafbfc; white-space: nowrap;
+}
+.sv-table th.right, .sv-table td.right { text-align: right; }
+.sv-table td { padding: 9px 12px; border-bottom: 1px solid #f5f7fa; vertical-align: middle; }
+.sv-tr { cursor: pointer; transition: background .12s; }
+.sv-tr:hover { background: #fff8f0; }
+.sv-td-name { font-weight: 700; color: #1a1f36; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-td-value { font-weight: 700; color: #e65100; white-space: nowrap; }
+.sv-td-date { white-space: nowrap; color: #5c6570; }
+.sv-td-shop { color: #5c6570; white-space: nowrap; }
 </style>

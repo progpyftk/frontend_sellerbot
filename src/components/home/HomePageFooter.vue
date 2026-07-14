@@ -20,7 +20,7 @@
           <a href="https://linkedin.com" target="_blank" class="slink" aria-label="LinkedIn">
             <q-icon name="work" size="18px" />
           </a>
-          <a href="mailto:contato@krivos.com.br" class="slink" aria-label="E-mail">
+          <a href="mailto:contato@krivus.com.br" class="slink" aria-label="E-mail">
             <q-icon name="mail" size="18px" />
           </a>
         </div>
@@ -32,7 +32,7 @@
         <a href="#about">Quem somos</a>
         <a href="#metodologia">Metodologia</a>
         <a href="#plans">Modelos de parceria</a>
-        <a href="mailto:contato@krivos.com.br">Fale conosco</a>
+        <a href="mailto:contato@krivus.com.br">Fale conosco</a>
       </div>
 
       <div class="footer-links-col">
@@ -47,7 +47,7 @@
         <div class="fcol-title">Acesso</div>
         <router-link to="/login">Entrar no SellerBot</router-link>
         <router-link to="/signup">Criar conta</router-link>
-        <a href="mailto:contato@krivos.com.br">Suporte</a>
+        <a href="mailto:contato@krivus.com.br">Suporte</a>
       </div>
 
     </div>

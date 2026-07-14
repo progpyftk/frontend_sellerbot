@@ -427,6 +427,13 @@ function openDetail(d) {
 }
 
 function openCreate() {
+  if (!accounts.value.length) {
+    $q.notify({
+      type: 'warning',
+      message: 'Nenhuma conta Shopee conectada ou compartilhada com você. Conecte uma conta em Contas Shopee para criar promoções.',
+    })
+    return
+  }
   form.value = { account_id: accounts.value[0]?.id || null, discount_name: '', start_date: '', end_date: '' }
   createOpen.value = true
 }

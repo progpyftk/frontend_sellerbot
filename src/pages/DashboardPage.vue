@@ -631,7 +631,7 @@
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--deduct">
-              <div class="wf-label">− Tarifas ML</div>
+              <div class="wf-label" title="Comissão + tarifa fixa do Mercado Livre (taxas Shopee já descontadas na Rec. Líquida)">− Taxas de marketplace (ML)</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.total_fees, op?.gmv) + '%' }"></div></div>
               <div class="wf-value wf-value--neg">−{{ fmt(op?.total_fees) }} <span class="wf-pct">({{ wfPct(op?.total_fees, op?.gmv).toFixed(1) }}%)</span></div>
             </div>
@@ -643,32 +643,40 @@
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--deduct">
-              <div class="wf-label">− CPV (custo do produto)</div>
+              <div class="wf-label" title="Custo da Mercadoria Vendida — custo por SKU (Tiny) × quantidade">− CMV (custo da mercadoria)</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.cmv_total, op?.gmv) + '%' }"></div></div>
               <div class="wf-value wf-value--neg">−{{ fmt(op?.cmv_total) }} <span class="wf-pct">({{ wfPct(op?.cmv_total, op?.gmv).toFixed(1) }}%)</span></div>
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--result">
-              <div class="wf-label">= Margem de Contribuição</div>
+              <div class="wf-label" title="Receita líquida menos CMV, antes dos custos variáveis de venda">= Resultado após CMV</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--gp" :style="{ width: wfPct(op?.gross_profit, op?.gmv) + '%' }"></div></div>
               <div class="wf-value">{{ fmt(op?.gross_profit) }} <span class="wf-pct">({{ wfPct(op?.gross_profit, op?.gmv).toFixed(1) }}% do GMV)</span></div>
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--deduct">
-              <div class="wf-label">− Investimento Ads</div>
+              <div class="wf-label" title="Product Ads (ML) + Shopee Ads no período">− Investimento em Ads</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--ads" :style="{ width: wfPct(op?.ads_cost, op?.gmv) + '%' }"></div></div>
               <div class="wf-value wf-value--warn">−{{ fmt(op?.ads_cost) }} <span class="wf-pct">(TACoS {{ wfPct(op?.ads_cost, op?.gmv).toFixed(1) }}%)</span></div>
             </div>
+            <template v-if="op?.affiliate_cost > 0">
+              <div class="wf-arrow">▼</div>
+              <div class="wf-step wf-step--deduct">
+                <div class="wf-label" title="Comissão paga a afiliados do programa Shopee (AMS)">− Afiliados (Shopee)</div>
+                <div class="wf-bar-wrap"><div class="wf-bar wf-bar--ads" :style="{ width: wfPct(op?.affiliate_cost, op?.gmv) + '%' }"></div></div>
+                <div class="wf-value wf-value--warn">−{{ fmt(op?.affiliate_cost) }} <span class="wf-pct">({{ wfPct(op?.affiliate_cost, op?.gmv).toFixed(1) }}%)</span></div>
+              </div>
+            </template>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--final" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-step--pos' : 'wf-step--neg'">
-              <div class="wf-label">= Lucro Real</div>
+              <div class="wf-label" title="O que sobra das vendas para cobrir custos fixos e gerar lucro. Não desconta despesas fixas.">= Margem de Contribuição</div>
               <div class="wf-bar-wrap">
                 <div class="wf-bar" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-bar--ll' : 'wf-bar--neg'"
-                  :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
+                  :style="{ width: Math.abs(wfPct((op?.lucro_liquido || 0) - (op?.affiliate_cost || 0), op?.gmv)) + '%' }"></div>
               </div>
               <div class="wf-value wf-value--highlight">
-                {{ fmt(op?.lucro_liquido) }}
-                <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% margem)</span>
+                {{ fmt((op?.lucro_liquido || 0) - (op?.affiliate_cost || 0)) }}
+                <span class="wf-pct">({{ wfPct((op?.lucro_liquido || 0) - (op?.affiliate_cost || 0), op?.gmv).toFixed(1) }}% do GMV)</span>
               </div>
             </div>
           </div>
@@ -939,7 +947,10 @@
                   <td class="product-cell">
                     <img v-if="p.thumbnail" :src="p.thumbnail.replace(/^http:\/\//i, 'https://')" class="prod-thumb" />
                     <div class="prod-info">
-                      <div class="prod-title">{{ p.title }}</div>
+                      <div class="prod-title">
+                        <span v-if="p.marketplace === 'shopee'" class="mkt-badge mkt-badge--shopee">Shopee</span>
+                        {{ p.title }}
+                      </div>
                       <div class="prod-id muted">{{ p.item_id }}</div>
                     </div>
                   </td>
@@ -1874,9 +1885,12 @@ const chartData = computed(() => {
 // Descendente (mais recente primeiro) — usado na tabela
 const chartDataDesc = computed(() => [...chartData.value].reverse())
 
-// Produtos ordenados pelo critério selecionado
+// Produtos ordenados pelo critério selecionado.
+// Feedback #13: inclui os produtos Shopee (que ficavam fora do ranking).
 const topProductsSorted = computed(() => {
-  const prods = [...(data.value?.top_products || [])]
+  const ml = activeMarketplace.value !== 'shopee' ? (data.value?.top_products || []) : []
+  const sh = activeMarketplace.value !== 'ml' ? (shopeeData.value?.top_products || []) : []
+  const prods = [...ml, ...sh]
   return prods.sort((a, b) => (b[topSortBy.value] || 0) - (a[topSortBy.value] || 0))
 })
 
@@ -2284,6 +2298,7 @@ const combinedOp = computed(() => {
     avg_ticket:   sh.avg_ticket,
     units_sold:   sh.units_sold,
     ads_cost:     sh.ads_cost || 0,
+    affiliate_cost: sh.affiliate_cost || 0,
     total_fees:   0,
     cmv_total:    0,
     lucro_liquido_pct: sh.net_revenue ? +((sh.lucro_liquido ?? sh.gross_profit ?? 0) / sh.net_revenue * 100).toFixed(2) : null,
@@ -2300,6 +2315,7 @@ const combinedOp = computed(() => {
     units_sold:    (ml.units_sold || 0) + (sh.units_sold || 0),
     avg_ticket:    null,
     ads_cost:      (ml.ads_cost || 0) + (sh.ads_cost || 0),
+    affiliate_cost: sh.affiliate_cost || 0,
     total_fees:    ml.total_fees || 0,
     cmv_total:     ml.cmv_total || 0,
     lucro_liquido_pct: null,
