@@ -157,11 +157,11 @@
     <div class="smart-views-bar">
       <div class="sv-label">Smart Views</div>
       <div class="sv-chips">
-        <button class="sv-chip sv-chip--red" @click="setViewSemEstoque"><q-icon name="inventory_2" size="13px" />Sem Estoque</button>
-        <button class="sv-chip sv-chip--orange" @click="setViewComDesconto"><q-icon name="local_offer" size="13px" />Com Desconto</button>
-        <button class="sv-chip sv-chip--amber" @click="setViewSemAvaliacoes"><q-icon name="star_border" size="13px" />Sem Avaliações</button>
-        <button class="sv-chip sv-chip--teal" @click="setViewMaisVendidos"><q-icon name="shopping_cart" size="13px" />Mais Vendidos</button>
-        <button class="sv-chip sv-chip--slate" @click="setViewVariacoes"><q-icon name="tune" size="13px" />Variações</button>
+        <button class="sv-chip sv-chip--alert" @click="setViewSemEstoque"><q-icon name="inventory_2" size="13px" />Sem Estoque</button>
+        <button class="sv-chip" @click="setViewComDesconto"><q-icon name="local_offer" size="13px" />Com Desconto</button>
+        <button class="sv-chip" @click="setViewSemAvaliacoes"><q-icon name="star_border" size="13px" />Sem Avaliações</button>
+        <button class="sv-chip" @click="setViewMaisVendidos"><q-icon name="shopping_cart" size="13px" />Mais Vendidos</button>
+        <button class="sv-chip" @click="setViewVariacoes"><q-icon name="tune" size="13px" />Variações</button>
       </div>
       <button class="sv-clear" @click="clearFilters"><q-icon name="filter_alt_off" size="13px" />Limpar</button>
     </div>
@@ -201,12 +201,9 @@
           </q-td>
 
           <q-td key="thumbnail" :props="props" style="width:70px">
-            <div class="relative-position">
-              <q-img :src="props.row.thumbnail || ''" style="height:52px;width:52px" fit="contain" class="rounded-borders border-grey thumb-img">
-                <template v-slot:error><div class="absolute-full flex flex-center bg-grey-2"><q-icon name="image_not_supported" size="20px" color="grey-5" /></div></template>
-              </q-img>
-              <div class="thumb-status-dot" :class="`dot--${statusColorClass(props.row.status)}`" />
-            </div>
+            <q-img :src="props.row.thumbnail || ''" style="height:52px;width:52px" fit="contain" class="rounded-borders border-grey thumb-img">
+              <template v-slot:error><div class="absolute-full flex flex-center bg-grey-2"><q-icon name="image_not_supported" size="20px" color="grey-5" /></div></template>
+            </q-img>
           </q-td>
 
           <q-td key="item_name" :props="props" style="max-width:360px;white-space:normal">
@@ -243,18 +240,18 @@
 
           <q-td key="analytics" :props="props" align="center">
             <div class="analytics-grid">
-              <div class="ag-cell" :class="props.row.views > 0 ? 'ag-cell--views' : 'ag-cell--zero'">
+              <div class="ag-cell" :class="!props.row.views && 'ag-cell--zero'">
                 <q-icon name="visibility" size="11px" class="ag-icon" /><span class="ag-value">{{ fmtNum(props.row.views) }}</span>
                 <q-tooltip class="bg-grey-9">{{ (props.row.views || 0).toLocaleString('pt-BR') }} visitas</q-tooltip>
               </div>
-              <div class="ag-cell" :class="props.row.sales > 0 ? 'ag-cell--sales' : 'ag-cell--zero'">
+              <div class="ag-cell" :class="!props.row.sales && 'ag-cell--zero'">
                 <q-icon name="shopping_bag" size="11px" class="ag-icon" /><span class="ag-value">{{ fmtNum(props.row.sales) }}</span>
                 <q-tooltip class="bg-grey-9">{{ (props.row.sales || 0).toLocaleString('pt-BR') }} vendas</q-tooltip>
               </div>
-              <div class="ag-cell" :class="props.row.rating_count > 0 ? 'ag-cell--rating' : 'ag-cell--zero'">
+              <div class="ag-cell" :class="!props.row.rating_count && 'ag-cell--zero'">
                 <q-icon name="star" size="11px" class="ag-icon" /><span class="ag-value">{{ props.row.rating_count > 0 ? Number(props.row.rating_star || 0).toFixed(1) : '—' }}</span>
               </div>
-              <div class="ag-cell" :class="props.row.rating_count > 0 ? 'ag-cell--reviews' : 'ag-cell--zero'">
+              <div class="ag-cell" :class="!props.row.rating_count && 'ag-cell--zero'">
                 <q-icon name="chat_bubble" size="11px" class="ag-icon" /><span class="ag-value">{{ fmtNum(props.row.rating_count) }}</span>
               </div>
             </div>
@@ -358,20 +355,20 @@
               <div class="dd-section dd-section--metrics">
                 <div class="dd-stats-row">
                   <div class="dd-stat">
-                    <div class="dd-stat-value text-green-7">{{ (selectedItem.sales || 0).toLocaleString('pt-BR') }}</div>
+                    <div class="dd-stat-value">{{ (selectedItem.sales || 0).toLocaleString('pt-BR') }}</div>
                     <div class="dd-stat-label">Vendas</div>
                   </div>
                   <div class="dd-stat">
-                    <div class="dd-stat-value text-blue-7">{{ (selectedItem.views || 0).toLocaleString('pt-BR') }}</div>
+                    <div class="dd-stat-value">{{ (selectedItem.views || 0).toLocaleString('pt-BR') }}</div>
                     <div class="dd-stat-label">Visitas</div>
                   </div>
                   <div class="dd-stat">
-                    <div class="dd-stat-value text-purple-7">{{ (selectedItem.liked || 0).toLocaleString('pt-BR') }}</div>
+                    <div class="dd-stat-value">{{ (selectedItem.liked || 0).toLocaleString('pt-BR') }}</div>
                     <div class="dd-stat-label">Curtidas</div>
                   </div>
                   <div v-if="selectedItem.rating_count" class="dd-stat">
-                    <div class="dd-stat-value text-amber-7">
-                      <q-icon name="star" size="14px" />{{ Number(selectedItem.rating_star || 0).toFixed(1) }}
+                    <div class="dd-stat-value">
+                      <q-icon name="star" size="14px" class="dd-stat-star" />{{ Number(selectedItem.rating_star || 0).toFixed(1) }}
                     </div>
                     <div class="dd-stat-label">{{ selectedItem.rating_count }} aval.</div>
                   </div>
@@ -1071,12 +1068,12 @@ onMounted(loadAccounts)
 .smart-views-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; overflow-x: auto; }
 .sv-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0; }
 .sv-chips { display: flex; gap: 6px; flex-shrink: 0; }
-.sv-chip { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: 14px; border: 1.5px solid; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
-.sv-chip--red    { border-color: #fca5a5; color: #dc2626; } .sv-chip--red:hover    { background: #fef2f2; }
-.sv-chip--orange { border-color: #fdba74; color: #EE4D2D; } .sv-chip--orange:hover { background: #fff8f7; }
-.sv-chip--amber  { border-color: #fbbf24; color: #b45309; } .sv-chip--amber:hover  { background: #fef3c7; }
-.sv-chip--teal   { border-color: #5eead4; color: #0d9488; } .sv-chip--teal:hover   { background: #f0fdf9; }
-.sv-chip--slate  { border-color: #cbd5e1; color: #475569; } .sv-chip--slate:hover  { background: #f1f5f9; }
+/* Neutro por padrão — cor reservada só para o alerta que exige ação real
+   (sem estoque). Os demais são só atalhos de filtro, não estados de risco. */
+.sv-chip { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: 14px; border: 1.5px solid #e2e8f0; background: #fff; font-size: 11px; font-weight: 600; color: #475569; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.sv-chip:hover { border-color: #0d9488; color: #0d9488; background: #f0fdf9; }
+.sv-chip--alert { border-color: #fca5a5; color: #dc2626; }
+.sv-chip--alert:hover { background: #fef2f2; border-color: #f87171; color: #dc2626; }
 .sv-clear { display: flex; align-items: center; gap: 4px; margin-left: auto; flex-shrink: 0; font-size: 11px; color: #94a3b8; background: none; border: none; cursor: pointer; }
 .sv-clear:hover { color: #ef4444; }
 
@@ -1093,8 +1090,6 @@ onMounted(loadAccounts)
 :deep(.shopee-table tbody td) { border-bottom: 1px solid #f1f5f9; min-height: 65px; height: auto; vertical-align: middle; }
 
 /* ── Células ─────────────────────────────────────────────────────────── */
-.thumb-status-dot { position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; }
-.dot--active { background: #22c55e; } .dot--paused { background: #f59e0b; } .dot--banned { background: #ef4444; } .dot--deleted { background: #cbd5e1; }
 .item-name { font-size: 13px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .badge-mono { background: #f1f5f9; color: #475569; padding: 1px 5px; border-radius: 5px; font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; font-size: 11px; display: inline-flex; align-items: center; }
 .badge-mono:hover { background: #e2e8f0; }
@@ -1102,18 +1097,18 @@ onMounted(loadAccounts)
 .price-main { color: #EE4D2D; }
 .stock-badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 10px; font-size: 10.5px; font-weight: 600; }
 .stock-badge--ok { background: #f0fdf4; color: #16a34a; } .stock-badge--zero { background: #fef2f2; color: #dc2626; }
-.var-attr-chip { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+.var-attr-chip { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .var-attr-chip--detail { font-size: 11px; padding: 2px 8px; }
 
-/* ── Analytics ───────────────────────────────────────────────────────── */
+/* ── Analytics ───────────────────────────────────────────────────────────
+   Neutro por design: views/vendas/nota/reviews não são "boas" ou "ruins",
+   são só números — a cor fica reservada para status (estoque, anúncio).
+   Ícones diferentes já bastam para diferenciar as métricas entre si. ── */
 .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; min-width: 80px; }
-.ag-cell { display: flex; align-items: center; gap: 3px; padding: 2px 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600; white-space: nowrap; }
-.ag-icon { flex-shrink: 0; } .ag-value { line-height: 1; }
-.ag-cell--zero    { color: #cbd5e1; }
-.ag-cell--views   { background: #f0f9ff; color: #0284c7; } .ag-cell--views .ag-icon   { color: #38bdf8; }
-.ag-cell--sales   { background: #f0fdf4; color: #16a34a; } .ag-cell--sales .ag-icon   { color: #4ade80; }
-.ag-cell--rating  { background: #fefce8; color: #ca8a04; } .ag-cell--rating .ag-icon  { color: #facc15; }
-.ag-cell--reviews { background: #faf5ff; color: #9333ea; } .ag-cell--reviews .ag-icon { color: #c084fc; }
+.ag-cell { display: flex; align-items: center; gap: 3px; padding: 2px 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600; white-space: nowrap; background: #f8fafc; color: #475569; }
+.ag-icon { flex-shrink: 0; color: #94a3b8; } .ag-value { line-height: 1; }
+.ag-cell--zero { color: #cbd5e1; }
+.ag-cell--zero .ag-icon { color: #cbd5e1; }
 
 /* ── Status pills ────────────────────────────────────────────────────── */
 .status-pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
@@ -1174,8 +1169,9 @@ onMounted(loadAccounts)
 .dd-stats-row { display: flex; gap: 0; flex-wrap: wrap; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
 .dd-stat { flex: 1; min-width: 70px; padding: 10px 12px; border-right: 1px solid #e2e8f0; text-align: center; }
 .dd-stat:last-child { border-right: none; }
-.dd-stat-value { font-size: 15px; font-weight: 700; line-height: 1.2; display: flex; align-items: center; justify-content: center; gap: 2px; }
+.dd-stat-value { font-size: 15px; font-weight: 700; line-height: 1.2; display: flex; align-items: center; justify-content: center; gap: 2px; color: #0f172a; }
 .dd-stat-label { font-size: 10px; color: #94a3b8; font-weight: 600; margin-top: 3px; }
+.dd-stat-star { color: #f59e0b; }
 
 /* ── Preço edit ──────────────────────────────────────────────────────── */
 .price-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
