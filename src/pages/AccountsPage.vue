@@ -215,6 +215,18 @@
                 </q-td>
               </template>
 
+              <template v-slot:body-cell-direct_delivery_cost="props">
+                <q-td :props="props" class="text-center">
+                  <span class="td-val">R$ {{ Number(props.row.direct_delivery_cost ?? 8.00).toFixed(2) }}</span>
+                  <q-popup-edit :model-value="String(props.row.direct_delivery_cost ?? 8.00)"
+                    @save="(val) => saveDirectDeliveryCost(props.row, val)" v-slot="scope" buttons label-set="Salvar"
+                    label-cancel="Cancelar">
+                    <q-input v-model="scope.value" label="Custo estimado de Entrega Direta (R$)" type="number" step="0.01"
+                      dense autofocus hint="Ex: 8.00" />
+                  </q-popup-edit>
+                </q-td>
+              </template>
+
               <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="text-center q-gutter-xs">
                   <q-btn flat round dense size="sm" color="deep-orange" icon="sync"
@@ -498,6 +510,7 @@ const mlColumns = [
 const shopeeColumns = [
   { name: 'shop_name', align: 'left', label: 'Loja', field: 'shop_name' },
   { name: 'is_connected', align: 'center', label: 'Status', field: 'is_connected' },
+  { name: 'direct_delivery_cost', align: 'center', label: 'Frete Entrega Direta (R$)', field: 'direct_delivery_cost' },
   { name: 'token_expires_at', align: 'left', label: 'Token Expira em', field: 'token_expires_at' },
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ]
@@ -718,6 +731,21 @@ const saveFlexDeliveryCost = async (account, value) => {
     $q.notify({ message: 'Frete Flex atualizado!', color: 'positive', position: 'top', timeout: 2000 })
   } catch (error) {
     $q.notify({ message: 'Erro ao salvar frete Flex.', color: 'negative', position: 'top' })
+  }
+}
+
+const saveDirectDeliveryCost = async (account, value) => {
+  const cost = parseFloat(value)
+  if (isNaN(cost) || cost < 0) {
+    $q.notify({ message: 'Valor inválido.', color: 'warning', position: 'top' })
+    return
+  }
+  try {
+    await api.patch(`/shopee/accounts/${account.id}/settings/`, { direct_delivery_cost: cost })
+    account.direct_delivery_cost = cost
+    $q.notify({ message: 'Frete Entrega Direta atualizado!', color: 'positive', position: 'top', timeout: 2000 })
+  } catch (error) {
+    $q.notify({ message: 'Erro ao salvar frete Entrega Direta.', color: 'negative', position: 'top' })
   }
 }
 
