@@ -279,6 +279,38 @@
           </q-menu>
         </div>
 
+        <!-- Modalidade de envio (feedback #18) -->
+        <div class="fb-combo" :class="filters.shipping_carrier?.length && 'fb-combo--on'">
+          <button class="fb-combo-btn">
+            <q-icon name="local_shipping" size="14px" class="fb-combo-ico" />
+            <span class="fb-combo-label">
+              <template v-if="!filters.shipping_carrier?.length">Envio</template>
+              <template v-else-if="filters.shipping_carrier.length === 1">{{ filters.shipping_carrier[0] }}</template>
+              <template v-else>Envio <span class="fb-combo-multi">+{{ filters.shipping_carrier.length }}</span></template>
+            </span>
+            <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
+          </button>
+          <button v-if="filters.shipping_carrier?.length" class="fb-combo-clear" @click.stop="filters.shipping_carrier = []; loadOrders()">
+            <q-icon name="close" size="11px" />
+          </button>
+          <q-menu fit anchor="bottom left" self="top left" class="fb-menu">
+            <q-list style="min-width:220px">
+              <q-item v-for="opt in shippingCarrierOptions" :key="opt.value" clickable
+                :class="['fb-menu-item', filters.shipping_carrier?.includes(opt.value) && 'fb-menu-item--on']"
+                @click.stop="toggleFilter('shipping_carrier', opt.value)">
+                <q-item-section side>
+                  <q-checkbox :model-value="filters.shipping_carrier?.includes(opt.value)"
+                    @update:model-value="toggleFilter('shipping_carrier', opt.value)"
+                    @click.stop color="teal-7" dense />
+                </q-item-section>
+                <q-item-section>
+                  <span class="fb-menu-item-label">{{ opt.label }}</span>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </div>
+
         <!-- Data rápida -->
         <div class="fb-combo" :class="filters.quickDate && 'fb-combo--on'">
           <button class="fb-combo-btn">
@@ -372,6 +404,11 @@
                   </span>
                   <span class="shop-badge">
                     <q-icon name="storefront" size="10px" /> {{ props.row.shop_name }}
+                  </span>
+                  <span v-if="props.row.shipping_carrier" class="shop-badge"
+                    :class="{ 'shop-badge--direta': props.row.shipping_carrier === 'Entrega Direta' }"
+                    :title="props.row.shipping_carrier === 'Entrega Direta' ? 'Entrega Direta — equivalente ao Flex do ML' : props.row.shipping_carrier">
+                    <q-icon name="local_shipping" size="10px" /> {{ props.row.shipping_carrier }}
                   </span>
                 </div>
                 <div v-if="props.row.items?.length" class="row items-start q-gutter-x-sm">
@@ -943,6 +980,7 @@ const filters = reactive({
   search:     '',
   account:    [],
   status:     [],
+  shipping_carrier: [],
   quickDate:  null,
   dateFrom:   null,
   dateTo:     null,
@@ -975,6 +1013,15 @@ const statusOptions = [
   { value: 'CANCELLED',           label: 'Cancelado'             },
   { value: 'TO_RETURN',           label: 'Em Devolução'          },
   { value: 'COMPLETED',           label: 'Concluído'             },
+]
+
+// Modalidades de envio Shopee (feedback #18) — "Entrega Direta" é a modalidade em que
+// o próprio vendedor entrega, equivalente ao Flex do Mercado Livre.
+const shippingCarrierOptions = [
+  { value: 'Shopee Xpress',           label: 'Shopee Xpress' },
+  { value: 'Entrega Direta',          label: 'Entrega Direta (≈ Flex)' },
+  { value: 'Full',                    label: 'Full' },
+  { value: 'Retirada pelo Comprador', label: 'Retirada pelo Comprador' },
 ]
 
 const quickDateOptions = [
@@ -1015,6 +1062,10 @@ const activeFilterTags = computed(() => {
   filters.status.forEach(v => {
     const opt = statusOptions.find(o => o.value === v)
     if (opt) tags.push({ key: 'status', value: v, catLabel: 'Status', label: opt.label, icon: 'receipt' })
+  })
+  filters.shipping_carrier.forEach(v => {
+    const opt = shippingCarrierOptions.find(o => o.value === v)
+    if (opt) tags.push({ key: 'shipping_carrier', value: v, catLabel: 'Envio', label: opt.label, icon: 'local_shipping' })
   })
   if (filters.quickDate) {
     const opt = quickDateOptions.find(o => o.value === filters.quickDate)
@@ -1158,6 +1209,7 @@ function removeFilterTag(tag) {
 
 function clearFilters() {
   filters.search = ''; filters.account = []; filters.status = []
+  filters.shipping_carrier = []
   filters.quickDate = null; filters.dateFrom = null; filters.dateTo = null
   loadOrders()
 }
@@ -1227,6 +1279,7 @@ async function loadOrders(pg = null) {
     if (filters.search) axiosParams.search = filters.search
     if (filters.account.length) axiosParams.account = filters.account
     if (filters.status.length)  axiosParams.status  = filters.status
+    if (filters.shipping_carrier.length) axiosParams.shipping_carrier = filters.shipping_carrier
     if (filters.dateFrom) axiosParams.date_from = filters.dateFrom
     if (filters.dateTo)   axiosParams.date_to   = filters.dateTo
     if (filters.amountMin) axiosParams.amount_min = filters.amountMin
@@ -1583,6 +1636,7 @@ onMounted(() => {
 .badge-mono:hover { background: #e2e8f0; }
 
 .shop-badge { color: #EE4D2D; font-weight: 700; font-size: 11px; }
+.shop-badge--direta { color: #7c3aed; }
 
 .cell-amount { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .amount-main { font-size: 14px; font-weight: 700; color: #0f172a; }

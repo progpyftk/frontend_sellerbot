@@ -79,11 +79,11 @@
                 <div class="today-kpi-val">{{ fmt(combinedToday.net_revenue) }}</div>
               </div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Margem de contribuição</div>
+                <div class="today-kpi-label">Margem Contrib. Antes do Ads</div>
                 <div class="today-kpi-val" :class="(combinedToday.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.gross_profit) }}</div>
               </div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Margem de Contribuição</div>
+                <div class="today-kpi-label">Margem Contrib. Após Ads</div>
                 <div class="today-kpi-val" :class="(combinedToday.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.lucro_liquido) }}</div>
               </div>
               <div class="today-kpi">
@@ -244,9 +244,9 @@
           </template>
         </SbKpiCard>
 
-        <!-- Margem de Contribuição -->
+        <!-- Margem de Contribuição Antes do Ads -->
         <SbKpiCard
-          label="Margem de Contribuição"
+          label="Margem Contrib. Antes do Ads"
           :value="fmt(op?.gross_profit)"
           variant="green"
           :sub="'Margem ' + pct(op?.gross_profit, op?.net_revenue)"
@@ -256,14 +256,14 @@
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Receita Líquida menos o Custo Médio do Produto (CMV). É o que sobra para cobrir custos fixos e marketing.</q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Receita Líquida menos o Custo Médio do Produto (CMV), antes de descontar Ads. É o que sobra para cobrir custos fixos e marketing.</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
 
-        <!-- Margem de Contribuição -->
+        <!-- Margem de Contribuição Após Ads -->
         <SbKpiCard
-          label="Margem de Contribuição"
+          label="Margem Contrib. Após Ads"
           :value="fmt(op?.lucro_liquido)"
           variant="teal"
           :sub="'Margem ' + pct(op?.lucro_liquido, op?.net_revenue)"
@@ -273,7 +273,7 @@
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Margem de Contribuição menos o gasto com Ads. O lucro real da operação.</q-tooltip>
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Margem de Contribuição Antes do Ads menos o investimento em Ads. O resultado real da operação, antes de impostos.</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
@@ -414,10 +414,10 @@
                   <th class="col-date">Data</th>
                   <th class="col-num">GMV</th>
                   <th class="col-num">Rec. Líquida</th>
-                  <th class="col-num">Margem de Contribuição</th>
+                  <th class="col-num">Margem Antes do Ads</th>
                   <th class="col-num col-ads">Ads</th>
                   <th class="col-num col-ads">TACoS</th>
-                  <th class="col-num col-ll">Margem de Contribuição</th>
+                  <th class="col-num col-ll">Margem Após Ads</th>
                   <th class="col-num">Pedidos</th>
                   <th class="col-num">Margem</th>
                 </tr>
@@ -518,8 +518,8 @@
             <div class="table-controls">
               <select v-model="rankingSortKey" class="sort-select">
                 <option value="gmv">Maior GMV</option>
-                <option value="lucro_liquido">Maior Margem de Contribuição</option>
-                <option value="gross_profit">Maior Margem de Contribuição</option>
+                <option value="lucro_liquido">Maior Margem Após Ads</option>
+                <option value="gross_profit">Maior Margem Antes do Ads</option>
                 <option value="lucro_liquido_pct">Melhor Margem Líquida</option>
                 <option value="gross_margin_pct">Melhor Margem Bruta</option>
                 <option value="roas">Melhor ROAS</option>
@@ -537,11 +537,11 @@
                   <th>Conta</th>
                   <th class="right">GMV</th>
                   <th class="right">Rec. Líq.</th>
-                  <th class="right">Margem de Contribuição</th>
+                  <th class="right">Margem Antes do Ads</th>
                   <th class="right">Margem Bruta</th>
                   <th class="right">Ads</th>
                   <th class="right">TACoS</th>
-                  <th class="right">Margem de Contribuição</th>
+                  <th class="right">Margem Após Ads</th>
                   <th class="right">Margem Líq.</th>
                   <th class="right">ROAS</th>
                   <th class="right">Pedidos</th>
@@ -608,6 +608,22 @@
 
       <!-- ══════════ ABA: DRE-APROXIMADA ══════════════════════════════════ -->
       <div v-show="activeTab === 'dre'" class="tab-content">
+        <!-- Alerta de dados de Ads possivelmente incompletos (feedback #19) -->
+        <div v-if="adsGapDays.length" class="ads-gap-banner">
+          <q-icon name="warning" size="16px" class="q-mr-sm" />
+          <div>
+            <strong>Dado de Ads possivelmente incompleto</strong>
+            em {{ adsGapDays.length }} dia(s): {{ adsGapDays.map(g => g.dateLabel).join(', ') }}.
+            O gasto ficou muito abaixo do esperado comparado aos dias vizinhos — o Mercado Livre
+            ou a Shopee pode não ter processado o relatório a tempo. Os KPIs desses dias podem
+            estar subestimados.
+            <q-tooltip max-width="260px">
+              <div v-for="g in adsGapDays" :key="g.date">
+                {{ g.dateLabel }}: R$ {{ g.ads_cost.toFixed(2) }} registrado, ~R$ {{ g.expected }} esperado
+              </div>
+            </q-tooltip>
+          </div>
+        </div>
         <div class="waterfall-card" v-if="op?.gmv">
           <div class="waterfall-header">
             <div class="waterfall-title">
@@ -631,13 +647,13 @@
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--deduct">
-              <div class="wf-label" title="Comissão + tarifa fixa do Mercado Livre (taxas Shopee já descontadas na Rec. Líquida)">− Taxas de marketplace (ML)</div>
+              <div class="wf-label" title="Comissão + tarifa fixa cobradas pelo marketplace (Mercado Livre e Shopee somados)">− Taxas de marketplace</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.total_fees, op?.gmv) + '%' }"></div></div>
               <div class="wf-value wf-value--neg">−{{ fmt(op?.total_fees) }} <span class="wf-pct">({{ wfPct(op?.total_fees, op?.gmv).toFixed(1) }}%)</span></div>
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--result">
-              <div class="wf-label">= Rec. Líquida</div>
+              <div class="wf-label">= Receita Líquida</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--net" :style="{ width: wfPct(op?.net_revenue, op?.gmv) + '%' }"></div></div>
               <div class="wf-value">{{ fmt(op?.net_revenue) }} <span class="wf-pct">({{ wfPct(op?.net_revenue, op?.gmv).toFixed(1) }}% do GMV)</span></div>
             </div>
@@ -649,7 +665,7 @@
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--result">
-              <div class="wf-label" title="Receita líquida menos CMV, antes dos custos variáveis de venda">= Resultado após CMV</div>
+              <div class="wf-label" title="Receita líquida menos CMV, antes de descontar Ads e afiliados">= Margem de Contribuição Antes do Ads</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--gp" :style="{ width: wfPct(op?.gross_profit, op?.gmv) + '%' }"></div></div>
               <div class="wf-value">{{ fmt(op?.gross_profit) }} <span class="wf-pct">({{ wfPct(op?.gross_profit, op?.gmv).toFixed(1) }}% do GMV)</span></div>
             </div>
@@ -658,6 +674,14 @@
               <div class="wf-label" title="Product Ads (ML) + Shopee Ads no período">− Investimento em Ads</div>
               <div class="wf-bar-wrap"><div class="wf-bar wf-bar--ads" :style="{ width: wfPct(op?.ads_cost, op?.gmv) + '%' }"></div></div>
               <div class="wf-value wf-value--warn">−{{ fmt(op?.ads_cost) }} <span class="wf-pct">(TACoS {{ wfPct(op?.ads_cost, op?.gmv).toFixed(1) }}%)</span></div>
+            </div>
+            <div class="wf-arrow">▼</div>
+            <div class="wf-step wf-step--result">
+              <div class="wf-label" title="Margem de Contribuição Antes do Ads menos o investimento em Ads do período">= Margem de Contribuição Após Ads</div>
+              <div class="wf-bar-wrap">
+                <div class="wf-bar wf-bar--gp" :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
+              </div>
+              <div class="wf-value">{{ fmt(op?.lucro_liquido) }} <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% do GMV)</span></div>
             </div>
             <template v-if="op?.affiliate_cost > 0">
               <div class="wf-arrow">▼</div>
@@ -669,7 +693,7 @@
             </template>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--final" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-step--pos' : 'wf-step--neg'">
-              <div class="wf-label" title="O que sobra das vendas para cobrir custos fixos e gerar lucro. Não desconta despesas fixas.">= Margem de Contribuição</div>
+              <div class="wf-label" title="O que sobra das vendas para cobrir custos fixos e gerar lucro, antes de impostos. Não desconta despesas fixas.">= Margem de Contribuição Final Sem Impostos</div>
               <div class="wf-bar-wrap">
                 <div class="wf-bar" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-bar--ll' : 'wf-bar--neg'"
                   :style="{ width: Math.abs(wfPct((op?.lucro_liquido || 0) - (op?.affiliate_cost || 0), op?.gmv)) + '%' }"></div>
@@ -697,9 +721,9 @@
                     <th class="right">Tarifas</th>
                     <th class="right">Rec. Líquida</th>
                     <th class="right">CPV</th>
-                    <th class="right">Margem de Contribuição</th>
+                    <th class="right">Margem Antes do Ads</th>
                     <th class="right">Ads</th>
-                    <th class="right">Margem de Contribuição</th>
+                    <th class="right">Margem Após Ads</th>
                     <th class="right">Margem</th>
                   </tr>
                 </thead>
@@ -778,7 +802,7 @@
                 <div class="cnpj-kpi-val">{{ fmt(c.gmv) }}</div>
               </div>
               <div class="cnpj-kpi">
-                <div class="cnpj-kpi-label">Margem de Contribuição</div>
+                <div class="cnpj-kpi-label">Margem Após Ads</div>
                 <div class="cnpj-kpi-val" :class="c.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(c.lucro_liquido) }}</div>
               </div>
               <div class="cnpj-kpi">
@@ -805,7 +829,7 @@
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(mp.gmv) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Rec. Líquida</span> <span class="mp-kpi-val">{{ fmt(mp.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Margem contrib.</span> <span class="mp-kpi-val" :class="mp.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(mp.lucro_liquido) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Margem Após Ads</span> <span class="mp-kpi-val" :class="mp.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(mp.lucro_liquido) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ mp.orders_count }}</span></div>
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
@@ -822,12 +846,26 @@
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.gmv) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Rec. Estimada</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Margem contrib.</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.gross_profit) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Margem Após Ads</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit ?? 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ filteredShopeeOp.orders_count }}</span></div>
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
               <div class="gmv-bar-fill gmv-bar-fill--shopee" :style="{ width: combinedGmvShare('shopee', filteredShopeeOp.gmv) + '%' }"></div>
               <span class="gmv-bar-pct">{{ combinedGmvShare('shopee', filteredShopeeOp.gmv) }}% do GMV total</span>
+            </div>
+
+            <!-- Modalidade de envio (feedback #18) — "Entrega Direta" ≈ Flex do ML -->
+            <div v-if="shopeeCarrierBreakdown.length" class="carrier-breakdown q-mt-sm">
+              <div class="carrier-breakdown-title">Por modalidade de envio</div>
+              <div v-for="c in shopeeCarrierBreakdown" :key="c.shipping_carrier" class="carrier-row">
+                <span class="carrier-label" :class="{ 'carrier-label--direta': c.shipping_carrier === 'Entrega Direta' }">
+                  {{ c.shipping_carrier }}
+                </span>
+                <span class="carrier-bar-wrap">
+                  <span class="carrier-bar-fill" :style="{ width: carrierPct(c) + '%' }"></span>
+                </span>
+                <span class="carrier-val">{{ c.orders_count }} <span class="carrier-val-sub">({{ fmt(c.gmv) }})</span></span>
+              </div>
             </div>
           </div>
         </div>
@@ -843,7 +881,7 @@
                 <th>CNPJ</th>
                 <th class="right">GMV</th>
                 <th class="right">Rec. Líq.</th>
-                <th class="right">Margem contrib.</th>
+                <th class="right">Margem Após Ads</th>
                 <th class="right">Ads</th>
                 <th class="right">Pedidos</th>
                 <th class="right">Share GMV</th>
@@ -877,8 +915,8 @@
                   <td class="muted">—</td>
                   <td class="right">{{ fmt(a.gmv) }}</td>
                   <td class="right">{{ fmt(a.net_revenue) }}</td>
-                  <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
-                  <td class="right warn">—</td>
+                  <td class="right" :class="(a.lucro_liquido ?? a.gross_profit ?? 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido ?? a.gross_profit) }}</td>
+                  <td class="right warn">{{ fmt(a.ads_cost) }}</td>
                   <td class="right">{{ a.orders_count }}</td>
                   <td class="right">
                     <div class="inline-bar-wrap">
@@ -1158,8 +1196,8 @@
               <select v-model="weekdayMetric" class="sort-select">
                 <option value="gmv">GMV</option>
                 <option value="orders_count">Pedidos</option>
-                <option value="gross_profit">Margem de Contribuição</option>
-                <option value="lucro_liquido">Margem de Contribuição</option>
+                <option value="gross_profit">Margem Antes do Ads</option>
+                <option value="lucro_liquido">Margem Após Ads</option>
                 <option value="ads_cost">Ads</option>
               </select>
               <span class="muted" style="font-size:11px">Baseado nos últimos {{ weekdaySourceData.length }} dias carregados</span>
@@ -1286,7 +1324,7 @@
                   <th>Dia</th>
                   <th class="right">GMV</th>
                   <th class="right">Pedidos</th>
-                  <th class="right">Margem contrib.</th>
+                  <th class="right">Margem Após Ads</th>
                   <th class="right">Ads</th>
                   <th class="right">TACoS</th>
                 </tr>
@@ -1328,8 +1366,8 @@
             <div class="saz-kpi-card" v-for="kpi in [
               { label: 'GMV',          curr: op?.gmv,          prev: lastYearOp?.gmv,          fmt: true },
               { label: 'Rec. Líquida', curr: op?.net_revenue,  prev: lastYearOp?.net_revenue,  fmt: true },
-              { label: 'Margem de Contribuição',  curr: op?.gross_profit, prev: lastYearOp?.gross_profit, fmt: true },
-              { label: 'Margem de Contribuição', curr: op?.lucro_liquido, prev: lastYearOp?.lucro_liquido, fmt: true },
+              { label: 'Margem Antes do Ads',  curr: op?.gross_profit, prev: lastYearOp?.gross_profit, fmt: true },
+              { label: 'Margem Após Ads', curr: op?.lucro_liquido, prev: lastYearOp?.lucro_liquido, fmt: true },
               { label: 'Pedidos',      curr: op?.orders_count, prev: lastYearOp?.orders_count, fmt: false },
               { label: 'Ads',          curr: op?.ads_cost,     prev: lastYearOp?.ads_cost,     fmt: true },
             ]" :key="kpi.label">
@@ -1691,8 +1729,17 @@ const filteredShopeeOp = computed(() => {
   const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
   const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
   const ads = s('ads_cost'), ll = s('lucro_liquido')
-  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, lucro_liquido: ll || null, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
+  const affiliate_cost = s('affiliate_cost'), marketplace_fees = s('marketplace_fees')
+  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, affiliate_cost, marketplace_fees, lucro_liquido: ll || null, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
 })
+
+// Modalidade de envio Shopee (feedback #18) — agregado de todas as contas Shopee
+// do usuário no período (o endpoint dashboard_stats não filtra por conta selecionada).
+const shopeeCarrierBreakdown = computed(() => shopeeData.value?.by_shipping_carrier || [])
+function carrierPct(c) {
+  const total = shopeeCarrierBreakdown.value.reduce((s, x) => s + x.orders_count, 0)
+  return total ? Math.round((c.orders_count / total) * 100) : 0
+}
 
 // Filtered ML daily: sums selected accounts from accountDailyData (when partial multi-account selection)
 const filteredMlDaily = computed(() => {
@@ -1785,8 +1832,8 @@ const tabs = [
 const chartMetrics = [
   { key: 'gmv', label: 'GMV', color: '#6366f1' },           // indigo
   { key: 'net_revenue', label: 'Rec. Líquida', color: '#0284c7' },  // sky-600
-  { key: 'gross_profit', label: 'Margem de Contribuição', color: '#16a34a' },  // green-600
-  { key: 'lucro_liquido', label: 'Margem de Contribuição', color: '#0f766e' },  // teal-700
+  { key: 'gross_profit', label: 'Margem Antes do Ads', color: '#16a34a' },  // green-600
+  { key: 'lucro_liquido', label: 'Margem Após Ads', color: '#0f766e' },  // teal-700
   { key: 'ads_cost', label: 'Ads', color: '#f59e0b' },       // amber
 ]
 
@@ -1884,6 +1931,26 @@ const chartData = computed(() => {
 
 // Descendente (mais recente primeiro) — usado na tabela
 const chartDataDesc = computed(() => [...chartData.value].reverse())
+
+// Feedback #19: detecta dias com Ads provavelmente incompleto (relatório do ML/Shopee
+// atrasado — caso real observado em 14/07). Compara cada dia com a média dos vizinhos;
+// exclui o dia de hoje (naturalmente parcial) e dias sem pedidos (Ads=0 é esperado).
+const adsGapDays = computed(() => {
+  const days = chartData.value
+  if (days.length < 5) return []
+  const todayStr = new Date().toISOString().split('T')[0]
+  const gaps = []
+  for (let i = 1; i < days.length - 1; i++) {
+    const d = days[i]
+    if (d.date === todayStr || !d.orders_count) continue
+    const window = days.slice(Math.max(0, i - 3), i).concat(days.slice(i + 1, i + 4))
+    const neighborAvg = window.reduce((s, x) => s + (x.ads_cost || 0), 0) / (window.length || 1)
+    if (neighborAvg > 5 && (d.ads_cost || 0) < neighborAvg * 0.25) {
+      gaps.push({ date: d.date, dateLabel: d.dateLabel, ads_cost: d.ads_cost, expected: Math.round(neighborAvg) })
+    }
+  }
+  return gaps
+})
 
 // Produtos ordenados pelo critério selecionado.
 // Feedback #13: inclui os produtos Shopee (que ficavam fora do ranking).
@@ -2299,7 +2366,7 @@ const combinedOp = computed(() => {
     units_sold:   sh.units_sold,
     ads_cost:     sh.ads_cost || 0,
     affiliate_cost: sh.affiliate_cost || 0,
-    total_fees:   0,
+    total_fees:   sh.marketplace_fees || 0,
     cmv_total:    0,
     lucro_liquido_pct: sh.net_revenue ? +((sh.lucro_liquido ?? sh.gross_profit ?? 0) / sh.net_revenue * 100).toFixed(2) : null,
     gross_margin_pct:  null,
@@ -2316,7 +2383,7 @@ const combinedOp = computed(() => {
     avg_ticket:    null,
     ads_cost:      (ml.ads_cost || 0) + (sh.ads_cost || 0),
     affiliate_cost: sh.affiliate_cost || 0,
-    total_fees:    ml.total_fees || 0,
+    total_fees:    (ml.total_fees || 0) + (sh.marketplace_fees || 0),
     cmv_total:     ml.cmv_total || 0,
     lucro_liquido_pct: null,
     gross_margin_pct:  null,
@@ -4033,6 +4100,17 @@ watch(selectedAccountKeys, () => {
   color: #9aa0ac;
 }
 
+/* Modalidade de envio Shopee (feedback #18) */
+.carrier-breakdown { border-top: 1px dashed #e8ecf1; padding-top: 8px; }
+.carrier-breakdown-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #9aa0ac; margin-bottom: 6px; }
+.carrier-row { display: flex; align-items: center; gap: 8px; font-size: 11px; padding: 2px 0; }
+.carrier-label { min-width: 140px; color: #5c6570; flex-shrink: 0; }
+.carrier-label--direta { color: #7c3aed; font-weight: 700; }
+.carrier-bar-wrap { flex: 1; height: 6px; background: #f0f2f5; border-radius: 3px; overflow: hidden; }
+.carrier-bar-fill { display: block; height: 100%; background: #EE4D2D; border-radius: 3px; }
+.carrier-val { white-space: nowrap; font-weight: 700; color: #1a1f36; }
+.carrier-val-sub { font-weight: 500; color: #9aa0ac; }
+
 .mp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -4433,6 +4511,14 @@ watch(selectedAccountKeys, () => {
   background: #fff7ed;
   border: 1.5px solid #fbbf24;
   color: #92400e;
+}
+
+/* Alerta de Ads incompleto (feedback #19) */
+.ads-gap-banner {
+  display: flex; align-items: flex-start; gap: 4px;
+  padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
+  font-size: 12.5px; line-height: 1.5; font-weight: 500;
+  background: #fff7ed; border: 1.5px solid #fbbf24; color: #92400e;
 }
 
 /* ── Row highlight ──────────────────────────────────────────────────────── */
