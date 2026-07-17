@@ -155,6 +155,15 @@
                     </q-tooltip>
                   </q-icon>
                 </div>
+
+                <!-- Suavização (média móvel) — só faz sentido no modo Agregado -->
+                <div v-if="chartMode === 'metrics'" class="chart-mode-toggle chart-ma-toggle">
+                  <button v-for="opt in MA_OPTIONS" :key="opt.key"
+                    :class="['cmt-btn', maWindow === opt.key && 'cmt-btn--on']"
+                    @click="maWindow = opt.key">
+                    {{ opt.label }}
+                  </button>
+                </div>
               </div>
             </div>
             <!-- Modo ativo — destaque contextual -->
@@ -1514,7 +1523,7 @@ const knownShopeeAccounts = ref([])
 const activeStatuses = ref([])  // e.g. ['paid', 'pending']
 
 // Nova paleta de cores — tons mais sóbrios e harmoniosos (Redesign Jul/2026)
-const ACCOUNT_COLORS = ['#0f766e','#0284c7','#6366f1','#8b5cf6','#f59e0b','#64748b','#16a34a','#d97706','#0ea5e9','#94a3b8']
+const ACCOUNT_COLORS = ['#2a78d6','#008300','#e87ba4','#eda100','#1baf7a','#eb6834','#4a3aa7','#e34948']
 
 function buildAccountKey(marketplace, id) { return `${marketplace}:${id}` }
 
@@ -1611,6 +1620,22 @@ const chartShowTotal     = ref(true)             // show dashed total line in pe
 const accountDailyData   = ref({})               // { 'ml:123': [{date, gmv, ...}] }
 const loadingAccountData = ref(false)
 const weekdayChartMetric = ref('gmv')            // metric for weekday bar chart mode
+const maWindow           = ref(0)                // 0 = desativada · janela (dias) da média móvel no modo Métricas
+const MA_OPTIONS = [
+  { key: 0,  label: 'Sem suavização' },
+  { key: 5,  label: '5d' },
+  { key: 15, label: '15d' },
+  { key: 30, label: '30d' },
+]
+// Média móvel simples com janela parcial nas bordas (evita cortar os primeiros dias do período)
+function movingAverage(vals, windowSize) {
+  if (!windowSize || windowSize <= 1) return vals.slice()
+  return vals.map((_, i) => {
+    const lo  = Math.max(0, i - windowSize + 1)
+    const win = vals.slice(lo, i + 1)
+    return win.reduce((a, b) => a + b, 0) / win.length
+  })
+}
 let plotlyLoaded = false
 
 const loadPlotly = () => new Promise((resolve) => {
@@ -1830,11 +1855,11 @@ const tabs = [
 ]
 
 const chartMetrics = [
-  { key: 'gmv', label: 'GMV', color: '#6366f1' },           // indigo
-  { key: 'net_revenue', label: 'Rec. Líquida', color: '#0284c7' },  // sky-600
-  { key: 'gross_profit', label: 'Margem Antes do Ads', color: '#16a34a' },  // green-600
-  { key: 'lucro_liquido', label: 'Margem Após Ads', color: '#0f766e' },  // teal-700
-  { key: 'ads_cost', label: 'Ads', color: '#f59e0b' },       // amber
+  { key: 'gmv', label: 'GMV', color: '#2a78d6' },           // blue
+  { key: 'net_revenue', label: 'Rec. Líquida', color: '#008300' },  // green
+  { key: 'gross_profit', label: 'Margem Antes do Ads', color: '#e87ba4' },  // magenta
+  { key: 'lucro_liquido', label: 'Margem Após Ads', color: '#eda100' },  // yellow
+  { key: 'ads_cost', label: 'Ads', color: '#1baf7a' },       // aqua
 ]
 
 const datePresets = [
@@ -2636,31 +2661,50 @@ async function renderPlotlyChart() {
         const isOrders = m.key === 'orders_count'
         if (isAds) hasRightAxis = true
 
-        const rawVals = chartDays.map(d => d[m.key] || 0)
-        const total   = rawVals.reduce((s, v) => s + v, 0)
-        const maxVal  = Math.max(...rawVals)
-        const maxIdx  = rawVals.indexOf(maxVal)
-        const lastIdx = rawVals.length - 1
-        const lblSet  = labelIndices(rawVals)
+        const rawVals  = chartDays.map(d => d[m.key] || 0)
+        const total    = rawVals.reduce((s, v) => s + v, 0)
+        const maHere   = maWindow.value > 0
+        // Com suavização ativa, quem carrega a leitura (picos, labels, marcadores) é a média —
+        // a série crua vira uma linha de contexto fina por baixo, ver trace "-ma-raw" abaixo
+        const dispVals = maHere ? movingAverage(rawVals, maWindow.value) : rawVals
+        const maxVal   = Math.max(...dispVals)
+        const maxIdx   = dispVals.indexOf(maxVal)
+        const lastIdx  = dispVals.length - 1
+        const lblSet   = labelIndices(dispVals)
 
         const vals = normalizeChart.value
           ? (() => {
-              const mn = Math.min(...rawVals), mx = Math.max(...rawVals)
+              const mn = Math.min(...dispVals), mx = Math.max(...dispVals)
               const span = mx - mn || 1
-              return rawVals.map(v => ((v - mn) / span) * 100)
+              return dispVals.map(v => ((v - mn) / span) * 100)
             })()
-          : rawVals
+          : dispVals
 
-        const textArr = rawVals.map((v, i) => lblSet.has(i) ? fmtShort(v, isOrders) : '')
+        const textArr = dispVals.map((v, i) => lblSet.has(i) ? fmtShort(v, isOrders) : '')
 
         // Marcadores: maior = 9px, último = 8px, resto = 4px
-        const markerSizes  = rawVals.map((v, i) => i === maxIdx ? 9 : i === lastIdx ? 8 : 4)
-        const markerColors = rawVals.map((v, i) =>
+        const markerSizes  = dispVals.map((v, i) => i === maxIdx ? 9 : i === lastIdx ? 8 : 4)
+        const markerColors = dispVals.map((v, i) =>
           i === maxIdx ? '#fff' : m.color
         )
 
-        // Legenda com total do período
-        const legendName = m.label + '  ·  ' + fmtShort(total, isOrders)
+        // Legenda com total do período (sempre o valor real, nunca o suavizado)
+        const legendName = m.label + (maHere ? ` · média ${maWindow.value}d` : '') + '  ·  ' + fmtShort(total, isOrders)
+
+        // Linha crua de contexto (fina, opaca, sem markers/labels/hover) por baixo da média móvel
+        if (maHere) {
+          traces.push({
+            x:    chartDays.map(d => d.date),
+            y:    normalizeChart.value ? vals : rawVals,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: m.color, width: 1.25, shape: 'spline' },
+            opacity: 0.28,
+            yaxis: isAds ? 'y2' : 'y',
+            hoverinfo: 'skip',
+            showlegend: false,
+          })
+        }
 
         traces.push({
           x:    chartDays.map(d => d.date),
@@ -2672,25 +2716,26 @@ async function renderPlotlyChart() {
           marker: {
             size:  isMobile ? markerSizes.map(s => s > 4 ? 6 : 3) : markerSizes,
             color: markerColors,
-            line:  { color: rawVals.map((_, i) => i === maxIdx ? m.color : 'transparent'), width: rawVals.map((_, i) => i === maxIdx ? 2.5 : 0) },
+            line:  { color: dispVals.map((_, i) => i === maxIdx ? m.color : 'transparent'), width: dispVals.map((_, i) => i === maxIdx ? 2.5 : 0) },
           },
           ...(isMobile ? {} : {
             text:         textArr,
             textposition: 'top center',
             textfont:     { size: 10, color: m.color, family: 'Inter, sans-serif' },
           }),
-          fill:      'tozeroy',
+          fill:      maHere ? 'none' : 'tozeroy',
           fillcolor: m.color + '12',
           yaxis: isAds ? 'y2' : 'y',
           hovertemplate:
             '<b>%{x|%A, %d/%m}</b><br>' +
-            '<span style="color:' + m.color + '">●</span> ' + m.label +
+            '<span style="color:' + m.color + '">●</span> ' + m.label + (maHere ? ` (média ${maWindow.value}d)` : '') +
             ': <b>' + (normalizeChart.value ? '%{y:.1f}%' : (isOrders ? '%{y:,.0f}' : 'R$%{y:,.0f}')) + '</b>' +
             '<extra></extra>',
         })
       }
     }
 
+    const adsAxisColor  = chartMetrics.find(m => m.key === 'ads_cost')?.color || '#1baf7a'
     const isWeekdayMode = chartMode.value === 'weekday'
     const isMonetary    = weekdayChartMetric.value !== 'orders_count'
     // nPts: usa os dados já filtrados (sem hoje) para calcular formatação do eixo
@@ -2804,11 +2849,11 @@ async function renderPlotlyChart() {
           side: 'right',
           tickprefix: 'R$',
           tickformat: isMobile ? '~s' : '',
-          tickfont: { size: isMobile ? 9 : 10, color: '#d97706', family: 'Inter, sans-serif' },
+          tickfont: { size: isMobile ? 9 : 10, color: adsAxisColor, family: 'Inter, sans-serif' },
           gridcolor: 'transparent',
           showgrid: false,
           zeroline: false,
-          title: { text: 'Ads', font: { color: '#d97706', size: 10 } },
+          title: { text: 'Ads', font: { color: adsAxisColor, size: 10 } },
           automargin: true,
           nticks: isMobile ? 5 : undefined,
         }
@@ -2831,6 +2876,7 @@ async function renderPlotlyChart() {
 
 // Watch metric toggles to re-render
 watch(activeMetrics, renderPlotlyChart)
+watch(maWindow, renderPlotlyChart)
 watch(() => $q.screen.lt.sm, renderPlotlyChart)
 
 function setTopGroupBy(val) {
@@ -5280,6 +5326,11 @@ tr.pareto-line-95 td {
   color: #0d9488;
   font-weight: 700;
   box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+
+/* Suavização (média móvel) — mesmo padrão visual do toggle Agregado/Por Conta */
+.chart-ma-toggle {
+  margin-left: 2px;
 }
 
 /* Help icon no toggle */
