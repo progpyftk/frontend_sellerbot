@@ -64,7 +64,7 @@
           </div>
         </div>
 
-        <!-- Faturamento real (escrow) -->
+        <!-- Receita Líquida real (escrow) -->
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="payments" size="16px" /></div>
           <div class="today-card-body">
@@ -839,7 +839,7 @@
               </div>
               <div class="finance-divider" />
               <div class="finance-row finance-row--total">
-                <span class="finance-label-bold">Margem estimada</span>
+                <span class="finance-label-bold">(=) LUCRO REAL</span>
                 <span :class="['finance-total', selectedOrder.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
                   {{ formatCurrency(selectedOrder.lucro_apos_cmp) }}
                 </span>

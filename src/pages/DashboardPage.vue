@@ -357,17 +357,17 @@
           </template>
         </SbKpiCard>
 
-        <!-- Margem Líquida -->
+        <!-- Margem Contrib. Após Ads (%) -->
         <SbKpiCard
-          label="Margem Líquida"
+          label="Margem Contrib. Após Ads (%)"
           :value="op?.lucro_liquido_pct != null ? op?.lucro_liquido_pct + '%' : '—'"
           :variant="(op?.lucro_liquido_pct || 0) >= 0 ? 'green' : 'red'"
-          :sub="'Margem bruta ' + (op?.gross_margin_pct != null ? op?.gross_margin_pct + '%' : '—')"
+          :sub="'Margem contrib. antes ' + (op?.gross_margin_pct != null ? op?.gross_margin_pct + '%' : '—')"
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Margem de Contribuição ÷ Receita Líquida. É a margem real depois de descontar todos os custos operacionais e de marketing.
+                Margem de Contribuição (após CMV e Ads) ÷ Receita Líquida. Não desconta despesas fixas nem impostos — para isso, veja a aba DRE-Aproximada.
               </q-tooltip>
             </q-icon>
           </template>
@@ -423,10 +423,10 @@
                   <th class="col-date">Data</th>
                   <th class="col-num">GMV</th>
                   <th class="col-num">Rec. Líquida</th>
-                  <th class="col-num">Margem Antes do Ads</th>
+                  <th class="col-num">Margem Contrib. Antes do Ads</th>
                   <th class="col-num col-ads">Ads</th>
                   <th class="col-num col-ads">TACoS</th>
-                  <th class="col-num col-ll">Margem Após Ads</th>
+                  <th class="col-num col-ll">Margem Contrib. Após Ads</th>
                   <th class="col-num">Pedidos</th>
                   <th class="col-num">Margem</th>
                 </tr>
@@ -527,10 +527,10 @@
             <div class="table-controls">
               <select v-model="rankingSortKey" class="sort-select">
                 <option value="gmv">Maior GMV</option>
-                <option value="lucro_liquido">Maior Margem Após Ads</option>
-                <option value="gross_profit">Maior Margem Antes do Ads</option>
-                <option value="lucro_liquido_pct">Melhor Margem Líquida</option>
-                <option value="gross_margin_pct">Melhor Margem Bruta</option>
+                <option value="lucro_liquido">Maior Margem Contrib. Após Ads</option>
+                <option value="gross_profit">Maior Margem Contrib. Antes do Ads</option>
+                <option value="lucro_liquido_pct">Melhor Margem Contrib. Após (%)</option>
+                <option value="gross_margin_pct">Melhor Margem Contrib. Antes (%)</option>
                 <option value="roas">Melhor ROAS</option>
                 <option value="tacos">Menor TACoS</option>
                 <option value="orders_count">Mais pedidos</option>
@@ -546,12 +546,12 @@
                   <th>Conta</th>
                   <th class="right">GMV</th>
                   <th class="right">Rec. Líq.</th>
-                  <th class="right">Margem Antes do Ads</th>
-                  <th class="right">Margem Bruta</th>
+                  <th class="right">Margem Contrib. Antes do Ads</th>
+                  <th class="right">Marg. Contrib. Antes (%)</th>
                   <th class="right">Ads</th>
                   <th class="right">TACoS</th>
-                  <th class="right">Margem Após Ads</th>
-                  <th class="right">Margem Líq.</th>
+                  <th class="right">Margem Contrib. Após Ads</th>
+                  <th class="right">Marg. Contrib. Após (%)</th>
                   <th class="right">ROAS</th>
                   <th class="right">Pedidos</th>
                 </tr>
@@ -729,10 +729,10 @@
                     <th class="right">GMV</th>
                     <th class="right">Tarifas</th>
                     <th class="right">Rec. Líquida</th>
-                    <th class="right">CPV</th>
-                    <th class="right">Margem Antes do Ads</th>
+                    <th class="right">CMV</th>
+                    <th class="right">Margem Contrib. Antes do Ads</th>
                     <th class="right">Ads</th>
-                    <th class="right">Margem Após Ads</th>
+                    <th class="right">Margem Contrib. Após Ads</th>
                     <th class="right">Margem</th>
                   </tr>
                 </thead>
@@ -811,7 +811,7 @@
                 <div class="cnpj-kpi-val">{{ fmt(c.gmv) }}</div>
               </div>
               <div class="cnpj-kpi">
-                <div class="cnpj-kpi-label">Margem Após Ads</div>
+                <div class="cnpj-kpi-label">Margem Contrib. Após Ads</div>
                 <div class="cnpj-kpi-val" :class="c.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(c.lucro_liquido) }}</div>
               </div>
               <div class="cnpj-kpi">
@@ -838,7 +838,7 @@
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(mp.gmv) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Rec. Líquida</span> <span class="mp-kpi-val">{{ fmt(mp.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Margem Após Ads</span> <span class="mp-kpi-val" :class="mp.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(mp.lucro_liquido) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Margem Contrib. Após Ads</span> <span class="mp-kpi-val" :class="mp.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(mp.lucro_liquido) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ mp.orders_count }}</span></div>
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
@@ -855,7 +855,7 @@
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.gmv) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Rec. Estimada</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Margem Após Ads</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit ?? 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Margem Contrib. Após Ads</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit ?? 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ filteredShopeeOp.orders_count }}</span></div>
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
@@ -890,7 +890,7 @@
                 <th>CNPJ</th>
                 <th class="right">GMV</th>
                 <th class="right">Rec. Líq.</th>
-                <th class="right">Margem Após Ads</th>
+                <th class="right">Margem Contrib. Após Ads</th>
                 <th class="right">Ads</th>
                 <th class="right">Pedidos</th>
                 <th class="right">Share GMV</th>
@@ -978,7 +978,7 @@
                   <th class="right">GMV</th>
                   <th class="right">% Acum.</th>
                   <th class="right">Tarifas</th>
-                  <th class="right">CPV</th>
+                  <th class="right">CMV</th>
                   <th class="right">Margem de Contribuição</th>
                   <th class="right">Margem</th>
                   <th class="right" v-if="topGroupBy === 'item' && activeMarketplace !== 'shopee'">
@@ -1205,8 +1205,8 @@
               <select v-model="weekdayMetric" class="sort-select">
                 <option value="gmv">GMV</option>
                 <option value="orders_count">Pedidos</option>
-                <option value="gross_profit">Margem Antes do Ads</option>
-                <option value="lucro_liquido">Margem Após Ads</option>
+                <option value="gross_profit">Margem Contrib. Antes do Ads</option>
+                <option value="lucro_liquido">Margem Contrib. Após Ads</option>
                 <option value="ads_cost">Ads</option>
               </select>
               <span class="muted" style="font-size:11px">Baseado nos últimos {{ weekdaySourceData.length }} dias carregados</span>
@@ -1333,7 +1333,7 @@
                   <th>Dia</th>
                   <th class="right">GMV</th>
                   <th class="right">Pedidos</th>
-                  <th class="right">Margem Após Ads</th>
+                  <th class="right">Margem Contrib. Após Ads</th>
                   <th class="right">Ads</th>
                   <th class="right">TACoS</th>
                 </tr>
@@ -1375,8 +1375,8 @@
             <div class="saz-kpi-card" v-for="kpi in [
               { label: 'GMV',          curr: op?.gmv,          prev: lastYearOp?.gmv,          fmt: true },
               { label: 'Rec. Líquida', curr: op?.net_revenue,  prev: lastYearOp?.net_revenue,  fmt: true },
-              { label: 'Margem Antes do Ads',  curr: op?.gross_profit, prev: lastYearOp?.gross_profit, fmt: true },
-              { label: 'Margem Após Ads', curr: op?.lucro_liquido, prev: lastYearOp?.lucro_liquido, fmt: true },
+              { label: 'Margem Contrib. Antes do Ads',  curr: op?.gross_profit, prev: lastYearOp?.gross_profit, fmt: true },
+              { label: 'Margem Contrib. Após Ads', curr: op?.lucro_liquido, prev: lastYearOp?.lucro_liquido, fmt: true },
               { label: 'Pedidos',      curr: op?.orders_count, prev: lastYearOp?.orders_count, fmt: false },
               { label: 'Ads',          curr: op?.ads_cost,     prev: lastYearOp?.ads_cost,     fmt: true },
             ]" :key="kpi.label">
@@ -1857,8 +1857,8 @@ const tabs = [
 const chartMetrics = [
   { key: 'gmv', label: 'GMV', color: '#2a78d6' },           // blue
   { key: 'net_revenue', label: 'Rec. Líquida', color: '#008300' },  // green
-  { key: 'gross_profit', label: 'Margem Antes do Ads', color: '#e87ba4' },  // magenta
-  { key: 'lucro_liquido', label: 'Margem Após Ads', color: '#eda100' },  // yellow
+  { key: 'gross_profit', label: 'Margem Contrib. Antes do Ads', color: '#e87ba4' },  // magenta
+  { key: 'lucro_liquido', label: 'Margem Contrib. Após Ads', color: '#eda100' },  // yellow
   { key: 'ads_cost', label: 'Ads', color: '#1baf7a' },       // aqua
 ]
 

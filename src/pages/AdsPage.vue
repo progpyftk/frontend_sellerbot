@@ -67,7 +67,7 @@
           <div class="stat-icon"><q-icon name="percent" size="16px" /></div>
           <div class="stat-body">
             <div class="stat-val">{{ avgAcos.toFixed(1) }}%</div>
-            <div class="stat-label">ACOS Médio</div>
+            <div class="stat-label">ACoS Médio</div>
             <div class="stat-sub">custo / vendas ads</div>
           </div>
         </div>
@@ -76,7 +76,7 @@
           <div class="stat-icon"><q-icon name="donut_small" size="16px" /></div>
           <div class="stat-body">
             <div class="stat-val">{{ avgTacos.toFixed(1) }}%</div>
-            <div class="stat-label">TACOS</div>
+            <div class="stat-label">TACoS</div>
             <div class="stat-sub">custo / fatur. total</div>
           </div>
         </div>
@@ -125,8 +125,8 @@
             </div>
             <div class="account-meta">
               <span class="meta-chip meta-chip--spend">{{ formatCurrency(acc.cost) }} investido</span>
-              <span class="meta-chip" :class="acc.acos <= 10 ? 'meta-chip--pos' : acc.acos <= 15 ? 'meta-chip--warn' : 'meta-chip--neg'">ACOS {{ acc.acos }}%</span>
-              <span class="meta-chip" :class="acc.tacos <= 8 ? 'meta-chip--pos' : acc.tacos <= 12 ? 'meta-chip--warn' : 'meta-chip--neg'">TACOS {{ acc.tacos }}%</span>
+              <span class="meta-chip" :class="acc.acos <= 10 ? 'meta-chip--pos' : acc.acos <= 15 ? 'meta-chip--warn' : 'meta-chip--neg'">ACoS {{ acc.acos }}%</span>
+              <span class="meta-chip" :class="acc.tacos <= 8 ? 'meta-chip--pos' : acc.tacos <= 12 ? 'meta-chip--warn' : 'meta-chip--neg'">TACoS {{ acc.tacos }}%</span>
               <span class="meta-chip meta-chip--neutral">{{ acc.clicks.toLocaleString('pt-BR') }} clicks</span>
             </div>
           </div>
@@ -140,7 +140,7 @@
                   <th>Estratégia</th>
                   <th class="th-num">Investido</th>
                   <th class="th-num">Receita Ads</th>
-                  <th class="th-num">ACOS</th>
+                  <th class="th-num">ACoS</th>
                   <th class="th-num">Target</th>
                   <th class="th-num">Clicks</th>
                   <th class="th-num">Impressões</th>
@@ -217,7 +217,7 @@
                   <th>Data</th>
                   <th class="th-num">Investido</th>
                   <th class="th-num">Receita Ads</th>
-                  <th class="th-num">ACOS</th>
+                  <th class="th-num">ACoS</th>
                   <th class="th-num">Clicks</th>
                   <th class="th-num">Impressões</th>
                   <th class="th-num">CPC</th>
@@ -379,7 +379,7 @@
               <div class="detail-metric-val" :class="campDetail.acos <= 10 ? 'val-pos' : campDetail.acos <= 15 ? 'val-warn' : 'val-neg'">
                 {{ campDetail.acos }}%
               </div>
-              <div class="detail-metric-label">ACOS</div>
+              <div class="detail-metric-label">ACoS</div>
             </div>
             <div class="detail-metric">
               <div class="detail-metric-val">{{ formatCurrency(campDetail.total_amount) }}</div>
@@ -407,7 +407,7 @@
               <span class="detail-config-val">{{ campDetail.budget > 0 ? formatCurrency(campDetail.budget) : 'Automático' }}</span>
             </div>
             <div class="detail-config-row" v-if="campDetail.acos_target > 0">
-              <span class="detail-config-label">ACOS Target</span>
+              <span class="detail-config-label">ACoS Target</span>
               <span class="detail-config-val">{{ campDetail.acos_target.toFixed(1) }}%</span>
             </div>
           </div>
@@ -547,7 +547,7 @@ const datePresets = [
 const trendMetrics = [
   { key: 'cost',         label: 'Investido',   fmt: v => formatCurrency(v) },
   { key: 'total_amount', label: 'Receita Ads', fmt: v => formatCurrency(v) },
-  { key: 'acos',         label: 'ACOS %',      fmt: v => v.toFixed(1) + '%' },
+  { key: 'acos',         label: 'ACoS %',      fmt: v => v.toFixed(1) + '%' },
   { key: 'clicks',       label: 'Clicks',      fmt: v => v.toLocaleString('pt-BR') },
 ]
 
@@ -588,7 +588,7 @@ const filteredAccounts = computed(() => {
 })
 
 // Se filtro de conta está ativo, recalcula localmente; senão usa o total pré-computado pelo backend
-// (que inclui TODAS as contas do usuário como denominador do TACOS)
+// (que inclui TODAS as contas do usuário como denominador do TACoS)
 const avgAcos = computed(() => {
   if (!overview.value) return 0
   if (!selectedAccounts.value.length) return overview.value.total_acos ?? 0
