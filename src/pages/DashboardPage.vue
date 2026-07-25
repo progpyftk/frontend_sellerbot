@@ -388,6 +388,34 @@
             </q-icon>
           </template>
         </SbKpiCard>
+
+        <!-- Clientes Novos vs Recorrentes (N1) -->
+        <SbKpiCard
+          label="Compradores"
+          :value="buyerClassification ? (buyerClassification.new_count + buyerClassification.returning_count) : '—'"
+          variant="slate"
+          :sub="buyerClassification ? (buyerClassification.new_pct + '% novos') : ''"
+        >
+          <template #info>
+            <q-icon name="help_outline" size="12px" class="kpi-info">
+              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
+                Compradores no período. Novos = primeira compra; Recorrentes = já compraram antes.
+              </q-tooltip>
+            </q-icon>
+          </template>
+          <template #detail>
+            <div v-if="buyerClassification" class="buyer-breakdown">
+              <div class="buyer-bar">
+                <span class="buyer-bar-seg buyer-bar--new" :style="{ width: buyerClassification.new_pct + '%' }"></span>
+                <span class="buyer-bar-seg buyer-bar--ret" :style="{ width: (100 - buyerClassification.new_pct) + '%' }"></span>
+              </div>
+              <div class="buyer-legend">
+                <span class="buyer-legend-item"><span class="buyer-dot buyer-dot--new"></span>Novos {{ buyerClassification.new_count }} ({{ buyerClassification.new_pct }}%)</span>
+                <span class="buyer-legend-item"><span class="buyer-dot buyer-dot--ret"></span>Recorrentes {{ buyerClassification.returning_count }} ({{ (100 - buyerClassification.new_pct).toFixed(0) }}%)</span>
+              </div>
+            </div>
+          </template>
+        </SbKpiCard>
       </SbKpiGrid>
 
           <!-- ══════════ ABAS ═══════════════════════════════════════════════════ -->
@@ -432,7 +460,7 @@
                 </tr>
               </thead>
               <tbody>
-                <template v-for="d in chartDataDesc" :key="d.date">
+                <template v-for="d in chartDataDesc" :key="d.date" v-memo="[d.date, d.gmv, d.net_revenue, d.gross_profit, d.ads_cost, d.lucro_liquido, d.dateLabel, expandedDays.has(d.date), d.orders_count, d.units_sold]">
                   <!-- Linha principal do dia -->
                   <tr :class="['dt-row', d.lucro_liquido < 0 ? 'dt-row--neg' : '', expandedDays.has(d.date) ? 'dt-row--open' : '']"
                     @click="toggleDayExpand(d.date)">
@@ -512,6 +540,68 @@
                 </tr>
               </tfoot>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ ABA: ESTOQUE ══════════════════════════════════════════ -->
+      <div v-show="activeTab === 'estoque'" class="tab-content">
+        <div class="table-card">
+          <div class="table-header-row">
+            <div class="table-title">
+              <q-icon name="inventory" size="15px" class="q-mr-xs" />
+              Análise de Estoque
+            </div>
+          </div>
+
+          <div v-if="stockLoading" class="loading-center" style="min-height: 120px;">
+            <q-spinner-dots color="teal" size="32px" />
+          </div>
+
+          <template v-else-if="stockData">
+            <!-- Cards resumo -->
+            <div class="stock-summary">
+              <div class="stock-card stock-card--ruptura">
+                <div class="stock-card-val">{{ stockData.em_ruptura }}</div>
+                <div class="stock-card-label">Em Ruptura</div>
+              </div>
+              <div class="stock-card stock-card--critico">
+                <div class="stock-card-val">{{ stockData.critico }}</div>
+                <div class="stock-card-label">Crítico (&lt;7d)</div>
+              </div>
+              <div class="stock-card stock-card--atencao">
+                <div class="stock-card-val">{{ stockData.atencao }}</div>
+                <div class="stock-card-label">Atenção (7-30d)</div>
+              </div>
+              <div class="stock-card stock-card--ok">
+                <div class="stock-card-val">{{ stockData.ok }}</div>
+                <div class="stock-card-label">OK (&gt;30d)</div>
+              </div>
+              <div class="stock-card stock-card--total">
+                <div class="stock-card-val">{{ stockData.total }}</div>
+                <div class="stock-card-label">Total Itens</div>
+              </div>
+            </div>
+
+            <!-- Alertas -->
+            <div v-if="stockData.alertas?.length" class="stock-alerts">
+              <div class="stock-alerts-title">
+                <q-icon name="warning" size="14px" color="red" />
+                Alertas — itens que precisam de atenção
+              </div>
+              <div v-for="a in stockData.alertas" :key="a.item_id" class="stock-alert-row">
+                <span class="stock-alert-badge" :class="a.motivo === 'ruptura' ? 'badge--ruptura' : 'badge--critico'">
+                  {{ a.motivo === 'ruptura' ? 'RUPTURA' : 'CRÍTICO' }}
+                </span>
+                <span class="stock-alert-title">{{ a.title }}</span>
+                <span class="stock-alert-meta">{{ a.account }} · estoque: {{ a.stock }} · vendas/dia: {{ a.daily_velocity }}</span>
+              </div>
+            </div>
+          </template>
+
+          <div v-else class="empty-state" style="padding: 40px 0;">
+            <q-icon name="inventory" size="32px" color="grey-4" />
+            <div class="text-small q-mt-sm text-grey">Nenhum dado de estoque disponível</div>
           </div>
         </div>
       </div>
@@ -1845,6 +1935,7 @@ const periodLabel = computed(() => {
 // ── Config ────────────────────────────────────────────────────────────────
 const tabs = [
   { key: 'evolucao',    label: 'Evolução',       icon: 'show_chart' },
+  { key: 'estoque',     label: 'Estoque',        icon: 'inventory' },
   { key: 'ranking',     label: 'Ranking Contas', icon: 'leaderboard' },
   { key: 'dre',         label: 'DRE-Aprox.',     icon: 'account_balance' },
   { key: 'contas',      label: 'Contas & CNPJ',  icon: 'storefront' },
@@ -2239,6 +2330,9 @@ async function load() {
 
     // Carrega dados do ano anterior (sazonalidade)
     if (activeMarketplace.value !== 'shopee') loadLastYear()
+
+    // Carrega classificação de compradores (N1)
+    loadBuyerClassification()
 
     // Sempre carrega dados por conta para per_account mode e filtros reativos
     loadAccountDailyData()
@@ -3348,6 +3442,9 @@ function convClass(qty, visits) {
 // ── Sazonalidade — ano anterior ───────────────────────────────────────────
 const lastYearData   = ref(null)
 const loadingLastYear = ref(false)
+const stockData = ref(null)
+const stockLoading = ref(false)
+const buyerClassification = ref(null)
 
 async function loadLastYear() {
   if (!dateFrom.value || !dateTo.value) return
@@ -3365,6 +3462,34 @@ async function loadLastYear() {
     lastYearData.value = null
   } finally {
     loadingLastYear.value = false
+  }
+}
+
+// ── Stock Analysis (N2) ─────────────────────────────────────────────
+async function loadStock() {
+  stockLoading.value = true
+  try {
+    const [mlRes] = await Promise.allSettled([
+      MercadoLivreService.getStockAnalysis?.() || Promise.resolve(null),
+    ])
+    stockData.value = (mlRes.status === 'fulfilled' && mlRes.value) ? mlRes.value.data : null
+  } catch (e) {
+    console.error('Erro ao carregar análise de estoque:', e)
+    stockData.value = null
+  } finally {
+    stockLoading.value = false
+  }
+}
+
+// ── Buyer Classification (N1) ────────────────────────────────────────
+async function loadBuyerClassification() {
+  try {
+    const params = { date_from: dateFrom.value, date_to: dateTo.value }
+    const res = await MercadoLivreService.getBuyerClassification(params)
+    buyerClassification.value = res.data
+  } catch (e) {
+    // Silently fail — this is a complementary KPI
+    buyerClassification.value = null
   }
 }
 
@@ -3456,6 +3581,7 @@ onMounted(() => {
   loadPlotly()  // pre-fetch Plotly in parallel with API calls — eliminates chart render delay
   load()
   loadToday()
+  loadStock()
   // Close account picker on outside click
   document.addEventListener('click', (e) => {
     const wrap = document.querySelector('.acct-picker-wrap')
@@ -3471,20 +3597,21 @@ watch(selectedAccountKeys, () => {
 }, { deep: true })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import 'src/css/tokens.scss';
 
 /* ── Loading ───────────────────────────────────────────────────────────── */
 .loading-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: $space-4;
   padding: 80px 0;
 }
 
 .loading-text {
   color: #9aa0ac;
-  font-size: 14px;
+  font-size: $text-body-size;
 }
 
 /* ── Today banner ───────────────────────────────────────────────────────── */
@@ -3630,7 +3757,7 @@ watch(selectedAccountKeys, () => {
   border: 1.5px solid #e8edf3;
   position: relative;
   overflow: hidden;
-  transition: transform .15s, box-shadow .15s;
+  transition: transform $transition-base, box-shadow $transition-base;
 }
 
 .kpi-card:hover {
@@ -3744,7 +3871,7 @@ watch(selectedAccountKeys, () => {
   font-weight: 500;
   display: flex;
   align-items: center;
-  transition: all .15s;
+  transition: all $transition-base;
 }
 
 .tab-btn--on {
@@ -3800,7 +3927,7 @@ watch(selectedAccountKeys, () => {
   cursor: pointer;
   font-size: 11px;
   font-weight: 500;
-  transition: all .2s;
+  transition: all $transition-slow;
 }
 
 .metric-btn:hover:not(.metric-btn--on) {
@@ -4050,7 +4177,7 @@ watch(selectedAccountKeys, () => {
   height: 6px;
   border-radius: 3px;
   flex-shrink: 0;
-  transition: width .3s;
+  transition: width $transition-slow;
 }
 
 /* ── CNPJ & Marketplace ────────────────────────────────────────────────── */
@@ -4075,7 +4202,7 @@ watch(selectedAccountKeys, () => {
   border: 1.5px solid #e8edf3;
   border-radius: 12px;
   padding: 18px;
-  transition: transform .15s, box-shadow .15s;
+  transition: transform $transition-base, box-shadow $transition-base;
 }
 
 .cnpj-card:hover {
@@ -4135,7 +4262,7 @@ watch(selectedAccountKeys, () => {
   height: 100%;
   background: linear-gradient(90deg, #0d9488, #2dd4bf);
   border-radius: 4px;
-  transition: width .4s;
+  transition: width $transition-slow;
 }
 
 .gmv-bar-pct {
@@ -4252,7 +4379,7 @@ watch(selectedAccountKeys, () => {
   font-weight: 500;
   display: flex;
   align-items: center;
-  transition: all .15s;
+  transition: all $transition-base;
 }
 
 .tg-btn--on {
@@ -4360,7 +4487,7 @@ watch(selectedAccountKeys, () => {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all .15s;
+  transition: all $transition-base;
   white-space: nowrap;
 }
 
@@ -4400,7 +4527,7 @@ watch(selectedAccountKeys, () => {
   background: linear-gradient(90deg, #0d9488, #2dd4bf);
   border-radius: 3px;
   flex-shrink: 0;
-  transition: width .4s;
+  transition: width $transition-slow;
 }
 
 /* Marketplace bar variants */
@@ -4500,7 +4627,7 @@ watch(selectedAccountKeys, () => {
 .wf-bar {
   height: 100%;
   border-radius: 5px;
-  transition: width .5s ease;
+  transition: width $transition-slow;
 }
 .wf-bar--gmv   { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
 .wf-bar--deduct{ background: linear-gradient(90deg, #fca5a5, #f87171); }
@@ -4652,7 +4779,7 @@ watch(selectedAccountKeys, () => {
 .daily-table td.col-num { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* Row states */
-.dt-row { cursor: pointer; transition: background .1s; }
+.dt-row { cursor: pointer; transition: background $transition-fast; }
 .dt-row:hover td { background: #f8fffe; }
 .dt-row--open td { background: #f0fdfa; font-weight: 600; }
 .dt-row--open .dt-expand-btn { color: #0d9488; }
@@ -4666,7 +4793,7 @@ watch(selectedAccountKeys, () => {
   color: #cbd5e1;
   margin-right: 6px;
   vertical-align: middle;
-  transition: color .15s;
+  transition: color $transition-fast;
 }
 .dt-row:hover .dt-expand-btn { color: #94a3b8; }
 .dt-date-label { vertical-align: middle; }
@@ -4737,7 +4864,7 @@ watch(selectedAccountKeys, () => {
 .dt-total-row .dt-warn { color: #fcd34d; }
 
 /* Expandable daily rows (legacy — mantidos para outras tabelas) */
-.day-row { transition: background .1s; }
+.day-row { transition: background $transition-fast; }
 .day-row--expanded td { background: #f0fdfb !important; font-weight: 600; }
 .day-expand-icon {
   display: inline-flex;
@@ -4813,7 +4940,7 @@ watch(selectedAccountKeys, () => {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all .15s;
+  transition: all $transition-base;
 }
 .wd-pill:hover:not(.wd-pill--on) {
   border-color: #94a3b8;
@@ -4847,7 +4974,7 @@ watch(selectedAccountKeys, () => {
 .pareto-bar-fill {
   height: 100%;
   border-radius: 3px;
-  transition: width .3s;
+  transition: width $transition-slow;
 }
 .pareto-pct {
   font-size: 11px;
@@ -5041,7 +5168,7 @@ tr.pareto-line-95 td {
   font-weight: 500;
   color: #374151;
   cursor: pointer;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color $transition-base, box-shadow $transition-base;
   min-width: 160px;
   max-width: 300px;
 }
@@ -5177,7 +5304,7 @@ tr.pareto-line-95 td {
   font-size: 11px;
   color: #64748b;
   cursor: pointer;
-  transition: all .15s;
+  transition: all $transition-base;
   margin-left: auto;
 }
 .dre-breakdown-toggle:hover { background: #f1f5f9; color: #0d9488; border-color: #0d9488; }
@@ -5293,7 +5420,7 @@ tr.pareto-line-95 td {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background .15s;
+  transition: background $transition-base;
 }
 .chart-filter-btn:active { background: #ccfbf1; }
 
@@ -5317,7 +5444,7 @@ tr.pareto-line-95 td {
   border: none;
   background: transparent;
   cursor: pointer;
-  transition: all .15s;
+  transition: all $transition-base;
   white-space: nowrap;
 }
 .cmt-btn:hover { color: #0f172a; }
@@ -5338,7 +5465,7 @@ tr.pareto-line-95 td {
   color: #94a3b8;
   cursor: pointer;
   margin-left: 2px;
-  transition: color .15s;
+  transition: color $transition-fast;
 }
 .cmt-help-icon:hover { color: #0d9488; }
 
@@ -5401,7 +5528,7 @@ tr.pareto-line-95 td {
   background: #f8fafc;
   color: #64748b;
   cursor: pointer;
-  transition: all .15s;
+  transition: all $transition-base;
 }
 .chart-metric-pill:hover { border-color: #94a3b8; color: #374151; }
 .chart-metric-pill--on {
@@ -5797,4 +5924,138 @@ tr.pareto-line-95 td {
     padding: 10px 12px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ESTOQUE — ABA
+══════════════════════════════════════════════════════════════════════════ */
+.stock-summary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: $space-3;
+  margin-bottom: $space-6;
+}
+.stock-card {
+  padding: $space-4;
+  border-radius: $radius-md;
+  text-align: center;
+  border: 1px solid $border;
+  background: #fff;
+}
+.stock-card-val {
+  font-size: 28px;
+  font-weight: $font-bold;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.stock-card-label {
+  font-size: $text-small-size;
+  color: $text-muted;
+  font-weight: $font-medium;
+}
+.stock-card--ruptura .stock-card-val { color: #dc2626; }
+.stock-card--critico .stock-card-val { color: #f59e0b; }
+.stock-card--atencao .stock-card-val { color: #f97316; }
+.stock-card--ok .stock-card-val { color: #16a34a; }
+.stock-card--total .stock-card-val { color: $text-primary; }
+
+.stock-alerts {
+  margin-top: $space-4;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: $radius-md;
+  padding: $space-4;
+}
+.stock-alerts-title {
+  font-weight: $font-semibold;
+  font-size: $text-body-size;
+  margin-bottom: $space-3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stock-alert-row {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-2 0;
+  border-bottom: 1px solid #fee2e2;
+  font-size: $text-small-size;
+}
+.stock-alert-row:last-child {
+  border-bottom: none;
+}
+.stock-alert-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: $font-bold;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.badge--ruptura {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.badge--critico {
+  background: #fef3c7;
+  color: #92400e;
+}
+.stock-alert-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: $text-primary;
+}
+.stock-alert-meta {
+  color: $text-muted;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .stock-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .stock-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* ══════════════════════════════════════════════════════════════════════════
+   COMPRADORES — KPI BREAKDOWN (N1)
+══════════════════════════════════════════════════════════════════════════ */
+.buyer-breakdown {
+  margin-top: $space-2;
+  width: 100%;
+}
+.buyer-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: $space-1;
+}
+.buyer-bar-seg { transition: width $transition-base; }
+.buyer-bar--new { background: #0f766e; }
+.buyer-bar--ret { background: #94a3b8; }
+.buyer-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  font-size: 10px;
+  color: $text-muted;
+}
+.buyer-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.buyer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.buyer-dot--new { background: #0f766e; }
+.buyer-dot--ret { background: #94a3b8; }
 </style>

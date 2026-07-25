@@ -158,4 +158,10 @@ export default {
   getFullCoverage() {
     return api.get('/mercadolivre/market/full-coverage/')
   },
+  getStockAnalysis() {
+    return api.get('/mercadolivre/market/stock-analysis/')
+  },
+  getBuyerClassification(params) {
+    return api.get('/mercadolivre/orders/buyer-classification/', { params })
+  },
 }
