@@ -115,4 +115,15 @@ export default {
   deleteVoucher(voucherId, data) {
     return api.delete(`/shopee/vouchers/${voucherId}/delete/`, { data })
   },
+
+  // Cupons — renovação automática (FB-27)
+  getVoucherAutoRenews() {
+    return api.get('/shopee/vouchers/auto-renew/')
+  },
+  createVoucherAutoRenew(data) {
+    return api.post('/shopee/vouchers/auto-renew/create/', data)
+  },
+  toggleVoucherAutoRenew(templateId, active) {
+    return api.patch(`/shopee/vouchers/auto-renew/${templateId}/toggle/`, { active })
+  },
 }

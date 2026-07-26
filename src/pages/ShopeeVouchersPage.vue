@@ -34,6 +34,9 @@
             @click="selectStatus('all')" aria-label="Limpar filtro" />
         </div>
 
+        <q-btn flat color="grey-7" icon="autorenew" label="Renovações automáticas" size="sm"
+          @click="openAutoRenewList()" />
+
         <q-btn unelevated color="orange-8" text-color="white" icon="add" label="Novo Cupom"
           size="sm" class="q-ml-md" @click="openCreate()" />
       </div>
@@ -170,12 +173,13 @@
                   placeholder="Ex: Cupom 10% Julho" />
               </div>
               <div class="sv-form-field" style="min-width:130px">
-                <div class="sv-form-label">Código *</div>
+                <div class="sv-form-label">{{ form.auto_renew ? 'Prefixo do código *' : 'Código *' }}</div>
                 <q-input v-model="form.voucher_code" outlined dense
-                  placeholder="JULHO10" maxlength="20"
+                  :placeholder="form.auto_renew ? 'PROMO' : 'JULHO10'" :maxlength="form.auto_renew ? 14 : 20"
                   :error="form.voucher_code.length > 0 && !/^[A-Za-z0-9]+$/.test(form.voucher_code)"
                   error-message="Só letras e números"
                   @update:model-value="v => form.voucher_code = v.toUpperCase().replace(/[^A-Z0-9]/g,'')" />
+                <div v-if="form.auto_renew" class="text-caption text-grey-5">Cada ciclo ganha um sufixo de data — ex: {{ form.voucher_code || 'PROMO' }}260101</div>
               </div>
             </div>
 
@@ -255,8 +259,19 @@
               </div>
             </div>
 
-            <!-- Período de validade -->
-            <div class="sv-form-row">
+            <!-- Renovação automática (FB-27) -->
+            <div class="sv-form-section">
+              <label class="sv-autorenew-check">
+                <q-checkbox v-model="form.auto_renew" dense color="teal" />
+                <div>
+                  <div class="sv-form-label" style="margin:0">Renovar automaticamente</div>
+                  <div class="text-caption text-grey-5">Cria um novo ciclo sozinho quando o anterior vence — sem precisar voltar aqui.</div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Período de validade (manual) ou duração do ciclo (auto-renovação) -->
+            <div v-if="!form.auto_renew" class="sv-form-row">
               <div class="sv-form-field sv-form-field--grow">
                 <div class="sv-form-label">Início *</div>
                 <q-input v-model="form.start_date" type="datetime-local" outlined dense />
@@ -264,6 +279,13 @@
               <div class="sv-form-field sv-form-field--grow">
                 <div class="sv-form-label">Fim *</div>
                 <q-input v-model="form.end_date" type="datetime-local" outlined dense />
+              </div>
+            </div>
+            <div v-else class="sv-form-row">
+              <div class="sv-form-field sv-form-field--grow">
+                <div class="sv-form-label">Duração de cada ciclo (dias) *</div>
+                <q-input v-model.number="form.duration_days" type="number" outlined dense min="1" max="90" />
+                <div class="text-caption text-grey-5 q-mt-xs">O 1º cupom é criado na hora, válido a partir de agora.</div>
               </div>
             </div>
 
@@ -489,6 +511,36 @@
       </q-card>
     </q-dialog>
 
+    <!-- ══ RENOVAÇÕES AUTOMÁTICAS (FB-27) ══════════════════════════════════════ -->
+    <q-dialog v-model="autoRenewOpen">
+      <q-card style="width:520px;max-width:96vw">
+        <q-card-section class="row items-center q-pb-sm">
+          <q-icon name="autorenew" size="sm" class="q-mr-sm" style="color:#0d9488" />
+          <span class="text-subtitle1 text-weight-bold">Renovações automáticas</span>
+          <q-space />
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-card-section>
+        <q-card-section class="q-pt-none" style="max-height:60vh;overflow-y:auto">
+          <div v-if="autoRenewLoading" class="sv-center" style="padding:30px">
+            <q-spinner-dots color="teal" size="30px" />
+          </div>
+          <div v-else-if="!autoRenewTemplates.length" class="text-center text-grey-5 q-pa-lg">
+            Nenhuma renovação automática ativa. Crie um cupom marcando "Renovar automaticamente".
+          </div>
+          <div v-else v-for="t in autoRenewTemplates" :key="t.id" class="sv-ar-row">
+            <div class="sv-ar-info">
+              <div class="sv-ar-name">{{ t.voucher_name }}</div>
+              <div class="text-caption text-grey-5">
+                {{ t.shop_name }} · a cada {{ t.duration_days }}d · último: {{ t.last_voucher_id ? fmtDateTime(t.last_renewed_at) : 'aguardando 1º ciclo' }}
+              </div>
+              <div v-if="t.last_error" class="sv-ar-error">⚠ {{ t.last_error }}</div>
+            </div>
+            <q-toggle v-model="t.active" color="teal" @update:model-value="v => toggleAutoRenew(t, v)" />
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
     <!-- Toast de cópia -->
     <transition name="sv-toast-anim">
       <div v-if="copiedToast" class="sv-toast">
@@ -549,6 +601,8 @@ function defaultForm() {
     display_start_date:'',
     display_all:       false,
     display_hidden:    false,
+    auto_renew:        false,   // FB-27
+    duration_days:     30,
   }
 }
 
@@ -581,12 +635,16 @@ const validationChecklist = computed(() => {
     { ok: !!f.voucher_code.trim(),     label: 'Código preenchido' },
     { ok: hasDiscount,                 label: f.reward_type === 1 ? 'Valor do desconto > R$ 0' : 'Percentual definido' },
     { ok: (f.usage_quantity || 0) >= 1,label: 'Quantidade de usos ≥ 1' },
-    { ok: !!f.start_date,              label: 'Data de início' },
-    { ok: !!f.end_date,                label: 'Data de fim' },
-    ...(f.start_date && f.end_date ? [
-      { ok: diffH >= 1, label: 'Fim ≥ 1h após início' },
-      { ok: diffM <= 3, label: 'Validade ≤ 3 meses'   },
-    ] : []),
+    ...(f.auto_renew ? [
+      { ok: (f.duration_days || 0) >= 1 && (f.duration_days || 0) <= 90, label: 'Duração do ciclo entre 1 e 90 dias' },
+    ] : [
+      { ok: !!f.start_date,              label: 'Data de início' },
+      { ok: !!f.end_date,                label: 'Data de fim' },
+      ...(f.start_date && f.end_date ? [
+        { ok: diffH >= 1, label: 'Fim ≥ 1h após início' },
+        { ok: diffM <= 3, label: 'Validade ≤ 3 meses'   },
+      ] : []),
+    ]),
     ...(createWarning.value ? [{ ok: false, label: 'Corrigir conflito de valores' }] : []),
   ]
 })
@@ -653,6 +711,34 @@ function openDetail(v) {
   detailOpen.value    = true
 }
 
+// ── Renovação automática (FB-27) ──────────────────────────────────────────
+const autoRenewOpen      = ref(false)
+const autoRenewLoading   = ref(false)
+const autoRenewTemplates = ref([])
+
+async function openAutoRenewList() {
+  autoRenewOpen.value = true
+  autoRenewLoading.value = true
+  try {
+    const res = await ShopeeService.getVoucherAutoRenews()
+    autoRenewTemplates.value = res.data?.templates || []
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar renovações automáticas: ' + (e?.response?.data?.error || e.message) })
+  } finally {
+    autoRenewLoading.value = false
+  }
+}
+
+async function toggleAutoRenew(template, active) {
+  try {
+    await ShopeeService.toggleVoucherAutoRenew(template.id, active)
+    $q.notify({ type: 'positive', message: active ? 'Renovação reativada.' : 'Renovação desativada — o cupom atual continua válido até o fim, só não cria o próximo ciclo.' })
+  } catch (e) {
+    template.active = !active  // reverte o toggle visual
+    $q.notify({ type: 'negative', message: 'Erro: ' + (e?.response?.data?.error || e.message) })
+  }
+}
+
 // ── Criação ────────────────────────────────────────────────────────────────
 function openCreate() {
   if (!accounts.value.length) {
@@ -671,6 +757,37 @@ async function submitCreate() {
   createLoading.value = true
   try {
     const f = form.value
+
+    // FB-27: renovação automática usa endpoint e payload próprios (sem datas manuais,
+    // o backend controla o agendamento local)
+    if (f.auto_renew) {
+      const payload = {
+        account_id:          f.account_id,
+        voucher_name:        f.voucher_name.trim(),
+        voucher_code_prefix: f.voucher_code.trim().toUpperCase(),
+        reward_type:         f.reward_type,
+        usage_quantity:      f.usage_quantity,
+        min_basket_price:    f.min_basket_price || 0,
+        duration_days:       f.duration_days,
+      }
+      if (f.reward_type === 1) {
+        payload.discount_amount = parseFloat(f.discount_amount)
+      } else {
+        payload.percentage = parseInt(f.percentage)
+        if (f.max_price) payload.max_price = parseFloat(f.max_price)
+      }
+
+      const res = await ShopeeService.createVoucherAutoRenew(payload)
+      if (res.data?.first_cycle_ok) {
+        $q.notify({ type: 'positive', message: 'Renovação automática criada — 1º cupom já está ativo!' })
+      } else {
+        $q.notify({ type: 'warning', message: 'Renovação automática criada, mas o 1º ciclo falhou: ' + (res.data?.error || 'erro desconhecido') + '. Tenta de novo amanhã.' })
+      }
+      createOpen.value = false
+      await loadVouchers()
+      return
+    }
+
     const payload = {
       account_id:       f.account_id,
       voucher_name:     f.voucher_name.trim(),
@@ -906,6 +1023,14 @@ function usageColor(pct) {
 .sv-type-opt-desc  { font-size: 10px; color: #aaa; }
 
 .sv-warn { font-size: 12px; color: #f57c00; background: #fff3e0; padding: 8px 12px; border-radius: 8px; display: flex; align-items: flex-start; }
+
+/* Renovação automática (FB-27) */
+.sv-autorenew-check { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.sv-ar-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 4px; border-bottom: 1px solid #f1f5f9; }
+.sv-ar-row:last-child { border-bottom: none; }
+.sv-ar-info { min-width: 0; }
+.sv-ar-name { font-weight: 700; color: #0f172a; font-size: 13px; }
+.sv-ar-error { font-size: 11px; color: #dc2626; margin-top: 2px; }
 
 /* ── Detail ── */
 .sv-detail-value { font-size: 32px; font-weight: 800; color: #e65100; text-align: center; padding: 16px 0 4px; }
