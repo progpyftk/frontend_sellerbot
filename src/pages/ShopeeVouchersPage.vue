@@ -189,11 +189,10 @@
                   <div class="sv-type-opt-title">Loja</div>
                   <div class="sv-type-opt-desc">Válido para qualquer produto</div>
                 </div>
-                <div :class="['sv-type-opt', form.voucher_type === 2 && 'sv-type-opt--on']"
-                  @click="form.voucher_type = 2">
+                <div class="sv-type-opt sv-type-opt--disabled" title="Em breve — seleção de produtos ainda não implementada">
                   <q-icon name="inventory_2" size="20px" />
                   <div class="sv-type-opt-title">Produto</div>
-                  <div class="sv-type-opt-desc">Produtos específicos</div>
+                  <div class="sv-type-opt-desc">Em breve</div>
                 </div>
               </div>
             </div>
@@ -901,6 +900,8 @@ function usageColor(pct) {
 .sv-type-opt { flex: 1; min-width: 120px; border: 2px solid #eee; border-radius: 10px; padding: 10px 12px; cursor: pointer; text-align: center; transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #999; }
 .sv-type-opt:hover { border-color: #0d9488; color: #0d9488; }
 .sv-type-opt--on { border-color: #0d9488; background: #f0fdf9; color: #0d9488; }
+.sv-type-opt--disabled { cursor: not-allowed; opacity: .5; }
+.sv-type-opt--disabled:hover { border-color: #eee; color: #999; }
 .sv-type-opt-title { font-size: 13px; font-weight: 700; }
 .sv-type-opt-desc  { font-size: 10px; color: #aaa; }
 
