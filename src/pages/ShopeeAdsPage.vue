@@ -461,6 +461,7 @@ function statusLabel(s) {
 }
 
 function adTypeLabel(t) {
+  if (t === 'shop_gms') return 'Shop GMV Max'
   if (t === 'manual' || t === 1) return 'CPC Manual'
   if (t === 'auto'   || t === 2) return 'CPC Auto'
   return t || '—'
