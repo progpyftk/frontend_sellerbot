@@ -63,6 +63,10 @@ export default {
     return api.post('/mercadolivre/promotions/', payload)
   },
 
+  toggleAutoActivatePromotion(recordId, active) {
+    return api.patch(`/mercadolivre/promotions/${recordId}/auto-activate/`, { active })
+  },
+
   getOrderKpis(params) {
     return api.get('/mercadolivre/orders/kpis/', { params })
   },

@@ -139,6 +139,14 @@
                             <q-icon name="bolt" size="10px" class="q-mr-xs" v-if="props.row.last_activated_count > 0" />
                             {{ props.row.last_activated_count }} itens
                           </q-chip>
+
+                          <q-toggle v-if="props.row.record_id" dense size="sm" color="teal"
+                            :model-value="props.row.auto_activate"
+                            @update:model-value="v => toggleAutoActivate(props.row, v)"
+                            class="q-ml-sm" />
+                          <span v-if="props.row.record_id" class="q-ml-xs" style="font-size:0.68rem;color:#64748b">
+                            Ativar automaticamente
+                          </span>
                         </div>
                       </q-td>
 
@@ -866,6 +874,25 @@ const openLogsFor = (account, promo) => {
 // ============================================================================
 // HELPERS
 // ============================================================================
+// FB-30: liga/desliga a reativação automática diária desta promoção
+const toggleAutoActivate = async (promo, active) => {
+  const previous = promo.auto_activate
+  promo.auto_activate = active  // otimista
+  try {
+    await MercadoLivreService.toggleAutoActivatePromotion(promo.record_id, active)
+    $q.notify({
+      type: 'positive',
+      message: active
+        ? 'Ativação automática ligada — vai rodar sozinha todo dia com a mesma trava de margem.'
+        : 'Ativação automática desligada.',
+      position: 'top',
+    })
+  } catch (e) {
+    promo.auto_activate = previous
+    $q.notify({ type: 'negative', message: 'Erro ao atualizar: ' + (e?.response?.data?.error || e.message), position: 'top' })
+  }
+}
+
 const getTypeMeta = (type) => {
   const map = {
     'MARKETPLACE_CAMPAIGN': { label: 'Campanha MKT', color: 'purple-1', textColor: 'purple-9' },
