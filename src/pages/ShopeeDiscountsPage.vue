@@ -194,11 +194,17 @@
           </table>
         </q-card-section>
 
-        <q-card-section class="col-auto q-py-sm q-px-md row justify-end bg-grey-1 items-center" style="border-top:1px solid #eee">
-          <q-btn v-if="activeDiscount?.status === 'ongoing'" unelevated color="red-7" icon="stop_circle"
-            label="Encerrar promoção" size="sm" @click="confirmEnd(activeDiscount)" />
-          <q-btn v-if="activeDiscount?.status === 'upcoming'" unelevated color="grey-7" icon="delete"
-            label="Deletar promoção" size="sm" @click="confirmDelete(activeDiscount)" />
+        <q-card-section class="col-auto q-py-sm q-px-md row justify-between bg-grey-1 items-center" style="border-top:1px solid #eee">
+          <div class="row items-center q-gutter-sm">
+            <q-btn v-if="activeDiscount?.status !== 'expired'" unelevated color="teal-7" icon="add"
+              label="Adicionar Itens" size="sm" @click="openAddItems(activeDiscount)" />
+          </div>
+          <div class="row items-center q-gutter-sm">
+            <q-btn v-if="activeDiscount?.status === 'ongoing'" unelevated color="red-7" icon="stop_circle"
+              label="Encerrar" size="sm" @click="confirmEnd(activeDiscount)" />
+            <q-btn v-if="activeDiscount?.status === 'upcoming'" unelevated color="grey-7" icon="delete"
+              label="Deletar" size="sm" @click="confirmDelete(activeDiscount)" />
+          </div>
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -221,7 +227,7 @@
             <q-input v-model="form.end_date" label="Fim *" type="datetime-local" outlined dense class="col" />
           </div>
           <div class="text-caption text-grey-6">
-            Após criar, você poderá adicionar itens pela API ou pelo painel da Shopee.
+            Após criar, adicione itens à promoção abrindo o detalhe e clicando em "Adicionar Itens".
           </div>
         </q-card-section>
         <q-card-section class="row justify-end q-pt-none q-gutter-sm">
@@ -229,6 +235,81 @@
           <q-btn unelevated color="orange-7" label="Criar Promoção" :loading="createLoading"
             :disable="!form.account_id || !form.discount_name || !form.start_date || !form.end_date"
             @click="submitCreate()" />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- ── ADD ITEMS DIALOG ── -->
+    <q-dialog v-model="addItemsOpen" maximized position="right">
+      <q-card class="column" style="width: 700px; max-width: 98vw;">
+        <q-card-section class="row items-center q-py-sm bg-teal-7 text-white">
+          <q-icon name="playlist_add" class="q-mr-sm" />
+          <span class="text-subtitle1 text-weight-bold">Adicionar Itens — {{ addItemsDiscount?.discount_name }}</span>
+          <q-space /><q-btn flat round dense icon="close" v-close-popup @click="addItemsOpen = false" />
+        </q-card-section>
+
+        <q-card-section class="col-auto row items-center q-gutter-sm q-pt-sm">
+          <q-input v-model="addItemSearch" label="Buscar item" outlined dense clearable
+            placeholder="Nome ou ID do item" style="min-width: 200px;" @update:model-value="debouncedFilterItems" />
+          <q-btn flat color="teal-7" icon="refresh" size="sm" @click="loadAddItems()" />
+          <q-space />
+          <span class="text-caption text-grey-6">{{ filteredItems.length }} itens disponíveis</span>
+        </q-card-section>
+
+        <q-card-section v-if="addItemsLoading" class="col flex-center">
+          <q-spinner-dots color="teal-7" size="28px" />
+        </q-card-section>
+
+        <q-card-section v-else class="col scroll q-pa-none">
+          <table class="sd-items-table">
+            <thead>
+              <tr>
+                <th style="width:36px"></th>
+                <th>Item</th>
+                <th class="text-right">Preço</th>
+                <th class="text-right" style="width:120px">Preço Promo</th>
+                <th class="text-right" style="width:100px">Estoque Promo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="item in filteredItems" :key="item.item_id">
+                <tr :class="['sd-item-row', selectedAddItems.has(item.item_id) && 'sd-item-row--selected']"
+                  @click="toggleAddItem(item)">
+                  <td class="text-center">
+                    <q-checkbox :model-value="selectedAddItems.has(item.item_id)" dense />
+                  </td>
+                  <td>
+                    <div class="sd-item-name ellipsis" style="max-width: 280px;">{{ item.item_name }}</div>
+                    <div class="text-caption text-grey-5">ID {{ item.item_id }}</div>
+                  </td>
+                  <td class="text-right text-grey-6">{{ fmtPrice(item.price) }}</td>
+                  <td class="text-right">
+                    <q-input v-model="addItemPrices[item.item_id]" type="number" dense outlined
+                      :placeholder="String(item.price)" step="0.01" min="0.01"
+                      style="width: 100px;" @click.stop
+                      @update:model-value="v => { addItemPrices[item.item_id] = Math.min(Number(v || 0), item.price || Infinity) }" />
+                  </td>
+                  <td class="text-right">
+                    <q-input v-model="addItemStocks[item.item_id]" type="number" dense outlined
+                      :placeholder="String(item.stock || 10)" step="1" min="1"
+                      style="width: 80px;" @click.stop />
+                  </td>
+                </tr>
+              </template>
+              <tr v-if="!filteredItems.length">
+                <td colspan="5" class="text-center text-grey-5 q-py-lg">Nenhum item encontrado</td>
+              </tr>
+            </tbody>
+          </table>
+        </q-card-section>
+
+        <q-card-section class="col-auto q-py-sm q-px-md row justify-between bg-grey-1 items-center" style="border-top:1px solid #eee">
+          <span class="text-caption text-grey-6">{{ selectedAddItems.size }} item(ns) selecionado(s)</span>
+          <div class="row q-gutter-sm">
+            <q-btn flat label="Cancelar" v-close-popup @click="addItemsOpen = false" />
+            <q-btn unelevated color="teal-7" label="Adicionar à Promoção" :loading="addItemsSaving"
+              :disable="!selectedAddItems.size" @click="submitAddItems()" />
+          </div>
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -299,6 +380,27 @@ const confirmEndOpen    = ref(false)
 const confirmDeleteOpen = ref(false)
 const confirmTarget     = ref(null)
 const actionLoading     = ref(false)
+
+// ── Add Items ──────────────────────────────────────────────────────────
+const addItemsOpen      = ref(false)
+const addItemsDiscount  = ref(null)
+const addItemsLoading   = ref(false)
+const addItemsSaving    = ref(false)
+const addItemSearch     = ref('')
+const availableItems    = ref([])
+const selectedAddItems  = ref(new Set())
+const addItemPrices     = ref({})
+const addItemStocks     = ref({})
+let addItemFilterTimer = null
+
+const filteredItems = computed(() => {
+  const q = (addItemSearch.value || '').toLowerCase().trim()
+  if (!q) return availableItems.value
+  return availableItems.value.filter(i =>
+    (i.item_name || '').toLowerCase().includes(q) ||
+    String(i.item_id).includes(q)
+  )
+})
 
 // ── Processamento em lote (segundo plano) ──────────────────────────────
 const tasks          = ref([])
@@ -414,6 +516,77 @@ async function loadDetail() {
     $q.notify({ type: 'negative', message: 'Erro ao carregar itens: ' + (e?.response?.data?.error || e.message) })
   } finally {
     detailLoading.value = false
+  }
+}
+
+// ── Add Items ──────────────────────────────────────────────────────────
+async function loadAddItems() {
+  addItemsLoading.value = true
+  try {
+    const accId = addItemsDiscount.value?.account_id
+    const res = await ShopeeService.listItems({ account_id: accId, page_size: 100 })
+    availableItems.value = (res.data?.items || []).filter(i => i.status === 'NORMAL')
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar itens: ' + (e?.response?.data?.error || e.message) })
+    availableItems.value = []
+  } finally {
+    addItemsLoading.value = false
+  }
+}
+
+function openAddItems(d) {
+  addItemsDiscount.value = d
+  selectedAddItems.value = new Set()
+  addItemPrices.value = {}
+  addItemStocks.value = {}
+  addItemSearch.value = ''
+  addItemsOpen.value = true
+  loadAddItems()
+}
+
+function toggleAddItem(item) {
+  const id = item.item_id
+  if (selectedAddItems.value.has(id)) {
+    selectedAddItems.value.delete(id)
+  } else {
+    selectedAddItems.value.add(id)
+    if (!(id in addItemPrices.value)) {
+      addItemPrices.value[id] = item.price || 0
+    }
+    if (!(id in addItemStocks.value)) {
+      addItemStocks.value[id] = Math.min(item.stock || 10, 50)
+    }
+  }
+  selectedAddItems.value = new Set(selectedAddItems.value)
+}
+
+function debouncedFilterItems() {
+  clearTimeout(addItemFilterTimer)
+  addItemFilterTimer = setTimeout(() => {}, 200)
+}
+
+async function submitAddItems() {
+  if (!selectedAddItems.value.size) return
+  addItemsSaving.value = true
+  try {
+    const items = [...selectedAddItems.value].map(itemId => ({
+      item_id: Number(itemId),
+      item_promotion_price: Number(addItemPrices.value[itemId] || 0),
+      item_promotion_stock: Number(addItemStocks.value[itemId] || 10),
+      purchase_limit: 0,
+    }))
+    await ShopeeService.addDiscountItems(addItemsDiscount.value.discount_id, {
+      account_id: addItemsDiscount.value.account_id,
+      items,
+    })
+    $q.notify({ type: 'positive', message: `${items.length} item(ns) adicionado(s) à promoção!` })
+    addItemsOpen.value = false
+    // Recarrega o detalhe para mostrar os novos itens
+    if (detailOpen.value) loadDetail()
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Erro ao adicionar itens: ' + (e?.response?.data?.error || e.message) })
+  } finally {
+    addItemsSaving.value = false
   }
 }
 
@@ -586,6 +759,8 @@ function discountClass(pct) {
 .sd-items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .sd-items-table thead th { background: #fafafa; color: #888; font-weight: 600; font-size: 11px; text-transform: uppercase; padding: 8px 12px; border-bottom: 1px solid #eee; letter-spacing: .4px; }
 .sd-item-row td, .sd-model-row td { padding: 8px 12px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+.sd-item-row--selected { background: #f0fdfa !important; }
+.sd-item-row--selected td { background: transparent !important; }
 .sd-item-row--parent td { background: #fafafa; padding-top: 10px; padding-bottom: 4px; }
 .sd-model-row td { background: #fff; color: #555; font-size: 12px; }
 .sd-item-name { font-weight: 600; color: #333; }

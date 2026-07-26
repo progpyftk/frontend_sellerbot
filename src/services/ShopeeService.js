@@ -98,6 +98,9 @@ export default {
   getDiscountTasks() {
     return api.get('/shopee/discounts/tasks/')
   },
+  addDiscountItems(discountId, data) {
+    return api.post(`/shopee/discounts/${discountId}/items/`, data)
+  },
 
   // Vouchers (Cupons)
   getVouchers(params = {}) {
