@@ -250,10 +250,18 @@
 
         <q-card-section class="col-auto row items-center q-gutter-sm q-pt-sm">
           <q-input v-model="addItemSearch" label="Buscar item" outlined dense clearable
-            placeholder="Nome ou ID do item" style="min-width: 200px;" @update:model-value="debouncedFilterItems" />
+            placeholder="Nome ou ID do item" style="min-width: 200px;" />
           <q-btn flat color="teal-7" icon="refresh" size="sm" @click="loadAddItems()" />
           <q-space />
           <span class="text-caption text-grey-6">{{ filteredItems.length }} itens disponíveis</span>
+        </q-card-section>
+
+        <q-card-section v-if="hiddenVariationCount > 0" class="col-auto q-pt-none">
+          <div class="sd-variation-notice">
+            <q-icon name="info" size="14px" class="q-mr-xs" />
+            {{ hiddenVariationCount }} item(ns) com variação (tamanho/cor) oculto(s) — ainda não
+            suportados aqui, precisam ser adicionados pelo painel da Shopee.
+          </div>
         </q-card-section>
 
         <q-card-section v-if="addItemsLoading" class="col flex-center">
@@ -292,7 +300,8 @@
                   <td class="text-right">
                     <q-input v-model="addItemStocks[item.item_id]" type="number" dense outlined
                       :placeholder="String(item.stock || 10)" step="1" min="1"
-                      style="width: 80px;" @click.stop />
+                      style="width: 80px;" @click.stop
+                      @update:model-value="v => { addItemStocks[item.item_id] = Math.max(1, Math.min(Math.round(Number(v || 1)), item.stock || 1)) }" />
                   </td>
                 </tr>
               </template>
@@ -391,7 +400,7 @@ const availableItems    = ref([])
 const selectedAddItems  = ref(new Set())
 const addItemPrices     = ref({})
 const addItemStocks     = ref({})
-let addItemFilterTimer = null
+const hiddenVariationCount = ref(0)
 
 const filteredItems = computed(() => {
   const q = (addItemSearch.value || '').toLowerCase().trim()
@@ -525,10 +534,16 @@ async function loadAddItems() {
   try {
     const accId = addItemsDiscount.value?.account_id
     const res = await ShopeeService.listItems({ account_id: accId, page_size: 100 })
-    availableItems.value = (res.data?.items || []).filter(i => i.status === 'NORMAL')
+    const normal = (res.data?.items || []).filter(i => i.status === 'NORMAL')
+    // add_discount_items só aceita item_promotion_price/stock no nível do item —
+    // itens com variação (has_model) exigem model_list por variação, que esta
+    // tela ainda não monta. Esconder em vez de deixar falhar contra a Shopee.
+    availableItems.value = normal.filter(i => !i.has_model)
+    hiddenVariationCount.value = normal.length - availableItems.value.length
   } catch (e) {
     $q.notify({ type: 'negative', message: 'Erro ao carregar itens: ' + (e?.response?.data?.error || e.message) })
     availableItems.value = []
+    hiddenVariationCount.value = 0
   } finally {
     addItemsLoading.value = false
   }
@@ -558,11 +573,6 @@ function toggleAddItem(item) {
     }
   }
   selectedAddItems.value = new Set(selectedAddItems.value)
-}
-
-function debouncedFilterItems() {
-  clearTimeout(addItemFilterTimer)
-  addItemFilterTimer = setTimeout(() => {}, 200)
 }
 
 async function submitAddItems() {
@@ -756,6 +766,7 @@ function discountClass(pct) {
 .sd-status--all      { background: #e3f2fd; color: #1565c0; }
 
 /* Items table */
+.sd-variation-notice { font-size: 12px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; }
 .sd-items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .sd-items-table thead th { background: #fafafa; color: #888; font-weight: 600; font-size: 11px; text-transform: uppercase; padding: 8px 12px; border-bottom: 1px solid #eee; letter-spacing: .4px; }
 .sd-item-row td, .sd-model-row td { padding: 8px 12px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
