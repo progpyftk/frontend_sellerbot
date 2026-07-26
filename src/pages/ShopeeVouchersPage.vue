@@ -79,14 +79,10 @@
         <thead>
           <tr>
             <th>Cupom</th>
-            <th>Código</th>
             <th>Tipo</th>
             <th class="right">Desconto</th>
-            <th class="right">Mín. pedido</th>
-            <th style="min-width:130px">Uso</th>
-            <th>Início</th>
-            <th>Fim</th>
-            <th v-if="!selectedAccountId">Conta</th>
+            <th>Uso</th>
+            <th>Vigência</th>
             <th>Status</th>
             <th class="right">Ações</th>
           </tr>
@@ -94,11 +90,14 @@
         <tbody>
           <tr v-for="v in vouchers" :key="`${v.voucher_id}-${v.account_id}`"
             class="sv-tr" @click="openDetail(v)">
-            <td class="sv-td-name">{{ v.voucher_name }}</td>
-            <td @click.stop>
-              <span class="sv-code">{{ v.voucher_code }}</span>
-              <q-btn flat round icon="content_copy" size="xs" color="grey-5"
-                @click.stop="copyCode(v.voucher_code)" title="Copiar código" />
+            <td class="sv-td-name">
+              <div class="sv-td-name-main">{{ v.voucher_name }}</div>
+              <div class="sv-td-name-sub">
+                <span class="sv-code">{{ v.voucher_code }}</span>
+                <q-btn flat round icon="content_copy" size="xs" color="grey-5"
+                  @click.stop="copyCode(v.voucher_code)" title="Copiar código" />
+                <span v-if="!selectedAccountId" class="sv-td-shop">· {{ v.shop_name }}</span>
+              </div>
             </td>
             <td>
               <span class="sv-type-badge">
@@ -107,8 +106,7 @@
               </span>
             </td>
             <td class="right sv-td-value">{{ v.reward_summary }}</td>
-            <td class="right">{{ v.min_basket_price ? fmtBRL(v.min_basket_price) : '—' }}</td>
-            <td>
+            <td style="min-width:110px">
               <div class="sv-usage-label">
                 <span>{{ v.current_usage || 0 }}</span>
                 <span class="text-grey-5">/ {{ v.usage_quantity }}</span>
@@ -118,9 +116,7 @@
                 :color="usageColor(v.usage_pct)"
                 track-color="grey-2" rounded size="5px" />
             </td>
-            <td class="sv-td-date">{{ fmtDate(v.start_time) }}</td>
-            <td class="sv-td-date">{{ fmtDate(v.end_time) }}</td>
-            <td v-if="!selectedAccountId" class="sv-td-shop">{{ v.shop_name }}</td>
+            <td class="sv-td-date">{{ fmtDate(v.start_time) }} – {{ fmtDate(v.end_time) }}</td>
             <td>
               <div v-if="v.status_label" :class="['sv-status', `sv-status--${v.status}`]">
                 <span class="sv-status-dot"></span>
@@ -806,17 +802,17 @@ function usageColor(pct) {
 .sv-pills { display: flex; gap: 4px; flex-wrap: wrap; }
 .sv-pills--status { border-left: 1px solid #eee; padding-left: 10px; }
 .sv-pills--form { gap: 6px; }
-.sv-pill { font-size: 12px; padding: 4px 12px; border-radius: 16px; border: 1px solid #e0e0e0; background: #fff; cursor: pointer; color: #666; transition: all .15s; white-space: nowrap; }
-.sv-pill--on { background: #e65100; color: #fff; border-color: #e65100; }
+.sv-pill { font-size: 12px; padding: 4px 12px; border-radius: 16px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #64748b; transition: all .15s; white-space: nowrap; }
+.sv-pill--on { background: #0d9488; color: #fff; border-color: #0d9488; }
 
 /* ── Stats bar ── */
-.sv-stats { display: flex; gap: 20px; background: #fff; border: 1px solid #f0f0f0; border-radius: 10px; padding: 10px 20px; margin-bottom: 14px; }
+.sv-stats { display: flex; gap: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 20px; margin-bottom: 14px; }
 .sv-stat { display: flex; flex-direction: column; align-items: center; }
-.sv-stat-n { font-size: 18px; font-weight: 700; color: #1a1a2e; }
-.sv-stat-n--green { color: #2e7d32; }
-.sv-stat-n--amber { color: #f57f17; }
-.sv-stat-n--blue  { color: #1565c0; }
-.sv-stat-l { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: .4px; }
+.sv-stat-n { font-size: 18px; font-weight: 700; color: #0f172a; }
+.sv-stat-n--green { color: #16a34a; }
+.sv-stat-n--amber { color: #0f172a; }
+.sv-stat-n--blue  { color: #0f172a; }
+.sv-stat-l { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; }
 
 /* ── Center / Empty ── */
 .sv-center { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; }
@@ -847,9 +843,9 @@ function usageColor(pct) {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #e65100;
-  background: #fff3e0;
-  border: 1px solid #ffcc80;
+  color: #0d9488;
+  background: #f0fdf9;
+  border: 1px solid #99f6e4;
   border-radius: 14px;
   padding: 3px 6px 3px 10px;
   margin-left: 8px;
@@ -864,7 +860,7 @@ function usageColor(pct) {
 .sv-name { font-size: 13px; color: #444; font-weight: 500; }
 
 .sv-code-row { display: flex; align-items: center; gap: 4px; }
-.sv-code { font-family: monospace; font-size: 14px; font-weight: 700; color: #1a1a2e; background: #f5f5f5; padding: 3px 10px; border-radius: 6px; letter-spacing: 1px; border: 1px dashed #ddd; }
+.sv-code { font-family: monospace; font-size: 11.5px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 1px 7px; border-radius: 5px; letter-spacing: .5px; }
 
 .sv-min { font-size: 11px; color: #888; }
 
@@ -903,8 +899,8 @@ function usageColor(pct) {
 /* Tipo select */
 .sv-type-select { display: flex; gap: 8px; flex-wrap: wrap; }
 .sv-type-opt { flex: 1; min-width: 120px; border: 2px solid #eee; border-radius: 10px; padding: 10px 12px; cursor: pointer; text-align: center; transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #999; }
-.sv-type-opt:hover { border-color: #f57c00; color: #e65100; }
-.sv-type-opt--on { border-color: #e65100; background: #fff3e0; color: #e65100; }
+.sv-type-opt:hover { border-color: #0d9488; color: #0d9488; }
+.sv-type-opt--on { border-color: #0d9488; background: #f0fdf9; color: #0d9488; }
 .sv-type-opt-title { font-size: 13px; font-weight: 700; }
 .sv-type-opt-desc  { font-size: 10px; color: #aaa; }
 
@@ -923,20 +919,29 @@ function usageColor(pct) {
 .sv-toast-anim-enter-active, .sv-toast-anim-leave-active { transition: opacity .2s, transform .2s; }
 .sv-toast-anim-enter-from, .sv-toast-anim-leave-to { opacity: 0; transform: translateX(-50%) translateY(10px); }
 
-/* ── Tabela de cupons (feedback #10) ── */
-.sv-table-wrap { background: #fff; border: 1px solid #f0f0f0; border-radius: 12px; overflow-x: auto; }
+/* ── Tabela de cupons (feedback #10 / FB-22 / FB-28) ── */
+.sv-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow-x: auto; }
 .sv-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .sv-table th {
   text-align: left; font-size: 10px; font-weight: 700; letter-spacing: .5px;
-  text-transform: uppercase; color: #8a94a6; padding: 10px 12px;
-  border-bottom: 1px solid #eef1f5; background: #fafbfc; white-space: nowrap;
+  text-transform: uppercase; color: #94a3b8; padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0; background: #f8fafc; white-space: nowrap;
 }
 .sv-table th.right, .sv-table td.right { text-align: right; }
-.sv-table td { padding: 9px 12px; border-bottom: 1px solid #f5f7fa; vertical-align: middle; }
+.sv-table td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 .sv-tr { cursor: pointer; transition: background .12s; }
-.sv-tr:hover { background: #fff8f0; }
-.sv-td-name { font-weight: 700; color: #1a1f36; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sv-td-value { font-weight: 700; color: #e65100; white-space: nowrap; }
-.sv-td-date { white-space: nowrap; color: #5c6570; }
-.sv-td-shop { color: #5c6570; white-space: nowrap; }
+.sv-tr:hover { background: #f8fafc; }
+.sv-td-name { max-width: 260px; }
+.sv-td-name-main { font-weight: 700; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-td-name-sub { display: flex; align-items: center; gap: 2px; margin-top: 2px; }
+.sv-td-value { font-weight: 700; color: #0d9488; white-space: nowrap; }
+.sv-td-date { white-space: nowrap; color: #64748b; }
+.sv-td-shop { color: #94a3b8; white-space: nowrap; font-size: 11.5px; margin-left: 2px; }
+
+@media (max-width: 600px) {
+  .page-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .sv-pills--status { overflow-x: auto; display: flex; }
+  .sv-table-wrap { overflow-x: auto; }
+  .sv-td-name { max-width: 140px; }
+}
 </style>
