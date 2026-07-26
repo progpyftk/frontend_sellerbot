@@ -253,26 +253,28 @@
           <div class="niche-card niche-card--wide">
             <div class="niche-card-title"><q-icon name="store" size="14px" /> Meus Anúncios Relacionados</div>
             <template v-if="nicheData.my_listings?.length">
-              <table class="niche-items-table">
-                <thead>
-                  <tr>
-                    <th>Título</th>
-                    <th class="right">Preço</th>
-                    <th class="right">Vendidos</th>
-                    <th>Status</th>
-                    <th>Logística</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in nicheData.my_listings" :key="item.item_id">
-                    <td>{{ item.title }}</td>
-                    <td class="right">{{ fmtBRL(item.price) }}</td>
-                    <td class="right">{{ item.sold_quantity }}</td>
-                    <td><span :class="['status-badge', `status-${item.status}`]">{{ item.status }}</span></td>
-                    <td class="muted">{{ item.logistic_type }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="niche-table-wrap">
+                <table class="niche-items-table">
+                  <thead>
+                    <tr>
+                      <th>Título</th>
+                      <th class="right">Preço</th>
+                      <th class="right">Vendidos</th>
+                      <th>Status</th>
+                      <th>Logística</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in nicheData.my_listings" :key="item.item_id">
+                      <td>{{ item.title }}</td>
+                      <td class="right">{{ fmtBRL(item.price) }}</td>
+                      <td class="right">{{ item.sold_quantity }}</td>
+                      <td><span :class="['status-badge', `status-${item.status}`]">{{ item.status }}</span></td>
+                      <td class="muted">{{ item.logistic_type }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </template>
             <div v-else class="muted">Nenhum anúncio seu contém esta keyword.</div>
           </div>
@@ -666,6 +668,7 @@ async function loadCoverage() {
 .cov-label { font-size: 11px; color: #64748b; margin-top: 2px; }
 
 .cov-table-wrap { overflow-x: auto; }
+.niche-table-wrap { overflow-x: auto; }
 .cov-table {
   width: 100%; border-collapse: collapse; font-size: 12px;
   background: #fff; border-radius: 10px; overflow: hidden;
@@ -702,7 +705,29 @@ async function loadCoverage() {
 .cov-badge--green { background: #d1fae5; color: #065f46; }
 
 @media (max-width: 600px) {
-  .page-header { padding: 10px 12px; }
-  .content-body { padding: 12px; }
+  .page-header { padding: 8px 12px; flex-wrap: wrap; gap: 8px; }
+  .tab-bar { padding: 8px 12px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-btn { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+  .tab-content { padding: 12px 8px; }
+  .section-intro { font-size: 12px; padding: 8px 10px; }
+  .controls-row { gap: 8px; }
+  .cat-select { min-width: 100%; font-size: 14px; }
+  .niche-input { min-width: 100%; font-size: 14px; }
+  .trends-summary { gap: 8px; }
+  .ts-card { min-width: 0; flex: 1 1 calc(50% - 8px); padding: 10px 8px; }
+  .ts-val { font-size: 18px; }
+  .trends-list { grid-template-columns: 1fr; }
+  .hl-grid { grid-template-columns: 1fr; }
+  .niche-grid { grid-template-columns: 1fr; }
+  .niche-big-num { font-size: 22px; }
+  .price-range-row { gap: 8px; }
+  .pr-val { font-size: 13px; }
+  .cov-summary { gap: 8px; }
+  .cov-stat { min-width: 0; flex: 1 1 calc(50% - 8px); padding: 10px 8px; }
+  .cov-val { font-size: 18px; }
+  .cov-table-wrap, .niche-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cov-title-text { max-width: 160px; }
+  .hl-mine-badge { position: static; margin-top: 8px; }
+  .hl-card { padding: 12px; }
 }
 </style>

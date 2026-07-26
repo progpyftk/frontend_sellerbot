@@ -1157,5 +1157,6 @@ onMounted(() => {
   .page-header { padding: 10px 12px; }
   .accounts-list { padding: 0 12px; }
   .content-area { padding: 12px; }
+  .content-wrap { padding: 12px; }
 }
 </style>

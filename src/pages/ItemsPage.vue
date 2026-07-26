@@ -457,8 +457,10 @@
           </div>
         </transition>
 
+        <div class="table-responsive">
         <q-table :rows="items" :columns="columns" row-key="item_id" flat :loading="loading"
           v-model:pagination="pagination" @request="onRequest" binary-state-sort
+          :dense="$q.screen.lt.md"
           class="sticky-header-table my-custom-table" no-data-label="Nenhum anúncio encontrado.">
           <template v-slot:header="props">
             <q-tr :props="props" class="bg-grey-2 text-grey-8 text-uppercase text-caption">
@@ -733,7 +735,7 @@
 
           </template>
         </q-table>
-
+        </div>
 
     <q-dialog v-model="showHealthDialog">
       <q-card style="width: 600px; max-width: 95vw;">
@@ -2308,5 +2310,8 @@ const reactivateItem = (row) => {
   .fadv-input--sm {
     width: 60px;
   }
+
+  .fb-toolbar-actions { overflow-x: auto; display: flex; flex-wrap: nowrap; gap: 6px; }
+  .fb-toolbar-actions .q-btn { flex-shrink: 0; }
 }
 </style>

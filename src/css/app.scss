@@ -127,3 +127,33 @@ $side-props: (p: padding, pt: padding-top, pr: padding-right, pb: padding-bottom
     padding: $space-3;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE UTILITIES (U1)
+   Classes for mobile-first responsive behavior.
+══════════════════════════════════════════════════════════════════════════ */
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { height: 4px; }
+  &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+}
+
+.filter-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  &::-webkit-scrollbar { height: 0; }
+  > * { scroll-snap-align: start; flex-shrink: 0; }
+}
+
+.hide-mobile {
+  @media (max-width: 600px) { display: none !important; }
+}
+
+.show-mobile {
+  @media (min-width: 601px) { display: none !important; }
+}

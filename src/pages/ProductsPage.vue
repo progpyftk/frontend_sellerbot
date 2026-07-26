@@ -465,5 +465,6 @@ onMounted(loadMlAccounts)
 @media (max-width: 600px) {
   .page-header { padding: 10px 12px; }
   .content-body { padding: 12px; }
+  .filter-row { flex-wrap: wrap; }
 }
 </style>

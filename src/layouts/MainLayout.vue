@@ -2,7 +2,7 @@
   <q-layout view="hHh lpR fFf" id="sb-layout">
 
     <!-- ══════════════════════════════════════════ SIDEBAR (LIGHT) -->
-    <q-drawer v-model="drawer" side="left" :width="248" :breakpoint="768" class="sidebar" no-swipe-close>
+    <q-drawer v-model="drawer" side="left" :width="248" :breakpoint="768" class="sidebar" :no-swipe-close="$q.screen.gt.sm">
 
       <!-- Brand -->
       <div class="sidebar-brand">

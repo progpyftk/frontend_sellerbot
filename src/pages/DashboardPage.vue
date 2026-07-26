@@ -5849,12 +5849,18 @@ tr.pareto-line-95 td {
 
   .daily-table thead th,
   .daily-table td {
-    padding: 6px 8px;
+    padding: 4px 6px;
     font-size: 11px;
   }
 
   .daily-table thead th {
     font-size: 9.5px;
+  }
+
+  /* Hide Ads (cost + TACoS) and Margem Pós-Ads columns on mobile */
+  .daily-table .col-ads,
+  .daily-table .col-ll {
+    display: none;
   }
 
   /* ── Ranking grids — 1 coluna ── */

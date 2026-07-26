@@ -86,8 +86,9 @@
               </template>
 
               <div class="bg-white q-pa-md">
+                <div class="table-responsive">
                 <q-table :rows="accountData.promotions" :columns="columns" row-key="id" flat hide-pagination
-                  :pagination="{ rowsPerPage: 0 }" class="promotions-table">
+                  :pagination="{ rowsPerPage: 0 }" class="promotions-table" :dense="$q.screen.lt.md">
                   <template v-slot:header="props">
                     <q-tr :props="props"
                       class="bg-grey-1 text-blue-grey-9 text-uppercase text-caption text-weight-bold">
@@ -223,6 +224,7 @@
                     </q-tr>
                   </template>
                 </q-table>
+                </div>
               </div>
             </q-expansion-item>
           </div>
@@ -934,8 +936,11 @@ onMounted(() => {
 .header-eyebrow-promos { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
 .header-title-promos   { font-size: 16px; font-weight: 700; color: #1a1f36; }
 
+.table-responsive { overflow-x: auto; }
+
 @media (max-width: 600px) {
-  .page-header { padding: 10px 12px; }
+  .page-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .promo-progress { min-width: 100%; }
 }
 
 .promo-progress { min-width: 170px; display: inline-block; text-align: right; }

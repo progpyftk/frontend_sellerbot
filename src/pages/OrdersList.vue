@@ -515,10 +515,11 @@
     </div>
 
     <!-- ── TABELA ─────────────────────────────────────────── -->
-    <div class="table-wrapper">
+    <div class="table-wrapper table-responsive">
       <q-table :rows="filteredOrders" :columns="columns" row-key="order_id" flat :loading="loading"
         v-model:pagination="pagination" @request="onRequest" binary-state-sort
         class="orders-table" no-data-label="Nenhuma venda encontrada."
+        :dense="$q.screen.lt.md"
         :rows-per-page-options="[20, 50, 100]">
 
         <template #header="props">
@@ -1469,12 +1470,12 @@ const columns = [
   { name: 'data_venda',   label: 'DATA',               field: 'date_created',  align: 'left',  sortable: true, style: 'min-width:90px' },
   { name: 'comprador',    label: 'COMPRADOR',          field: 'buyer_nickname',align: 'left',  style: 'min-width:110px' },
   { name: 'status_venda', label: 'STATUS',             field: 'status',        align: 'left',  style: 'min-width:90px' },
-  { name: 'logistica',    label: 'LOGÍSTICA',          field: 'shipment',      align: 'left',  style: 'min-width:160px' },
+  { name: 'logistica',    label: 'LOGÍSTICA',          field: 'shipment',      align: 'left',  style: 'min-width:160px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
   { name: 'venda',        label: 'GMV',                field: 'total_amount',  align: 'right', sortable: true, style: 'min-width:85px' },
-  { name: 'tarifa',       label: 'TAXAS ML',           field: 'total_fee',     align: 'right', style: 'min-width:90px' },
-  { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px' },
-  { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right', style: 'min-width:115px' },
-  { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px' },
+  { name: 'tarifa',       label: 'TAXAS ML',           field: 'total_fee',     align: 'right', style: 'min-width:90px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
+  { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
+  { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right', style: 'min-width:115px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
+  { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
 ]
 
 // Soma de unidades do pedido (pack soma todos os sub-orders)
@@ -2926,6 +2927,10 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 
   .detail-panel {
     width: 100vw !important;
+  }
+
+  .col-hide-mobile {
+    display: none !important;
   }
 }
 

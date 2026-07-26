@@ -596,4 +596,10 @@ function discountClass(pct) {
 .sd-pct--high { background: #fce4ec; color: #c62828; }
 .sd-pct--mid  { background: #fff3e0; color: #e65100; }
 .sd-pct--low  { background: #f1f8e9; color: #558b2f; }
+
+@media (max-width: 600px) {
+  .page-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .filter-bar { overflow-x: auto; display: flex; }
+  .sd-items-table-wrap { overflow-x: auto; }
+}
 </style>

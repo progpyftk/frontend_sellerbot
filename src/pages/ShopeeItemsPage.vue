@@ -177,8 +177,10 @@
     </transition>
 
     <!-- ══ TABELA ══════════════════════════════════════════════ -->
+    <div class="table-responsive">
     <q-table :rows="items" :columns="columns" row-key="item_id" flat :loading="loading"
       v-model:pagination="pagination" @request="onRequest" binary-state-sort
+      :dense="$q.screen.lt.md"
       class="sticky-header-table shopee-table" no-data-label="Nenhum anúncio encontrado.">
 
       <template v-slot:header="props">
@@ -269,6 +271,7 @@
         </q-tr>
       </template>
     </q-table>
+    </div>
 
     <!-- ══ DETAIL DRAWER ════════════════════════════════════════ -->
     <q-dialog v-model="showDetail" position="right" :maximized="true"
@@ -1253,4 +1256,12 @@ onMounted(loadAccounts)
 .slide-fade-enter-active { transition: all .25s ease-out; }
 .slide-fade-leave-active { transition: all .2s cubic-bezier(1, .5, .8, 1); }
 .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(-10px); opacity: 0; }
+
+/* ── Mobile ────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .page-header { padding: 8px 12px; flex-wrap: wrap; gap: 8px; }
+  .smart-views-bar { overflow-x: auto; display: flex; }
+  .analytics-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .var-table-wrap { overflow-x: auto; }
+}
 </style>

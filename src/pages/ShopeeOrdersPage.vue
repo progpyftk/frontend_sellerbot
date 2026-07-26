@@ -369,7 +369,7 @@
     </div>
 
     <!-- ══ TABELA ═════════════════════════════════════════════════ -->
-    <div class="table-container">
+    <div class="table-container table-responsive">
       <q-table
         flat
         :rows="orders"
@@ -379,6 +379,7 @@
         v-model:pagination="pagination"
         @request="onRequest"
         binary-state-sort
+        :dense="$q.screen.lt.md"
         :rows-per-page-options="[25, 50, 100]"
         class="sticky-header-table shopee-table">
 
@@ -995,9 +996,9 @@ const columns = [
   { name: 'comprador', label: 'COMPRADOR',            field: 'buyer_username', sortable: false, align: 'left',   style: 'min-width:110px' },
   { name: 'status',    label: 'STATUS',               field: 'status',         sortable: false, align: 'center', style: 'min-width:120px' },
   { name: 'bruto',     label: 'VENDA',                field: 'total_amount',   sortable: true,  align: 'right',  style: 'min-width:90px'  },
-  { name: 'frete',     label: 'TAXAS SHOPEE',         field: 'commission_fee', sortable: false, align: 'right',  style: 'min-width:90px'  },
-  { name: 'liquido',   label: 'REPASSE (S/ CUSTO)',   field: 'escrow_amount',  sortable: false, align: 'right',  style: 'min-width:120px' },
-  { name: 'lucro',     label: 'LUCRO APÓS CUSTO',     field: 'lucro_apos_cmp', sortable: false, align: 'right',  style: 'min-width:115px' },
+  { name: 'frete',     label: 'TAXAS SHOPEE',         field: 'commission_fee', sortable: false, align: 'right',  style: 'min-width:90px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
+  { name: 'liquido',   label: 'REPASSE (S/ CUSTO)',   field: 'escrow_amount',  sortable: false, align: 'right',  style: 'min-width:120px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
+  { name: 'lucro',     label: 'LUCRO APÓS CUSTO',     field: 'lucro_apos_cmp', sortable: false, align: 'right',  style: 'min-width:115px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
 ]
 
 // ── Opções ─────────────────────────────────────────────────────────────────
@@ -1955,5 +1956,9 @@ onMounted(() => {
   .fb-search { max-width: 100%; min-width: 0; }
   .fadv-section { padding: 10px 12px; }
   .detail-section { padding: 10px 12px; }
+
+  .col-hide-mobile {
+    display: none !important;
+  }
 }
 </style>
