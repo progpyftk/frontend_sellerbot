@@ -186,7 +186,7 @@ const menuSections = [
       { label: "Meus Anúncios",    icon: "mdi-storefront",        route: "shopee-items" },
       { label: "Vendas e Pedidos", icon: "receipt_long",          route: "shopee-orders" },
       { label: "Publicidade",      icon: "campaign",              route: "shopee-ads" },
-      { label: "Promoções",        icon: "local_offer",           route: "shopee-discounts" },
+      { label: "Desconto",         icon: "local_offer",           route: "shopee-discounts" },
       { label: "Cupons",           icon: "confirmation_number",  route: "shopee-vouchers" },
     ],
   },
