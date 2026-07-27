@@ -9,6 +9,7 @@
       :date-presets="datePresets"
       :ml-accounts="knownMlAccounts"
       :shopee-accounts="knownShopeeAccounts"
+      :tiktok-accounts="knownTiktokAccounts"
       :selected-keys="selectedAccountKeys"
       :all-keys="allAccountKeys"
       :loading="loading"
@@ -35,6 +36,7 @@
         :date-presets="datePresets"
         :ml-accounts="knownMlAccounts"
         :shopee-accounts="knownShopeeAccounts"
+        :tiktok-accounts="knownTiktokAccounts"
         :selected-keys="selectedAccountKeys"
         :all-keys="allAccountKeys"
         :chart-metrics="chartMetrics"
@@ -654,8 +656,8 @@
                     </span>
                   </td>
                   <td>
-                    <span :class="['mkt-badge', a.marketplace === 'ml' ? 'mkt-badge--ml' : 'mkt-badge--shopee']">
-                      {{ a.marketplace === 'ml' ? 'ML' : 'Shopee' }}
+                    <span :class="['mkt-badge', a.marketplace === 'ml' ? 'mkt-badge--ml' : a.marketplace === 'tiktokshop' ? 'mkt-badge--tiktokshop' : 'mkt-badge--shopee']">
+                      {{ a.marketplace === 'ml' ? 'ML' : a.marketplace === 'tiktokshop' ? 'TikTok' : 'Shopee' }}
                     </span>
                   </td>
                   <td class="bold">
@@ -863,7 +865,43 @@
                       <td class="right">{{ pct(a.gross_profit, a.net_revenue) }}</td>
                     </tr>
                   </template>
-                </tbody>
+                  <template v-if="activeMarketplaces.includes('tiktokshop') && tiktokData?.by_account">
+                    <tr v-for="a in tiktokData.by_account.filter(a => selectedAccountKeys.includes('tiktokshop:' + a.account_id))" :key="'dre2-tk-' + a.account_id">
+                      <td><span class="mkt-badge mkt-badge--tiktokshop">TikTok</span></td>
+                      <td class="bold">
+                        <span class="acct-dot-inline" :style="{ background: accountColor('tiktokshop:' + a.account_id) }"></span>
+                        {{ a.shop_name }}
+                      </td>
+                      <td class="right">{{ fmt(a.gmv) }}</td>
+                      <td class="right warn">—</td>
+                      <td class="right">{{ fmt(a.net_revenue) }}</td>
+                      <td class="right warn">—</td>
+                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
+                      <td class="right warn">—</td>
+                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
+                      <td class="right">{{ pct(a.gross_profit, a.net_revenue) }}</td>
+                  </tr>
+              </template>
+              <!-- TikTok Shop accounts -->
+              <template v-if="activeMarketplace !== 'ml' && activeMarketplace !== 'shopee' && tiktokData?.by_account">
+                <tr v-for="a in tiktokData.by_account.filter(a => selectedAccountKeys.includes('tiktokshop:' + a.account_id))" :key="'tk-' + a.account_id">
+                  <td><span class="mkt-badge mkt-badge--tiktokshop">TikTok</span></td>
+                  <td class="bold">{{ a.shop_name }}</td>
+                  <td class="muted">—</td>
+                  <td class="right">{{ fmt(a.gmv) }}</td>
+                  <td class="right">{{ fmt(a.net_revenue) }}</td>
+                  <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
+                  <td class="right warn">—</td>
+                  <td class="right">{{ a.orders_count }}</td>
+                  <td class="right">
+                    <div class="inline-bar-wrap">
+                      <div class="inline-bar-fill" :style="{ width: combinedGmvShare('tiktokshop', a.gmv) + '%' }"></div>
+                      <span>{{ combinedGmvShare('tiktokshop', a.gmv) }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
                 <tfoot>
                   <tr class="total-row">
                     <td colspan="2">TOTAL</td>
@@ -1086,6 +1124,7 @@
                     <div class="prod-info">
                       <div class="prod-title">
                         <span v-if="p.marketplace === 'shopee'" class="mkt-badge mkt-badge--shopee">Shopee</span>
+                        <span v-else-if="p.marketplace === 'tiktokshop'" class="mkt-badge mkt-badge--tiktokshop">TikTok</span>
                         {{ p.title }}
                       </div>
                       <div class="prod-id muted">{{ p.item_id }}</div>
@@ -1586,6 +1625,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
+import TikTokShopService from 'src/services/TikTokShopService'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
 import DashboardHeader from 'src/components/dashboard/DashboardHeader.vue'
@@ -1599,6 +1639,8 @@ const data = ref(null)
 const todayData = ref(null)
 const shopeeData = ref(null)     // dados Shopee para o período
 const shopeeTodayData = ref(null) // dados Shopee de hoje
+const tiktokData = ref(null)     // dados TikTok Shop para o período
+const tiktokTodayData = ref(null) // dados TikTok Shop de hoje
 
 // ── Layout ────────────────────────────────────────────────────────────────
 const showFilters = ref($q.screen.gt.sm)  // aberto no desktop, fechado no mobile
@@ -1608,6 +1650,7 @@ const showAccountPicker = ref(false)
 const selectedAccountKeys = ref([])  // e.g. ['ml:123', 'shopee:456']
 const knownMlAccounts    = ref([])   // { key, id, marketplace, label, color }
 const knownShopeeAccounts = ref([])
+const knownTiktokAccounts = ref([])
 
 // Status do pedido (desativado — aguarda backend)
 const activeStatuses = ref([])  // e.g. ['paid', 'pending']
@@ -1620,18 +1663,21 @@ function buildAccountKey(marketplace, id) { return `${marketplace}:${id}` }
 const allAccountKeys = computed(() => [
   ...knownMlAccounts.value.map(a => a.key),
   ...knownShopeeAccounts.value.map(a => a.key),
+  ...knownTiktokAccounts.value.map(a => a.key),
 ])
 
 const allMlSelected    = computed(() => knownMlAccounts.value.length > 0 && knownMlAccounts.value.every(a => selectedAccountKeys.value.includes(a.key)))
 const someMlSelected   = computed(() => knownMlAccounts.value.some(a => selectedAccountKeys.value.includes(a.key)))
 const allShopeeSelected = computed(() => knownShopeeAccounts.value.length > 0 && knownShopeeAccounts.value.every(a => selectedAccountKeys.value.includes(a.key)))
 const someShopeeSelected = computed(() => knownShopeeAccounts.value.some(a => selectedAccountKeys.value.includes(a.key)))
+const allTiktokSelected = computed(() => knownTiktokAccounts.value.length > 0 && knownTiktokAccounts.value.every(a => selectedAccountKeys.value.includes(a.key)))
+const someTiktokSelected = computed(() => knownTiktokAccounts.value.some(a => selectedAccountKeys.value.includes(a.key)))
 
 const isComparativeMode = computed(() => selectedAccountKeys.value.length > 1)
 
 // Active marketplaces derived from selection (empty = all)
 const activeMarketplaces = computed(() => {
-  if (selectedAccountKeys.value.length === 0 || selectedAccountKeys.value.length === allAccountKeys.value.length) return ['ml', 'shopee']
+  if (selectedAccountKeys.value.length === 0 || selectedAccountKeys.value.length === allAccountKeys.value.length) return ['ml', 'shopee', 'tiktokshop']
   const set = new Set(selectedAccountKeys.value.map(k => k.split(':')[0]))
   return [...set]
 })
@@ -1654,6 +1700,8 @@ function accountLabel(key) {
   if (ml) return ml.label
   const sh = knownShopeeAccounts.value.find(a => a.key === key)
   if (sh) return sh.label
+  const tk = knownTiktokAccounts.value.find(a => a.key === key)
+  if (tk) return tk.label
   return key
 }
 
@@ -1673,6 +1721,16 @@ function toggleAllShopee() {
   } else {
     const shopeeKeys = knownShopeeAccounts.value.map(a => a.key)
     selectedAccountKeys.value = [...new Set([...selectedAccountKeys.value, ...shopeeKeys])]
+  }
+  onFilterChange()
+}
+
+function toggleAllTiktok() {
+  if (allTiktokSelected.value) {
+    selectedAccountKeys.value = selectedAccountKeys.value.filter(k => !k.startsWith('tiktokshop:'))
+  } else {
+    const tiktokKeys = knownTiktokAccounts.value.map(a => a.key)
+    selectedAccountKeys.value = [...new Set([...selectedAccountKeys.value, ...tiktokKeys])]
   }
   onFilterChange()
 }
@@ -1856,6 +1914,24 @@ function carrierPct(c) {
   return total ? Math.round((c.orders_count / total) * 100) : 0
 }
 
+// Filtered TikTok Shop operation: sums only selected TikTok accounts
+const filteredTiktokOp = computed(() => {
+  if (!tiktokData.value) return null
+  const byAccount = tiktokData.value.by_account || []
+  const tiktokKeys = selectedAccountKeys.value.filter(k => k.startsWith('tiktokshop:'))
+  const allTiktokKeys = knownTiktokAccounts.value.map(a => a.key)
+  if (!tiktokKeys.length) return null
+  if (tiktokKeys.length === allTiktokKeys.length || !byAccount.length) {
+    return tiktokData.value || null
+  }
+  const selectedIds = new Set(tiktokKeys.map(k => k.replace('tiktokshop:', '')))
+  const selected = byAccount.filter(a => selectedIds.has(String(a.account_id)))
+  if (!selected.length) return null
+  const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
+  const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
+  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: s('ads_cost'), lucro_liquido: gp, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
+})
+
 // Filtered ML daily: sums selected accounts from accountDailyData (when partial multi-account selection)
 const filteredMlDaily = computed(() => {
   const mlKeys = selectedAccountKeys.value.filter(k => k.startsWith('ml:'))
@@ -1896,6 +1972,30 @@ const filteredShopeeDaily = computed(() => {
   // Seleção parcial → soma apenas as contas selecionadas usando dados por conta
   const byDate = {}
   for (const key of shopeeKeys) {
+    for (const d of (accountDailyData.value[key] || [])) {
+      if (!byDate[d.date]) byDate[d.date] = { date: d.date, gmv: 0, net_revenue: 0, gross_profit: 0, ads_cost: 0, lucro_liquido: 0, orders_count: 0 }
+      byDate[d.date].gmv           += d.gmv || 0
+      byDate[d.date].net_revenue   += d.net_revenue || 0
+      byDate[d.date].gross_profit  += d.gross_profit || 0
+      byDate[d.date].ads_cost      += d.ads_cost || 0
+      byDate[d.date].lucro_liquido += d.lucro_liquido ?? d.gross_profit ?? 0
+      byDate[d.date].orders_count  += d.orders_count || 0
+    }
+  }
+  return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
+})
+
+// Filtered TikTok daily: mesma lógica do filteredShopeeDaily mas para contas TikTok
+const filteredTiktokDaily = computed(() => {
+  const tiktokKeys = selectedAccountKeys.value.filter(k => k.startsWith('tiktokshop:'))
+  const allTiktokKeys = knownTiktokAccounts.value.map(a => a.key)
+  const hasAccountData = Object.keys(accountDailyData.value).length > 0
+  if (!tiktokKeys.length) return []
+  if (tiktokKeys.length === allTiktokKeys.length || !hasAccountData) {
+    return tiktokData.value?.daily || []
+  }
+  const byDate = {}
+  for (const key of tiktokKeys) {
     for (const d of (accountDailyData.value[key] || [])) {
       if (!byDate[d.date]) byDate[d.date] = { date: d.date, gmv: 0, net_revenue: 0, gross_profit: 0, ads_cost: 0, lucro_liquido: 0, orders_count: 0 }
       byDate[d.date].gmv           += d.gmv || 0
@@ -2281,15 +2381,18 @@ async function load() {
     const mlParams = { ...base }
 
     // Only call ML if ml accounts are in selection (or no selection = all)
-    const wantMl     = activeMarketplaces.value.includes('ml')
-    const wantShopee = activeMarketplaces.value.includes('shopee')
+    const wantMl       = activeMarketplaces.value.includes('ml')
+    const wantShopee   = activeMarketplaces.value.includes('shopee')
+    const wantTiktok   = activeMarketplaces.value.includes('tiktokshop')
 
-    const [mlRes, shopeeRes] = await Promise.allSettled([
+    const [mlRes, shopeeRes, tiktokRes] = await Promise.allSettled([
       wantMl     ? MercadoLivreService.getDashboardOperation(mlParams) : Promise.resolve(null),
       wantShopee ? ShopeeService.getDashboardStats({ date_from: dateFrom.value, date_to: dateTo.value }) : Promise.resolve(null),
+      wantTiktok ? TikTokShopService.getDashboardStats({ date_from: dateFrom.value, date_to: dateTo.value }) : Promise.resolve(null),
     ])
     data.value       = (mlRes.status === 'fulfilled' && mlRes.value) ? mlRes.value.data : null
     shopeeData.value = (shopeeRes.status === 'fulfilled' && shopeeRes.value) ? shopeeRes.value.data : null
+    tiktokData.value = (tiktokRes.status === 'fulfilled' && tiktokRes.value) ? tiktokRes.value.data : null
 
     // Build/update known accounts list from full API response
     if (data.value?.accounts?.length) {
@@ -2307,6 +2410,16 @@ async function load() {
         key: buildAccountKey('shopee', a.account_id),
         id: a.account_id,
         marketplace: 'shopee',
+        label: a.shop_name,
+        color: ACCOUNT_COLORS[(offset + i) % ACCOUNT_COLORS.length],
+      }))
+    }
+    if (tiktokData.value?.by_account?.length) {
+      const offset = knownMlAccounts.value.length + knownShopeeAccounts.value.length
+      knownTiktokAccounts.value = tiktokData.value.by_account.map((a, i) => ({
+        key: buildAccountKey('tiktokshop', a.account_id),
+        id: a.account_id,
+        marketplace: 'tiktokshop',
         label: a.shop_name,
         color: ACCOUNT_COLORS[(offset + i) % ACCOUNT_COLORS.length],
       }))
@@ -2378,12 +2491,25 @@ async function loadToday() {
       shopeeParams = usp
     }
 
-    const [mlRes, shopeeRes] = await Promise.allSettled([
+    // Idem para TikTok Shop.
+    const tiktokKeys = selectedAccountKeys.value.filter(k => k.startsWith('tiktokshop:'))
+    const allTiktokKeys = knownTiktokAccounts.value.map(a => a.key)
+    const isTiktokPartial = tiktokKeys.length > 0 && tiktokKeys.length < allTiktokKeys.length
+    let tiktokParams = {}
+    if (isTiktokPartial) {
+      const usp = new URLSearchParams()
+      tiktokKeys.forEach(k => usp.append('account', k.split(':')[1]))
+      tiktokParams = usp
+    }
+
+    const [mlRes, shopeeRes, tiktokRes] = await Promise.allSettled([
       MercadoLivreService.getDashboardToday(params),
       ShopeeService.getTodayStats(shopeeParams),
+      TikTokShopService.getTodayStats(tiktokParams),
     ])
-    todayData.value      = mlRes.status === 'fulfilled' ? mlRes.value.data : null
+    todayData.value       = mlRes.status === 'fulfilled' ? mlRes.value.data : null
     shopeeTodayData.value = shopeeRes.status === 'fulfilled' ? shopeeRes.value.data : null
+    tiktokTodayData.value = tiktokRes.status === 'fulfilled' ? tiktokRes.value.data : null
   } catch (e) {
     console.error('Today data error', e)
   }
@@ -2430,22 +2556,25 @@ function mlFilteredToday(ml) {
 const combinedToday = computed(() => {
   const ml = todayData.value
   const sh = shopeeTodayData.value
-  if (activeMarketplace.value === 'ml')     return mlFilteredToday(ml)
-  if (activeMarketplace.value === 'shopee') return sh ? shopeeToMLFormat(sh) : null
+  const tk = tiktokTodayData.value
+  if (activeMarketplace.value === 'ml')        return mlFilteredToday(ml)
+  if (activeMarketplace.value === 'shopee')    return sh ? shopeeToMLFormat(sh) : null
+  if (activeMarketplace.value === 'tiktokshop') return tk ? tiktokToMLFormat(tk) : null
 
-  // all: soma ML filtrado + Shopee
-  if (!ml && !sh) return null
+  // all: soma ML filtrado + Shopee + TikTok
+  if (!ml && !sh && !tk) return null
   const fml = mlFilteredToday(ml)
   return {
-    gmv:           (fml?.gmv || 0) + (sh?.gmv || 0),
-    orders_count:  (fml?.orders_count || 0) + (sh?.count_paid || 0),
-    net_revenue:   (fml?.net_revenue || 0) + (sh?.faturamento || 0),
-    gross_profit:  (fml?.gross_profit || 0) + (sh?.lucro_apos_cmp || 0),
-    lucro_liquido: (fml?.lucro_liquido || 0) + (sh?.lucro_apos_cmp || 0),
+    gmv:           (fml?.gmv || 0) + (sh?.gmv || 0) + (tk?.gmv || 0),
+    orders_count:  (fml?.orders_count || 0) + (sh?.count_paid || 0) + (tk?.count_paid || 0),
+    net_revenue:   (fml?.net_revenue || 0) + (sh?.faturamento || 0) + (tk?.faturamento || 0),
+    gross_profit:  (fml?.gross_profit || 0) + (sh?.lucro_apos_cmp || 0) + (tk?.lucro_apos_cmp || 0),
+    lucro_liquido: (fml?.lucro_liquido || 0) + (sh?.lucro_apos_cmp || 0) + (tk?.lucro_apos_cmp || 0),
     units_sold:    (fml?.units_sold || 0),
     avg_ticket:    null,
     _ml: fml,
     _shopee: sh,
+    _tiktok: tk,
   }
 })
 
@@ -2461,6 +2590,18 @@ function shopeeToMLFormat(sh) {
   }
 }
 
+function tiktokToMLFormat(tk) {
+  return {
+    gmv:          tk.gmv || 0,
+    orders_count: tk.count_paid || 0,
+    net_revenue:  tk.faturamento || 0,
+    gross_profit: tk.lucro_apos_cmp || 0,
+    lucro_liquido: tk.lucro_apos_cmp || 0,
+    units_sold:   0,
+    avg_ticket:   null,
+  }
+}
+
 // KPIs mesclados: quando preset=hoje usa combinedToday, senão usa ML + shopeeData somados
 const combinedOp = computed(() => {
   if (activeDatePreset.value === 'hoje' && combinedToday.value) {
@@ -2470,12 +2611,13 @@ const combinedOp = computed(() => {
     return { ...d, lucro_liquido_pct: ll_pct, gross_margin_pct: gm_pct, roas: null, acos: null, catalog_orders_count: 0, flex_orders_count: 0, canceled_count: null, vs_prev: null }
   }
 
-  const ml = activeMarketplace.value !== 'shopee' ? filteredMlOp.value    : null
-  const sh = activeMarketplace.value !== 'ml'     ? filteredShopeeOp.value : null
+  const ml = activeMarketplace.value !== 'shopee' && activeMarketplace.value !== 'tiktokshop' ? filteredMlOp.value : null
+  const sh = activeMarketplace.value !== 'ml' && activeMarketplace.value !== 'tiktokshop' ? filteredShopeeOp.value : null
+  const tk = activeMarketplace.value !== 'ml' && activeMarketplace.value !== 'shopee' ? filteredTiktokOp.value : null
 
-  if (!ml && !sh) return null
-  if (!sh) return ml
-  if (!ml) return {
+  if (!ml && !sh && !tk) return null
+  if (!sh && !tk) return ml
+  if (!ml && !tk) return {
     gmv:          sh.gmv,
     net_revenue:  sh.net_revenue,
     gross_profit: sh.gross_profit || 0,
@@ -2491,26 +2633,40 @@ const combinedOp = computed(() => {
     gross_margin_pct:  null,
     vs_prev: null,
   }
+  if (!ml && !sh) return {
+    gmv:          tk.gmv,
+    net_revenue:  tk.net_revenue,
+    gross_profit: tk.gross_profit || 0,
+    lucro_liquido: tk.gross_profit || 0,
+    orders_count: tk.orders_count,
+    avg_ticket:   tk.avg_ticket,
+    units_sold:   tk.units_sold,
+    ads_cost:     tk.ads_cost || 0,
+    cmv_total:    0,
+    lucro_liquido_pct: tk.net_revenue ? +((tk.gross_profit || 0) / tk.net_revenue * 100).toFixed(2) : null,
+    gross_margin_pct:  null,
+    vs_prev: null,
+  }
 
   return {
-    gmv:           (ml.gmv || 0) + (sh.gmv || 0),
-    net_revenue:   (ml.net_revenue || 0) + (sh.net_revenue || 0),
-    gross_profit:  (ml.gross_profit || 0) + (sh.gross_profit || 0),
-    lucro_liquido: (ml.lucro_liquido || 0) + (sh.lucro_liquido ?? sh.gross_profit ?? 0),
-    orders_count:  (ml.orders_count || 0) + (sh.orders_count || 0),
-    units_sold:    (ml.units_sold || 0) + (sh.units_sold || 0),
+    gmv:           (ml?.gmv || 0) + (sh?.gmv || 0) + (tk?.gmv || 0),
+    net_revenue:   (ml?.net_revenue || 0) + (sh?.net_revenue || 0) + (tk?.net_revenue || 0),
+    gross_profit:  (ml?.gross_profit || 0) + (sh?.gross_profit || 0) + (tk?.gross_profit || 0),
+    lucro_liquido: (ml?.lucro_liquido || 0) + (sh?.lucro_liquido ?? sh?.gross_profit ?? 0) + (tk?.gross_profit || 0),
+    orders_count:  (ml?.orders_count || 0) + (sh?.orders_count || 0) + (tk?.orders_count || 0),
+    units_sold:    (ml?.units_sold || 0) + (sh?.units_sold || 0) + (tk?.units_sold || 0),
     avg_ticket:    null,
-    ads_cost:      (ml.ads_cost || 0) + (sh.ads_cost || 0),
-    affiliate_cost: sh.affiliate_cost || 0,
-    total_fees:    (ml.total_fees || 0) + (sh.marketplace_fees || 0),
-    cmv_total:     ml.cmv_total || 0,
+    ads_cost:      (ml?.ads_cost || 0) + (sh?.ads_cost || 0) + (tk?.ads_cost || 0),
+    affiliate_cost: sh?.affiliate_cost || 0,
+    total_fees:    (ml?.total_fees || 0) + (sh?.marketplace_fees || 0),
+    cmv_total:     ml?.cmv_total || 0,
     lucro_liquido_pct: null,
     gross_margin_pct:  null,
-    roas: ml.roas, acos: ml.acos, tacos: ml.tacos,
-    canceled_count: ml.canceled_count,
-    catalog_orders_count: ml.catalog_orders_count,
-    flex_orders_count:    ml.flex_orders_count,
-    vs_prev: ml.vs_prev,
+    roas: ml?.roas, acos: ml?.acos, tacos: ml?.tacos,
+    canceled_count: ml?.canceled_count,
+    catalog_orders_count: ml?.catalog_orders_count,
+    flex_orders_count:    ml?.flex_orders_count,
+    vs_prev: ml?.vs_prev,
   }
 })
 
@@ -2562,6 +2718,7 @@ function toggleMetric(key) {
 const allChartAccounts = computed(() => [
   ...knownMlAccounts.value,
   ...knownShopeeAccounts.value,
+  ...knownTiktokAccounts.value,
 ])
 
 function setChartMode(mode) {
@@ -2617,6 +2774,12 @@ async function loadAccountDailyData() {
   // Shopee — usa daily por conta retornado em by_account[].daily
   for (const a of knownShopeeAccounts.value) {
     const accData = shopeeData.value?.by_account?.find(b => b.account_id === a.id)
+    result[a.key] = accData?.daily?.map(d => ({ ...d })) || []
+  }
+
+  // TikTok Shop — usa daily por conta retornado em by_account[].daily
+  for (const a of knownTiktokAccounts.value) {
+    const accData = tiktokData.value?.by_account?.find(b => b.account_id === a.id)
     result[a.key] = accData?.daily?.map(d => ({ ...d })) || []
   }
 
@@ -3320,6 +3483,30 @@ const rankingRows = computed(() => {
     rows.push({
       key,
       marketplace: 'shopee',
+      label: a.shop_name,
+      gmv,
+      net_revenue: net,
+      gross_profit: gp,
+      gross_margin_pct: net ? +(gp / net * 100).toFixed(1) : null,
+      ads_cost: null,
+      tacos: null,
+      lucro_liquido: gp,
+      lucro_liquido_pct: net ? +(gp / net * 100).toFixed(1) : null,
+      roas: null,
+      orders_count: a.orders_count || 0,
+    })
+  }
+
+  // TikTok Shop accounts
+  for (const a of (tiktokData.value?.by_account || [])) {
+    const key = buildAccountKey('tiktokshop', a.account_id)
+    if (!selectedAccountKeys.value.includes(key)) continue
+    const gmv = a.gmv || 0
+    const net = a.net_revenue || 0
+    const gp  = a.gross_profit || 0
+    rows.push({
+      key,
+      marketplace: 'tiktokshop',
       label: a.shop_name,
       gmv,
       net_revenue: net,
@@ -4357,6 +4544,7 @@ watch(selectedAccountKeys, () => {
 }
 .mkt-badge--ml     { background: #1a1a2e; color: #FFE600; }
 .mkt-badge--shopee { background: #fff3f1; color: #EE4D2D; border: 1px solid #EE4D2D44; }
+.mkt-badge--tiktokshop { background: #010101; color: #fff; }
 
 /* ── Toggle group ───────────────────────────────────────────────────────── */
 .toggle-group {
@@ -5210,6 +5398,7 @@ tr.pareto-line-95 td {
 }
 .acct-mkt-badge--ml     { background: #1a1a2e; color: #FFE600; }
 .acct-mkt-badge--shopee { background: #fff7f5; color: #EE4D2D; border: 1px solid #EE4D2D40; }
+.acct-mkt-badge--tiktokshop { background: #f5f5f5; color: #010101; border: 1px solid #01010120; }
 .acct-item {
   display: flex;
   align-items: center;

@@ -86,6 +86,16 @@ const routes = [
         component: () => import('pages/ShopeeVouchersPage.vue')
       },
       {
+        path: 'tiktokshop/orders',
+        name: 'tiktokshop-orders',
+        component: () => import('pages/TikTokShopOrdersPage.vue')
+      },
+      {
+        path: 'tiktokshop/items',
+        name: 'tiktokshop-items',
+        component: () => import('pages/TikTokShopItemsPage.vue')
+      },
+      {
         path: 'dashboard',
         name: 'dashboard',
         component: () => import('pages/DashboardPage.vue')
@@ -167,6 +177,10 @@ const routes = [
   {
     path: "/shopee-redirect",
     component: () => import("pages/ShopeeRedirect.vue"),
+  },
+  {
+    path: "/tiktokshop-redirect",
+    component: () => import("pages/TikTokShopRedirect.vue"),
   },
   {
     path: "/tiny/callback",

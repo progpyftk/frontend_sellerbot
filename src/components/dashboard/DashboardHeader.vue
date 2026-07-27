@@ -106,6 +106,33 @@
               </q-item-section>
             </q-item>
 
+            <!-- TikTok Shop -->
+            <q-item-label v-if="tiktokAccounts.length" header class="text-weight-bold q-mt-sm">
+              <span class="mkt-badge mkt-badge--tiktokshop q-mr-xs">TK</span>
+              TikTok Shop
+            </q-item-label>
+            <q-item
+              v-for="a in tiktokAccounts"
+              :key="a.key"
+              tag="label"
+              dense
+            >
+              <q-item-section avatar>
+                <q-checkbox
+                  :model-value="selectedKeys.includes(a.key)"
+                  @update:model-value="toggleAccount(a.key)"
+                  dense
+                  size="sm"
+                />
+              </q-item-section>
+              <q-item-section>
+                <div class="row items-center no-wrap">
+                  <span class="acct-dot q-mr-sm" :style="{ background: a.color }"></span>
+                  {{ a.label }}
+                </div>
+              </q-item-section>
+            </q-item>
+
             <q-separator />
             <q-item clickable v-close-popup @click="selectAll">
               <q-item-section avatar><q-icon name="select_all" size="16px" /></q-item-section>
@@ -142,6 +169,7 @@ const props = defineProps({
   datePresets: { type: Array, required: true },
   mlAccounts: { type: Array, default: () => [] },
   shopeeAccounts: { type: Array, default: () => [] },
+  tiktokAccounts: { type: Array, default: () => [] },
   selectedKeys: { type: Array, default: () => [] },
   allKeys: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
@@ -287,6 +315,10 @@ function clearSelection() {
   &--shopee {
     background: $shopee-orange-bg;
     color: #991b1b;  // tom escuro legível sobre fundo translúcido
+  }
+  &--tiktokshop {
+    background: #f5f5f5;
+    color: #010101;
   }
 }
 

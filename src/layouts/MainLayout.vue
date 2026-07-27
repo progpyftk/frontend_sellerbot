@@ -47,6 +47,7 @@
               @click="toggleSection(si)">
               <span v-if="section.ml" class="mkt-badge mkt-badge--ml">ML</span>
               <span v-else-if="section.shopee" class="mkt-badge mkt-badge--shopee">SHOPEE</span>
+              <span v-else-if="section.tiktokshop" class="mkt-badge mkt-badge--tiktokshop">TIKTOK</span>
               <span v-else class="nav-section-icon">
                 <q-icon :name="section.sectionIcon || 'circle'" size="11px" />
               </span>
@@ -188,6 +189,15 @@ const menuSections = [
       { label: "Publicidade",      icon: "campaign",              route: "shopee-ads" },
       { label: "Desconto",         icon: "local_offer",           route: "shopee-discounts" },
       { label: "Cupons",           icon: "confirmation_number",  route: "shopee-vouchers" },
+    ],
+  },
+  {
+    title: "TikTok Shop",
+    tiktokshop: true,
+    sectionIcon: null,
+    items: [
+      { label: "Meus Anúncios",    icon: "mdi-storefront",        route: "tiktokshop-items" },
+      { label: "Vendas e Pedidos", icon: "receipt_long",          route: "tiktokshop-orders" },
     ],
   },
   {
@@ -363,6 +373,7 @@ const redirectToLogin = () => router.push("/login")
 }
 .mkt-badge--ml     { background: #FFE600; color: #1a1a2e; }
 .mkt-badge--shopee { background: #EE4D2D; color: #fff; }
+.mkt-badge--tiktokshop { background: #010101; color: #fff; }
 
 /* Children */
 .nav-children {

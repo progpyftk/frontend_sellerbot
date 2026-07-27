@@ -131,6 +131,36 @@
           </label>
         </div>
 
+        <!-- TikTok Shop -->
+        <div v-if="tiktokAccounts.length" class="fd-mkt-group">
+          <label class="fd-mkt-header">
+            <q-checkbox
+              :model-value="allTiktokSelected"
+              :indeterminate="someTiktokSelected && !allTiktokSelected"
+              dense
+              size="sm"
+              @update:model-value="toggleAllTiktok"
+            />
+            <span class="fd-mkt-badge fd-mkt-badge--tiktokshop">TK</span>
+            <span class="fd-mkt-name">TikTok Shop</span>
+          </label>
+          <label
+            v-for="a in tiktokAccounts"
+            :key="a.key"
+            class="fd-acct-item"
+            :class="{ 'fd-acct-item--on': selectedKeys.includes(a.key) }"
+          >
+            <q-checkbox
+              :model-value="selectedKeys.includes(a.key)"
+              @update:model-value="toggleAccount(a.key)"
+              dense
+              size="sm"
+            />
+            <span class="fd-acct-dot" :style="{ background: a.color }"></span>
+            <span class="fd-acct-label">{{ a.label }}</span>
+          </label>
+        </div>
+
         <!-- Hint com breakdown -->
         <div v-if="selectedKeys.length > 0 && selectedKeys.length < allKeys.length" class="fd-comparative-hint">
           <q-icon name="compare_arrows" size="14px" />
@@ -138,7 +168,9 @@
           <span class="fd-hint-breakdown">
             (<template v-if="mlSelectedCount > 0">{{ mlSelectedCount }} ML</template>
             <template v-if="mlSelectedCount > 0 && shopeeSelectedCount > 0">, </template>
-            <template v-if="shopeeSelectedCount > 0">{{ shopeeSelectedCount }} Shopee</template>)
+            <template v-if="shopeeSelectedCount > 0">{{ shopeeSelectedCount }} Shopee</template>
+            <template v-if="(mlSelectedCount > 0 || shopeeSelectedCount > 0) && tiktokSelectedCount > 0">, </template>
+            <template v-if="tiktokSelectedCount > 0">{{ tiktokSelectedCount }} TikTok</template>)
           </span>
         </div>
       </div>
@@ -239,6 +271,7 @@ const props = defineProps({
   datePresets: { type: Array, required: true },
   mlAccounts: { type: Array, default: () => [] },
   shopeeAccounts: { type: Array, default: () => [] },
+  tiktokAccounts: { type: Array, default: () => [] },
   selectedKeys: { type: Array, default: () => [] },
   allKeys: { type: Array, default: () => [] },
   chartMetrics: { type: Array, default: () => [] },
@@ -283,6 +316,12 @@ const allShopeeSelected = computed(() =>
 const someShopeeSelected = computed(() =>
   props.shopeeAccounts.some(a => props.selectedKeys.includes(a.key))
 );
+const allTiktokSelected = computed(() =>
+  props.tiktokAccounts.length > 0 && props.tiktokAccounts.every(a => props.selectedKeys.includes(a.key))
+);
+const someTiktokSelected = computed(() =>
+  props.tiktokAccounts.some(a => props.selectedKeys.includes(a.key))
+);
 
 // Contadores por marketplace
 const mlSelectedCount = computed(() =>
@@ -290,6 +329,9 @@ const mlSelectedCount = computed(() =>
 );
 const shopeeSelectedCount = computed(() =>
   props.shopeeAccounts.filter(a => props.selectedKeys.includes(a.key)).length
+);
+const tiktokSelectedCount = computed(() =>
+  props.tiktokAccounts.filter(a => props.selectedKeys.includes(a.key)).length
 );
 
 function toggleAccount(key) {
@@ -323,6 +365,17 @@ function toggleAllShopee() {
     emit('update:selectedKeys', current.filter(k => !shopeeKeys.includes(k)));
   } else {
     const newKeys = [...new Set([...current, ...shopeeKeys])];
+    emit('update:selectedKeys', newKeys);
+  }
+}
+
+function toggleAllTiktok() {
+  const current = [...props.selectedKeys];
+  const tiktokKeys = props.tiktokAccounts.map(a => a.key);
+  if (allTiktokSelected.value) {
+    emit('update:selectedKeys', current.filter(k => !tiktokKeys.includes(k)));
+  } else {
+    const newKeys = [...new Set([...current, ...tiktokKeys])];
     emit('update:selectedKeys', newKeys);
   }
 }
@@ -462,6 +515,10 @@ function toggleAllShopee() {
   &--shopee {
     background: $shopee-orange-bg;
     color: #991b1b;
+  }
+  &--tiktokshop {
+    background: #f5f5f5;
+    color: #010101;
   }
 }
 
