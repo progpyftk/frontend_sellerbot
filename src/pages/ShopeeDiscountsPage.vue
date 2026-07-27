@@ -78,6 +78,9 @@
           <div class="sd-card-main">
             <div class="sd-discount-name">{{ d.discount_name }}</div>
             <div class="sd-discount-meta">
+              <span v-if="d.source === 'shopee'" class="sd-source-badge">
+                <q-icon name="store" size="10px" class="q-mr-xs" />Shopee
+              </span>
               <q-icon name="storefront" size="12px" class="q-mr-xs text-grey-5" />
               <span class="text-grey-6">{{ d.shop_name }}</span>
               <span class="sd-sep">·</span>
@@ -113,6 +116,9 @@
         </q-card-section>
 
         <q-card-section class="col-auto q-py-xs q-px-md bg-grey-1 text-caption text-grey-7 row items-center">
+          <span v-if="activeDiscount?.source === 'shopee'" class="sd-source-badge q-mr-sm">
+            <q-icon name="store" size="10px" class="q-mr-xs" />Campanha Shopee
+          </span>
           <q-icon name="storefront" size="12px" class="q-mr-xs" />{{ activeDiscount?.shop_name }}
           <span class="sd-sep">·</span>
           <q-icon name="schedule" size="12px" class="q-mr-xs" />
@@ -760,6 +766,7 @@ function discountClass(pct) {
 /* Status badge */
 .sd-status-badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; letter-spacing: .3px; text-transform: uppercase; }
 .sd-status-badge--sm { font-size: 10px; padding: 2px 7px; }
+.sd-source-badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 6px; background: #e0f2fe; color: #0369a1; }
 .sd-status--ongoing  { background: #e8f5e9; color: #2e7d32; }
 .sd-status--upcoming { background: #fff8e1; color: #f57f17; }
 .sd-status--expired  { background: #f5f5f5; color: #9e9e9e; }
