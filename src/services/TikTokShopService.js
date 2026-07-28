@@ -55,4 +55,13 @@ export default {
   getDashboardStats(params = {}) {
     return api.get('/tiktokshop/orders/dashboard_stats/', { params })
   },
+
+  // Item edit
+  updateItemPrice(itemId, payload) {
+    return api.post(`/tiktokshop/items/${itemId}/update_price/`, payload)
+  },
+
+  updateItemStock(itemId, payload) {
+    return api.post(`/tiktokshop/items/${itemId}/update_stock/`, payload)
+  },
 }

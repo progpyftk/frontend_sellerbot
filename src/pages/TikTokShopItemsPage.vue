@@ -146,6 +146,24 @@
               {{ props.row.status || '—' }}
             </q-td>
 
+            <!-- Ações -->
+            <q-td key="actions" :props="props" align="center">
+              <q-btn flat dense round icon="more_horiz" color="grey-6" size="sm">
+                <q-menu anchor="bottom right" self="top right" class="fb-menu">
+                  <q-list style="min-width:150px">
+                    <q-item clickable v-close-popup @click="openPriceDialog(props.row)">
+                      <q-item-section avatar><q-icon name="attach_money" size="16px" color="grey-7" /></q-item-section>
+                      <q-item-section class="fb-menu-item-label">Editar preço</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="openStockDialog(props.row)">
+                      <q-item-section avatar><q-icon name="inventory_2" size="16px" color="grey-7" /></q-item-section>
+                      <q-item-section class="fb-menu-item-label">Editar estoque</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+              </q-btn>
+            </q-td>
+
           </q-tr>
         </template>
 
@@ -154,6 +172,46 @@
     </div>
 
   </q-page>
+
+  <!-- ══ DIALOG EDITAR PREÇO ════════════════════════════════ -->
+  <q-dialog v-model="priceDialog.open" persistent>
+    <q-card style="min-width:360px;border-radius:12px">
+      <q-card-section class="q-pb-none">
+        <div class="text-weight-bold text-grey-9" style="font-size:15px">Editar preço</div>
+        <div class="text-grey-5" style="font-size:12px">{{ priceDialog.item?.title }}</div>
+      </q-card-section>
+      <q-card-section>
+        <q-input v-model.number="priceDialog.price" label="Preço de venda" type="number"
+          prefix="R$" filled dense :min="0" step="0.01" :rules="[v => v > 0 || 'Informe um preço']" />
+        <q-input v-model.number="priceDialog.original_price" label="Preço original (opcional)" type="number"
+          prefix="R$" filled dense :min="0" step="0.01" class="q-mt-sm" />
+      </q-card-section>
+      <q-card-actions align="right" class="q-px-md q-pb-md">
+        <q-btn flat label="Cancelar" v-close-popup color="grey-7" />
+        <q-btn unelevated label="Salvar" color="grey-10" :loading="priceDialog.saving"
+          @click="savePrice" :disable="priceDialog.price <= 0" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- ══ DIALOG EDITAR ESTOQUE ════════════════════════════════ -->
+  <q-dialog v-model="stockDialog.open" persistent>
+    <q-card style="min-width:360px;border-radius:12px">
+      <q-card-section class="q-pb-none">
+        <div class="text-weight-bold text-grey-9" style="font-size:15px">Editar estoque</div>
+        <div class="text-grey-5" style="font-size:12px">{{ stockDialog.item?.title }}</div>
+      </q-card-section>
+      <q-card-section>
+        <q-input v-model.number="stockDialog.stock" label="Estoque disponível" type="number"
+          filled dense :min="0" :rules="[v => Number.isInteger(v) && v >= 0 || 'Informe um número inteiro']" />
+      </q-card-section>
+      <q-card-actions align="right" class="q-px-md q-pb-md">
+        <q-btn flat label="Cancelar" v-close-popup color="grey-7" />
+        <q-btn unelevated label="Salvar" color="grey-10" :loading="stockDialog.saving"
+          @click="saveStock" :disable="stockDialog.stock < 0" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -162,6 +220,21 @@ import { useQuasar } from 'quasar'
 import TikTokShopService from 'src/services/TikTokShopService'
 
 const $q = useQuasar()
+
+const priceDialog = reactive({
+  open: false,
+  item: null,
+  price: 0,
+  original_price: null,
+  saving: false,
+})
+
+const stockDialog = reactive({
+  open: false,
+  item: null,
+  stock: 0,
+  saving: false,
+})
 
 const items = ref([])
 const loading = ref(false)
@@ -191,6 +264,7 @@ const columns = [
   { name: 'price', label: 'PREÇO', field: 'price', sortable: true, align: 'right', style: 'min-width:90px' },
   { name: 'stock', label: 'ESTOQUE', field: 'stock', sortable: true, align: 'center', style: 'min-width:80px' },
   { name: 'status', label: 'STATUS', field: 'status', sortable: false, align: 'center', style: 'min-width:100px' },
+  { name: 'actions', label: '', field: '', sortable: false, align: 'center', style: 'width:50px' },
 ]
 
 const sortOptions = [
@@ -288,6 +362,51 @@ async function syncItems() {
     $q.notify({ message: 'Erro ao sincronizar', color: 'negative' })
   } finally {
     syncing.value = false
+  }
+}
+
+function openPriceDialog(item) {
+  priceDialog.item = item
+  priceDialog.price = Number(item.price) || 0
+  priceDialog.original_price = Number(item.original_price) || null
+  priceDialog.open = true
+}
+
+function openStockDialog(item) {
+  stockDialog.item = item
+  stockDialog.stock = Number(item.stock) || 0
+  stockDialog.open = true
+}
+
+async function savePrice() {
+  priceDialog.saving = true
+  try {
+    const payload = { price: priceDialog.price }
+    if (priceDialog.original_price) payload.original_price = priceDialog.original_price
+    await TikTokShopService.updateItemPrice(priceDialog.item.id, payload)
+    $q.notify({ message: 'Preço atualizado!', color: 'positive', icon: 'check' })
+    priceDialog.open = false
+    loadItems(pagination.value.page)
+  } catch (e) {
+    const msg = e?.response?.data?.detail || 'Erro ao atualizar preço'
+    $q.notify({ message: msg, color: 'negative' })
+  } finally {
+    priceDialog.saving = false
+  }
+}
+
+async function saveStock() {
+  stockDialog.saving = true
+  try {
+    await TikTokShopService.updateItemStock(stockDialog.item.id, { stock: stockDialog.stock })
+    $q.notify({ message: 'Estoque atualizado!', color: 'positive', icon: 'check' })
+    stockDialog.open = false
+    loadItems(pagination.value.page)
+  } catch (e) {
+    const msg = e?.response?.data?.detail || 'Erro ao atualizar estoque'
+    $q.notify({ message: msg, color: 'negative' })
+  } finally {
+    stockDialog.saving = false
   }
 }
 
