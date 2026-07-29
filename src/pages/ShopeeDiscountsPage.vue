@@ -5,7 +5,7 @@
     <div class="sd-header">
       <div class="sd-header-left">
         <q-icon name="local_offer" size="20px" class="q-mr-sm text-orange-7" />
-        <span class="sd-title">Promoções de Desconto</span>
+        <span class="sd-title">Descontos</span>
         <span class="sd-subtitle">Shopee</span>
       </div>
       <div class="sd-header-right">
@@ -31,7 +31,7 @@
           </button>
         </div>
 
-        <q-btn unelevated color="orange-7" text-color="white" icon="add" label="Nova Promoção"
+        <q-btn unelevated color="orange-7" text-color="white" icon="add" label="Novo Desconto"
           size="sm" class="q-ml-sm" @click="openCreate()" />
         <q-btn v-if="selectedCount > 0" unelevated color="red-7" text-color="white"
           icon="stop_circle" :label="`Encerrar ${selectedCount} selecionado(s)`" size="sm"
@@ -42,7 +42,7 @@
     <!-- ── PROCESSING BANNER (lote) ── -->
     <div v-if="isProcessing" class="sd-processing">
       <q-spinner-gears color="white" size="20px" class="q-mr-sm" />
-      <span>Processando {{ processingTotal }} promoção(ões) em lote
+      <span>Processando {{ processingTotal }} desconto(s) em lote
         ({{ processingDone }}/{{ processingTotal }})…</span>
       <q-linear-progress :value="processingPct" color="white" class="sd-progress" stripe animated />
     </div>
@@ -55,8 +55,8 @@
     <!-- ── EMPTY ── -->
     <div v-else-if="!discounts.length" class="sd-empty">
       <q-icon name="local_offer" size="48px" color="grey-4" />
-      <div class="text-grey-6 q-mt-sm">Nenhuma promoção encontrada</div>
-      <div class="text-caption text-grey-4">Crie sua primeira promoção de desconto clicando em "Nova Promoção"</div>
+      <div class="text-grey-6 q-mt-sm">Nenhum desconto encontrado</div>
+      <div class="text-caption text-grey-4">Crie seu primeiro desconto clicando em "Novo Desconto"</div>
     </div>
 
     <!-- ── LISTA ── -->
@@ -93,7 +93,7 @@
             <q-btn v-if="d.status === 'ongoing'" flat round icon="stop_circle" color="red-7" size="sm"
               title="Encerrar agora" :disable="isProcessing" @click="confirmEnd(d)" />
             <q-btn v-if="d.status === 'upcoming'" flat round icon="delete" color="grey-6" size="sm"
-              title="Deletar promoção" :disable="isProcessing" @click="confirmDelete(d)" />
+              title="Deletar desconto" :disable="isProcessing" @click="confirmDelete(d)" />
             <q-btn flat round icon="chevron_right" color="grey-5" size="sm" @click="openDetail(d)" />
           </div>
         </div>
@@ -220,25 +220,25 @@
       <q-card style="width: 480px; max-width: 98vw;">
         <q-card-section class="row items-center bg-orange-8 text-white">
           <q-icon name="add_circle" class="q-mr-sm" />
-          <span class="text-subtitle1 text-weight-bold">Nova Promoção de Desconto</span>
+          <span class="text-subtitle1 text-weight-bold">Novo Desconto</span>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md q-pt-md">
           <q-select v-model="form.account_id" :options="accountOptions" option-value="id" option-label="shop_name"
             emit-value map-options label="Conta Shopee *" outlined dense />
-          <q-input v-model="form.discount_name" label="Nome da Promoção *" outlined dense
+          <q-input v-model="form.discount_name" label="Nome do Desconto *" outlined dense
             placeholder="Ex: Oferta Relâmpago 07.07" />
           <div class="row q-gutter-sm">
             <q-input v-model="form.start_date" label="Início *" type="datetime-local" outlined dense class="col" />
             <q-input v-model="form.end_date" label="Fim *" type="datetime-local" outlined dense class="col" />
           </div>
           <div class="text-caption text-grey-6">
-            Após criar, adicione itens à promoção abrindo o detalhe e clicando em "Adicionar Itens".
+            Após criar, adicione itens ao desconto abrindo o detalhe e clicando em "Adicionar Itens".
           </div>
         </q-card-section>
         <q-card-section class="row justify-end q-pt-none q-gutter-sm">
           <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn unelevated color="orange-7" label="Criar Promoção" :loading="createLoading"
+          <q-btn unelevated color="orange-7" label="Criar Desconto" :loading="createLoading"
             :disable="!form.account_id || !form.discount_name || !form.start_date || !form.end_date"
             @click="submitCreate()" />
         </q-card-section>
@@ -322,7 +322,7 @@
           <span class="text-caption text-grey-6">{{ selectedAddItems.size }} item(ns) selecionado(s)</span>
           <div class="row q-gutter-sm">
             <q-btn flat label="Cancelar" v-close-popup @click="addItemsOpen = false" />
-            <q-btn unelevated color="teal-7" label="Adicionar à Promoção" :loading="addItemsSaving"
+            <q-btn unelevated color="teal-7" label="Adicionar ao Desconto" :loading="addItemsSaving"
               :disable="!selectedAddItems.size" @click="submitAddItems()" />
           </div>
         </q-card-section>
@@ -334,10 +334,10 @@
       <q-card style="width:380px">
         <q-card-section class="row items-center q-pb-none">
           <q-icon name="warning" color="red-7" size="md" class="q-mr-sm" />
-          <span class="text-subtitle1 text-weight-bold">Encerrar promoção?</span>
+          <span class="text-subtitle1 text-weight-bold">Encerrar desconto?</span>
         </q-card-section>
         <q-card-section class="text-grey-8">
-          A promoção <strong>{{ confirmTarget?.discount_name }}</strong> será encerrada imediatamente.
+          O desconto <strong>{{ confirmTarget?.discount_name }}</strong> será encerrado imediatamente.
           Itens voltarão ao preço original.
         </q-card-section>
         <q-card-actions align="right">
@@ -352,10 +352,10 @@
       <q-card style="width:380px">
         <q-card-section class="row items-center q-pb-none">
           <q-icon name="delete_forever" color="red-7" size="md" class="q-mr-sm" />
-          <span class="text-subtitle1 text-weight-bold">Deletar promoção?</span>
+          <span class="text-subtitle1 text-weight-bold">Deletar desconto?</span>
         </q-card-section>
         <q-card-section class="text-grey-8">
-          A promoção <strong>{{ confirmTarget?.discount_name }}</strong> será deletada permanentemente.
+          O desconto <strong>{{ confirmTarget?.discount_name }}</strong> será deletado permanentemente.
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" v-close-popup />
@@ -513,7 +513,7 @@ async function loadDiscounts() {
     const res = await ShopeeService.getDiscounts(params)
     discounts.value = res.data?.discounts || []
   } catch (e) {
-    $q.notify({ type: 'negative', message: 'Erro ao carregar promoções: ' + (e?.response?.data?.error || e.message) })
+    $q.notify({ type: 'negative', message: 'Erro ao carregar descontos: ' + (e?.response?.data?.error || e.message) })
   } finally {
     loading.value = false
   }
@@ -595,7 +595,7 @@ async function submitAddItems() {
       account_id: addItemsDiscount.value.account_id,
       items,
     })
-    $q.notify({ type: 'positive', message: `${items.length} item(ns) adicionado(s) à promoção!` })
+    $q.notify({ type: 'positive', message: `${items.length} item(ns) adicionado(s) ao desconto!` })
     addItemsOpen.value = false
     // Recarrega o detalhe para mostrar os novos itens
     if (detailOpen.value) loadDetail()
@@ -619,7 +619,7 @@ function openCreate() {
   if (!accounts.value.length) {
     $q.notify({
       type: 'warning',
-      message: 'Nenhuma conta Shopee conectada ou compartilhada com você. Conecte uma conta em Contas Shopee para criar promoções.',
+      message: 'Nenhuma conta Shopee conectada ou compartilhada com você. Conecte uma conta em Contas Shopee para criar descontos.',
     })
     return
   }
@@ -638,7 +638,7 @@ async function submitCreate() {
       start_time:    startTs,
       end_time:      endTs,
     })
-    $q.notify({ type: 'positive', message: 'Promoção criada com sucesso!' })
+    $q.notify({ type: 'positive', message: 'Desconto criado com sucesso!' })
     createOpen.value = false
     await loadDiscounts()
   } catch (e) {
@@ -664,7 +664,7 @@ async function doEnd() {
     await ShopeeService.endDiscount(confirmTarget.value.discount_id, {
       account_id: confirmTarget.value.account_id,
     })
-    $q.notify({ type: 'positive', message: 'Promoção encerrada.' })
+    $q.notify({ type: 'positive', message: 'Desconto encerrado.' })
     confirmEndOpen.value = false
     detailOpen.value = false
     await loadDiscounts()
@@ -681,7 +681,7 @@ async function doDelete() {
     await ShopeeService.deleteDiscount(confirmTarget.value.discount_id, {
       account_id: confirmTarget.value.account_id,
     })
-    $q.notify({ type: 'positive', message: 'Promoção deletada.' })
+    $q.notify({ type: 'positive', message: 'Desconto deletado.' })
     confirmDeleteOpen.value = false
     detailOpen.value = false
     await loadDiscounts()

@@ -122,12 +122,12 @@
             </q-list>
           </q-menu>
         </div>
-        <!-- Promoção -->
+        <!-- Desconto -->
         <div class="fb-combo" :class="filters.hasDiscount !== null && 'fb-combo--on'">
           <button class="fb-combo-btn">
             <q-icon name="local_offer" size="14px" class="fb-combo-ico" />
             <span class="fb-combo-label">
-              <template v-if="filters.hasDiscount === null">Promoção</template>
+              <template v-if="filters.hasDiscount === null">Desconto</template>
               <template v-else>{{ filters.hasDiscount ? 'Com desconto' : 'Sem desconto' }}</template>
             </span>
             <q-icon name="expand_more" size="14px" class="fb-combo-arrow" />
