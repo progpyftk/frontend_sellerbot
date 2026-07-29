@@ -56,7 +56,7 @@
       </div>
 
       <template v-if="loading || !overview">
-        <div class="stat-card stat-card--skeleton" v-for="n in 4" :key="n" />
+        <div class="stat-card stat-card--skeleton" v-for="n in 5" :key="n" />
       </template>
       <template v-else>
         <div class="stat-card stat-card--spend">
@@ -102,6 +102,15 @@
             <div class="stat-sub">receita / investimento</div>
           </div>
         </div>
+
+        <div class="stat-card stat-card--teal" v-if="overview.total_balance != null">
+          <div class="stat-icon"><q-icon name="account_balance_wallet" size="16px" /></div>
+          <div class="stat-body">
+            <div class="stat-val">{{ formatCurrency(overview.total_balance) }}</div>
+            <div class="stat-label">Saldo em Ads</div>
+            <div class="stat-sub">crédito disponível</div>
+          </div>
+        </div>
       </template>
     </div>
 
@@ -131,6 +140,9 @@
               <span class="meta-chip meta-chip--spend">{{ formatCurrency(acc.cost) }} investido</span>
               <span class="meta-chip" :class="acc.acos <= 10 ? 'meta-chip--pos' : acc.acos <= 20 ? 'meta-chip--warn' : 'meta-chip--neg'">ACOS {{ acc.acos }}%</span>
               <span class="meta-chip meta-chip--neutral">{{ acc.clicks.toLocaleString('pt-BR') }} clicks</span>
+              <span class="meta-chip meta-chip--teal" v-if="acc.balance != null">
+                <q-icon name="account_balance_wallet" size="12px" class="q-mr-xs" />Saldo {{ formatCurrency(acc.balance) }}
+              </span>
             </div>
           </div>
 
@@ -590,6 +602,7 @@ function formatTick(val) {
 .meta-chip--warn  { background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
 .meta-chip--neg   { background: #fff1f2; color: #ef4444; border: 1px solid #fee2e2; }
 .meta-chip--neutral { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; }
+.meta-chip--teal    { background: #f0fdf4; color: #0d9488; border: 1px solid #ccfbf1; }
 
 /* ─── CAMPAIGN TABLE ─────────────────────────────────────────────────────── */
 .camp-table-wrap { overflow-x: auto; }
