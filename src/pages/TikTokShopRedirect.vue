@@ -59,6 +59,7 @@ const errorMsg = ref('')
 onMounted(async () => {
   const urlParams = new URLSearchParams(window.location.search)
   const code = urlParams.get('code')
+  const shopId = urlParams.get('shop_id') || ''
 
   if (!code) {
     state.value = 'error'
@@ -67,7 +68,9 @@ onMounted(async () => {
   }
 
   try {
-    const res = await TikTokShopService.callback({ code })
+    const payload = { code }
+    if (shopId) payload.shop_id = shopId
+    const res = await TikTokShopService.callback(payload)
 
     shopName.value = res.data.shop_name || 'TikTok Shop'
     state.value = 'success'

@@ -27,6 +27,11 @@
           Shopee
           <span class="tab-count" v-if="shopeeAccounts.length > 0">{{ shopeeAccounts.length }}</span>
         </button>
+        <button :class="['tab-btn', activeTab === 'tiktokshop' ? 'tab-btn--active' : '']" @click="activeTab = 'tiktokshop'">
+          <div class="tab-tiktok-badge">TIKTOK</div>
+          TikTok Shop
+          <span class="tab-count" v-if="tiktokAccounts.length > 0">{{ tiktokAccounts.length }}</span>
+        </button>
       </div>
     </div>
 
@@ -267,6 +272,89 @@
         </div>
       </div>
 
+      <!-- ==================== TAB TIKTOK SHOP ==================== -->
+      <div v-show="activeTab === 'tiktokshop'" class="tab-content">
+        <div class="tab-header">
+          <div class="tab-title">Contas TikTok Shop</div>
+          <q-btn unelevated color="grey-10" icon="add_circle" label="Conectar Conta TikTok" @click="connectTiktok"
+            :loading="connectingTiktok" size="sm">
+            <q-tooltip>Conectar nova conta do TikTok Shop</q-tooltip>
+          </q-btn>
+        </div>
+
+        <div class="table-wrap">
+          <div v-if="loadingTiktok" class="flex flex-center q-pa-xl">
+            <q-spinner color="grey-8" size="3em" />
+          </div>
+
+          <template v-else>
+            <q-table v-if="tiktokAccounts.length > 0" :rows="tiktokAccounts" :columns="tiktokColumns" row-key="id" flat
+              :pagination="{ rowsPerPage: 10 }" class="accounts-table">
+              <template v-slot:header-cell="props">
+                <q-th :props="props" class="th-cell">{{ props.col.label }}</q-th>
+              </template>
+
+              <template v-slot:body-cell-shop_name="props">
+                <q-td :props="props">
+                  <div class="shopee-name">{{ props.row.shop_name || props.row.shop_id }}</div>
+                  <div class="td-muted">ID: {{ props.row.shop_id }}</div>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-is_connected="props">
+                <q-td :props="props">
+                  <span :class="['status-chip', props.row.is_connected ? 'status-chip--pos' : 'status-chip--neg']">
+                    {{ props.row.is_connected ? 'Conectada' : 'Desconectada' }}
+                  </span>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-token_expires_at="props">
+                <q-td :props="props" class="td-muted">
+                  {{ formatDate(props.row.token_expires_at) }}
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-actions="props">
+                <q-td :props="props" class="text-center q-gutter-xs">
+                  <q-btn flat round dense size="sm" color="grey-10" icon="sync"
+                    :loading="syncingTiktok === props.row.id" @click="syncTiktokOrders(props.row.id)">
+                    <q-tooltip>Sync Pedidos</q-tooltip>
+                  </q-btn>
+
+                  <q-btn flat round dense size="sm" color="grey-10" icon="inventory"
+                    @click="syncTiktokItems(props.row.id)">
+                    <q-tooltip>Sync Produtos</q-tooltip>
+                  </q-btn>
+
+                  <q-btn flat round dense size="sm" color="grey-6" icon="refresh"
+                    :loading="refreshingTiktok === props.row.id" @click="refreshTiktokToken(props.row.id)">
+                    <q-tooltip>Renovar Token</q-tooltip>
+                  </q-btn>
+
+                  <q-btn v-if="props.row.user === currentUserId" flat round dense size="sm" color="indigo-5" icon="group"
+                    @click="openShareDialog('tiktokshop', props.row)">
+                    <q-tooltip>Compartilhar conta</q-tooltip>
+                  </q-btn>
+
+                  <q-btn v-if="props.row.user === currentUserId" flat round size="sm" color="negative" icon="delete" @click="confirmDeleteTiktok(props.row)">
+                    <q-tooltip>Excluir conta TikTok</q-tooltip>
+                  </q-btn>
+                </q-td>
+              </template>
+            </q-table>
+
+            <div v-else class="empty-state">
+              <div class="shopee-empty-icon">
+                <div class="tab-tiktok-badge" style="margin: 0 auto;">TIKTOK</div>
+              </div>
+              <div style="font-size:15px; font-weight:600; color:#1a1f36">Nenhuma conta TikTok Shop</div>
+              <div style="color:#9aa0ac; font-size:13px">Clique em "Conectar Conta TikTok" para começar.</div>
+            </div>
+          </template>
+        </div>
+      </div>
+
     </div>
 
     <!-- ══════════════════════════════════════════════════════ DIALOGS -->
@@ -301,6 +389,23 @@
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
           <q-btn unelevated label="Excluir" color="negative" @click="deleteShopeeAccount" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Delete TikTok -->
+    <q-dialog v-model="deleteDialogTiktok">
+      <q-card style="min-width: 320px; border-radius: 12px">
+        <q-card-section class="row items-center q-pb-sm">
+          <q-avatar icon="warning" color="negative" text-color="white" />
+          <span class="q-ml-sm" style="font-weight:600; color:#1a1f36">Excluir conta TikTok Shop?</span>
+        </q-card-section>
+        <q-card-section class="q-pt-none" style="color:#9aa0ac; font-size:13px">
+          Esta ação é irreversível.
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Excluir" color="negative" @click="deleteTiktokAccount" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -477,6 +582,15 @@ const SHOPEE_REDIRECT_URI = isDevEnvironment
   ? `${NGROK_URL}/shopee-redirect`
   : 'https://sellerbot-frontend-367123809032.us-central1.run.app/shopee-redirect'
 
+// --- TikTok Shop ---
+const loadingTiktok = ref(false)
+const tiktokAccounts = ref([])
+const connectingTiktok = ref(false)
+const refreshingTiktok = ref(null)
+const syncingTiktok = ref(null)
+const deleteDialogTiktok = ref(false)
+const tiktokAccountToDelete = ref(null)
+
 // --- Tiny ---
 const tinyDialog = ref(false)
 const tinyConnecting = ref(false)
@@ -511,6 +625,14 @@ const shopeeColumns = [
   { name: 'shop_name', align: 'left', label: 'Loja', field: 'shop_name' },
   { name: 'is_connected', align: 'center', label: 'Status', field: 'is_connected' },
   { name: 'direct_delivery_cost', align: 'center', label: 'Frete Entrega Direta (R$)', field: 'direct_delivery_cost' },
+  { name: 'token_expires_at', align: 'left', label: 'Token Expira em', field: 'token_expires_at' },
+  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
+]
+
+// --- Colunas TikTok ---
+const tiktokColumns = [
+  { name: 'shop_name', align: 'left', label: 'Loja', field: 'shop_name' },
+  { name: 'is_connected', align: 'center', label: 'Status', field: 'is_connected' },
   { name: 'token_expires_at', align: 'left', label: 'Token Expira em', field: 'token_expires_at' },
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ]
@@ -695,6 +817,90 @@ const deleteShopeeAccount = async () => {
   }
 }
 
+// ==================== TikTok Shop ====================
+
+const getTiktokAccounts = async () => {
+  loadingTiktok.value = true
+  try {
+    const response = await api.get('/tiktokshop/accounts/')
+    tiktokAccounts.value = response.data.results || response.data || []
+  } catch (error) {
+    console.error('Erro ao buscar contas TikTok:', error)
+    tiktokAccounts.value = []
+  } finally {
+    loadingTiktok.value = false
+  }
+}
+
+const connectTiktok = async () => {
+  connectingTiktok.value = true
+  try {
+    const { data } = await api.get('/tiktokshop/accounts/auth_url/')
+    window.location.href = data.auth_url
+  } catch (error) {
+    console.error('Erro ao gerar link TikTok:', error)
+    $q.notify({ message: 'Erro ao gerar link de autorização.', color: 'negative', position: 'top' })
+  } finally {
+    connectingTiktok.value = false
+  }
+}
+
+const refreshTiktokToken = async (accountId) => {
+  refreshingTiktok.value = accountId
+  try {
+    await api.post(`/tiktokshop/accounts/${accountId}/refresh_token/`)
+    $q.notify({ message: 'Token renovado!', color: 'positive' })
+    await getTiktokAccounts()
+  } catch (error) {
+    $q.notify({ message: 'Erro ao renovar token', color: 'negative' })
+  } finally {
+    refreshingTiktok.value = null
+  }
+}
+
+const syncTiktokOrders = async (accountId) => {
+  syncingTiktok.value = accountId
+  try {
+    await api.post(`/tiktokshop/accounts/${accountId}/sync_orders/`)
+    $q.notify({ message: 'Pedidos sincronizados!', color: 'positive' })
+  } catch (error) {
+    $q.notify({ message: 'Erro ao sincronizar pedidos', color: 'negative' })
+  } finally {
+    syncingTiktok.value = null
+  }
+}
+
+const syncTiktokItems = async (accountId) => {
+  syncingTiktok.value = accountId
+  try {
+    await api.post(`/tiktokshop/accounts/${accountId}/sync_items/`)
+    $q.notify({ message: 'Produtos sincronizados!', color: 'positive' })
+  } catch (error) {
+    $q.notify({ message: 'Erro ao sincronizar produtos', color: 'negative' })
+  } finally {
+    syncingTiktok.value = null
+  }
+}
+
+const confirmDeleteTiktok = (account) => {
+  tiktokAccountToDelete.value = account
+  deleteDialogTiktok.value = true
+}
+
+const deleteTiktokAccount = async () => {
+  if (!tiktokAccountToDelete.value) return
+  try {
+    await api.delete(`/tiktokshop/accounts/${tiktokAccountToDelete.value.id}/`)
+    $q.notify({ message: 'Conta excluída', color: 'positive' })
+    await getTiktokAccounts()
+  } catch (error) {
+    $q.notify({ message: 'Erro ao excluir conta', color: 'negative' })
+  } finally {
+    deleteDialogTiktok.value = false
+    tiktokAccountToDelete.value = null
+  }
+}
+
 // ==================== Tiny ====================
 
 const openTinySetup = async (account) => {
@@ -804,7 +1010,7 @@ const syncCustoMedioProduto = async (account) => {
 
 const shareDialog = ref(false)
 const shareAccount = ref(null)
-const shareMarketplace = ref(null) // 'ml' | 'shopee'
+const shareMarketplace = ref(null) // 'ml' | 'shopee' | 'tiktokshop'
 const shareEmail = ref('')
 const addingShare = ref(false)
 const removingShare = ref(null)
@@ -822,7 +1028,9 @@ const addShare = async () => {
   try {
     const url = shareMarketplace.value === 'ml'
       ? `/mercadolivre/accounts/${shareAccount.value.account_id}/share/`
-      : `/shopee/accounts/${shareAccount.value.id}/share/`
+      : shareMarketplace.value === 'shopee'
+        ? `/shopee/accounts/${shareAccount.value.id}/share/`
+        : `/tiktokshop/accounts/${shareAccount.value.id}/share/`
     await api.post(url, { email: shareEmail.value.trim() })
     shareEmail.value = ''
     $q.notify({ message: 'Acesso concedido!', color: 'positive', position: 'top', timeout: 2000 })
@@ -841,8 +1049,14 @@ const removeShare = async (userId) => {
   try {
     const url = shareMarketplace.value === 'ml'
       ? `/mercadolivre/accounts/${shareAccount.value.account_id}/share/${userId}/`
-      : `/shopee/accounts/${shareAccount.value.id}/share/${userId}/`
-    await api.delete(url)
+      : shareMarketplace.value === 'shopee'
+        ? `/shopee/accounts/${shareAccount.value.id}/share/${userId}/`
+        : `/tiktokshop/accounts/${shareAccount.value.id}/unshare/`
+    if (shareMarketplace.value === 'tiktokshop') {
+      await api.post(url, { user_id: userId })
+    } else {
+      await api.delete(url)
+    }
     $q.notify({ message: 'Acesso removido.', color: 'positive', position: 'top', timeout: 2000 })
     await refreshShareAccount()
   } catch (error) {
@@ -857,9 +1071,13 @@ const refreshShareAccount = async () => {
     await getMLAccounts()
     const updated = mlAccounts.value.find(a => a.account_id === shareAccount.value.account_id)
     if (updated) shareAccount.value = { ...updated }
-  } else {
+  } else if (shareMarketplace.value === 'shopee') {
     await getShopeeAccounts()
     const updated = shopeeAccounts.value.find(a => a.id === shareAccount.value.id)
+    if (updated) shareAccount.value = { ...updated }
+  } else if (shareMarketplace.value === 'tiktokshop') {
+    await getTiktokAccounts()
+    const updated = tiktokAccounts.value.find(a => a.id === shareAccount.value.id)
     if (updated) shareAccount.value = { ...updated }
   }
 }
@@ -876,15 +1094,16 @@ onMounted(() => {
     window.history.replaceState({}, document.title, window.location.pathname)
   }
 
-  // Abrir aba correta se vier via ?tab=shopee
+  // Abrir aba correta se vier via ?tab=shopee ou ?tab=tiktokshop
   const tab = urlParams.get('tab')
-  if (tab === 'shopee') {
-    activeTab.value = 'shopee'
+  if (tab === 'shopee' || tab === 'tiktokshop') {
+    activeTab.value = tab
     window.history.replaceState({}, document.title, window.location.pathname)
   }
 
   getMLAccounts()
   getShopeeAccounts()
+  getTiktokAccounts()
 })
 </script>
 
@@ -985,6 +1204,19 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: #EE4D2D;
+  color: #fff;
+  font-size: 7px;
+  font-weight: 900;
+  border-radius: 4px;
+  padding: 1px 4px;
+  letter-spacing: .04em;
+}
+
+.tab-tiktok-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #010101;
   color: #fff;
   font-size: 7px;
   font-weight: 900;
