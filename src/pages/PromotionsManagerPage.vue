@@ -144,6 +144,9 @@
                             :model-value="props.row.auto_activate"
                             @update:model-value="v => toggleAutoActivate(props.row, v)"
                             class="q-ml-sm" />
+                          <q-chip v-if="props.row.auto_activate && props.row.auto_max_discount_pct"
+                            dense size="sm" color="orange-2" text-color="orange-9"
+                            :label="`Trava ${props.row.auto_max_discount_pct}%`" />
                           <span v-if="props.row.record_id" class="q-ml-xs" style="font-size:0.68rem;color:#64748b">
                             Ativar automaticamente
                           </span>
@@ -326,6 +329,45 @@
           <q-btn unelevated color="orange-8" icon-right="bolt" class="text-weight-bold q-px-md"
             :label="activationTargets.length === 1 ? 'Confirmar e Ativar' : `Ativar ${activationTargets.length} campanhas`"
             :disable="!activeDiscountValid" @click="confirmActivate" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- FB-30: dialog de trava obrigatória para auto-ativação -->
+    <q-dialog v-model="showAutoTravaDialog" persistent>
+      <q-card style="width: 420px; max-width: 94vw;">
+        <q-card-section class="row items-center bg-teal-7 text-white q-py-sm">
+          <q-icon name="schedule" size="sm" class="q-mr-sm" />
+          <span class="text-subtitle1 text-weight-bold">Trava de desconto para auto-ativação</span>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md">
+          <p class="text-body2 text-grey-8">
+            A auto-ativação roda diariamente às 09h. O robô só ativa anúncios
+            cujo desconto fique <strong>abaixo deste limite</strong>.
+            Acima disso, o item é ignorado.
+          </p>
+          <q-input
+            v-model.number="autoTravaPercent"
+            type="number"
+            label="Trava máxima de desconto (%)"
+            min="0.01" max="100" step="0.1"
+            suffix="%"
+            :rules="[v => (v > 0 && v <= 100) || 'Valor entre 0.01 e 100']"
+            outlined dense
+            class="q-mt-sm"
+            autofocus
+          />
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md q-gutter-x-sm">
+          <q-btn flat label="Cancelar" color="grey-7" @click="cancelAutoTrava" />
+          <q-btn
+            :label="`Ativar com trava de ${autoTravaPercent || '?'}%`"
+            color="teal" @click="confirmAutoTrava"
+            :disable="!autoTravaPercent || autoTravaPercent <= 0 || autoTravaPercent > 100" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -557,6 +599,11 @@ const fixedDiscountPct = ref(5)
 
 const showLogsDialog = ref(false)
 const expandedLogKey = ref(null)           // foco em um log específico ao abrir pelo chip da linha
+
+// FB-30: dialog de trava obrigatória para auto-ativação
+const showAutoTravaDialog = ref(false)
+const autoTravaPromo = ref(null)
+const autoTravaPercent = ref(null)
 
 const targetAccountsCount = computed(() =>
   new Set(activationTargets.value.map(t => t.account_id)).size
@@ -874,23 +921,56 @@ const openLogsFor = (account, promo) => {
 // ============================================================================
 // HELPERS
 // ============================================================================
-// FB-30: liga/desliga a reativação automática diária desta promoção
+// FB-30: liga/desliga a reativação automática diária desta promoção.
+// Ao ligar exige trava de desconto via dialog. Ao desligar remove a trava.
 const toggleAutoActivate = async (promo, active) => {
-  const previous = promo.auto_activate
-  promo.auto_activate = active  // otimista
+  if (active) {
+    autoTravaPromo.value = promo
+    autoTravaPercent.value = promo.auto_max_discount_pct || null
+    showAutoTravaDialog.value = true
+    return
+  }
+  // Desligar: limpa a trava e o toggle
+  promo.auto_activate = false
+  promo.auto_max_discount_pct = null
   try {
-    await MercadoLivreService.toggleAutoActivatePromotion(promo.record_id, active)
+    await MercadoLivreService.toggleAutoActivatePromotion(promo.record_id, false)
     $q.notify({
       type: 'positive',
-      message: active
-        ? 'Ativação automática ligada — vai rodar sozinha todo dia com a mesma trava de margem.'
-        : 'Ativação automática desligada.',
+      message: 'Ativação automática desligada.',
       position: 'top',
     })
   } catch (e) {
-    promo.auto_activate = previous
+    promo.auto_activate = true
     $q.notify({ type: 'negative', message: 'Erro ao atualizar: ' + (e?.response?.data?.error || e.message), position: 'top' })
   }
+}
+
+const confirmAutoTrava = async () => {
+  const promo = autoTravaPromo.value
+  const pct = autoTravaPercent.value
+  if (!promo || !pct) return
+  promo.auto_activate = true
+  promo.auto_max_discount_pct = pct
+  showAutoTravaDialog.value = false
+  try {
+    await MercadoLivreService.toggleAutoActivatePromotion(promo.record_id, true, pct)
+    $q.notify({
+      type: 'positive',
+      message: `Ativação automática ligada com trava de ${pct}% — vai rodar sozinha todo dia.`,
+      position: 'top',
+    })
+  } catch (e) {
+    promo.auto_activate = false
+    promo.auto_max_discount_pct = null
+    $q.notify({ type: 'negative', message: 'Erro ao atualizar: ' + (e?.response?.data?.error || e.message), position: 'top' })
+  }
+}
+
+const cancelAutoTrava = () => {
+  showAutoTravaDialog.value = false
+  autoTravaPromo.value = null
+  autoTravaPercent.value = null
 }
 
 const getTypeMeta = (type) => {
