@@ -176,9 +176,9 @@
                 <div class="sv-form-label">{{ form.auto_renew ? 'Prefixo do código *' : 'Código *' }}</div>
                 <q-input v-model="form.voucher_code" outlined dense
                   :placeholder="form.auto_renew ? 'SP' : 'SP10'" :maxlength="5"
-                  :error="form.voucher_code.length > 0 && !/^[A-Za-z0-9]+$/.test(form.voucher_code)"
+                  :error="form.voucher_code.length > 0 && !/^[A-Za-z0-9]{1,5}$/.test(form.voucher_code)"
                   error-message="1 a 5 letras/números, sem espaços"
-                  @update:model-value="v => form.voucher_code = v.toUpperCase().replace(/[^A-Z0-9]/g,'')" />
+                  @update:model-value="v => form.voucher_code = v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0, 5)" />
                 <div v-if="form.auto_renew" class="text-caption text-grey-5">
                   Cada ciclo reusa o mesmo código — limite da Shopee é 5 caracteres (FB-28). A Shopee
                   adiciona um prefixo da loja ao salvar (ex: SP → MGPSP).
@@ -767,6 +767,12 @@ async function submitCreate() {
   try {
     const f = form.value
 
+    // FB-28: defesa em profundidade — maxlength + sanitizer podem ser burlados via DevTools/clipboard
+    if (f.voucher_code.trim().length > 5 || f.voucher_code.trim().length < 1) {
+      $q.notify({ type: 'negative', message: 'Código do cupom deve ter no máximo 5 caracteres' })
+      return
+    }
+
     // FB-27: renovação automática usa endpoint e payload próprios (sem datas manuais,
     // o backend controla o agendamento local)
     if (f.auto_renew) {
@@ -998,7 +1004,7 @@ function usageColor(pct) {
 .sv-card-actions { position: absolute; top: 10px; right: 8px; display: flex; gap: 2px; }
 
 /* ── Create dialog ── */
-.sv-create-card { width: 860px; max-width: 98vw; max-height: 92vh; display: flex; flex-direction: column; }
+.sv-create-card { width: min(860px, 96vw); max-height: 92vh; display: flex; flex-direction: column; }
 .sv-dialog-header { display: flex; align-items: center; background: #e65100; color: #fff; padding: 10px 16px; flex-shrink: 0; }
 .sv-dialog-footer { display: flex; align-items: center; border-top: 1px solid #eee; background: #fafafa; flex-shrink: 0; gap: 8px; padding: 10px 16px; }
 
@@ -1073,6 +1079,11 @@ function usageColor(pct) {
 .sv-td-date { white-space: nowrap; color: #64748b; }
 .sv-td-shop { color: #94a3b8; white-space: nowrap; font-size: 11.5px; margin-left: 2px; }
 
+@media (max-width: 700px) {
+  .sv-create-body { flex-direction: column; }
+  .sv-form { border-right: none; border-bottom: 1px solid #f0f0f0; }
+  .sv-rules-panel { width: 100%; flex-shrink: 1; max-height: 40vh; }
+}
 @media (max-width: 600px) {
   .page-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
   .sv-pills--status { overflow-x: auto; display: flex; }
