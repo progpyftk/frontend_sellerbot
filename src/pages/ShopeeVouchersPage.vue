@@ -175,11 +175,17 @@
               <div class="sv-form-field" style="min-width:130px">
                 <div class="sv-form-label">{{ form.auto_renew ? 'Prefixo do código *' : 'Código *' }}</div>
                 <q-input v-model="form.voucher_code" outlined dense
-                  :placeholder="form.auto_renew ? 'PROMO' : 'JULHO10'" :maxlength="form.auto_renew ? 14 : 20"
+                  :placeholder="form.auto_renew ? 'SP' : 'SP10'" :maxlength="5"
                   :error="form.voucher_code.length > 0 && !/^[A-Za-z0-9]+$/.test(form.voucher_code)"
-                  error-message="Só letras e números"
+                  error-message="1 a 5 letras/números, sem espaços"
                   @update:model-value="v => form.voucher_code = v.toUpperCase().replace(/[^A-Z0-9]/g,'')" />
-                <div v-if="form.auto_renew" class="text-caption text-grey-5">Cada ciclo ganha um sufixo de data — ex: {{ form.voucher_code || 'PROMO' }}260101</div>
+                <div v-if="form.auto_renew" class="text-caption text-grey-5">
+                  Cada ciclo reusa o mesmo código — limite da Shopee é 5 caracteres (FB-28). A Shopee
+                  adiciona um prefixo da loja ao salvar (ex: SP → MGPSP).
+                </div>
+                <div v-else class="text-caption text-grey-5">
+                  Máx 5 caracteres — a Shopee adiciona um prefixo da loja ao salvar (ex: SP10 → MGPSP10).
+                </div>
               </div>
             </div>
 
@@ -350,13 +356,13 @@
                 Regras da Shopee
               </div>
               <ul class="sv-rules-list">
-                <li>Código: apenas letras e números, sem espaços</li>
+                <li>Código: <b>1 a 5 letras/números</b> (A-Z, 0-9), sem espaços — a Shopee coloca um prefixo da loja ao salvar (FB-28)</li>
                 <li>Validade: fim deve ser no mínimo 1 hora após o início</li>
                 <li>Validade máxima: 3 meses</li>
                 <li v-if="form.reward_type === 1">Compra mínima deve ser maior que o valor fixo (se definida)</li>
                 <li v-if="form.reward_type === 2">Percentual mínimo aceito pela Shopee: ≥ 5%</li>
                 <li v-if="form.reward_type >= 2 && form.max_price > 0">
-                  Teto (R$ {{ form.max_price }}) deve permitir que o comprador aproveite o desconto com a compra mínima
+                  Teto (R$ {{ form.max_price }}) deve permitir que o comprador aprove o desconto com a compra mínima
                 </li>
                 <li>Máx 1.000 cupons ativos + agendados simultâneos</li>
                 <li>Para cupom tipo Produto, escolha os itens pelo painel da Shopee após criar</li>
@@ -633,6 +639,9 @@ const validationChecklist = computed(() => {
     { ok: !!f.account_id,              label: 'Conta selecionada' },
     { ok: !!f.voucher_name.trim(),     label: 'Nome preenchido' },
     { ok: !!f.voucher_code.trim(),     label: 'Código preenchido' },
+    // FB-28: Shopee só aceita voucher_code de 1-5 alfanuméricos — antes o usuário
+    // podia digitar até 20 chars e o erro só vinha da API ("Up to 5 characters."), ilegível.
+    { ok: /^[A-Za-z0-9]{1,5}$/.test(f.voucher_code.trim()), label: 'Código de 1 a 5 letras/números' },
     { ok: hasDiscount,                 label: f.reward_type === 1 ? 'Valor do desconto > R$ 0' : 'Percentual definido' },
     { ok: (f.usage_quantity || 0) >= 1,label: 'Quantidade de usos ≥ 1' },
     ...(f.auto_renew ? [
