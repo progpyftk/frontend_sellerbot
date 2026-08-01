@@ -373,7 +373,7 @@
       <q-table
         flat
         :rows="orders"
-        :columns="columns"
+        :columns="displayColumns"
         row-key="id"
         :loading="loading"
         v-model:pagination="pagination"
@@ -385,6 +385,7 @@
 
         <template v-slot:header="props">
           <q-tr :props="props">
+            <q-th v-if="isCompact" auto-width class="sb-expand-toggle-th" />
             <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">
               {{ col.label }}
             </q-th>
@@ -394,7 +395,12 @@
         <template v-slot:body="props">
           <q-tr :props="props"
             class="hover-row cursor-pointer"
-            @click="openDetail(props.row)">
+            @click="isCompact ? toggleExpand(props.row.id) : openDetail(props.row)">
+
+            <!-- Toggle de expandir (só mobile <600px) ─── -->
+            <q-td v-if="isCompact" auto-width class="sb-expand-toggle-td" @click.stop="toggleExpand(props.row.id)">
+              <q-icon :name="isExpanded(props.row.id) ? 'expand_less' : 'expand_more'" size="20px" color="grey-6" />
+            </q-td>
 
             <!-- ① Pedido / Produto -->
             <q-td key="order" :props="props" style="max-width:320px;white-space:normal">
@@ -484,7 +490,7 @@
             </q-td>
 
             <!-- ⑥ Taxas Shopee (comissão + serviço, do escrow) -->
-            <q-td key="frete" :props="props" align="right">
+            <q-td v-if="!isCompact" key="frete" :props="props" align="right">
               <div class="column items-end">
                 <template v-if="props.row.escrow_synced">
                   <span class="frete-val">-{{ formatCurrency(getTaxasShopee(props.row)) }}</span>
@@ -495,7 +501,7 @@
             </q-td>
 
             <!-- ⑦ Repasse Shopee (escrow_amount) -->
-            <q-td key="liquido" :props="props" align="right">
+            <q-td v-if="!isCompact" key="liquido" :props="props" align="right">
               <div class="cell-liquido">
                 <template v-if="props.row.escrow_synced">
                   <div :class="['liquido-main', props.row.escrow_amount >= 0 ? 'pos' : 'neg']">
@@ -513,7 +519,7 @@
             </q-td>
 
             <!-- ⑧ Margem após CMV -->
-            <q-td key="lucro" :props="props" align="right">
+            <q-td v-if="!isCompact" key="lucro" :props="props" align="right">
               <div v-if="props.row.lucro_apos_cmp != null" class="cell-lucro">
                 <div :class="['lucro-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
                   {{ formatCurrency(props.row.lucro_apos_cmp) }}
@@ -525,6 +531,62 @@
               <span v-else class="text-caption text-grey-5">S/ Custo</span>
             </q-td>
 
+          </q-tr>
+
+          <!-- Painel de expandir inline (mobile <600px): taxas, repasse e margem após CMV -->
+          <q-tr v-if="isCompact" v-show="isExpanded(props.row.id)" class="sb-expand-row" :props="props">
+            <q-td colspan="100%">
+              <div class="sb-expand-panel">
+
+                <div class="sb-expand-field">
+                  <span class="sb-expand-label">Taxas Shopee</span>
+                  <div class="column items-start">
+                    <template v-if="props.row.escrow_synced">
+                      <span class="frete-val">-{{ formatCurrency(getTaxasShopee(props.row)) }}</span>
+                      <span class="frete-hint">comissão + taxas</span>
+                    </template>
+                    <span v-else class="text-caption text-grey-4">—</span>
+                  </div>
+                </div>
+
+                <div class="sb-expand-field">
+                  <span class="sb-expand-label">Repasse (s/ custo)</span>
+                  <div class="cell-liquido">
+                    <template v-if="props.row.escrow_synced">
+                      <div :class="['liquido-main', props.row.escrow_amount >= 0 ? 'pos' : 'neg']">
+                        {{ formatCurrency(props.row.escrow_amount) }}
+                      </div>
+                      <div class="liquido-hint">repasse Shopee</div>
+                    </template>
+                    <template v-else>
+                      <div :class="['liquido-main', getLiquido(props.row) >= 0 ? 'pos' : 'neg']">
+                        {{ formatCurrency(getLiquido(props.row)) }}
+                      </div>
+                      <div class="liquido-hint">estimado</div>
+                    </template>
+                  </div>
+                </div>
+
+                <div class="sb-expand-field">
+                  <span class="sb-expand-label">Lucro após custo</span>
+                  <div v-if="props.row.lucro_apos_cmp != null" class="cell-lucro">
+                    <div :class="['lucro-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
+                      {{ formatCurrency(props.row.lucro_apos_cmp) }}
+                    </div>
+                    <div class="lucro-hint">
+                      Custo: {{ formatCurrency(props.row.custo_medio_produto) }}
+                    </div>
+                  </div>
+                  <span v-else class="text-caption text-grey-5">S/ Custo</span>
+                </div>
+
+                <div class="row justify-end">
+                  <q-btn flat dense no-caps size="sm" color="indigo-7" label="Ver detalhamento completo"
+                    icon="open_in_new" @click.stop="openDetail(props.row)" />
+                </div>
+
+              </div>
+            </q-td>
           </q-tr>
         </template>
 
@@ -947,8 +1009,10 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
+import { useRowExpand } from 'src/composables/useRowExpand'
 
 const $q = useQuasar()
+const { isExpanded, toggleExpand } = useRowExpand()
 
 // ── Estado ──────────────────────────────────────────────────────────────────
 const orders         = ref([])
@@ -996,10 +1060,16 @@ const columns = [
   { name: 'comprador', label: 'COMPRADOR',            field: 'buyer_username', sortable: false, align: 'left',   style: 'min-width:110px' },
   { name: 'status',    label: 'STATUS',               field: 'status',         sortable: false, align: 'center', style: 'min-width:120px' },
   { name: 'bruto',     label: 'VENDA',                field: 'total_amount',   sortable: true,  align: 'right',  style: 'min-width:90px'  },
-  { name: 'frete',     label: 'TAXAS SHOPEE',         field: 'commission_fee', sortable: false, align: 'right',  style: 'min-width:90px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
-  { name: 'liquido',   label: 'REPASSE (S/ CUSTO)',   field: 'escrow_amount',  sortable: false, align: 'right',  style: 'min-width:120px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
-  { name: 'lucro',     label: 'LUCRO APÓS CUSTO',     field: 'lucro_apos_cmp', sortable: false, align: 'right',  style: 'min-width:115px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
+  { name: 'frete',     label: 'TAXAS SHOPEE',         field: 'commission_fee', sortable: false, align: 'right',  style: 'min-width:90px', priority: 'secondary' },
+  { name: 'liquido',   label: 'REPASSE (S/ CUSTO)',   field: 'escrow_amount',  sortable: false, align: 'right',  style: 'min-width:120px', priority: 'secondary' },
+  { name: 'lucro',     label: 'LUCRO APÓS CUSTO',     field: 'lucro_apos_cmp', sortable: false, align: 'right',  style: 'min-width:115px', priority: 'secondary' },
 ]
+
+// Paridade mobile: <600px mostra só colunas primárias na linha; secundárias vão pro painel de expandir inline.
+const isCompact = computed(() => $q.screen.lt.sm)
+const displayColumns = computed(() =>
+  isCompact.value ? columns.filter(c => c.priority !== 'secondary') : columns
+)
 
 // ── Opções ─────────────────────────────────────────────────────────────────
 const statusOptions = [
@@ -1956,9 +2026,5 @@ onMounted(() => {
   .fb-search { max-width: 100%; min-width: 0; }
   .fadv-section { padding: 10px 12px; }
   .detail-section { padding: 10px 12px; }
-
-  .col-hide-mobile {
-    display: none !important;
-  }
 }
 </style>
