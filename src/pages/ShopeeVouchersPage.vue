@@ -1004,7 +1004,7 @@ function usageColor(pct) {
 .sv-card-actions { position: absolute; top: 10px; right: 8px; display: flex; gap: 2px; }
 
 /* ── Create dialog ── */
-.sv-create-card { width: min(720px, 94vw); max-height: 92vh; display: flex; flex-direction: column; }
+.sv-create-card { width: min(720px, 94vw); max-height: 92vh; display: flex; flex-direction: column; flex-wrap: nowrap; }
 .sv-dialog-header { display: flex; align-items: center; background: #e65100; color: #fff; padding: 10px 16px; flex-shrink: 0; }
 .sv-dialog-footer { display: flex; align-items: center; border-top: 1px solid #eee; background: #fafafa; flex-shrink: 0; gap: 8px; padding: 10px 16px; }
 
