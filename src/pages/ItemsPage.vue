@@ -921,6 +921,19 @@
           </q-banner>
         </q-card-section>
 
+        <!-- ── Pausar promoções ao aumentar preço (Ajuste-aumentar e Exato) ── -->
+        <q-card-section
+          v-if="(bulkPriceForm.mode === 'adjust' && bulkPriceForm.direction === 'increase') || bulkPriceForm.mode === 'exact'"
+          class="q-px-lg q-pt-none q-pb-md">
+          <q-checkbox v-model="bulkPriceForm.pausePromotions" dense color="indigo-6"
+            label="Pausar promoções ativas antes de aumentar o preço" />
+          <div class="text-caption text-grey-6 q-ml-lg">
+            Anúncios em promoção continuam mostrando o preço promocional pro comprador mesmo
+            depois de aumentar o preço-base. Marque esta opção para pausar a(s) promoção(ões)
+            ativa(s) de cada anúncio antes de aplicar o aumento.
+          </div>
+        </q-card-section>
+
         <!-- ── Modo: Atacado (PxQ) ─────────────────────────────────────── -->
         <q-card-section v-else-if="bulkPriceForm.mode === 'wholesale'" class="q-pa-lg column q-gutter-sm">
           <div class="text-caption text-grey-6 q-mb-xs">Máx. 3 faixas · Disponível apenas para compradores B2B · Preços devem diminuir conforme a quantidade aumenta</div>
@@ -1159,6 +1172,34 @@
       </q-card>
     </q-dialog>
 
+    <!-- ── RESULTADO DA AÇÃO EM MASSA (erros / avisos por item) ────────────── -->
+    <q-dialog v-model="showBulkResultDialog">
+      <q-card style="min-width:min(480px, 95vw); max-width:95vw">
+        <q-card-section class="bg-grey-9 text-white row items-center q-pb-sm">
+          <q-icon name="fact_check" size="sm" class="q-mr-sm" />
+          <span class="text-h6">Resultado da Ação</span>
+          <q-space /><q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-list separator style="max-height:60vh" class="scroll">
+          <q-item v-for="(r, i) in bulkResultItems" :key="r.item_id + i">
+            <q-item-section avatar>
+              <q-icon :name="r.kind === 'error' ? 'error' : 'warning_amber'"
+                :color="r.kind === 'error' ? 'red-6' : 'amber-8'" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="text-weight-medium">{{ r.title }}</q-item-label>
+              <q-item-label caption>{{ r.message }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Fechar" color="grey-8" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -1226,7 +1267,7 @@ const showBulkReactivateDialog  = ref(false)
 const bulkLoading = ref(false)
 const bulkStockForm = reactive({ quantity: null })
 
-const bulkPriceForm = reactive({ mode: 'adjust', direction: 'increase', type: 'pct', value: null })
+const bulkPriceForm = reactive({ mode: 'adjust', direction: 'increase', type: 'pct', value: null, pausePromotions: false })
 const bulkPromoForm = reactive({ action: 'deactivate', dealPriceType: 'pct', dealPriceValue: null, finishDate: null })
 const bulkListingTypeForm = reactive({ listing_type: 'gold_pro' })
 const bulkWholesaleForm = reactive({
@@ -1751,18 +1792,32 @@ const openSpaceManagement = (row) => {
 // ── Helpers bulk ─────────────────────────────────────────────────────────
 const _itemsPayload = () => selectedItems.value.map(r => ({ item_id: r.item_id }))
 
+const showBulkResultDialog = ref(false)
+const bulkResultItems = ref([])
+
 const _bulkFinish = (result, closeRef) => {
-  const ok = result.data?.success?.length || 0
-  const err = result.data?.errors?.length || 0
-  if (err === 0) {
+  const successList = result.data?.success || []
+  const errorList = result.data?.errors || []
+  const warningList = result.data?.warnings || []
+  const ok = successList.length
+  const err = errorList.length
+  const titleFor = (itemId) => selectedItems.value.find(r => r.item_id === itemId)?.title || itemId
+
+  if (errorList.length === 0 && warningList.length === 0) {
     $q.notify({ type: 'positive', message: `${ok} anúncio(s) atualizado(s) com sucesso!`, position: 'top' })
   } else {
+    bulkResultItems.value = [
+      ...errorList.map(e => ({ item_id: e.item_id, title: titleFor(e.item_id), kind: 'error', message: e.error })),
+      ...warningList.map(w => ({ item_id: w.item_id, title: titleFor(w.item_id), kind: 'warning', message: w.message })),
+    ]
+    showBulkResultDialog.value = true
     $q.notify({
-      type: err === ok + err ? 'negative' : 'warning',
-      message: `${ok} ok, ${err} erro(s). Veja o console.`,
+      type: err > 0 ? (err === ok + err ? 'negative' : 'warning') : 'warning',
+      message: err > 0
+        ? `${ok} ok, ${err} erro(s). Veja os detalhes.`
+        : `${ok} atualizado(s), ${warningList.length} com aviso. Veja os detalhes.`,
       position: 'top'
     })
-    console.warn('[BulkErrors]', result.data?.errors)
   }
   closeRef.value = false
   selectedItems.value = []
@@ -1772,7 +1827,12 @@ const _bulkFinish = (result, closeRef) => {
 const executeBulkPriceUpdate = async () => {
   bulkLoading.value = true
   try {
-    const base = { direction: bulkPriceForm.direction, type: bulkPriceForm.type, value: bulkPriceForm.value }
+    const base = {
+      direction: bulkPriceForm.direction,
+      type: bulkPriceForm.type,
+      value: bulkPriceForm.value,
+      pause_promotions: bulkPriceForm.direction === 'increase' && bulkPriceForm.pausePromotions,
+    }
     const payload = selectAllFiltered.value
       ? { select_all: true, filters: buildFiltersPayload(), ...base }
       : { items: _itemsPayload(), ...base }
@@ -1840,9 +1900,10 @@ const executeBulkWholesale = async () => {
 const executeBulkExactPrice = async () => {
   bulkLoading.value = true
   try {
+    const base = { price: bulkExactPriceForm.price, pause_promotions: bulkPriceForm.pausePromotions }
     const payload = selectAllFiltered.value
-      ? { select_all: true, filters: buildFiltersPayload(), price: bulkExactPriceForm.price }
-      : { items: _itemsPayload(), price: bulkExactPriceForm.price }
+      ? { select_all: true, filters: buildFiltersPayload(), ...base }
+      : { items: _itemsPayload(), ...base }
     const res = await MercadoLivreService.bulkExactPrice(payload)
     _bulkFinish(res, showBulkPriceDialog)
     bulkExactPriceForm.price = null
