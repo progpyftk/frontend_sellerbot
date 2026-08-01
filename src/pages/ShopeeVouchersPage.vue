@@ -153,7 +153,7 @@
         <div class="sv-create-body">
 
           <!-- COL ESQUERDA: formulário -->
-          <div class="sv-form scroll">
+          <div class="sv-form">
 
             <!-- Conta -->
             <div class="sv-form-section">
@@ -1004,12 +1004,12 @@ function usageColor(pct) {
 .sv-card-actions { position: absolute; top: 10px; right: 8px; display: flex; gap: 2px; }
 
 /* ── Create dialog ── */
-.sv-create-card { width: min(860px, 96vw); max-height: 92vh; display: flex; flex-direction: column; }
+.sv-create-card { width: min(1040px, 96vw); max-height: 92vh; display: flex; flex-direction: column; }
 .sv-dialog-header { display: flex; align-items: center; background: #e65100; color: #fff; padding: 10px 16px; flex-shrink: 0; }
 .sv-dialog-footer { display: flex; align-items: center; border-top: 1px solid #eee; background: #fafafa; flex-shrink: 0; gap: 8px; padding: 10px 16px; }
 
-/* Body 2 colunas */
-.sv-create-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+/* Body 2 colunas — um único scroll para o corpo inteiro (evita scrollbars aninhados) */
+.sv-create-body { display: flex; flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; }
 
 .sv-form { padding: 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; border-right: 1px solid #f0f0f0; }
 .sv-form-section { display: flex; flex-direction: column; gap: 6px; }
@@ -1019,7 +1019,7 @@ function usageColor(pct) {
 .sv-form-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; }
 
 /* Rules panel */
-.sv-rules-panel { width: 240px; flex-shrink: 0; padding: 16px 14px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; }
+.sv-rules-panel { width: 260px; flex-shrink: 0; padding: 16px 14px; background: #fafafa; display: flex; flex-direction: column; }
 .sv-rules-section { display: flex; flex-direction: column; gap: 6px; }
 .sv-rules-title { font-size: 11px; font-weight: 700; color: #777; text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; margin-bottom: 4px; }
 .sv-check-item { display: flex; align-items: flex-start; font-size: 12px; color: #aaa; padding: 3px 0; transition: color .15s; }
@@ -1082,7 +1082,7 @@ function usageColor(pct) {
 @media (max-width: 700px) {
   .sv-create-body { flex-direction: column; }
   .sv-form { border-right: none; border-bottom: 1px solid #f0f0f0; }
-  .sv-rules-panel { width: 100%; flex-shrink: 1; max-height: 40vh; }
+  .sv-rules-panel { width: 100%; flex-shrink: 1; }
 }
 @media (max-width: 600px) {
   .page-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
