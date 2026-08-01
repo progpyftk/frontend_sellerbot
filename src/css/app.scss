@@ -157,3 +157,36 @@ $side-props: (p: padding, pt: padding-top, pr: padding-right, pb: padding-bottom
 .show-mobile {
   @media (min-width: 601px) { display: none !important; }
 }
+
+/* ── Paridade mobile de tabelas: painel de expandir inline (colunas secundárias) ── */
+.sb-expand-toggle-th,
+.sb-expand-toggle-td {
+  width: 40px;
+}
+
+.sb-expand-row td {
+  padding: 0 !important;
+  border-bottom: 1px solid #eef1f5 !important;
+}
+
+.sb-expand-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  background: #f8fafc;
+}
+
+.sb-expand-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sb-expand-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: #8a94a6;
+}
