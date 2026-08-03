@@ -190,3 +190,28 @@ $side-props: (p: padding, pt: padding-top, pr: padding-right, pb: padding-bottom
   text-transform: uppercase;
   color: #8a94a6;
 }
+
+/* Resumo financeiro que permanece visível na célula de venda em telas estreitas. */
+.mobile-financial-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: 9px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.mobile-financial-summary span {
+  color: #8a94a6;
+}
+
+.mobile-financial-summary strong {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.mobile-financial-summary--positive strong { color: #0d9488; }
+.mobile-financial-summary--negative strong { color: #ef4444; }
+.mobile-financial-summary--muted strong { color: #9aa0ac; }

@@ -5,6 +5,7 @@
 
 # Testes
 /coverage
+/test-results
 
 # Produção
 /build
