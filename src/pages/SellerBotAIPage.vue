@@ -286,7 +286,7 @@
             color="teal-7"
             icon="send"
             :loading="isLoading"
-            :disable="!inputMessage.trim() || isLoading"
+            :disable="(!inputMessage.trim() && !pendingImages.length) || isLoading"
             @click="sendMessage"
             class="send-btn"
           />
@@ -625,12 +625,26 @@ const selectModel = (model) => {
 // ===========================================================================
 const handleFileSelect = (e) => {
   const files = Array.from(e.target.files)
+  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+  let totalBytes = pendingImages.value.reduce((sum, image) => sum + image.file.size, 0)
   for (const file of files) {
-    if (!file.type.startsWith('image/')) continue
-    if (file.size > 10 * 1024 * 1024) {
-      $q.notify({ message: `${file.name} excede 10MB`, color: 'negative' })
+    if (pendingImages.value.length >= 4) {
+      $q.notify({ message: 'Envie no máximo 4 imagens por mensagem', color: 'negative' })
+      break
+    }
+    if (!allowedTypes.has(file.type)) {
+      $q.notify({ message: `${file.name}: use JPEG, PNG ou WebP`, color: 'negative' })
       continue
     }
+    if (file.size > 5 * 1024 * 1024) {
+      $q.notify({ message: `${file.name} excede 5MB`, color: 'negative' })
+      continue
+    }
+    if (totalBytes + file.size > 15 * 1024 * 1024) {
+      $q.notify({ message: 'O total das imagens deve ter no máximo 15MB', color: 'negative' })
+      continue
+    }
+    totalBytes += file.size
     const reader = new FileReader()
     reader.onload = (ev) => {
       pendingImages.value.push({ file, preview: ev.target.result })
