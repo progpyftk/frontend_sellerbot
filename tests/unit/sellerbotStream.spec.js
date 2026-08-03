@@ -1,0 +1,84 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  createAssistantMessage,
+  normalizeHistoricalMessage,
+  reduceSellerbotEvent,
+} from '../../src/services/sellerbotStream.js'
+
+describe('sellerbotStream reducer', () => {
+  it('appends textual tokens to content', () => {
+    let message = createAssistantMessage()
+    message = reduceSellerbotEvent(message, { type: 'token', text: 'Olá' })
+    message = reduceSellerbotEvent(message, { type: 'token', text: ' mundo' })
+
+    expect(message.content).toBe('Olá mundo')
+  })
+
+  it('keeps tool calls as safe labels without arguments', () => {
+    const message = reduceSellerbotEvent(createAssistantMessage(), {
+      type: 'tool_call',
+      text: 'Consultando pedidos',
+      args: '{"account_id":"private"}',
+    })
+
+    expect(message.logs[0]).toEqual({ type: 'tool_call', text: 'Consultando pedidos' })
+    expect(JSON.stringify(message)).not.toContain('account_id')
+  })
+
+  it('does not store raw tool results', () => {
+    const message = reduceSellerbotEvent(createAssistantMessage(), {
+      type: 'tool_result',
+      text: '{"orders":[1]}',
+    })
+
+    expect(message.logs[0].text).toBe('Dados recebidos')
+    expect(message.logs[0].text).not.toContain('orders')
+  })
+
+  it('lets done replace a partial streamed response', () => {
+    let message = reduceSellerbotEvent(createAssistantMessage(), { type: 'token', text: 'parcial' })
+    message = reduceSellerbotEvent(message, { type: 'done', response: 'Resposta final em **Markdown**.' })
+
+    expect(message.content).toBe('Resposta final em **Markdown**.')
+    expect(message.loading).toBe(false)
+  })
+
+  it('does not persist or render traceback on errors', () => {
+    const message = reduceSellerbotEvent(createAssistantMessage(), {
+      type: 'error',
+      text: 'Traceback SECRET_KEY=abc',
+      traceback: 'private stack',
+    })
+
+    expect(message.content).toBe('Não foi possível processar a mensagem. Tente novamente.')
+    expect(JSON.stringify(message)).not.toContain('Traceback')
+    expect(JSON.stringify(message)).not.toContain('SECRET_KEY')
+  })
+
+  it('sanitizes old logs without hiding legitimate final JSON content', () => {
+    const message = normalizeHistoricalMessage({
+      role: 'assistant',
+      content: '{"legitimate": true}',
+      logs: [
+        { type: 'tool_call', text: '{"args":{"secret":"x"}}' },
+        { type: 'thinking', text: 'Processando' },
+      ],
+    })
+
+    expect(message.content).toBe('{"legitimate": true}')
+    expect(message.logs).toEqual([{ type: 'thinking', text: 'Processando' }])
+  })
+
+  it('keeps drafts and images as bounded component data', () => {
+    const message = reduceSellerbotEvent(createAssistantMessage(), {
+      type: 'listing_draft_ready',
+      draft: { draft_id: 12, title: 'Produto', pictures: ['secret'], price: 10 },
+      instructions: 'Revise o rascunho',
+    })
+    const withImage = reduceSellerbotEvent(message, { type: 'image', url: 'https://img.test/a.jpg' })
+
+    expect(withImage.pendingDraft.draft).toEqual({ draft_id: 12, title: 'Produto', price: 10 })
+    expect(withImage.images).toEqual(['https://img.test/a.jpg'])
+  })
+})

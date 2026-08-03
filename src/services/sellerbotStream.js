@@ -1,0 +1,137 @@
+/** Pure reducer for the public SellerBot SSE contract. */
+
+const SAFE_ERROR = 'Não foi possível processar a mensagem. Tente novamente.'
+const MAX_LOGS = 100
+const MAX_IMAGES = 4
+
+export const createAssistantMessage = () => ({
+  role: 'assistant',
+  content: '',
+  images: [],
+  logs: [],
+  loading: true,
+  hasError: false,
+  logsOpen: false,
+  startedAt: Date.now(),
+  elapsedSec: 0,
+  agent: null,
+})
+
+export function reduceSellerbotEvent(message, event) {
+  if (!message || !event || typeof event.type !== 'string') return message
+
+  const next = { ...message, logs: [...(message.logs || [])], images: [...(message.images || [])] }
+  switch (event.type) {
+    case 'thinking':
+      next.loadingText = safeLogText(event.text, 'Processando sua solicitação...')
+      appendLog(next, { type: 'thinking', text: next.loadingText })
+      break
+
+    case 'tool_call':
+      next.loadingText = safeLogText(event.text, 'Consultando dados...')
+      appendLog(next, { type: 'tool_call', text: next.loadingText })
+      break
+
+    case 'tool_result':
+      appendLog(next, { type: 'tool_result', text: safeLogText(event.text, 'Dados recebidos') })
+      break
+
+    case 'image':
+      if (isPublicUrl(event.url) && !next.images.includes(event.url)) {
+        next.images = [...next.images, event.url].slice(0, MAX_IMAGES)
+      }
+      appendLog(next, { type: 'tool_result', text: 'Imagem recebida' })
+      break
+
+    case 'listing_draft_ready':
+      next.pendingDraft = {
+        draft: sanitizeDraft(event.draft),
+        instructions: safeLogText(event.instructions, 'Revise o rascunho antes de publicar.'),
+        status: 'pending',
+      }
+      appendLog(next, { type: 'tool_result', text: 'Rascunho de anúncio pronto para revisão' })
+      break
+
+    case 'token':
+      if (typeof event.text === 'string') next.content = `${next.content || ''}${event.text}`
+      next.loadingText = null
+      break
+
+    case 'done':
+      // The final response is authoritative and replaces any streamed partial text.
+      next.content = typeof event.response === 'string' && event.response ? event.response : (next.content || '')
+      next.agent = typeof event.agent === 'string' ? event.agent : null
+      mergeImages(next, event.images)
+      next.loading = false
+      break
+
+    case 'error':
+      next.content = SAFE_ERROR
+      next.hasError = true
+      next.loading = false
+      next.logsOpen = true
+      appendLog(next, { type: 'error', text: SAFE_ERROR })
+      break
+
+    case 'end':
+      next.loading = false
+      break
+  }
+
+  return next
+}
+
+export function normalizeHistoricalMessage(raw) {
+  const message = {
+    ...raw,
+    content: typeof raw?.content === 'string' ? raw.content : '',
+    images: Array.isArray(raw?.images) ? raw.images.filter(isPublicUrl).slice(0, MAX_IMAGES) : [],
+    logs: Array.isArray(raw?.logs) ? raw.logs.map(sanitizeHistoricalLog).filter(Boolean).slice(0, MAX_LOGS) : [],
+  }
+  return message
+}
+
+export function safeErrorText() {
+  return SAFE_ERROR
+}
+
+function appendLog(message, log) {
+  if (message.logs.length < MAX_LOGS) message.logs.push(log)
+}
+
+function mergeImages(message, images) {
+  if (!Array.isArray(images)) return
+  for (const image of images) {
+    if (isPublicUrl(image) && !message.images.includes(image)) message.images.push(image)
+  }
+  message.images = message.images.slice(0, MAX_IMAGES)
+}
+
+function sanitizeDraft(draft) {
+  if (!draft || typeof draft !== 'object') return null
+  const allowed = [
+    'draft_id', 'approval_id', 'marketplace', 'action', 'status', 'title', 'family_name',
+    'category_name', 'price', 'available_quantity', 'condition', 'listing_type_id', 'warnings',
+  ]
+  return Object.fromEntries(allowed.filter(key => key in draft).map(key => [key, draft[key]]))
+}
+
+function sanitizeHistoricalLog(log) {
+  if (!log || typeof log !== 'object' || typeof log.type !== 'string') return null
+  const text = safeLogText(log.text, '')
+  if (!text) return null
+  return { type: log.type, text }
+}
+
+function safeLogText(value, fallback) {
+  if (typeof value !== 'string' || !value.trim()) return fallback
+  // Old tool logs may contain serialized arguments. Keep the trail, drop the payload.
+  if (/^\s*[{'"[]/.test(value) || /\b(args|arguments|payload|traceback)\b\s*[:=]/i.test(value)) {
+    return fallback
+  }
+  return value.slice(0, 2_000)
+}
+
+function isPublicUrl(value) {
+  return typeof value === 'string' && /^https?:\/\//.test(value)
+}

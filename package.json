@@ -6,7 +6,8 @@
   "author": "Lorenzo Simonassi Cabrini>",
   "private": true,
   "scripts": {
-    "test": "echo \"No test specified\" && exit 0",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
     "dev": "quasar dev",
     "build": "quasar build"
   },
@@ -32,11 +33,13 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.62.1",
     "@quasar/app-vite": "^1.9.0",
     "@quasar/quasar-app-extension-qflashcard": "^1.0.5",
     "autoprefixer": "^10.4.2",
     "playwright": "^1.62.0",
-    "postcss": "^8.4.14"
+    "postcss": "^8.4.14",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": "^20 || ^18 || ^16",
