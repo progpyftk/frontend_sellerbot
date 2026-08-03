@@ -1182,9 +1182,28 @@ const rejectApproval = async (msg) => {
 const adjustApproval = async (msg) => {
   const approval = msg.pendingApproval
   if (!approval?.approval_id) return
-  const value = window.prompt('Novo preço (opcional). O ajuste exige nova aprovação:')
-  if (value === null || value.trim() === '') return
-  const price = Number(value.replace(',', '.'))
+  const value = await new Promise(resolve => {
+    let settled = false
+    const finish = result => {
+      if (!settled) {
+        settled = true
+        resolve(result)
+      }
+    }
+    $q.dialog({
+      title: 'Ajustar ação',
+      message: 'Informe o novo preço. O ajuste exige nova aprovação.',
+      prompt: {
+        model: '',
+        type: 'number',
+        isValid: input => Number.isFinite(Number(input)) && Number(input) >= 0,
+      },
+      cancel: true,
+      persistent: true,
+    }).onOk(finish).onCancel(() => finish(null)).onDismiss(() => finish(null))
+  })
+  if (value === null || String(value).trim() === '') return
+  const price = Number(value)
   if (!Number.isFinite(price) || price < 0) {
     $q.notify({ type: 'negative', message: 'Informe um preço válido.' })
     return
