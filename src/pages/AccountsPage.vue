@@ -209,7 +209,7 @@
               <template v-slot:body-cell-is_connected="props">
                 <q-td :props="props">
                   <span :class="['status-chip', props.row.is_connected ? 'status-chip--pos' : 'status-chip--neg']">
-                    {{ props.row.is_connected ? 'Conectada' : 'Desconectada' }}
+                    {{ props.row.is_connected ? 'Conectada' : 'Reconectar' }}
                   </span>
                 </q-td>
               </template>
@@ -253,6 +253,11 @@
               <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="text-center">
                   <div class="shopee-actions">
+                   <q-btn v-if="canEditShopeeCredentials(props.row) && !props.row.is_connected" flat round dense size="sm" color="negative"
+                     icon="link_off" @click="reconnectShopee(props.row)">
+                     <q-tooltip>Reconectar conta Shopee (nova autorização)</q-tooltip>
+                   </q-btn>
+
                    <q-btn v-if="canEditShopeeCredentials(props.row)" flat round dense size="sm" color="deep-orange"
                      icon="vpn_key" @click="openShopeeCredentialsDialog(props.row)">
                      <q-tooltip>Editar credenciais Shopee</q-tooltip>
@@ -444,7 +449,9 @@
             <q-icon name="storefront" size="18px" />
           </div>
           <div>
-            <div style="font-size: 15px; font-weight: 700; color: #1a1f36">Conectar Loja Shopee</div>
+            <div style="font-size: 15px; font-weight: 700; color: #1a1f36">
+              {{ shopeeReconnectMode ? 'Reconectar Loja Shopee' : 'Conectar Loja Shopee' }}
+            </div>
             <div style="font-size: 11px; color: #9aa0ac">Credenciais do seu App no Shopee Open Platform</div>
           </div>
         </div>
@@ -452,16 +459,19 @@
         <q-card-section class="q-gutter-md">
           <q-banner class="bg-orange-1 text-orange-9 rounded-borders" dense>
             <template v-slot:avatar><q-icon name="info" /></template>
-            Acesse <strong>Shopee Open Platform → My Apps</strong> e copie o <strong>Live Partner ID</strong> e <strong>Live API Partner Key</strong> do seu app.
+            {{ shopeeReconnectMode
+              ? 'Autorize novamente a mesma loja para revalidar os tokens. Histórico e produtos são preservados.'
+              : 'Acesse <strong>Shopee Open Platform → My Apps</strong> e copie o <strong>Live Partner ID</strong> e <strong>Live API Partner Key</strong> do seu app.' }}
           </q-banner>
           <q-input v-model="shopeeConnectForm.partner_id" label="Live Partner ID" outlined dense
+            :readonly="shopeeReconnectMode"
             :rules="[val => !!val || 'Obrigatório']" hint="Ex: 2032209" />
           <q-input v-model="shopeeConnectForm.partner_key" label="Live API Partner Key" outlined dense type="password"
             :rules="[val => !!val || 'Obrigatório']" hint="Começa com shpk..." />
         </q-card-section>
         <q-card-actions align="right" class="q-pa-md">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-          <q-btn label="Conectar" unelevated color="deep-orange" icon="open_in_new"
+          <q-btn :label="shopeeReconnectMode ? 'Reconectar' : 'Conectar'" unelevated color="deep-orange" icon="open_in_new"
             :loading="connectingShopee" @click="submitShopeeConnect" />
         </q-card-actions>
       </q-card>
@@ -642,6 +652,7 @@ const deleteDialogShopee = ref(false)
 const shopeeAccountToDelete = ref(null)
 const shopeeConnectDialog = ref(false)
 const shopeeConnectForm = ref({ partner_id: '', partner_key: '' })
+const shopeeReconnectMode = ref(false)
 const shopeeCredentialsDialog = ref(false)
 const shopeeCredentialsAccount = ref(null)
 const shopeeCredentialsForm = ref({ partner_id: '', partner_key: '', push_partner_key: '' })
@@ -805,7 +816,17 @@ const getShopeeAccounts = async () => {
 }
 
 const connectShopee = () => {
+  shopeeReconnectMode.value = false
   shopeeConnectForm.value = { partner_id: '', partner_key: '' }
+  shopeeConnectDialog.value = true
+}
+
+const reconnectShopee = (account) => {
+  if (!canEditShopeeCredentials(account)) return
+  // Reutiliza o fluxo OAuth; partner_id vem da conta (readonly) e a chave
+  // fica vazia/mascarada para o usuário colar/cadastrar sem expor segredo.
+  shopeeReconnectMode.value = true
+  shopeeConnectForm.value = { partner_id: account.partner_id || '', partner_key: '' }
   shopeeConnectDialog.value = true
 }
 
