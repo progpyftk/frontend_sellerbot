@@ -916,13 +916,7 @@ const sendMessage = async () => {
       const token = getAccessToken() || store.authToken
       const body = { message: userMessage, model_id: selectedModel.value, session_id: currentSessionId.value }
       if (imageData.length) body.images = imageData
-      if (artifactRefs.length) body.artifacts = artifactRefs.map(artifact => ({
-        artifact_id: artifact.artifact_id,
-        artifact_type: artifact.artifact_type,
-        content_type: artifact.content_type,
-        sha256: artifact.sha256,
-        preview: artifact.preview,
-      }))
+      if (artifactRefs.length) body.artifacts = artifactRefs.map(artifact => ({ artifact_id: artifact.artifact_id }))
       return fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
