@@ -196,93 +196,44 @@
                 </template>
               </template>
 
-              <!-- ── Card de aprovação de rascunho de anúncio (ListingAgent) ── -->
+               <!-- Approval, artifact and batch cards remain visible after a draft changes state. -->
                <div v-if="msg.pendingDraft" class="listing-draft-card">
-                <div v-if="msg.pendingDraft.status === 'pending'">
-                  <div class="listing-draft-instructions">{{ msg.pendingDraft.instructions }}</div>
-                  <div class="listing-draft-actions">
-                    <q-btn
-                      unelevated color="positive" label="Aprovar" icon="check" no-caps dense
-                      :loading="msg.pendingDraft.loading"
-                      @click="approveDraft(msg)"
-                    />
-                    <q-btn
-                      flat color="negative" label="Cancelar" icon="close" no-caps dense
-                      :loading="msg.pendingDraft.loading"
-                      @click="cancelDraft(msg)"
-                    />
+                 <div v-if="msg.pendingDraft.status === 'pending'">
+                   <div class="listing-draft-instructions">{{ msg.pendingDraft.instructions }}</div>
+                   <div class="listing-draft-actions">
+                     <q-btn unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="msg.pendingDraft.loading" @click="approveDraft(msg)" />
+                     <q-btn flat color="negative" label="Cancelar" icon="close" no-caps dense :loading="msg.pendingDraft.loading" @click="cancelDraft(msg)" />
+                   </div>
+                 </div>
+                 <div v-else-if="msg.pendingDraft.status === 'approved'" class="listing-draft-status listing-draft-status--approved">
+                   <q-icon name="check_circle" size="16px" /> Rascunho aprovado — peça ao agente para publicar.
+                 </div>
+                 <div v-else-if="msg.pendingDraft.status === 'cancelled'" class="listing-draft-status listing-draft-status--cancelled">
+                   <q-icon name="cancel" size="16px" /> Rascunho cancelado.
+                 </div>
                </div>
 
                <div v-if="msg.pendingApproval" class="listing-draft-card approval-card" aria-live="polite">
-                 <div class="listing-draft-instructions">
-                   <q-icon name="verified_user" size="16px" class="q-mr-xs" />
-                   {{ approvalStatusLabel(msg.pendingApproval.status) }}
-                   <span v-if="msg.pendingApproval.sku"> · {{ msg.pendingApproval.sku }}</span>
-                 </div>
+                 <div class="listing-draft-instructions"><q-icon name="verified_user" size="16px" class="q-mr-xs" />{{ approvalStatusLabel(msg.pendingApproval.status) }}<span v-if="msg.pendingApproval.sku"> · {{ msg.pendingApproval.sku }}</span></div>
                  <div v-if="msg.pendingApproval.status === 'pending'" class="listing-draft-actions">
-                   <q-btn
-                     unelevated color="positive" label="Aprovar" icon="check" no-caps dense
-                     :loading="msg.pendingApproval.loading"
-                     @click="approveApproval(msg)"
-                   />
-                   <q-btn
-                     flat color="negative" label="Rejeitar" icon="close" no-caps dense
-                     :loading="msg.pendingApproval.loading"
-                     @click="rejectApproval(msg)"
-                   />
-                   <q-btn
-                     flat color="teal-8" label="Ajustar" icon="edit" no-caps dense
-                     :loading="msg.pendingApproval.loading"
-                     @click="adjustApproval(msg)"
-                   />
+                   <q-btn unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="msg.pendingApproval.loading" @click="approveApproval(msg)" />
+                   <q-btn flat color="negative" label="Rejeitar" icon="close" no-caps dense :loading="msg.pendingApproval.loading" @click="rejectApproval(msg)" />
+                   <q-btn flat color="teal-8" label="Ajustar" icon="edit" no-caps dense :loading="msg.pendingApproval.loading" @click="adjustApproval(msg)" />
                  </div>
-                 <div v-else class="listing-draft-status" :class="`listing-draft-status--${msg.pendingApproval.status}`">
-                   <q-icon :name="approvalStatusIcon(msg.pendingApproval.status)" size="16px" />
-                   {{ approvalStatusLabel(msg.pendingApproval.status) }}
-                 </div>
+                 <div v-else class="listing-draft-status" :class="`listing-draft-status--${msg.pendingApproval.status}`"><q-icon :name="approvalStatusIcon(msg.pendingApproval.status)" size="16px" />{{ approvalStatusLabel(msg.pendingApproval.status) }}</div>
                </div>
 
                <div v-if="msg.artifactValidation" class="artifact-validation-card" aria-live="polite">
-                 <div class="artifact-validation-title">
-                   <q-icon :name="msg.artifactValidation.valid ? 'check_circle' : 'error'" size="16px" />
-                   {{ msg.artifactValidation.valid ? 'Arquivo validado' : 'Revise as linhas inválidas' }}
-                 </div>
-                 <div v-for="error in msg.artifactValidation.errors" :key="`${error.row}-${error.message}`" class="artifact-validation-error">
-                   Linha {{ error.row }}: {{ error.message }}
-                 </div>
+                 <div class="artifact-validation-title"><q-icon :name="msg.artifactValidation.valid ? 'check_circle' : 'error'" size="16px" />{{ msg.artifactValidation.valid ? 'Arquivo validado' : 'Revise as linhas inválidas' }}</div>
+                 <div v-for="error in msg.artifactValidation.errors" :key="`${error.row}-${error.message}`" class="artifact-validation-error">Linha {{ error.row }}: {{ error.message }}</div>
                </div>
 
                <div v-if="msg.batchStatus" class="batch-status-card" aria-live="polite">
                  <div class="batch-status-title">Lote {{ batchStatusLabel(msg.batchStatus.status) }}</div>
-                 <div class="batch-status-counts">
-                   <span>Sucesso: {{ msg.batchStatus.succeeded || 0 }}</span>
-                   <span>Falhas: {{ msg.batchStatus.failed || 0 }}</span>
-                   <span>Pendentes: {{ msg.batchStatus.pending || 0 }}</span>
-                 </div>
-                 <div v-if="msg.batchStatus.skus?.length" class="batch-sku-list" aria-label="SKUs do lote">
-                   <q-checkbox
-                     v-for="sku in msg.batchStatus.skus"
-                     :key="sku.sku"
-                     v-model="sku.selected"
-                     dense
-                     :disable="sku.status === 'executed'"
-                     :label="`${sku.sku} · ${batchStatusLabel(sku.status)}`"
-                   />
-                 </div>
-                 <q-btn
-                   v-if="msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length"
-                   flat dense no-caps color="teal-8" label="Tentar falhas novamente"
-                   @click="retryBatch(msg)"
-                 />
+                 <div class="batch-status-counts"><span>Sucesso: {{ msg.batchStatus.succeeded || 0 }}</span><span>Falhas: {{ msg.batchStatus.failed || 0 }}</span><span>Pendentes: {{ msg.batchStatus.pending || 0 }}</span></div>
+                 <div v-if="msg.batchStatus.skus?.length" class="batch-sku-list" aria-label="SKUs do lote"><q-checkbox v-for="sku in msg.batchStatus.skus" :key="sku.sku" v-model="sku.selected" dense :disable="sku.status === 'executed'" :label="`${sku.sku} · ${batchStatusLabel(sku.status)}`" /></div>
+                  <q-btn v-if="msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length" flat dense no-caps color="teal-8" label="Tentar falhas novamente" :loading="msg.batchStatus.retrying" @click="retryBatch(msg)" />
                </div>
-                </div>
-                <div v-else-if="msg.pendingDraft.status === 'approved'" class="listing-draft-status listing-draft-status--approved">
-                  <q-icon name="check_circle" size="16px" /> Rascunho aprovado — peça ao agente para publicar.
-                </div>
-                <div v-else-if="msg.pendingDraft.status === 'cancelled'" class="listing-draft-status listing-draft-status--cancelled">
-                  <q-icon name="cancel" size="16px" /> Rascunho cancelado.
-                </div>
-              </div>
 
               <!-- Cursor piscante enquanto tokens chegam -->
               <span v-if="msg.loading && msg.content" class="streaming-cursor" />
@@ -317,17 +268,18 @@
 
       <!-- Image Preview Bar -->
        <div v-if="pendingImages.length" class="image-preview-bar">
-        <div v-for="(img, i) in pendingImages" :key="i" class="image-preview-item">
+         <div v-for="(img, i) in pendingImages" :key="i" class="image-preview-item">
           <img :src="img.preview" />
-          <q-btn flat round dense icon="close" size="xs" color="negative"
-            class="image-preview-remove" @click="removeImage(i)" />
+           <q-btn flat round dense icon="close" size="xs" color="negative"
+             class="image-preview-remove" @click="removeImage(i)" />
+         </div>
        </div>
        <div v-if="pendingFiles.length" class="artifact-preview-bar" aria-live="polite">
          <div v-for="(artifact, i) in pendingFiles" :key="`${artifact.file.name}-${i}`" class="artifact-preview-item">
            <q-icon name="table_view" size="16px" color="teal-7" />
            <span class="artifact-preview-name">{{ artifact.file.name }}</span>
            <q-badge v-if="artifact.preview && !artifact.preview.valid" color="negative" label="Revise" />
-           <q-btn flat round dense icon="close" size="xs" color="negative" @click="removeFile(i)" />
+            <q-btn flat round dense icon="close" size="xs" color="negative" aria-label="Remover arquivo" @click="removeFile(i)" />
          </div>
          <div v-for="artifact in pendingFiles" :key="`${artifact.file.name}-errors`">
            <div v-for="error in artifact.preview?.errors || []" :key="`${artifact.file.name}-${error.row}-${error.message}`" class="artifact-preview-error">
@@ -335,7 +287,6 @@
            </div>
          </div>
        </div>
-      </div>
 
       <!-- Input Area -->
       <div class="input-area">
@@ -351,7 +302,7 @@
             class="input-field"
           >
             <template v-slot:prepend>
-               <q-btn flat round dense icon="attach_file" color="grey-6" size="sm" @click="$refs.fileInput.click()">
+                <q-btn flat round dense icon="attach_file" color="grey-6" size="sm" aria-label="Anexar imagem ou planilha" @click="$refs.fileInput.click()">
                  <q-tooltip>Anexar imagem ou planilha</q-tooltip>
                </q-btn>
                <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp,.csv,.tsv,.xlsx" multiple hidden @change="handleFileSelect" />
@@ -425,9 +376,10 @@
                <span class="history-run-status">{{ batchStatusLabel(run.status) }}</span>
              </div>
              <q-btn
-               v-if="['partial', 'paused', 'failed', 'running'].includes(run.status)"
-               flat dense no-caps color="teal-8" label="Retomar"
-               @click="resumeRun(run)"
+                v-if="['partial', 'paused', 'failed', 'running'].includes(run.status)"
+                flat dense no-caps color="teal-8" label="Retomar"
+                :loading="run.resuming"
+                @click="resumeRun(run)"
              />
            </div>
          </div>
@@ -708,10 +660,6 @@ const handleFileSelect = (e) => {
       $q.notify({ message: 'Envie no máximo 4 imagens por mensagem', color: 'negative' })
       break
     }
-    if (!allowedTypes.has(file.type)) {
-      $q.notify({ message: `${file.name}: use JPEG, PNG ou WebP`, color: 'negative' })
-      continue
-    }
     if (file.size > 5 * 1024 * 1024) {
       $q.notify({ message: `${file.name} excede 5MB`, color: 'negative' })
       continue
@@ -875,9 +823,13 @@ const fetchBalance = async () => {
 const sendMessage = async () => {
   if ((!inputMessage.value.trim() && !pendingImages.value.length && !pendingFiles.value.length) || isLoading.value) return
 
+  isLoading.value = true
   const userMessage = inputMessage.value.trim()
   const artifactRefs = await uploadPendingFiles()
-  if (artifactRefs === null) return
+  if (artifactRefs === null) {
+    isLoading.value = false
+    return
+  }
   inputMessage.value = ''
 
   // Capturar imagens pendentes e limpar preview
@@ -907,8 +859,6 @@ const sendMessage = async () => {
   }, 1000)
 
   scrollToBottom()
-  isLoading.value = true
-
   // Helper: faz o fetch SSE; se receber 401 força refresh via axios (que tem o interceptor)
   // e retenta uma vez com o novo token.
   const doStreamFetch = async () => {
@@ -1257,6 +1207,8 @@ const adjustApproval = async (msg) => {
 const retryBatch = async (msg) => {
   const runId = msg.batchStatus?.run_id
   if (!runId) return
+  if (msg.batchStatus.retrying) return
+  msg.batchStatus.retrying = true
   try {
     const selectedSkus = (msg.batchStatus.skus || [])
       .filter(sku => sku.selected && sku.status !== 'executed')
@@ -1269,6 +1221,8 @@ const retryBatch = async (msg) => {
     $q.notify({ type: 'positive', message: 'Retomada iniciada para os SKUs que falharam.' })
   } catch (error) {
     $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao retomar lote.' })
+  } finally {
+    msg.batchStatus.retrying = false
   }
 }
 
@@ -1282,6 +1236,8 @@ const loadRuns = async () => {
 }
 
 const resumeRun = async (run) => {
+  if (run.resuming) return
+  run.resuming = true
   try {
     const response = await api.post(`/sellerbot-ai/runs/${run.run_id}/resume/`)
     $q.notify({ type: 'positive', message: 'Lote retomado.' })
@@ -1289,6 +1245,8 @@ const resumeRun = async (run) => {
     await loadRuns()
   } catch (error) {
     $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao retomar lote.' })
+  } finally {
+    run.resuming = false
   }
 }
 
