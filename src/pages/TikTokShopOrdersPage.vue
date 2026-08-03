@@ -259,9 +259,7 @@
 
     <!-- ══ TABELA ═════════════════════════════════════════════════ -->
     <div class="table-container table-responsive">
-      <div class="sb-scroll-hint show-mobile">
-        <q-icon name="swipe" size="12px" />Deslize para ver todas as colunas
-      </div>
+      <SbTableScrollHint />
       <q-table
         flat
         :rows="orders"
@@ -593,6 +591,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import TikTokShopService from 'src/services/TikTokShopService'
+import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 
 const $q = useQuasar()
 
@@ -641,8 +640,6 @@ const columns = [
   { name: 'liquido',   label: 'REPASSE',           field: 'settlement_amount', sortable: false, align: 'right',  style: 'min-width:110px' },
   { name: 'lucro',     label: 'LUCRO APÓS CMV',    field: 'lucro_apos_cmp', sortable: false, align: 'right', style: 'min-width:115px' },
 ]
-
-// Paridade mobile/desktop: todas as colunas sempre visíveis (rolagem horizontal no wrapper).
 
 // ── Opções ─────────────────────────────────────────────────────────────────
 const statusOptions = [

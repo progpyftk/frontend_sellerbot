@@ -145,7 +145,11 @@ async function authenticate(page) {
 // Em q-tables o scroll container nativo é o `.q-table__middle`; em tabelas puras, o wrapper.
 async function expectHorizontalScroll(page, tableSelector) {
   const scrollable = await page.locator(tableSelector).evaluate(el => {
-    const candidates = [el.querySelector('.q-table__middle'), el.closest('.table-responsive')]
+    const candidates = [
+      el.querySelector('.q-table__middle'),
+      el.closest('.table-responsive'),
+      el.closest('.daily-table-wrap'),
+    ]
     return candidates.some(c => c && c.scrollWidth > c.clientWidth)
   })
   expect(scrollable).toBe(true)
@@ -165,6 +169,8 @@ test.describe('Finanças no mobile — paridade com o desktop', () => {
     await expect(page.locator('.daily-table .dt-row .col-ll')).toContainText('R$')
     await expect(page.locator('.daily-table .dt-row .col-before')).toContainText('R$')
     await expect(page.locator('.daily-table .dt-row .col-ads').first()).toContainText('R$')
+    await expect(page.locator('.sb-scroll-hint')).toBeVisible()
+    await expectHorizontalScroll(page, '.daily-table')
   })
 
   test('dashboard desktop mantém as colunas financeiras completas', async ({ page }) => {
@@ -177,6 +183,7 @@ test.describe('Finanças no mobile — paridade com o desktop', () => {
     await expect(page.locator('.daily-table .desktop-only-label')).toBeVisible()
     await expect(page.locator('.daily-table thead .col-ads').first()).toBeVisible()
     await expect(page.locator('.daily-table thead .col-ll')).toBeVisible()
+    await expect(page.locator('.sb-scroll-hint')).toBeHidden()
   })
 
   test('tabela de pedidos ML mostra as colunas financeiras no mobile', async ({ page }) => {
@@ -190,6 +197,7 @@ test.describe('Finanças no mobile — paridade com o desktop', () => {
     await expect(page.locator('.orders-table thead')).toContainText('RECEITA LÍQUIDA')
     await expect(page.locator('.orders-table thead')).toContainText('MARGEM APÓS CMV')
     await expect(page.locator('.orders-table tbody .cell-liquido').last()).toContainText('R$ 80,00')
+    await expect(page.locator('.table-responsive .sb-scroll-hint')).toBeVisible()
     await expectHorizontalScroll(page, '.orders-table')
   })
 
@@ -204,6 +212,7 @@ test.describe('Finanças no mobile — paridade com o desktop', () => {
     await expect(page.locator('.shopee-table thead')).toContainText('REPASSE')
     await expect(page.locator('.shopee-table thead')).toContainText('LUCRO APÓS CUSTO')
     await expect(page.locator('.shopee-table tbody .cell-lucro')).toContainText('R$ 80,00')
+    await expect(page.locator('.table-responsive .sb-scroll-hint')).toBeVisible()
     await expectHorizontalScroll(page, '.shopee-table')
 
     await page.goto(`${BASE_URL}/app/tiktokshop/orders`)
@@ -212,6 +221,7 @@ test.describe('Finanças no mobile — paridade com o desktop', () => {
     await expect(page.locator('.tiktok-table thead')).toContainText('REPASSE')
     await expect(page.locator('.tiktok-table thead')).toContainText('LUCRO APÓS CMV')
     await expect(page.locator('.tiktok-table tbody .cell-lucro')).toContainText('R$ 80,00')
+    await expect(page.locator('.table-responsive .sb-scroll-hint')).toBeVisible()
     await expectHorizontalScroll(page, '.tiktok-table')
   })
 })

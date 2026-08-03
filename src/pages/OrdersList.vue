@@ -516,9 +516,7 @@
 
     <!-- ── TABELA ─────────────────────────────────────────── -->
     <div class="table-wrapper table-responsive">
-      <div class="sb-scroll-hint show-mobile">
-        <q-icon name="swipe" size="12px" />Deslize para ver todas as colunas
-      </div>
+      <SbTableScrollHint />
       <q-table :rows="filteredOrders" :columns="columns" row-key="order_id" flat :loading="loading"
         v-model:pagination="pagination" @request="onRequest" binary-state-sort
         class="orders-table" no-data-label="Nenhuma venda encontrada."
@@ -1377,6 +1375,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed, watch } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
+import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 import { useQuasar, copyToClipboard, date } from 'quasar'
 
 const $q = useQuasar()
@@ -1481,8 +1480,6 @@ const columns = [
   { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right', style: 'min-width:115px' },
   { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px' },
 ]
-
-// Paridade mobile/desktop: todas as colunas sempre visíveis (rolagem horizontal no wrapper).
 
 // Soma de unidades do pedido (pack soma todos os sub-orders)
 const rowUnits = (row) => (row.items || []).reduce((s, i) => s + (i.quantity || 0), 0)
@@ -1777,10 +1774,14 @@ const ensurePayments = async (row) => {
   finally { detailLoading.value = false }
 }
 
+let financialSeq = 0
+
 const openFinancial = async (row) => {
+  const seq = ++financialSeq
   selectedOrder.value = null   // limpa conteúdo anterior
   financialOpen.value = true   // abre dialog (mostrará só o spinner)
   await ensurePayments(row)
+  if (seq !== financialSeq) return  // clique obsoleto sobrescreveu o atual
   selectedOrder.value = { ...row }  // renderiza tudo de uma vez após carregar
 }
 

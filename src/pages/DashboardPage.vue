@@ -446,10 +446,8 @@
               </span>
             </div>
           </div>
+          <SbTableScrollHint />
           <div class="daily-table-wrap">
-            <div class="sb-scroll-hint show-mobile">
-              <q-icon name="swipe" size="12px" />Deslize para ver todas as colunas
-            </div>
             <table class="daily-table">
               <thead>
                 <tr>
@@ -1636,6 +1634,7 @@ import ShopeeService from 'src/services/ShopeeService'
 import TikTokShopService from 'src/services/TikTokShopService'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
+import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 import DashboardHeader from 'src/components/dashboard/DashboardHeader.vue'
 import FiltersDrawer from 'src/components/dashboard/FiltersDrawer.vue'
 

@@ -370,9 +370,7 @@
 
     <!-- ══ TABELA ═════════════════════════════════════════════════ -->
     <div class="table-container table-responsive">
-      <div class="sb-scroll-hint show-mobile">
-        <q-icon name="swipe" size="12px" />Deslize para ver todas as colunas
-      </div>
+      <SbTableScrollHint />
       <q-table
         flat
         :rows="orders"
@@ -950,6 +948,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
+import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 
 const $q = useQuasar()
 
@@ -1003,8 +1002,6 @@ const columns = [
   { name: 'liquido',   label: 'REPASSE (S/ CUSTO)',   field: 'escrow_amount',  sortable: false, align: 'right',  style: 'min-width:120px' },
   { name: 'lucro',     label: 'LUCRO APÓS CUSTO',     field: 'lucro_apos_cmp', sortable: false, align: 'right',  style: 'min-width:115px' },
 ]
-
-// Paridade mobile/desktop: todas as colunas sempre visíveis (rolagem horizontal no wrapper).
 
 // ── Opções ─────────────────────────────────────────────────────────────────
 const statusOptions = [
@@ -1350,16 +1347,21 @@ function openDetail(order) {
   }
 }
 
+let trackingSeq = 0
+
 async function loadTracking(order) {
+  const seq = ++trackingSeq
   trackingLoading.value = true
   try {
     const { data } = await ShopeeService.getOrderTracking(order.id)
+    if (seq !== trackingSeq) return
     trackingList.value = data.tracking_list || []
   } catch (e) {
     console.error('[Shopee] Erro ao carregar rastreamento:', e)
+    if (seq !== trackingSeq) return
     trackingList.value = []
   } finally {
-    trackingLoading.value = false
+    if (seq === trackingSeq) trackingLoading.value = false
   }
 }
 
