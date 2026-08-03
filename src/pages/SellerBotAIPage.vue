@@ -375,103 +375,70 @@ const API_BASE = api.defaults.baseURL || 'http://localhost:8000'
 // (a lista real vem de GET /sellerbot-ai/models/; manter os dois em sincronia)
 const DEFAULT_MODELS = [
   {
-    id: 'deepseek/deepseek-v4-pro',
-    name: 'DeepSeek V4 Pro',
-    provider: 'DeepSeek',
-    cost_input: 0.43,
-    cost_output: 0.87,
-    quality: 5,
-    speed: 4,
-    recommended: true,
-    note: 'Recomendado. Geração V4 — raciocínio forte, tool calling confiável, contexto 1M.',
-  },
-  {
-    id: 'deepseek/deepseek-v4-flash',
-    name: 'DeepSeek V4 Flash',
+    id: 'deepseek/deepseek-v4-flash-0731',
+    name: 'DeepSeek V4 Flash 0731',
     provider: 'DeepSeek',
     cost_input: 0.09,
     cost_output: 0.18,
     quality: 4,
     speed: 5,
-    recommended: false,
-    note: 'V4 rápido e ultra-barato — ideal para alto volume de consultas simples.',
+    recommended: true,
+    note: 'Recomendado. Flash atualizado — rápido, barato e tool calling confiável.',
   },
   {
-    id: 'xiaomi/mimo-v2.5-pro',
-    name: 'MiMo 2.5 Pro',
-    provider: 'Xiaomi',
-    cost_input: 0.43,
-    cost_output: 0.87,
+    id: 'openai/gpt-5.6-luna-pro',
+    name: 'GPT-5.6 Luna Pro',
+    provider: 'OpenAI',
+    cost_input: 3.00,
+    cost_output: 12.00,
     quality: 5,
     speed: 4,
     recommended: false,
-    note: 'Open weights da Xiaomi. Raciocínio forte com tool calling, contexto 1M.',
+    note: 'Topo de linha OpenAI — máxima qualidade em tarefas complexas.',
   },
   {
-    id: 'xiaomi/mimo-v2.5',
-    name: 'MiMo 2.5',
-    provider: 'Xiaomi',
-    cost_input: 0.10,
-    cost_output: 0.28,
-    quality: 4,
-    speed: 5,
+    id: 'openai/gpt-5.6-luna',
+    name: 'GPT-5.6 Luna',
+    provider: 'OpenAI',
+    cost_input: 1.25,
+    cost_output: 5.00,
+    quality: 5,
+    speed: 4,
     recommended: false,
-    note: 'Versão econômica do MiMo 2.5 — rápido e barato.',
+    note: 'OpenAI padrão — qualidade premium com custo menor que o Pro.',
   },
   {
-    id: 'minimax/minimax-m3',
-    name: 'MiniMax M3',
-    provider: 'MiniMax',
+    id: 'tencent/hy3',
+    name: 'Hunyuan 3',
+    provider: 'Tencent',
     cost_input: 0.30,
-    cost_output: 1.20,
-    quality: 5,
-    speed: 4,
-    recommended: false,
-    note: 'Open weights do MiniMax. Contexto 1M e raciocínio avançado.',
-  },
-  {
-    id: 'z-ai/glm-5.2',
-    name: 'GLM 5.2',
-    provider: 'Z.ai',
-    cost_input: 0.69,
-    cost_output: 2.16,
-    quality: 5,
-    speed: 4,
-    recommended: false,
-    note: 'Open weights da Z.ai. Topo de linha da família GLM, contexto 1M.',
-  },
-  {
-    id: 'deepseek/deepseek-chat',
-    name: 'DeepSeek V3',
-    provider: 'DeepSeek',
-    cost_input: 0.20,
     cost_output: 0.80,
     quality: 4,
     speed: 4,
     recommended: false,
-    note: 'Geração anterior — mantido por compatibilidade.',
+    note: 'Hunyuan 3 da Tencent — bom equilíbrio entre qualidade e custo.',
   },
   {
-    id: 'meta-llama/llama-4-maverick',
-    name: 'Llama 4 Maverick',
-    provider: 'Meta',
-    cost_input: 0.17,
-    cost_output: 0.52,
-    quality: 4,
-    speed: 4,
-    recommended: false,
-    note: 'Open source da Meta com visão. Contexto 1M com custo mínimo.',
-  },
-  {
-    id: 'qwen/qwen3-235b-a22b',
-    name: 'Qwen 3 235B',
+    id: 'qwen/qwen3.7-flash',
+    name: 'Qwen 3.7 Flash',
     provider: 'Alibaba',
-    cost_input: 0.40,
-    cost_output: 0.60,
-    quality: 5,
-    speed: 3,
+    cost_input: 0.04,
+    cost_output: 0.12,
+    quality: 4,
+    speed: 5,
     recommended: false,
-    note: 'Maior modelo open weights do Qwen. Raciocínio avançado e tool calling.',
+    note: 'Flash da família Qwen 3.7 — rápido e barato para alto volume.',
+  },
+  {
+    id: 'google/gemini-2.5-flash-lite',
+    name: 'Gemini 2.5 Flash Lite',
+    provider: 'Google',
+    cost_input: 0.10,
+    cost_output: 0.40,
+    quality: 4,
+    speed: 5,
+    recommended: false,
+    note: 'Flash Lite do Google — leve, rápido e com visão.',
   },
 ]
 const MODELS = ref(DEFAULT_MODELS)
@@ -489,7 +456,7 @@ const orBalanceError = ref(null)
 const messagesArea = ref(null)
 const VALID_MODEL_IDS = computed(() => new Set(MODELS.value.map(m => m.id)))
 const _savedModel = localStorage.getItem('sellerbot_model')
-const selectedModel = ref(VALID_MODEL_IDS.value.has(_savedModel) ? _savedModel : 'deepseek/deepseek-v4-pro')
+const selectedModel = ref(VALID_MODEL_IDS.value.has(_savedModel) ? _savedModel : 'deepseek/deepseek-v4-flash-0731')
 
 // Sessões
 const currentSessionId = ref(null)
@@ -1098,7 +1065,7 @@ const fetchModels = async () => {
     const res = await api.get('/sellerbot-ai/models/')
     if (res.data.models?.length) MODELS.value = res.data.models
     if (!VALID_MODEL_IDS.value.has(selectedModel.value)) {
-      selectedModel.value = MODELS.value[0]?.id || 'deepseek/deepseek-chat'
+      selectedModel.value = MODELS.value[0]?.id || 'deepseek/deepseek-v4-flash-0731'
     }
   } catch { /* fallback local já aplicado */ }
 }
