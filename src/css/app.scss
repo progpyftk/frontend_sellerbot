@@ -158,60 +158,15 @@ $side-props: (p: padding, pt: padding-top, pr: padding-right, pb: padding-bottom
   @media (min-width: 601px) { display: none !important; }
 }
 
-/* ── Paridade mobile de tabelas: painel de expandir inline (colunas secundárias) ── */
-.sb-expand-toggle-th,
-.sb-expand-toggle-td {
-  width: 40px;
-}
-
-.sb-expand-row td {
-  padding: 0 !important;
-  border-bottom: 1px solid #eef1f5 !important;
-}
-
-.sb-expand-panel {
+/* ── Paridade mobile/desktop: tabela completa com rolagem horizontal ──
+   Dica discreta exibida só em telas estreitas (combinar com .show-mobile). */
+.sb-scroll-hint {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px 14px;
-  background: #f8fafc;
-}
-
-.sb-expand-field {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sb-expand-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .4px;
-  text-transform: uppercase;
-  color: #8a94a6;
-}
-
-/* Resumo financeiro que permanece visível na célula de venda em telas estreitas. */
-.mobile-financial-summary {
-  display: flex;
-  align-items: baseline;
-  justify-content: flex-end;
+  align-items: center;
   gap: 4px;
-  margin-top: 3px;
-  font-size: 9px;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.mobile-financial-summary span {
+  padding: 6px 2px 0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .2px;
   color: #8a94a6;
 }
-
-.mobile-financial-summary strong {
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.mobile-financial-summary--positive strong { color: #0d9488; }
-.mobile-financial-summary--negative strong { color: #ef4444; }
-.mobile-financial-summary--muted strong { color: #9aa0ac; }

@@ -447,6 +447,9 @@
             </div>
           </div>
           <div class="daily-table-wrap">
+            <div class="sb-scroll-hint show-mobile">
+              <q-icon name="swipe" size="12px" />Deslize para ver todas as colunas
+            </div>
             <table class="daily-table">
               <thead>
                 <tr>
@@ -496,25 +499,6 @@
                       </span>
                     </td>
                   </tr>
-                  <!-- Resumo financeiro compacto para telas estreitas. -->
-                  <tr v-if="expandedDays.has(d.date)" class="dt-mobile-detail-row">
-                    <td colspan="5">
-                      <div class="dt-mobile-detail-grid">
-                        <div>
-                          <span class="dt-mobile-detail-label">Antes do Ads</span>
-                          <strong :class="d.gross_profit >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(d.gross_profit) }}</strong>
-                        </div>
-                        <div>
-                          <span class="dt-mobile-detail-label">Ads</span>
-                          <strong class="dt-warn">{{ fmt(d.ads_cost) }}</strong>
-                        </div>
-                        <div>
-                          <span class="dt-mobile-detail-label">TACoS</span>
-                          <strong>{{ d.gmv > 0 ? (d.ads_cost / d.gmv * 100).toFixed(1) + '%' : '—' }}</strong>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
                   <!-- Breakdown por conta -->
                   <template v-if="expandedDays.has(d.date)">
                     <tr v-for="a in dayAccountRows(d.date)" :key="a.label + d.date" class="dt-acct-row">
@@ -538,7 +522,7 @@
                       <td class="col-num col-margin dt-sub">{{ pct(a.lucro_liquido, a.net_revenue) }}</td>
                     </tr>
                     <tr v-if="!dayAccountRows(d.date).length" class="dt-acct-row">
-                      <td :colspan="$q.screen.lt.sm ? 5 : 9" class="dt-loading-hint">
+                      <td colspan="9" class="dt-loading-hint">
                         <q-spinner-dots size="12px" color="teal" />
                         Carregando dados por conta…
                       </td>
@@ -4997,7 +4981,6 @@ watch(selectedAccountKeys, () => {
 .desktop-only-label { display: inline; }
 .mobile-only-label { display: none; }
 .dt-mobile-pct { display: none; }
-.dt-mobile-detail-row { display: none; }
 
 .daily-table td {
   padding: 9px 14px;
@@ -6097,56 +6080,6 @@ tr.pareto-line-95 td {
     color: inherit;
     opacity: .8;
   }
-
-  /* Keep the final contribution value visible; details move below the row. */
-  .daily-table .col-ads,
-  .daily-table .col-before,
-  .daily-table .col-margin {
-    display: none;
-  }
-
-  .daily-table .dt-mobile-detail-row {
-    display: table-row;
-  }
-
-  .dt-mobile-detail-row td {
-    background: #f8fafc;
-    border-bottom: 1px solid #eef1f5;
-    padding: 8px 10px !important;
-  }
-
-  .dt-mobile-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .dt-mobile-detail-grid > div {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .dt-mobile-detail-label {
-    color: #94a3b8;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: .35px;
-    text-transform: uppercase;
-  }
-
-  .dt-mobile-detail-grid strong {
-    color: #374151;
-    font-size: 11px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .dt-mobile-detail-grid strong.dt-pos { color: #0d9488; }
-  .dt-mobile-detail-grid strong.dt-neg { color: #ef4444; }
-  .dt-mobile-detail-grid strong.dt-warn { color: #f59e0b; }
 
   /* ── Ranking grids — 1 coluna ── */
   .ranking-highlights {
