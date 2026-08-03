@@ -15,6 +15,9 @@ export const createAssistantMessage = () => ({
   startedAt: Date.now(),
   elapsedSec: 0,
   agent: null,
+  pendingApproval: null,
+  artifactValidation: null,
+  batchStatus: null,
 })
 
 export function reduceSellerbotEvent(message, event) {
@@ -50,6 +53,28 @@ export function reduceSellerbotEvent(message, event) {
         status: 'pending',
       }
       appendLog(next, { type: 'tool_result', text: 'Rascunho de anúncio pronto para revisão' })
+      break
+
+    case 'approval_required':
+      next.pendingApproval = sanitizeApproval(event)
+      appendLog(next, { type: 'tool_result', text: 'Aprovação humana necessária' })
+      break
+
+    case 'approval_state':
+      next.pendingApproval = {
+        ...(next.pendingApproval || {}),
+        ...sanitizeApproval(event),
+      }
+      break
+
+    case 'artifact_validation':
+      next.artifactValidation = sanitizeArtifactValidation(event)
+      break
+
+    case 'batch_status':
+    case 'partial':
+      next.batchStatus = sanitizeBatchStatus(event)
+      appendLog(next, { type: 'tool_result', text: event.type === 'partial' ? 'Lote concluído parcialmente' : 'Progresso do lote atualizado' })
       break
 
     case 'token':
@@ -114,6 +139,44 @@ function sanitizeDraft(draft) {
     'category_name', 'price', 'available_quantity', 'condition', 'listing_type_id', 'warnings',
   ]
   return Object.fromEntries(allowed.filter(key => key in draft).map(key => [key, draft[key]]))
+}
+
+function sanitizeApproval(event) {
+  const allowed = ['approval_id', 'sku', 'status', 'expires_at', 'reason']
+  return Object.fromEntries(allowed.filter(key => typeof event?.[key] === 'string').map(key => [key, event[key].slice(0, 255)]))
+}
+
+function sanitizeArtifactValidation(event) {
+  return {
+    artifact_id: typeof event?.artifact_id === 'string' ? event.artifact_id.slice(0, 120) : null,
+    valid: event?.valid === true,
+    errors: Array.isArray(event?.errors)
+      ? event.errors.filter(item => item && Number.isInteger(item.row) && typeof item.message === 'string')
+        .slice(0, 100).map(item => ({ row: Math.max(0, item.row), message: item.message.slice(0, 2_000) }))
+      : [],
+  }
+}
+
+function sanitizeBatchStatus(event) {
+  const result = {}
+  for (const key of ['run_id', 'status']) {
+    if (typeof event?.[key] === 'string') result[key] = event[key].slice(0, 120)
+  }
+  for (const key of ['succeeded', 'failed', 'pending']) {
+    if (Number.isInteger(event?.[key])) result[key] = Math.max(0, Math.min(event[key], 100000))
+  }
+  if (Array.isArray(event?.retryable)) {
+    result.retryable = event.retryable.filter(item => typeof item === 'string').slice(0, 100).map(item => item.slice(0, 120))
+  }
+  if (Array.isArray(event?.skus)) {
+    result.skus = event.skus.filter(item => item && typeof item.sku === 'string')
+      .slice(0, 500).map(item => ({
+        sku: item.sku.slice(0, 120),
+        status: typeof item.status === 'string' ? item.status.slice(0, 80) : 'pending',
+        selected: item.selected !== false,
+      }))
+  }
+  return result
 }
 
 function sanitizeHistoricalLog(log) {

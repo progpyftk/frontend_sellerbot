@@ -196,30 +196,44 @@
                 </template>
               </template>
 
-              <!-- ── Card de aprovação de rascunho de anúncio (ListingAgent) ── -->
-              <div v-if="msg.pendingDraft" class="listing-draft-card">
-                <div v-if="msg.pendingDraft.status === 'pending'">
-                  <div class="listing-draft-instructions">{{ msg.pendingDraft.instructions }}</div>
-                  <div class="listing-draft-actions">
-                    <q-btn
-                      unelevated color="positive" label="Aprovar" icon="check" no-caps dense
-                      :loading="msg.pendingDraft.loading"
-                      @click="approveDraft(msg)"
-                    />
-                    <q-btn
-                      flat color="negative" label="Cancelar" icon="close" no-caps dense
-                      :loading="msg.pendingDraft.loading"
-                      @click="cancelDraft(msg)"
-                    />
-                  </div>
-                </div>
-                <div v-else-if="msg.pendingDraft.status === 'approved'" class="listing-draft-status listing-draft-status--approved">
-                  <q-icon name="check_circle" size="16px" /> Rascunho aprovado — peça ao agente para publicar.
-                </div>
-                <div v-else-if="msg.pendingDraft.status === 'cancelled'" class="listing-draft-status listing-draft-status--cancelled">
-                  <q-icon name="cancel" size="16px" /> Rascunho cancelado.
-                </div>
-              </div>
+               <!-- Approval, artifact and batch cards remain visible after a draft changes state. -->
+               <div v-if="msg.pendingDraft" class="listing-draft-card">
+                 <div v-if="msg.pendingDraft.status === 'pending'">
+                   <div class="listing-draft-instructions">{{ msg.pendingDraft.instructions }}</div>
+                   <div class="listing-draft-actions">
+                     <q-btn unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="msg.pendingDraft.loading" @click="approveDraft(msg)" />
+                     <q-btn flat color="negative" label="Cancelar" icon="close" no-caps dense :loading="msg.pendingDraft.loading" @click="cancelDraft(msg)" />
+                   </div>
+                 </div>
+                 <div v-else-if="msg.pendingDraft.status === 'approved'" class="listing-draft-status listing-draft-status--approved">
+                   <q-icon name="check_circle" size="16px" /> Rascunho aprovado — peça ao agente para publicar.
+                 </div>
+                 <div v-else-if="msg.pendingDraft.status === 'cancelled'" class="listing-draft-status listing-draft-status--cancelled">
+                   <q-icon name="cancel" size="16px" /> Rascunho cancelado.
+                 </div>
+               </div>
+
+               <div v-if="msg.pendingApproval" class="listing-draft-card approval-card" aria-live="polite">
+                 <div class="listing-draft-instructions"><q-icon name="verified_user" size="16px" class="q-mr-xs" />{{ approvalStatusLabel(msg.pendingApproval.status) }}<span v-if="msg.pendingApproval.sku"> · {{ msg.pendingApproval.sku }}</span></div>
+                 <div v-if="msg.pendingApproval.status === 'pending'" class="listing-draft-actions">
+                   <q-btn unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="msg.pendingApproval.loading" @click="approveApproval(msg)" />
+                   <q-btn flat color="negative" label="Rejeitar" icon="close" no-caps dense :loading="msg.pendingApproval.loading" @click="rejectApproval(msg)" />
+                   <q-btn flat color="teal-8" label="Ajustar" icon="edit" no-caps dense :loading="msg.pendingApproval.loading" @click="adjustApproval(msg)" />
+                 </div>
+                 <div v-else class="listing-draft-status" :class="`listing-draft-status--${msg.pendingApproval.status}`"><q-icon :name="approvalStatusIcon(msg.pendingApproval.status)" size="16px" />{{ approvalStatusLabel(msg.pendingApproval.status) }}</div>
+               </div>
+
+               <div v-if="msg.artifactValidation" class="artifact-validation-card" aria-live="polite">
+                 <div class="artifact-validation-title"><q-icon :name="msg.artifactValidation.valid ? 'check_circle' : 'error'" size="16px" />{{ msg.artifactValidation.valid ? 'Arquivo validado' : 'Revise as linhas inválidas' }}</div>
+                 <div v-for="error in msg.artifactValidation.errors" :key="`${error.row}-${error.message}`" class="artifact-validation-error">Linha {{ error.row }}: {{ error.message }}</div>
+               </div>
+
+               <div v-if="msg.batchStatus" class="batch-status-card" aria-live="polite">
+                 <div class="batch-status-title">Lote {{ batchStatusLabel(msg.batchStatus.status) }}</div>
+                 <div class="batch-status-counts"><span>Sucesso: {{ msg.batchStatus.succeeded || 0 }}</span><span>Falhas: {{ msg.batchStatus.failed || 0 }}</span><span>Pendentes: {{ msg.batchStatus.pending || 0 }}</span></div>
+                 <div v-if="msg.batchStatus.skus?.length" class="batch-sku-list" aria-label="SKUs do lote"><q-checkbox v-for="sku in msg.batchStatus.skus" :key="sku.sku" v-model="sku.selected" dense :disable="sku.status === 'executed'" :label="`${sku.sku} · ${batchStatusLabel(sku.status)}`" /></div>
+                  <q-btn v-if="msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length" flat dense no-caps color="teal-8" label="Tentar falhas novamente" :loading="msg.batchStatus.retrying" @click="retryBatch(msg)" />
+               </div>
 
               <!-- Cursor piscante enquanto tokens chegam -->
               <span v-if="msg.loading && msg.content" class="streaming-cursor" />
@@ -253,13 +267,26 @@
       </div>
 
       <!-- Image Preview Bar -->
-      <div v-if="pendingImages.length" class="image-preview-bar">
-        <div v-for="(img, i) in pendingImages" :key="i" class="image-preview-item">
+       <div v-if="pendingImages.length" class="image-preview-bar">
+         <div v-for="(img, i) in pendingImages" :key="i" class="image-preview-item">
           <img :src="img.preview" />
-          <q-btn flat round dense icon="close" size="xs" color="negative"
-            class="image-preview-remove" @click="removeImage(i)" />
-        </div>
-      </div>
+           <q-btn flat round dense icon="close" size="xs" color="negative"
+             class="image-preview-remove" @click="removeImage(i)" />
+         </div>
+       </div>
+       <div v-if="pendingFiles.length" class="artifact-preview-bar" aria-live="polite">
+         <div v-for="(artifact, i) in pendingFiles" :key="`${artifact.file.name}-${i}`" class="artifact-preview-item">
+           <q-icon name="table_view" size="16px" color="teal-7" />
+           <span class="artifact-preview-name">{{ artifact.file.name }}</span>
+           <q-badge v-if="artifact.preview && !artifact.preview.valid" color="negative" label="Revise" />
+            <q-btn flat round dense icon="close" size="xs" color="negative" aria-label="Remover arquivo" @click="removeFile(i)" />
+         </div>
+         <div v-for="artifact in pendingFiles" :key="`${artifact.file.name}-errors`">
+           <div v-for="error in artifact.preview?.errors || []" :key="`${artifact.file.name}-${error.row}-${error.message}`" class="artifact-preview-error">
+             {{ artifact.file.name }} · linha {{ error.row }}: {{ error.message }}
+           </div>
+         </div>
+       </div>
 
       <!-- Input Area -->
       <div class="input-area">
@@ -275,10 +302,10 @@
             class="input-field"
           >
             <template v-slot:prepend>
-              <q-btn flat round dense icon="attach_file" color="grey-6" size="sm" @click="$refs.fileInput.click()">
-                <q-tooltip>Anexar imagem</q-tooltip>
-              </q-btn>
-              <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="handleFileSelect" />
+                <q-btn flat round dense icon="attach_file" color="grey-6" size="sm" aria-label="Anexar imagem ou planilha" @click="$refs.fileInput.click()">
+                 <q-tooltip>Anexar imagem ou planilha</q-tooltip>
+               </q-btn>
+               <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp,.csv,.tsv,.xlsx" multiple hidden @change="handleFileSelect" />
             </template>
           </q-input>
           <q-btn
@@ -286,7 +313,7 @@
             color="teal-7"
             icon="send"
             :loading="isLoading"
-            :disable="(!inputMessage.trim() && !pendingImages.length) || isLoading"
+             :disable="(!inputMessage.trim() && !pendingImages.length && !pendingFiles.length) || isLoading"
             @click="sendMessage"
             class="send-btn"
           />
@@ -322,7 +349,7 @@
             <span>Nova conversa</span>
           </button>
         </div>
-        <div class="history-panel-list">
+         <div class="history-panel-list">
           <div v-if="sessions.length === 0" class="history-empty">
             <q-icon name="chat_bubble_outline" size="28px" color="grey-4" />
             <span>Nenhuma conversa ainda</span>
@@ -341,8 +368,21 @@
                 <q-icon name="delete_outline" size="14px" />
               </button>
             </div>
-          </template>
-        </div>
+           </template>
+           <div v-if="recentRuns.length" class="history-group-label history-runs-label">Lotes recentes</div>
+           <div v-for="run in recentRuns" :key="run.run_id" class="history-run-item">
+             <div class="history-run-copy">
+               <span class="history-item-title">Lote {{ run.run_id.slice(0, 8) }}</span>
+               <span class="history-run-status">{{ batchStatusLabel(run.status) }}</span>
+             </div>
+             <q-btn
+                v-if="['partial', 'paused', 'failed', 'running'].includes(run.status)"
+                flat dense no-caps color="teal-8" label="Retomar"
+                :loading="run.resuming"
+                @click="resumeRun(run)"
+             />
+           </div>
+         </div>
       </div>
     </transition>
     <!-- ══ fim HISTORY PANEL ══ -->
@@ -461,10 +501,12 @@ const selectedModel = ref(VALID_MODEL_IDS.value.has(_savedModel) ? _savedModel :
 // Sessões
 const currentSessionId = ref(null)
 const sessions = ref([])
+const recentRuns = ref([])
 const showHistory = ref(false)
 
 // Upload de imagens
 const pendingImages = ref([])  // [{file: File, preview: string(base64)}]
+const pendingFiles = ref([])  // [{file: File, preview: object|null, artifact: object|null}]
 const fileInput = ref(null)
 
 const selectedModelName = computed(() => {
@@ -593,16 +635,30 @@ const selectModel = (model) => {
 const handleFileSelect = (e) => {
   const files = Array.from(e.target.files)
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+  const spreadsheetExtensions = new Set(['.csv', '.tsv', '.xlsx'])
   let totalBytes = pendingImages.value.reduce((sum, image) => sum + image.file.size, 0)
   let acceptedCount = pendingImages.value.length
   for (const file of files) {
+    const extension = `.${file.name.split('.').pop().toLowerCase()}`
+    if (!allowedTypes.has(file.type) && !spreadsheetExtensions.has(extension)) {
+      $q.notify({ message: `${file.name}: use imagem, CSV, TSV ou XLSX`, color: 'negative' })
+      continue
+    }
+    if (!allowedTypes.has(file.type)) {
+      if (pendingFiles.value.length >= 5) {
+        $q.notify({ message: 'Envie no máximo 5 planilhas por lote', color: 'negative' })
+        continue
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        $q.notify({ message: `${file.name} excede 10MB`, color: 'negative' })
+        continue
+      }
+      pendingFiles.value.push({ file, preview: null, artifact: null })
+      continue
+    }
     if (acceptedCount >= 4) {
       $q.notify({ message: 'Envie no máximo 4 imagens por mensagem', color: 'negative' })
       break
-    }
-    if (!allowedTypes.has(file.type)) {
-      $q.notify({ message: `${file.name}: use JPEG, PNG ou WebP`, color: 'negative' })
-      continue
     }
     if (file.size > 5 * 1024 * 1024) {
       $q.notify({ message: `${file.name} excede 5MB`, color: 'negative' })
@@ -625,6 +681,35 @@ const handleFileSelect = (e) => {
 
 const removeImage = (index) => {
   pendingImages.value.splice(index, 1)
+}
+
+const removeFile = (index) => {
+  pendingFiles.value.splice(index, 1)
+}
+
+const uploadPendingFiles = async () => {
+  if (!pendingFiles.value.length) return []
+  const references = []
+  for (const pending of pendingFiles.value) {
+    const form = new FormData()
+    form.append('file', pending.file)
+    form.append('artifact_type', 'spreadsheet')
+    if (currentSessionId.value) form.append('session_id', String(currentSessionId.value))
+    try {
+      const response = await api.post('/sellerbot-ai/artifacts/', form)
+      pending.preview = response.data.preview || null
+      pending.artifact = response.data
+      if (pending.preview && pending.preview.valid === false) {
+        $q.notify({ message: `${pending.file.name}: corrija as linhas inválidas antes de continuar`, color: 'negative' })
+        return null
+      }
+      references.push(response.data)
+    } catch (error) {
+      $q.notify({ message: error?.response?.data?.error || `Falha ao validar ${pending.file.name}`, color: 'negative' })
+      return null
+    }
+  }
+  return references
 }
 
 // ===========================================================================
@@ -736,18 +821,25 @@ const fetchBalance = async () => {
 // Send message — streaming SSE
 // ===========================================================================
 const sendMessage = async () => {
-  if ((!inputMessage.value.trim() && !pendingImages.value.length) || isLoading.value) return
+  if ((!inputMessage.value.trim() && !pendingImages.value.length && !pendingFiles.value.length) || isLoading.value) return
 
+  isLoading.value = true
   const userMessage = inputMessage.value.trim()
+  const artifactRefs = await uploadPendingFiles()
+  if (artifactRefs === null) {
+    isLoading.value = false
+    return
+  }
   inputMessage.value = ''
 
   // Capturar imagens pendentes e limpar preview
   const imageData = pendingImages.value.map(img => img.preview)
   pendingImages.value = []
+  pendingFiles.value = []
 
   messages.value.push({
     role: 'user',
-    content: userMessage || (imageData.length ? `${imageData.length} imagem(ns) enviada(s)` : ''),
+     content: userMessage || (imageData.length ? `${imageData.length} imagem(ns) enviada(s)` : `${artifactRefs.length} arquivo(s) enviado(s)`),
     images: imageData,
     time: nowTime(),
   })
@@ -767,8 +859,6 @@ const sendMessage = async () => {
   }, 1000)
 
   scrollToBottom()
-  isLoading.value = true
-
   // Helper: faz o fetch SSE; se receber 401 força refresh via axios (que tem o interceptor)
   // e retenta uma vez com o novo token.
   const doStreamFetch = async () => {
@@ -776,6 +866,7 @@ const sendMessage = async () => {
       const token = getAccessToken() || store.authToken
       const body = { message: userMessage, model_id: selectedModel.value, session_id: currentSessionId.value }
       if (imageData.length) body.images = imageData
+      if (artifactRefs.length) body.artifacts = artifactRefs.map(artifact => ({ artifact_id: artifact.artifact_id }))
       return fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1057,6 +1148,150 @@ const cancelDraft = async (msg) => {
   }
 }
 
+const approveApproval = async (msg) => {
+  const approval = msg.pendingApproval
+  if (!approval?.approval_id) return
+  approval.loading = true
+  try {
+    await api.post(`/sellerbot-ai/approvals/${approval.approval_id}/approve/`)
+    approval.status = 'approved'
+    $q.notify({ type: 'positive', message: 'Ação aprovada.' })
+  } catch (error) {
+    approval.status = error?.response?.status === 400 ? 'expired' : approval.status
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao aprovar ação.' })
+  } finally {
+    approval.loading = false
+  }
+}
+
+const rejectApproval = async (msg) => {
+  const approval = msg.pendingApproval
+  if (!approval?.approval_id) return
+  approval.loading = true
+  try {
+    await api.post(`/sellerbot-ai/approvals/${approval.approval_id}/cancel/`)
+    approval.status = 'rejected'
+    $q.notify({ type: 'info', message: 'Ação rejeitada.' })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao rejeitar ação.' })
+  } finally {
+    approval.loading = false
+  }
+}
+
+const adjustApproval = async (msg) => {
+  const approval = msg.pendingApproval
+  if (!approval?.approval_id) return
+  const value = await new Promise(resolve => {
+    let settled = false
+    const finish = result => {
+      if (!settled) {
+        settled = true
+        resolve(result)
+      }
+    }
+    $q.dialog({
+      title: 'Ajustar ação',
+      message: 'Informe o novo preço. O ajuste exige nova aprovação.',
+      prompt: {
+        model: '',
+        type: 'number',
+        isValid: input => Number.isFinite(Number(input)) && Number(input) >= 0,
+      },
+      cancel: true,
+      persistent: true,
+    }).onOk(finish).onCancel(() => finish(null)).onDismiss(() => finish(null))
+  })
+  if (value === null || String(value).trim() === '') return
+  const price = Number(value)
+  if (!Number.isFinite(price) || price < 0) {
+    $q.notify({ type: 'negative', message: 'Informe um preço válido.' })
+    return
+  }
+  approval.loading = true
+  try {
+    const response = await api.post(`/sellerbot-ai/approvals/${approval.approval_id}/adjust/`, {
+      payload: { sku: approval.sku || '', price },
+    })
+    approval.approval_id = response.data.approval_id
+    approval.status = 'pending'
+    $q.notify({ type: 'info', message: 'Ajuste salvo. A nova ação aguarda aprovação.' })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao ajustar ação.' })
+  } finally {
+    approval.loading = false
+  }
+}
+
+const retryBatch = async (msg) => {
+  const runId = msg.batchStatus?.run_id
+  if (!runId) return
+  if (msg.batchStatus.retrying) return
+  msg.batchStatus.retrying = true
+  try {
+    const selectedSkus = (msg.batchStatus.skus || [])
+      .filter(sku => sku.selected && sku.status !== 'executed')
+      .map(sku => sku.sku)
+    const response = await api.post(`/sellerbot-ai/runs/${runId}/resume/`, { skus: selectedSkus })
+    msg.batchStatus = {
+      ...(msg.batchStatus || {}),
+      status: response.data.status || 'running',
+    }
+    $q.notify({ type: 'positive', message: 'Retomada iniciada para os SKUs que falharam.' })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao retomar lote.' })
+  } finally {
+    msg.batchStatus.retrying = false
+  }
+}
+
+const loadRuns = async () => {
+  try {
+    const response = await api.get('/sellerbot-ai/runs/')
+    recentRuns.value = Array.isArray(response.data?.runs) ? response.data.runs : []
+  } catch {
+    recentRuns.value = []
+  }
+}
+
+const resumeRun = async (run) => {
+  if (run.resuming) return
+  run.resuming = true
+  try {
+    const response = await api.post(`/sellerbot-ai/runs/${run.run_id}/resume/`)
+    $q.notify({ type: 'positive', message: 'Lote retomado.' })
+    run.status = response.data?.status || 'running'
+    await loadRuns()
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao retomar lote.' })
+  } finally {
+    run.resuming = false
+  }
+}
+
+const approvalStatusLabel = (status) => ({
+  pending: 'Aguardando sua aprovação',
+  approved: 'Ação aprovada',
+  rejected: 'Ação rejeitada',
+  cancelled: 'Ação cancelada',
+  expired: 'Aprovação expirada. Gere um novo rascunho.',
+  invalidated: 'Aprovação invalidada por alteração.',
+  adjusted: 'Ação ajustada. Nova aprovação necessária.',
+  executing: 'Ação em execução',
+  executed: 'Ação executada',
+  failed: 'Ação falhou',
+}[status] || 'Estado de aprovação atualizado')
+
+const approvalStatusIcon = (status) => ({
+  approved: 'check_circle', executed: 'check_circle', rejected: 'cancel', cancelled: 'cancel',
+  expired: 'schedule', invalidated: 'change_circle', failed: 'error', executing: 'autorenew',
+}[status] || 'pending_actions')
+
+const batchStatusLabel = (status) => ({
+  running: 'em execução', partial: 'parcial', completed: 'concluído', failed: 'com falhas',
+  paused: 'pausado', queued: 'na fila',
+}[status] || 'atualizado')
+
 // ===========================================================================
 // Lifecycle
 // ===========================================================================
@@ -1075,6 +1310,7 @@ onMounted(() => {
   checkHealth()
   fetchBalance()
   loadSessions()
+  loadRuns()
 })
 </script>
 
@@ -1429,6 +1665,28 @@ onMounted(() => {
 }
 .listing-draft-status--approved { color: #059669; }
 .listing-draft-status--cancelled { color: #b91c1c; }
+.approval-card { background: #eff6ff; border-color: #bfdbfe; }
+.approval-card .listing-draft-instructions { color: #1e40af; }
+.listing-draft-status--expired,
+.listing-draft-status--invalidated { color: #b45309; }
+.listing-draft-status--failed,
+.listing-draft-status--rejected { color: #b91c1c; }
+.listing-draft-status--executing { color: #2563eb; }
+
+.artifact-validation-card,
+.batch-status-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.artifact-validation-title,
+.batch-status-title { font-weight: 600; color: #334155; }
+.artifact-validation-error { color: #b91c1c; margin-top: 4px; }
+.batch-status-counts { display: flex; flex-wrap: wrap; gap: 10px; color: #64748b; margin: 6px 0; }
+.batch-sku-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 4px 0 8px; }
 
 /* Live log panel */
 .live-log-panel {
@@ -1609,6 +1867,30 @@ onMounted(() => {
   background: rgba(255,255,255,0.85) !important;
   border-radius: 50%;
 }
+
+.artifact-preview-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+.artifact-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid #dbe5ed;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.artifact-preview-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #334155; }
+.artifact-preview-error { color: #b91c1c; font-size: 11px; padding: 2px 4px; }
+
+.history-runs-label { margin-top: 18px; }
+.history-run-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #f8fafc; margin-bottom: 5px; }
+.history-run-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.history-run-status { color: #64748b; font-size: 11px; }
 
 /* Images in messages */
 .message-images {

@@ -81,4 +81,58 @@ describe('sellerbotStream reducer', () => {
     expect(withImage.pendingDraft.draft).toEqual({ draft_id: 12, title: 'Produto', price: 10 })
     expect(withImage.images).toEqual(['https://img.test/a.jpg'])
   })
+
+  it('reduces approval, artifact validation and partial batch events safely', () => {
+    let message = reduceSellerbotEvent(createAssistantMessage(), {
+      type: 'approval_required',
+      approval_id: 'approval-1',
+      sku: 'SKU-1',
+      status: 'pending',
+      payload: { secret: 'must-not-leak' },
+    })
+    message = reduceSellerbotEvent(message, {
+      type: 'artifact_validation',
+      artifact_id: 'artifact-1',
+      valid: false,
+      errors: [{ row: 2, message: 'Preço inválido' }],
+      preview: { rows: [{ secret: 'private' }] },
+    })
+    message = reduceSellerbotEvent(message, {
+      type: 'partial',
+      run_id: 'run-1',
+      status: 'partial',
+      succeeded: 8,
+      failed: 2,
+      retryable: ['SKU-2'],
+      skus: [{ sku: 'SKU-2', status: 'failed', selected: true }],
+    })
+
+    expect(message.pendingApproval).toEqual({
+      approval_id: 'approval-1',
+      sku: 'SKU-1',
+      status: 'pending',
+    })
+    expect(message.artifactValidation.errors).toEqual([{ row: 2, message: 'Preço inválido' }])
+    expect(message.batchStatus).toEqual({
+      run_id: 'run-1',
+      status: 'partial',
+      succeeded: 8,
+      failed: 2,
+      retryable: ['SKU-2'],
+      skus: [{ sku: 'SKU-2', status: 'failed', selected: true }],
+    })
+    expect(JSON.stringify(message)).not.toContain('secret')
+  })
+
+  it('moves approval state without exposing an editable payload', () => {
+    let message = reduceSellerbotEvent(createAssistantMessage(), {
+      type: 'approval_required', approval_id: 'approval-1', status: 'pending',
+    })
+    message = reduceSellerbotEvent(message, {
+      type: 'approval_state', approval_id: 'approval-1', status: 'expired', reason: 'ttl',
+    })
+
+    expect(message.pendingApproval.status).toBe('expired')
+    expect(message.pendingApproval.reason).toBe('ttl')
+  })
 })

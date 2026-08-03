@@ -1,5 +1,6 @@
 # Dependências
 /node_modules
+.worktrees/
 /.pnp
 .pnp.js
 
