@@ -244,7 +244,6 @@
                   >
                     <q-icon :name="logIcon(log.type)" size="12px" />
                     <span>{{ log.text }}</span>
-                    <pre v-if="log.traceback" class="log-traceback">{{ log.traceback }}</pre>
                   </div>
                 </div>
               </div>
@@ -359,6 +358,11 @@ import { api } from 'src/boot/axios'
 import { getAccessToken } from 'src/services/tokenService'
 import ChatChart from 'src/components/ChatChart.vue'
 import ChatTable from 'src/components/ChatTable.vue'
+import {
+  createAssistantMessage,
+  normalizeHistoricalMessage,
+  reduceSellerbotEvent,
+} from 'src/services/sellerbotStream.js'
 
 const $q = useQuasar()
 const store = useStore()
@@ -669,11 +673,7 @@ const loadSession = async (id) => {
     const res = await api.get(`/sellerbot-ai/sessions/${id}/`)
     const msgs = res.data.messages || []
     messages.value = msgs.map(m => ({
-      role: m.role,
-      content: m.content,
-      images: m.images || [],
-      agent: m.agent || null,
-      logs: m.logs || [],
+      ...normalizeHistoricalMessage(m),
       logsOpen: false,
       time: new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     }))
@@ -771,16 +771,9 @@ const sendMessage = async () => {
 
   const assistantIndex = messages.value.length
   messages.value.push({
-    role: 'assistant',
-    content: '',
+    ...createAssistantMessage(),
     time: nowTime(),
-    loading: true,
     loadingText: 'Iniciando...',
-    logs: [],
-    logsOpen: false,
-    startedAt: Date.now(),
-    elapsedSec: 0,
-    agent: null,
   })
 
   // Timer de tempo decorrido — atualiza a cada segundo enquanto loading
@@ -862,81 +855,17 @@ const handleStreamEvent = (index, event) => {
   const msg = messages.value[index]
   if (!msg) return
 
-  switch (event.type) {
-    case 'session':
-      currentSessionId.value = event.session_id
-      // Atualiza lista de sessões após nova sessão criada
-      loadSessions()
-      break
-
-    case 'thinking':
-      msg.loadingText = event.text
-      msg.logs.push({ type: 'thinking', text: event.text })
-      break
-
-    case 'tool_call':
-      msg.loadingText = event.text
-      msg.logs.push({ type: 'tool_call', text: `🔧 ${event.text}` })
-      break
-
-    case 'tool_result':
-      msg.logs.push({ type: 'tool_result', text: '✅ Dados recebidos' })
-      break
-
-    case 'image':
-      // Imagem gerada pelo ImageAgent — adiciona ao array de imagens da mensagem
-      if (event.url) {
-        if (!msg.images) msg.images = []
-        msg.images.push(event.url)
-      }
-      msg.logs.push({ type: 'tool_result', text: '🖼️ Imagem recebida' })
-      break
-
-    case 'listing_draft_ready':
-      msg.pendingDraft = {
-        draft: event.draft || null,
-        instructions: event.instructions || '',
-        status: 'pending', // pending | approved | cancelled
-      }
-      msg.logs.push({ type: 'tool_result', text: '📋 Rascunho de anúncio pronto para revisão' })
-      break
-
-    case 'token':
-      // Streaming token a token em tempo real
-      msg.content = (msg.content || '') + event.text
-      msg.loadingText = null
-      scrollToBottom()
-      break
-
-    case 'done':
-      // Se o conteúdo já foi construído via tokens, mantém; senão usa response como fallback
-      if (!msg.content) msg.content = event.response || ''
-      msg.agent = event.agent || null
-      msg.durationMs = Date.now() - (msg.startedAt || Date.now())
-      // Imagens enviadas pelo ImageAgent (via campo images no done)
-      if (event.images?.length) {
-        if (!msg.images) msg.images = []
-        for (const imgUrl of event.images) {
-          if (!msg.images.includes(imgUrl)) msg.images.push(imgUrl)
-        }
-      }
-      msg.loading = false
-      // Atualiza preview da sessão no histórico
-      loadSessions()
-      break
-
-    case 'error':
-      msg.content = `❌ ${event.text}`
-      msg.durationMs = Date.now() - (msg.startedAt || Date.now())
-      msg.hasError = true
-      msg.logs.push({ type: 'error', text: event.text, traceback: event.traceback || null })
-      msg.logsOpen = true
-      msg.loading = false
-      break
-
-    case 'end':
-      msg.loading = false
-      break
+  if (event.type === 'session') {
+    currentSessionId.value = event.session_id
+    loadSessions()
+  } else {
+    const next = reduceSellerbotEvent(msg, event)
+    next.time = msg.time
+    if (event.type === 'done' || event.type === 'error') {
+      next.durationMs = Date.now() - (msg.startedAt || Date.now())
+    }
+    messages.value[index] = next
+    if (event.type === 'done') loadSessions()
   }
 
   scrollToBottom()
@@ -1578,22 +1507,6 @@ onMounted(() => {
 .log-tool_call .q-icon { color: #f59e0b; }
 .log-tool_result .q-icon { color: #10b981; }
 .log-error .q-icon { color: #ef4444; }
-
-.log-traceback {
-  margin: 6px 0 0 18px;
-  padding: 8px 10px;
-  background: #1e1e2e;
-  color: #f38ba8;
-  font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 11px;
-  line-height: 1.5;
-  border-radius: 6px;
-  border-left: 3px solid #ef4444;
-  white-space: pre-wrap;
-  word-break: break-all;
-  max-height: 300px;
-  overflow-y: auto;
-}
 
 .message-text {
   background: #f3f4f6;

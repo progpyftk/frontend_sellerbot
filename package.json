@@ -6,7 +6,7 @@
   "author": "Lorenzo Simonassi Cabrini>",
   "private": true,
   "scripts": {
-    "test": "echo \"No test specified\" && exit 0",
+    "test": "vitest run",
     "dev": "quasar dev",
     "build": "quasar build"
   },
@@ -36,7 +36,8 @@
     "@quasar/quasar-app-extension-qflashcard": "^1.0.5",
     "autoprefixer": "^10.4.2",
     "playwright": "^1.62.0",
-    "postcss": "^8.4.14"
+    "postcss": "^8.4.14",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": "^20 || ^18 || ^16",
