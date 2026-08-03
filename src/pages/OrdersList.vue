@@ -516,7 +516,8 @@
 
     <!-- ── TABELA ─────────────────────────────────────────── -->
     <div class="table-wrapper table-responsive">
-      <q-table :rows="filteredOrders" :columns="displayColumns" row-key="order_id" flat :loading="loading"
+      <SbTableScrollHint />
+      <q-table :rows="filteredOrders" :columns="columns" row-key="order_id" flat :loading="loading"
         v-model:pagination="pagination" @request="onRequest" binary-state-sort
         class="orders-table" no-data-label="Nenhuma venda encontrada."
         :dense="$q.screen.lt.md"
@@ -524,7 +525,6 @@
 
         <template #header="props">
           <q-tr :props="props" class="orders-thead">
-            <q-th v-if="isCompact" auto-width class="sb-expand-toggle-th" />
             <q-th v-for="col in props.cols" :key="col.name" :props="props"
               :class="col.align === 'right' ? 'text-right' : 'text-left'">
               {{ col.label }}
@@ -534,12 +534,7 @@
 
         <template #body="props">
           <q-tr :props="props" class="order-row"
-            @click="isCompact ? toggleExpand(props.row.order_id) : openFinancial(props.row)">
-
-            <!-- Toggle de expandir (só mobile <600px) ─── -->
-            <q-td v-if="isCompact" auto-width class="sb-expand-toggle-td" @click.stop="toggleExpand(props.row.order_id)">
-              <q-icon :name="isExpanded(props.row.order_id) ? 'expand_less' : 'expand_more'" size="20px" color="grey-6" />
-            </q-td>
+            @click="openFinancial(props.row)">
 
             <!-- ① Produto ─────────────────────────────── -->
             <q-td key="produto" :props="props">
@@ -634,7 +629,7 @@
             </q-td>
 
             <!-- ⑤ Logística ──────────────────────────── -->
-            <q-td v-if="!isCompact" key="logistica" :props="props" @click.stop="openLogistics(props.row)">
+            <q-td key="logistica" :props="props" @click.stop="openLogistics(props.row)">
               <div class="cell-logistica" v-if="props.row.shipment">
 
                 <!-- Badge tipo logístico -->
@@ -691,16 +686,6 @@
                   {{ props.row.items.length }} item{{ props.row.items.length > 1 ? 's' : '' }}
                   · {{ props.row.items[0]?.quantity }}×
                 </div>
-                <div v-if="isCompact" class="mobile-financial-summary"
-                  :class="props.row.lucro_apos_cmp == null
-                    ? 'mobile-financial-summary--muted'
-                    : props.row.lucro_apos_cmp >= 0
-                      ? 'mobile-financial-summary--positive'
-                      : 'mobile-financial-summary--negative'">
-                  <span>Após CMV</span>
-                  <strong v-if="props.row.lucro_apos_cmp != null">{{ formatCurrency(props.row.lucro_apos_cmp) }}</strong>
-                  <strong v-else>S/ Custo</strong>
-                </div>
                 <div v-if="(props.row.coupon_amount || 0) > 0" class="coupon-chip">
                   <q-icon name="local_offer" size="9px" />-{{ formatCurrency(props.row.coupon_amount) }}
                 </div>
@@ -708,7 +693,7 @@
             </q-td>
 
             <!-- ⑦ Tarifa ML ──────────────────────────── -->
-            <q-td v-if="!isCompact" key="tarifa" :props="props" align="right">
+            <q-td key="tarifa" :props="props" align="right">
               <div class="cell-fee">
                 <div class="fee-main">-{{ formatCurrency(getOrderFeeBreakdown(props.row).totalSaleFee) }}</div>
                 <div class="fee-pct">{{ getOrderFeeBreakdown(props.row).effectivePct.toFixed(1) }}% efetivo</div>
@@ -733,7 +718,7 @@
             </q-td>
 
             <!-- ⑧ Frete ──────────────────────────────── -->
-            <q-td v-if="!isCompact" key="frete" :props="props" align="right">
+            <q-td key="frete" :props="props" align="right">
               <div class="cell-frete">
                 <!-- Flex: seller entrega por conta própria -->
                 <template v-if="props.row.shipment?.logistic_type === 'self_service'">
@@ -771,7 +756,7 @@
             </q-td>
 
             <!-- ⑨ Líquido ────────────────────────────── -->
-            <q-td v-if="!isCompact" key="liquido" :props="props" align="right">
+            <q-td key="liquido" :props="props" align="right">
               <div class="cell-liquido">
                 <div :class="['liquido-main', getNetMargin(props.row) >= 0 ? 'pos' : 'neg']">
                   {{ formatCurrency(getNetMargin(props.row)) }}
@@ -784,7 +769,7 @@
             </q-td>
 
             <!-- ⑩ Lucro (c/ Custo Médio do Produto) ──── -->
-            <q-td v-if="!isCompact" key="lucro" :props="props" align="right">
+            <q-td key="lucro" :props="props" align="right">
               <div class="cell-liquido" v-if="props.row.lucro_apos_cmp != null">
                 <div :class="['liquido-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
                   {{ formatCurrency(props.row.lucro_apos_cmp) }}
@@ -799,94 +784,6 @@
               <div v-else class="text-caption text-grey-5">S/ Custo</div>
             </q-td>
 
-          </q-tr>
-
-          <!-- Painel de expandir inline (mobile <600px): logística, taxas, frete, líquido e lucro -->
-          <q-tr v-if="isCompact" v-show="isExpanded(props.row.order_id)" class="sb-expand-row" :props="props">
-            <q-td colspan="100%">
-              <div class="sb-expand-panel">
-
-                <div class="sb-expand-field" @click="openLogistics(props.row)">
-                  <span class="sb-expand-label">Logística</span>
-                  <div class="cell-logistica" v-if="props.row.shipment">
-                    <div :class="['logistic-badge', getLogisticClass(props.row.shipment.logistic_type)]">
-                      <q-icon :name="getLogisticIcon(props.row.shipment.logistic_type)" size="11px" />
-                      {{ LOGISTIC_META[props.row.shipment.logistic_type]?.label || props.row.shipment.logistic_type }}
-                    </div>
-                    <template v-if="props.row.shipment.logistic_type === 'fulfillment'">
-                      <span class="mini-label">{{ getShipmentStatusLabelFull(props.row.shipment.status) }}</span>
-                    </template>
-                    <template v-else>
-                      <span class="mini-label">{{ getShipmentStatusLabel(getEffectiveShipStatus(props.row.shipment)) }}</span>
-                      <div v-if="needsSellerAction(getEffectiveShipStatus(props.row.shipment))" class="action-alert">
-                        <q-icon name="warning_amber" size="10px" />
-                        {{ getSellerActionLabel(getEffectiveShipStatus(props.row.shipment)) }}
-                      </div>
-                    </template>
-                  </div>
-                  <span v-else class="text-caption text-grey-5">S/ envio</span>
-                </div>
-
-                <div class="sb-expand-field">
-                  <span class="sb-expand-label">Taxas ML</span>
-                  <div class="cell-fee">
-                    <div class="fee-main">-{{ formatCurrency(getOrderFeeBreakdown(props.row).totalSaleFee) }}</div>
-                    <div class="fee-pct">{{ getOrderFeeBreakdown(props.row).effectivePct.toFixed(1) }}% efetivo</div>
-                    <div class="fee-type">{{ LISTING_TYPE_LABELS[props.row.items?.[0]?.listing_type_id] || '—' }}</div>
-                  </div>
-                </div>
-
-                <div class="sb-expand-field">
-                  <span class="sb-expand-label">Frete</span>
-                  <div class="cell-frete">
-                    <template v-if="props.row.shipment?.logistic_type === 'self_service'">
-                      <div v-if="getSellerShippingCost(props.row) > 0" class="frete-main">
-                        -{{ formatCurrency(getSellerShippingCost(props.row)) }}
-                      </div>
-                      <div v-else class="frete-gratis"><q-icon name="check_circle" size="12px" />S/ custo</div>
-                      <div class="flex-repasse-hint">+{{ formatCurrency(getFlexCredit(props.row)) }} repasse</div>
-                    </template>
-                    <template v-else-if="getSellerShippingCost(props.row) > 0">
-                      <div class="frete-main">-{{ formatCurrency(getSellerShippingCost(props.row)) }}</div>
-                    </template>
-                    <template v-else>
-                      <div class="frete-gratis"><q-icon name="check_circle" size="12px" />Grátis</div>
-                    </template>
-                  </div>
-                </div>
-
-                <div class="sb-expand-field">
-                  <span class="sb-expand-label">Receita Líquida</span>
-                  <div class="cell-liquido">
-                    <div :class="['liquido-main', getNetMargin(props.row) >= 0 ? 'pos' : 'neg']">
-                      {{ formatCurrency(getNetMargin(props.row)) }}
-                    </div>
-                    <div :class="['margin-pill', getNetMargin(props.row) >= 0 ? 'margin-pos' : 'margin-neg']">
-                      {{ calculateMarginPct(props.row) }}% margem
-                    </div>
-                  </div>
-                </div>
-
-                <div class="sb-expand-field">
-                  <span class="sb-expand-label">Margem após CMV</span>
-                  <div class="cell-liquido" v-if="props.row.lucro_apos_cmp != null">
-                    <div :class="['liquido-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
-                      {{ formatCurrency(props.row.lucro_apos_cmp) }}
-                    </div>
-                    <div :class="['margin-pill', props.row.lucro_apos_cmp >= 0 ? 'margin-pos' : 'margin-neg']">
-                      {{ calcLucroPct(props.row) }}% margem
-                    </div>
-                  </div>
-                  <div v-else class="text-caption text-grey-5">S/ Custo</div>
-                </div>
-
-                <div class="row justify-end">
-                  <q-btn flat dense no-caps size="sm" color="indigo-7" label="Ver detalhamento completo"
-                    icon="open_in_new" @click.stop="openFinancial(props.row)" />
-                </div>
-
-              </div>
-            </q-td>
           </q-tr>
         </template>
 
@@ -1478,8 +1375,8 @@
 <script setup>
 import { ref, onMounted, reactive, computed, watch } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
+import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 import { useQuasar, copyToClipboard, date } from 'quasar'
-import { useRowExpand } from 'src/composables/useRowExpand'
 
 const $q = useQuasar()
 
@@ -1552,7 +1449,6 @@ const logisticsOpen = ref(false)
 const selectedOrder = ref(null)   // para dialog financeiro
 const logisticsOrder = ref(null)  // para dialog logístico
 const detailLoading = ref(false)
-const { isExpanded, toggleExpand } = useRowExpand()
 
 const pagination = ref({
   sortBy: 'date_created', descending: true, page: 1, rowsPerPage: 50, rowsNumber: 0
@@ -1577,19 +1473,13 @@ const columns = [
   { name: 'data_venda',   label: 'DATA',               field: 'date_created',  align: 'left',  sortable: true, style: 'min-width:90px' },
   { name: 'comprador',    label: 'COMPRADOR',          field: 'buyer_nickname',align: 'left',  style: 'min-width:110px' },
   { name: 'status_venda', label: 'STATUS',             field: 'status',        align: 'left',  style: 'min-width:90px' },
-  { name: 'logistica',    label: 'LOGÍSTICA',          field: 'shipment',      align: 'left',  style: 'min-width:160px', priority: 'secondary' },
+  { name: 'logistica',    label: 'LOGÍSTICA',          field: 'shipment',      align: 'left',  style: 'min-width:160px' },
   { name: 'venda',        label: 'GMV',                field: 'total_amount',  align: 'right', sortable: true, style: 'min-width:85px' },
-  { name: 'tarifa',       label: 'TAXAS ML',           field: 'total_fee',     align: 'right', style: 'min-width:90px', priority: 'secondary' },
-  { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px', priority: 'secondary' },
-  { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right', style: 'min-width:115px', priority: 'secondary' },
-  { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px', priority: 'secondary' },
+  { name: 'tarifa',       label: 'TAXAS ML',           field: 'total_fee',     align: 'right', style: 'min-width:90px' },
+  { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px' },
+  { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right', style: 'min-width:115px' },
+  { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px' },
 ]
-
-// Paridade mobile: <600px mostra só colunas primárias na linha; secundárias vão pro painel de expandir inline.
-const isCompact = computed(() => $q.screen.lt.sm)
-const displayColumns = computed(() =>
-  isCompact.value ? columns.filter(c => c.priority !== 'secondary') : columns
-)
 
 // Soma de unidades do pedido (pack soma todos os sub-orders)
 const rowUnits = (row) => (row.items || []).reduce((s, i) => s + (i.quantity || 0), 0)
@@ -1884,10 +1774,14 @@ const ensurePayments = async (row) => {
   finally { detailLoading.value = false }
 }
 
+let financialSeq = 0
+
 const openFinancial = async (row) => {
+  const seq = ++financialSeq
   selectedOrder.value = null   // limpa conteúdo anterior
   financialOpen.value = true   // abre dialog (mostrará só o spinner)
   await ensurePayments(row)
+  if (seq !== financialSeq) return  // clique obsoleto sobrescreveu o atual
   selectedOrder.value = { ...row }  // renderiza tudo de uma vez após carregar
 }
 
