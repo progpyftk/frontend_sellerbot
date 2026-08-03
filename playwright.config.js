@@ -1,18 +1,14 @@
-const { defineConfig } = require('@playwright/test');
+const { defineConfig, devices } = require('@playwright/test')
 
 module.exports = defineConfig({
-  testDir: './tests/a11y',
-  timeout: 30000,
-  expect: { timeout: 10000 },
+  testDir: './tests/e2e',
+  timeout: 30_000,
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:9000',
-    headless: true,
-    viewport: { width: 1280, height: 720 },
+    baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:9000',
+    trace: 'retain-on-failure',
   },
   projects: [
-    {
-      name: 'chromium',
-      use: { browserName: 'chromium' },
-    },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    { name: 'mobile', use: { ...devices['Pixel 7'] } },
   ],
-});
+})
