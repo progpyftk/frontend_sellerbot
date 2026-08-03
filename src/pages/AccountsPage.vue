@@ -232,8 +232,32 @@
                 </q-td>
               </template>
 
+               <template v-slot:body-cell-push_partner_key_configured="props">
+                 <q-td :props="props" class="text-center">
+                   <span :class="['status-chip', props.row.push_partner_key_configured ? 'status-chip--pos' : 'status-chip--neutral']">
+                     <q-icon :name="props.row.push_partner_key_configured ? 'verified_user' : 'vpn_key'" size="12px" class="q-mr-xs" />
+                     {{ props.row.push_partner_key_configured ? 'Push configurado' : 'Push pendente' }}
+                   </span>
+                 </q-td>
+               </template>
+
+               <template v-slot:body-cell-partner_key_configured="props">
+                 <q-td :props="props" class="text-center">
+                   <span :class="['status-chip', props.row.partner_key_configured ? 'status-chip--pos' : 'status-chip--neutral']">
+                     <q-icon :name="props.row.partner_key_configured ? 'verified_user' : 'vpn_key'" size="12px" class="q-mr-xs" />
+                     {{ props.row.partner_key_configured ? 'API configurada' : 'API pendente' }}
+                   </span>
+                 </q-td>
+               </template>
+
               <template v-slot:body-cell-actions="props">
-                <q-td :props="props" class="text-center q-gutter-xs">
+                <q-td :props="props" class="text-center">
+                  <div class="shopee-actions">
+                   <q-btn v-if="canEditShopeeCredentials(props.row)" flat round dense size="sm" color="deep-orange"
+                     icon="vpn_key" @click="openShopeeCredentialsDialog(props.row)">
+                     <q-tooltip>Editar credenciais Shopee</q-tooltip>
+                   </q-btn>
+
                   <q-btn flat round dense size="sm" color="deep-orange" icon="sync"
                     :loading="syncingShopee === props.row.id" @click="syncShopeeOrders(props.row.id)">
                     <q-tooltip>Sync Pedidos</q-tooltip>
@@ -257,6 +281,7 @@
                   <q-btn v-if="props.row.user === currentUserId" flat round size="sm" color="negative" icon="delete" @click="confirmDeleteShopee(props.row)">
                     <q-tooltip>Excluir conta Shopee</q-tooltip>
                   </q-btn>
+                  </div>
                 </q-td>
               </template>
             </q-table>
@@ -442,6 +467,46 @@
       </q-card>
     </q-dialog>
 
+    <!-- Shopee Credentials Dialog -->
+    <q-dialog v-model="shopeeCredentialsDialog" persistent>
+      <q-card class="credentials-dialog-card">
+        <div class="dialog-header">
+          <div class="header-icon" style="background: linear-gradient(135deg, #f97316, #ef4444)">
+            <q-icon name="vpn_key" size="18px" />
+          </div>
+          <div>
+            <div style="font-size: 15px; font-weight: 700; color: #1a1f36">Editar credenciais Shopee</div>
+            <div style="font-size: 11px; color: #9aa0ac">{{ shopeeCredentialsAccount?.shop_name || shopeeCredentialsAccount?.shop_id }}</div>
+          </div>
+        </div>
+        <q-separator />
+        <q-card-section class="q-gutter-md">
+          <q-banner class="bg-orange-1 text-orange-9 rounded-borders" dense>
+            <template v-slot:avatar><q-icon name="lock" /></template>
+            Campos em branco mantêm o valor atual. As chaves salvas nunca são exibidas.
+          </q-banner>
+          <q-input v-model="shopeeCredentialsForm.partner_id" label="Live Partner ID" outlined dense
+            autocomplete="off" hint="Deixe em branco para manter o ID atual." />
+          <q-input v-model="shopeeCredentialsForm.partner_key" label="Live API Partner Key" outlined dense
+            type="password" autocomplete="new-password"
+            hint="Deixe em branco para manter a chave atual." />
+          <q-input v-model="shopeeCredentialsForm.push_partner_key" label="Live Push Partner Key" outlined dense
+            type="password" autocomplete="new-password"
+            hint="Separada da chave usada pela API. Deixe em branco para manter." />
+        </q-card-section>
+        <q-card-actions align="between" class="q-pa-md">
+          <q-btn v-if="shopeeCredentialsAccount?.push_partner_key_configured" flat label="Remover Push"
+            color="negative" :loading="savingShopeeCredentials" :disable="savingShopeeCredentials" @click="removeShopeePushKey" />
+          <div v-else />
+          <div class="row q-gutter-sm">
+            <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+            <q-btn label="Salvar credenciais" unelevated color="deep-orange" :loading="savingShopeeCredentials"
+              @click="saveShopeeCredentials" />
+          </div>
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Share Dialog -->
     <q-dialog v-model="shareDialog" persistent>
       <q-card style="min-width: 420px; border-radius: 12px">
@@ -577,6 +642,10 @@ const deleteDialogShopee = ref(false)
 const shopeeAccountToDelete = ref(null)
 const shopeeConnectDialog = ref(false)
 const shopeeConnectForm = ref({ partner_id: '', partner_key: '' })
+const shopeeCredentialsDialog = ref(false)
+const shopeeCredentialsAccount = ref(null)
+const shopeeCredentialsForm = ref({ partner_id: '', partner_key: '', push_partner_key: '' })
+const savingShopeeCredentials = ref(false)
 
 const SHOPEE_REDIRECT_URI = isDevEnvironment
   ? `${NGROK_URL}/shopee-redirect`
@@ -625,6 +694,8 @@ const shopeeColumns = [
   { name: 'shop_name', align: 'left', label: 'Loja', field: 'shop_name' },
   { name: 'is_connected', align: 'center', label: 'Status', field: 'is_connected' },
   { name: 'direct_delivery_cost', align: 'center', label: 'Frete Entrega Direta (R$)', field: 'direct_delivery_cost' },
+  { name: 'partner_key_configured', align: 'center', label: 'API Shopee', field: 'partner_key_configured' },
+  { name: 'push_partner_key_configured', align: 'center', label: 'Push em tempo real', field: 'push_partner_key_configured' },
   { name: 'token_expires_at', align: 'left', label: 'Token Expira em', field: 'token_expires_at' },
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ]
@@ -736,6 +807,71 @@ const getShopeeAccounts = async () => {
 const connectShopee = () => {
   shopeeConnectForm.value = { partner_id: '', partner_key: '' }
   shopeeConnectDialog.value = true
+}
+
+const canEditShopeeCredentials = (account) =>
+  account?.user === currentUserId.value || !!authStore.currentUser?.is_staff
+
+const openShopeeCredentialsDialog = (account) => {
+  if (!canEditShopeeCredentials(account)) return
+  shopeeCredentialsAccount.value = account
+  // Never hydrate saved credentials; only newly entered values are submitted.
+  shopeeCredentialsForm.value = { partner_id: '', partner_key: '', push_partner_key: '' }
+  shopeeCredentialsDialog.value = true
+}
+
+const saveShopeeCredentials = async () => {
+  const account = shopeeCredentialsAccount.value
+  if (!account) return
+
+  const form = shopeeCredentialsForm.value
+  const body = Object.fromEntries(
+    Object.entries(form)
+      .map(([key, value]) => [key, value.trim()])
+      .filter(([, value]) => value),
+  )
+  if (!Object.keys(body).length) {
+    $q.notify({ message: 'Informe ao menos uma credencial nova.', color: 'warning', position: 'top' })
+    return
+  }
+  savingShopeeCredentials.value = true
+  try {
+    const { data } = await api.patch(`/shopee/accounts/${account.id}/settings/`, body)
+    if (body.partner_id) account.partner_id = data.partner_id
+    account.partner_key_configured = !!data.partner_key_configured
+    account.push_partner_key_configured = !!data.push_partner_key_configured
+    shopeeCredentialsDialog.value = false
+    $q.notify({ message: 'Credenciais Shopee atualizadas!', color: 'positive', position: 'top' })
+  } catch (error) {
+    $q.notify({ message: 'Erro ao salvar as credenciais Shopee.', color: 'negative', position: 'top' })
+  } finally {
+    savingShopeeCredentials.value = false
+  }
+}
+
+const removeShopeePushKey = () => {
+  const account = shopeeCredentialsAccount.value
+  if (!account) return
+  $q.dialog({
+    title: 'Remover chave de Push?',
+    message: 'Os próximos pushes usarão o fallback disponível. A remoção é explícita e não pode ser desfeita automaticamente.',
+    cancel: true,
+    persistent: true,
+  }).onOk(async () => {
+    savingShopeeCredentials.value = true
+    try {
+      const { data } = await api.patch(`/shopee/accounts/${account.id}/settings/`, {
+        remove_push_partner_key: true,
+      })
+      account.push_partner_key_configured = !!data.push_partner_key_configured
+      shopeeCredentialsDialog.value = false
+      $q.notify({ message: 'Chave de Push removida.', color: 'positive', position: 'top' })
+    } catch (error) {
+      $q.notify({ message: 'Erro ao remover a chave de Push.', color: 'negative', position: 'top' })
+    } finally {
+      savingShopeeCredentials.value = false
+    }
+  })
 }
 
 const submitShopeeConnect = async () => {
@@ -1321,6 +1457,14 @@ onMounted(() => {
   color: #1a1f36;
 }
 
+.shopee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
 .status-chip {
   display: inline-flex;
   align-items: center;
@@ -1359,6 +1503,11 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
+}
+
+.credentials-dialog-card {
+  width: min(520px, calc(100vw - 32px));
+  border-radius: 12px;
 }
 
 .shopee-empty-icon {
