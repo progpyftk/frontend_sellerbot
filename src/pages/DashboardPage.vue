@@ -1871,6 +1871,10 @@ const knownAccounts = knownMlAccounts  // alias
 
 // ── Per-account filtered aggregates (respects selectedAccountKeys) ────────
 
+function averageTicket(gmv, orders) {
+  return orders > 0 ? +(gmv / orders).toFixed(2) : null
+}
+
 // Filtered ML operation: sums only selected ML accounts from data.value?.accounts
 const filteredMlOp = computed(() => {
   if (!data.value) return null
@@ -1894,7 +1898,7 @@ const filteredMlOp = computed(() => {
   return {
     gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, lucro_liquido: ll,
     orders_count: orders, units_sold: units,
-    avg_ticket: orders ? +(gmv / orders).toFixed(2) : null,
+    avg_ticket: averageTicket(gmv, orders),
     total_fees: +(gmv - net).toFixed(2), cmv_total: s('cmv_total'),
     lucro_liquido_pct: net ? +(ll / net * 100).toFixed(2) : null,
     gross_margin_pct: net ? +(gp / net * 100).toFixed(2) : null,
@@ -1927,7 +1931,7 @@ const filteredShopeeOp = computed(() => {
   const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
   const ads = s('ads_cost'), ll = s('lucro_liquido')
   const affiliate_cost = s('affiliate_cost'), marketplace_fees = s('marketplace_fees')
-  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, affiliate_cost, marketplace_fees, lucro_liquido: ll || null, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
+  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, affiliate_cost, marketplace_fees, lucro_liquido: ll || null, orders_count: orders, avg_ticket: averageTicket(gmv, orders), units_sold: 0, by_account: selected }
 })
 
 // Modalidade de envio Shopee (feedback #18) — agregado de todas as contas Shopee
@@ -1953,7 +1957,7 @@ const filteredTiktokOp = computed(() => {
   if (!selected.length) return null
   const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
   const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
-  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: s('ads_cost'), lucro_liquido: gp, orders_count: orders, avg_ticket: orders ? +(gmv / orders).toFixed(2) : null, units_sold: 0, by_account: selected }
+  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: s('ads_cost'), lucro_liquido: gp, orders_count: orders, avg_ticket: averageTicket(gmv, orders), units_sold: 0, by_account: selected }
 })
 
 // Filtered ML daily: sums selected accounts from accountDailyData (when partial multi-account selection)
@@ -2562,9 +2566,11 @@ function mlFilteredToday(ml) {
   // Senão, backend retornou mais contas do que a seleção (race condition
   // ou cache antigo) → aplica filtro client-side somando os campos
   const sum = (field) => accounts.reduce((s, a) => s + (a[field] || 0), 0)
+  const gmv = sum('gmv')
+  const orders = sum('orders_count')
   return {
     ...ml,
-    gmv:           sum('gmv'),
+    gmv,
     total_fees:    sum('total_fees'),
     net_revenue:   sum('net_revenue'),
     cmv_total:     sum('cmv_total'),
@@ -2572,8 +2578,8 @@ function mlFilteredToday(ml) {
     gross_profit:  sum('gross_profit'),
     ads_cost:      sum('ads_cost'),
     lucro_liquido: sum('lucro_liquido'),
-    orders_count:  sum('orders_count'),
-    avg_ticket:    null,
+    orders_count:  orders,
+    avg_ticket:    averageTicket(gmv, orders),
   }
 }
 
@@ -2588,14 +2594,16 @@ const combinedToday = computed(() => {
   // all: soma ML filtrado + Shopee + TikTok
   if (!ml && !sh && !tk) return null
   const fml = mlFilteredToday(ml)
+  const gmv = (fml?.gmv || 0) + (sh?.gmv || 0) + (tk?.gmv || 0)
+  const orders = (fml?.orders_count || 0) + (sh?.count_paid || 0) + (tk?.count_paid || 0)
   return {
-    gmv:           (fml?.gmv || 0) + (sh?.gmv || 0) + (tk?.gmv || 0),
-    orders_count:  (fml?.orders_count || 0) + (sh?.count_paid || 0) + (tk?.count_paid || 0),
+    gmv,
+    orders_count:  orders,
     net_revenue:   (fml?.net_revenue || 0) + (sh?.faturamento || 0) + (tk?.faturamento || 0),
     gross_profit:  (fml?.gross_profit || 0) + (sh?.lucro_apos_cmp || 0) + (tk?.lucro_apos_cmp || 0),
     lucro_liquido: (fml?.lucro_liquido || 0) + (sh?.lucro_apos_cmp || 0) + (tk?.lucro_apos_cmp || 0),
     units_sold:    (fml?.units_sold || 0),
-    avg_ticket:    null,
+    avg_ticket:    averageTicket(gmv, orders),
     _ml: fml,
     _shopee: sh,
     _tiktok: tk,
@@ -2603,26 +2611,30 @@ const combinedToday = computed(() => {
 })
 
 function shopeeToMLFormat(sh) {
+  const gmv = sh.gmv || 0
+  const orders = sh.count_paid || 0
   return {
-    gmv:          sh.gmv || 0,          // GMV bruto (total_amount), consistente com dashboard_stats
-    orders_count: sh.count_paid || 0,
+    gmv,                               // GMV bruto (total_amount), consistente com dashboard_stats
+    orders_count: orders,
     net_revenue:  sh.faturamento || 0,  // receita líquida (escrow real ou estimado)
     gross_profit: sh.lucro_apos_cmp || 0,
     lucro_liquido: sh.lucro_apos_cmp || 0,
     units_sold:   0,
-    avg_ticket:   null,
+    avg_ticket:   averageTicket(gmv, orders),
   }
 }
 
 function tiktokToMLFormat(tk) {
+  const gmv = tk.gmv || 0
+  const orders = tk.count_paid || 0
   return {
-    gmv:          tk.gmv || 0,
-    orders_count: tk.count_paid || 0,
+    gmv,
+    orders_count: orders,
     net_revenue:  tk.faturamento || 0,
     gross_profit: tk.lucro_apos_cmp || 0,
     lucro_liquido: tk.lucro_apos_cmp || 0,
     units_sold:   0,
-    avg_ticket:   null,
+    avg_ticket:   averageTicket(gmv, orders),
   }
 }
 
@@ -2672,14 +2684,16 @@ const combinedOp = computed(() => {
     vs_prev: null,
   }
 
+  const gmv = (ml?.gmv || 0) + (sh?.gmv || 0) + (tk?.gmv || 0)
+  const orders = (ml?.orders_count || 0) + (sh?.orders_count || 0) + (tk?.orders_count || 0)
   return {
-    gmv:           (ml?.gmv || 0) + (sh?.gmv || 0) + (tk?.gmv || 0),
+    gmv,
     net_revenue:   (ml?.net_revenue || 0) + (sh?.net_revenue || 0) + (tk?.net_revenue || 0),
     gross_profit:  (ml?.gross_profit || 0) + (sh?.gross_profit || 0) + (tk?.gross_profit || 0),
     lucro_liquido: (ml?.lucro_liquido || 0) + (sh?.lucro_liquido ?? sh?.gross_profit ?? 0) + (tk?.gross_profit || 0),
-    orders_count:  (ml?.orders_count || 0) + (sh?.orders_count || 0) + (tk?.orders_count || 0),
+    orders_count:  orders,
     units_sold:    (ml?.units_sold || 0) + (sh?.units_sold || 0) + (tk?.units_sold || 0),
-    avg_ticket:    null,
+    avg_ticket:    averageTicket(gmv, orders),
     ads_cost:      (ml?.ads_cost || 0) + (sh?.ads_cost || 0) + (tk?.ads_cost || 0),
     affiliate_cost: sh?.affiliate_cost || 0,
     total_fees:    (ml?.total_fees || 0) + (sh?.marketplace_fees || 0),
