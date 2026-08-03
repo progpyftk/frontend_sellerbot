@@ -627,8 +627,9 @@ const handleFileSelect = (e) => {
   const files = Array.from(e.target.files)
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
   let totalBytes = pendingImages.value.reduce((sum, image) => sum + image.file.size, 0)
+  let acceptedCount = pendingImages.value.length
   for (const file of files) {
-    if (pendingImages.value.length >= 4) {
+    if (acceptedCount >= 4) {
       $q.notify({ message: 'Envie no máximo 4 imagens por mensagem', color: 'negative' })
       break
     }
@@ -645,6 +646,7 @@ const handleFileSelect = (e) => {
       continue
     }
     totalBytes += file.size
+    acceptedCount += 1
     const reader = new FileReader()
     reader.onload = (ev) => {
       pendingImages.value.push({ file, preview: ev.target.result })
@@ -854,8 +856,7 @@ const sendMessage = async () => {
     }
   } catch (error) {
     console.error('Stream error:', error)
-    messages.value[assistantIndex].content = '❌ Erro ao processar mensagem. Tente novamente.'
-    messages.value[assistantIndex].loading = false
+    handleStreamEvent(assistantIndex, { type: 'error' })
     $q.notify({ message: 'Erro ao enviar mensagem', color: 'negative', position: 'top' })
   } finally {
     clearInterval(elapsedTimer)
@@ -873,6 +874,12 @@ const handleStreamEvent = (index, event) => {
     currentSessionId.value = event.session_id
     loadSessions()
   } else {
+    if (event.type === 'token' && typeof event.text === 'string') {
+      msg.content = `${msg.content || ''}${event.text}`
+      msg.loadingText = null
+      scrollToBottom()
+      return
+    }
     const next = reduceSellerbotEvent(msg, event)
     next.time = msg.time
     if (event.type === 'done' || event.type === 'error') {

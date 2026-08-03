@@ -59,7 +59,7 @@ export function reduceSellerbotEvent(message, event) {
 
     case 'done':
       // The final response is authoritative and replaces any streamed partial text.
-      next.content = typeof event.response === 'string' ? event.response : ''
+      next.content = typeof event.response === 'string' && event.response ? event.response : (next.content || '')
       next.agent = typeof event.agent === 'string' ? event.agent : null
       mergeImages(next, event.images)
       next.loading = false
