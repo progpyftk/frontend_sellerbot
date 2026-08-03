@@ -197,7 +197,7 @@
               </template>
 
               <!-- ── Card de aprovação de rascunho de anúncio (ListingAgent) ── -->
-              <div v-if="msg.pendingDraft" class="listing-draft-card">
+               <div v-if="msg.pendingDraft" class="listing-draft-card">
                 <div v-if="msg.pendingDraft.status === 'pending'">
                   <div class="listing-draft-instructions">{{ msg.pendingDraft.instructions }}</div>
                   <div class="listing-draft-actions">
@@ -211,7 +211,60 @@
                       :loading="msg.pendingDraft.loading"
                       @click="cancelDraft(msg)"
                     />
-                  </div>
+               </div>
+
+               <div v-if="msg.pendingApproval" class="listing-draft-card approval-card" aria-live="polite">
+                 <div class="listing-draft-instructions">
+                   <q-icon name="verified_user" size="16px" class="q-mr-xs" />
+                   {{ approvalStatusLabel(msg.pendingApproval.status) }}
+                   <span v-if="msg.pendingApproval.sku"> · {{ msg.pendingApproval.sku }}</span>
+                 </div>
+                 <div v-if="msg.pendingApproval.status === 'pending'" class="listing-draft-actions">
+                   <q-btn
+                     unelevated color="positive" label="Aprovar" icon="check" no-caps dense
+                     :loading="msg.pendingApproval.loading"
+                     @click="approveApproval(msg)"
+                   />
+                   <q-btn
+                     flat color="negative" label="Rejeitar" icon="close" no-caps dense
+                     :loading="msg.pendingApproval.loading"
+                     @click="rejectApproval(msg)"
+                   />
+                   <q-btn
+                     flat color="teal-8" label="Ajustar" icon="edit" no-caps dense
+                     :loading="msg.pendingApproval.loading"
+                     @click="adjustApproval(msg)"
+                   />
+                 </div>
+                 <div v-else class="listing-draft-status" :class="`listing-draft-status--${msg.pendingApproval.status}`">
+                   <q-icon :name="approvalStatusIcon(msg.pendingApproval.status)" size="16px" />
+                   {{ approvalStatusLabel(msg.pendingApproval.status) }}
+                 </div>
+               </div>
+
+               <div v-if="msg.artifactValidation" class="artifact-validation-card" aria-live="polite">
+                 <div class="artifact-validation-title">
+                   <q-icon :name="msg.artifactValidation.valid ? 'check_circle' : 'error'" size="16px" />
+                   {{ msg.artifactValidation.valid ? 'Arquivo validado' : 'Revise as linhas inválidas' }}
+                 </div>
+                 <div v-for="error in msg.artifactValidation.errors" :key="`${error.row}-${error.message}`" class="artifact-validation-error">
+                   Linha {{ error.row }}: {{ error.message }}
+                 </div>
+               </div>
+
+               <div v-if="msg.batchStatus" class="batch-status-card" aria-live="polite">
+                 <div class="batch-status-title">Lote {{ batchStatusLabel(msg.batchStatus.status) }}</div>
+                 <div class="batch-status-counts">
+                   <span>Sucesso: {{ msg.batchStatus.succeeded || 0 }}</span>
+                   <span>Falhas: {{ msg.batchStatus.failed || 0 }}</span>
+                   <span>Pendentes: {{ msg.batchStatus.pending || 0 }}</span>
+                 </div>
+                 <q-btn
+                   v-if="msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length"
+                   flat dense no-caps color="teal-8" label="Tentar falhas novamente"
+                   @click="retryBatch(msg)"
+                 />
+               </div>
                 </div>
                 <div v-else-if="msg.pendingDraft.status === 'approved'" class="listing-draft-status listing-draft-status--approved">
                   <q-icon name="check_circle" size="16px" /> Rascunho aprovado — peça ao agente para publicar.
@@ -253,12 +306,20 @@
       </div>
 
       <!-- Image Preview Bar -->
-      <div v-if="pendingImages.length" class="image-preview-bar">
+       <div v-if="pendingImages.length" class="image-preview-bar">
         <div v-for="(img, i) in pendingImages" :key="i" class="image-preview-item">
           <img :src="img.preview" />
           <q-btn flat round dense icon="close" size="xs" color="negative"
             class="image-preview-remove" @click="removeImage(i)" />
-        </div>
+       </div>
+       <div v-if="pendingFiles.length" class="artifact-preview-bar" aria-live="polite">
+         <div v-for="(artifact, i) in pendingFiles" :key="`${artifact.file.name}-${i}`" class="artifact-preview-item">
+           <q-icon name="table_view" size="16px" color="teal-7" />
+           <span class="artifact-preview-name">{{ artifact.file.name }}</span>
+           <q-badge v-if="artifact.preview && !artifact.preview.valid" color="negative" label="Revise" />
+           <q-btn flat round dense icon="close" size="xs" color="negative" @click="removeFile(i)" />
+         </div>
+       </div>
       </div>
 
       <!-- Input Area -->
@@ -275,10 +336,10 @@
             class="input-field"
           >
             <template v-slot:prepend>
-              <q-btn flat round dense icon="attach_file" color="grey-6" size="sm" @click="$refs.fileInput.click()">
-                <q-tooltip>Anexar imagem</q-tooltip>
-              </q-btn>
-              <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="handleFileSelect" />
+               <q-btn flat round dense icon="attach_file" color="grey-6" size="sm" @click="$refs.fileInput.click()">
+                 <q-tooltip>Anexar imagem ou planilha</q-tooltip>
+               </q-btn>
+               <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp,.csv,.tsv,.xlsx" multiple hidden @change="handleFileSelect" />
             </template>
           </q-input>
           <q-btn
@@ -286,7 +347,7 @@
             color="teal-7"
             icon="send"
             :loading="isLoading"
-            :disable="(!inputMessage.trim() && !pendingImages.length) || isLoading"
+             :disable="(!inputMessage.trim() && !pendingImages.length && !pendingFiles.length) || isLoading"
             @click="sendMessage"
             class="send-btn"
           />
@@ -465,6 +526,7 @@ const showHistory = ref(false)
 
 // Upload de imagens
 const pendingImages = ref([])  // [{file: File, preview: string(base64)}]
+const pendingFiles = ref([])  // [{file: File, preview: object|null, artifact: object|null}]
 const fileInput = ref(null)
 
 const selectedModelName = computed(() => {
@@ -593,9 +655,27 @@ const selectModel = (model) => {
 const handleFileSelect = (e) => {
   const files = Array.from(e.target.files)
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+  const spreadsheetExtensions = new Set(['.csv', '.tsv', '.xlsx'])
   let totalBytes = pendingImages.value.reduce((sum, image) => sum + image.file.size, 0)
   let acceptedCount = pendingImages.value.length
   for (const file of files) {
+    const extension = `.${file.name.split('.').pop().toLowerCase()}`
+    if (!allowedTypes.has(file.type) && !spreadsheetExtensions.has(extension)) {
+      $q.notify({ message: `${file.name}: use imagem, CSV, TSV ou XLSX`, color: 'negative' })
+      continue
+    }
+    if (!allowedTypes.has(file.type)) {
+      if (pendingFiles.value.length >= 5) {
+        $q.notify({ message: 'Envie no máximo 5 planilhas por lote', color: 'negative' })
+        continue
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        $q.notify({ message: `${file.name} excede 10MB`, color: 'negative' })
+        continue
+      }
+      pendingFiles.value.push({ file, preview: null, artifact: null })
+      continue
+    }
     if (acceptedCount >= 4) {
       $q.notify({ message: 'Envie no máximo 4 imagens por mensagem', color: 'negative' })
       break
@@ -625,6 +705,35 @@ const handleFileSelect = (e) => {
 
 const removeImage = (index) => {
   pendingImages.value.splice(index, 1)
+}
+
+const removeFile = (index) => {
+  pendingFiles.value.splice(index, 1)
+}
+
+const uploadPendingFiles = async () => {
+  if (!pendingFiles.value.length) return []
+  const references = []
+  for (const pending of pendingFiles.value) {
+    const form = new FormData()
+    form.append('file', pending.file)
+    form.append('artifact_type', 'spreadsheet')
+    if (currentSessionId.value) form.append('session_id', String(currentSessionId.value))
+    try {
+      const response = await api.post('/sellerbot-ai/artifacts/', form)
+      pending.preview = response.data.preview || null
+      pending.artifact = response.data
+      if (pending.preview && pending.preview.valid === false) {
+        $q.notify({ message: `${pending.file.name}: corrija as linhas inválidas antes de continuar`, color: 'negative' })
+        return null
+      }
+      references.push(response.data)
+    } catch (error) {
+      $q.notify({ message: error?.response?.data?.error || `Falha ao validar ${pending.file.name}`, color: 'negative' })
+      return null
+    }
+  }
+  return references
 }
 
 // ===========================================================================
@@ -736,18 +845,21 @@ const fetchBalance = async () => {
 // Send message — streaming SSE
 // ===========================================================================
 const sendMessage = async () => {
-  if ((!inputMessage.value.trim() && !pendingImages.value.length) || isLoading.value) return
+  if ((!inputMessage.value.trim() && !pendingImages.value.length && !pendingFiles.value.length) || isLoading.value) return
 
   const userMessage = inputMessage.value.trim()
+  const artifactRefs = await uploadPendingFiles()
+  if (artifactRefs === null) return
   inputMessage.value = ''
 
   // Capturar imagens pendentes e limpar preview
   const imageData = pendingImages.value.map(img => img.preview)
   pendingImages.value = []
+  pendingFiles.value = []
 
   messages.value.push({
     role: 'user',
-    content: userMessage || (imageData.length ? `${imageData.length} imagem(ns) enviada(s)` : ''),
+     content: userMessage || (imageData.length ? `${imageData.length} imagem(ns) enviada(s)` : `${artifactRefs.length} arquivo(s) enviado(s)`),
     images: imageData,
     time: nowTime(),
   })
@@ -776,6 +888,13 @@ const sendMessage = async () => {
       const token = getAccessToken() || store.authToken
       const body = { message: userMessage, model_id: selectedModel.value, session_id: currentSessionId.value }
       if (imageData.length) body.images = imageData
+      if (artifactRefs.length) body.artifacts = artifactRefs.map(artifact => ({
+        artifact_id: artifact.artifact_id,
+        artifact_type: artifact.artifact_type,
+        content_type: artifact.content_type,
+        sha256: artifact.sha256,
+        preview: artifact.preview,
+      }))
       return fetch(`${API_BASE}/sellerbot-ai/chat/stream/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1056,6 +1175,100 @@ const cancelDraft = async (msg) => {
     msg.pendingDraft.loading = false
   }
 }
+
+const approveApproval = async (msg) => {
+  const approval = msg.pendingApproval
+  if (!approval?.approval_id) return
+  approval.loading = true
+  try {
+    await api.post(`/sellerbot-ai/approvals/${approval.approval_id}/approve/`)
+    approval.status = 'approved'
+    $q.notify({ type: 'positive', message: 'Ação aprovada.' })
+  } catch (error) {
+    approval.status = error?.response?.status === 400 ? 'expired' : approval.status
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao aprovar ação.' })
+  } finally {
+    approval.loading = false
+  }
+}
+
+const rejectApproval = async (msg) => {
+  const approval = msg.pendingApproval
+  if (!approval?.approval_id) return
+  approval.loading = true
+  try {
+    await api.post(`/sellerbot-ai/approvals/${approval.approval_id}/cancel/`)
+    approval.status = 'rejected'
+    $q.notify({ type: 'info', message: 'Ação rejeitada.' })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao rejeitar ação.' })
+  } finally {
+    approval.loading = false
+  }
+}
+
+const adjustApproval = async (msg) => {
+  const approval = msg.pendingApproval
+  if (!approval?.approval_id) return
+  const value = window.prompt('Novo preço (opcional). O ajuste exige nova aprovação:')
+  if (value === null || value.trim() === '') return
+  const price = Number(value.replace(',', '.'))
+  if (!Number.isFinite(price) || price < 0) {
+    $q.notify({ type: 'negative', message: 'Informe um preço válido.' })
+    return
+  }
+  approval.loading = true
+  try {
+    const response = await api.post(`/sellerbot-ai/approvals/${approval.approval_id}/adjust/`, {
+      payload: { sku: approval.sku || '', price },
+    })
+    approval.approval_id = response.data.approval_id
+    approval.status = 'pending'
+    $q.notify({ type: 'info', message: 'Ajuste salvo. A nova ação aguarda aprovação.' })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao ajustar ação.' })
+  } finally {
+    approval.loading = false
+  }
+}
+
+const retryBatch = async (msg) => {
+  const runId = msg.batchStatus?.run_id
+  if (!runId) return
+  try {
+    const response = await api.post(`/sellerbot-ai/runs/${runId}/resume/`)
+    msg.batchStatus = {
+      ...(msg.batchStatus || {}),
+      status: response.data.status || 'running',
+    }
+    $q.notify({ type: 'positive', message: 'Retomada iniciada para os SKUs que falharam.' })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao retomar lote.' })
+  }
+}
+
+const approvalStatusLabel = (status) => ({
+  pending: 'Aguardando sua aprovação',
+  approved: 'Ação aprovada',
+  rejected: 'Ação rejeitada',
+  cancelled: 'Ação cancelada',
+  expired: 'Aprovação expirada. Gere um novo rascunho.',
+  invalidated: 'Aprovação invalidada por alteração.',
+  adjusted: 'Ação ajustada. Nova aprovação necessária.',
+  executing: 'Ação em execução',
+  executed: 'Ação executada',
+  failed: 'Ação falhou',
+}[status] || 'Estado de aprovação atualizado')
+
+const approvalStatusIcon = (status) => ({
+  approved: 'check_circle', executed: 'check_circle', rejected: 'cancel', cancelled: 'cancel',
+  expired: 'schedule', invalidated: 'change_circle', failed: 'error', executing: 'autorenew',
+}[status] || 'pending_actions')
+
+const batchStatusLabel = (status) => ({
+  running: 'em execução', partial: 'parcial', completed: 'concluído', failed: 'com falhas',
+  paused: 'pausado', queued: 'na fila',
+}[status] || 'atualizado')
 
 // ===========================================================================
 // Lifecycle
@@ -1429,6 +1642,27 @@ onMounted(() => {
 }
 .listing-draft-status--approved { color: #059669; }
 .listing-draft-status--cancelled { color: #b91c1c; }
+.approval-card { background: #eff6ff; border-color: #bfdbfe; }
+.approval-card .listing-draft-instructions { color: #1e40af; }
+.listing-draft-status--expired,
+.listing-draft-status--invalidated { color: #b45309; }
+.listing-draft-status--failed,
+.listing-draft-status--rejected { color: #b91c1c; }
+.listing-draft-status--executing { color: #2563eb; }
+
+.artifact-validation-card,
+.batch-status-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.artifact-validation-title,
+.batch-status-title { font-weight: 600; color: #334155; }
+.artifact-validation-error { color: #b91c1c; margin-top: 4px; }
+.batch-status-counts { display: flex; flex-wrap: wrap; gap: 10px; color: #64748b; margin: 6px 0; }
 
 /* Live log panel */
 .live-log-panel {
@@ -1609,6 +1843,24 @@ onMounted(() => {
   background: rgba(255,255,255,0.85) !important;
   border-radius: 50%;
 }
+
+.artifact-preview-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+.artifact-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid #dbe5ed;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.artifact-preview-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #334155; }
 
 /* Images in messages */
 .message-images {
