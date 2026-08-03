@@ -691,6 +691,16 @@
                   {{ props.row.items.length }} item{{ props.row.items.length > 1 ? 's' : '' }}
                   · {{ props.row.items[0]?.quantity }}×
                 </div>
+                <div v-if="isCompact" class="mobile-financial-summary"
+                  :class="props.row.lucro_apos_cmp == null
+                    ? 'mobile-financial-summary--muted'
+                    : props.row.lucro_apos_cmp >= 0
+                      ? 'mobile-financial-summary--positive'
+                      : 'mobile-financial-summary--negative'">
+                  <span>Após CMV</span>
+                  <strong v-if="props.row.lucro_apos_cmp != null">{{ formatCurrency(props.row.lucro_apos_cmp) }}</strong>
+                  <strong v-else>S/ Custo</strong>
+                </div>
                 <div v-if="(props.row.coupon_amount || 0) > 0" class="coupon-chip">
                   <q-icon name="local_offer" size="9px" />-{{ formatCurrency(props.row.coupon_amount) }}
                 </div>

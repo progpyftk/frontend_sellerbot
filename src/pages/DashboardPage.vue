@@ -453,12 +453,15 @@
                   <th class="col-date">Data</th>
                   <th class="col-num">GMV</th>
                   <th class="col-num">Rec. Líquida</th>
-                  <th class="col-num">Margem Contrib. Antes do Ads</th>
+                  <th class="col-num col-before">Margem Contrib. Antes do Ads</th>
                   <th class="col-num col-ads">Ads</th>
                   <th class="col-num col-ads">TACoS</th>
-                  <th class="col-num col-ll">Margem Contrib. Após Ads</th>
+                  <th class="col-num col-ll">
+                    <span class="desktop-only-label">Margem Contrib. Após Ads</span>
+                    <span class="mobile-only-label">Pós-Ads</span>
+                  </th>
                   <th class="col-num">Pedidos</th>
-                  <th class="col-num">Margem</th>
+                  <th class="col-num col-margin">Margem</th>
                 </tr>
               </thead>
               <tbody>
@@ -474,7 +477,7 @@
                     </td>
                     <td class="col-num dt-gmv">{{ fmt(d.gmv) }}</td>
                     <td class="col-num">{{ fmt(d.net_revenue) }}</td>
-                    <td class="col-num" :class="d.gross_profit >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(d.gross_profit) }}</td>
+                    <td class="col-num col-before" :class="d.gross_profit >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(d.gross_profit) }}</td>
                     <td class="col-num col-ads dt-warn">{{ fmt(d.ads_cost) }}</td>
                     <td class="col-num col-ads">
                       <span v-if="d.gmv > 0" :class="['dt-tacos-badge', tacosBadgeClass(d.ads_cost / d.gmv * 100)]">
@@ -484,12 +487,32 @@
                     </td>
                     <td class="col-num col-ll" :class="d.lucro_liquido >= 0 ? 'dt-pos' : 'dt-neg'">
                       <strong>{{ fmt(d.lucro_liquido) }}</strong>
+                      <span class="dt-mobile-pct">{{ pct(d.lucro_liquido, d.net_revenue) }}</span>
                     </td>
                     <td class="col-num">{{ d.orders_count }}</td>
-                    <td class="col-num">
+                    <td class="col-num col-margin">
                       <span :class="d.net_revenue > 0 ? (d.lucro_liquido / d.net_revenue >= 0.15 ? 'dt-pos' : d.lucro_liquido / d.net_revenue >= 0.05 ? '' : 'dt-warn-text') : ''">
                         {{ pct(d.lucro_liquido, d.net_revenue) }}
                       </span>
+                    </td>
+                  </tr>
+                  <!-- Resumo financeiro compacto para telas estreitas. -->
+                  <tr v-if="expandedDays.has(d.date)" class="dt-mobile-detail-row">
+                    <td colspan="5">
+                      <div class="dt-mobile-detail-grid">
+                        <div>
+                          <span class="dt-mobile-detail-label">Antes do Ads</span>
+                          <strong :class="d.gross_profit >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(d.gross_profit) }}</strong>
+                        </div>
+                        <div>
+                          <span class="dt-mobile-detail-label">Ads</span>
+                          <strong class="dt-warn">{{ fmt(d.ads_cost) }}</strong>
+                        </div>
+                        <div>
+                          <span class="dt-mobile-detail-label">TACoS</span>
+                          <strong>{{ d.gmv > 0 ? (d.ads_cost / d.gmv * 100).toFixed(1) + '%' : '—' }}</strong>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                   <!-- Breakdown por conta -->
@@ -504,7 +527,7 @@
                       </td>
                       <td class="col-num dt-sub">{{ fmt(a.gmv) }}</td>
                       <td class="col-num dt-sub">{{ fmt(a.net_revenue) }}</td>
-                      <td class="col-num dt-sub" :class="(a.gross_profit || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(a.gross_profit) }}</td>
+                      <td class="col-num col-before dt-sub" :class="(a.gross_profit || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(a.gross_profit) }}</td>
                       <td class="col-num col-ads dt-sub dt-warn">{{ a.ads_cost ? fmt(a.ads_cost) : '—' }}</td>
                       <td class="col-num col-ads dt-sub">
                         <span v-if="a.gmv > 0">{{ (a.ads_cost / a.gmv * 100).toFixed(1) }}%</span>
@@ -512,10 +535,10 @@
                       </td>
                       <td class="col-num col-ll dt-sub" :class="(a.lucro_liquido || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(a.lucro_liquido) }}</td>
                       <td class="col-num dt-sub">{{ a.orders_count || 0 }}</td>
-                      <td class="col-num dt-sub">{{ pct(a.lucro_liquido, a.net_revenue) }}</td>
+                      <td class="col-num col-margin dt-sub">{{ pct(a.lucro_liquido, a.net_revenue) }}</td>
                     </tr>
                     <tr v-if="!dayAccountRows(d.date).length" class="dt-acct-row">
-                      <td colspan="9" class="dt-loading-hint">
+                      <td :colspan="$q.screen.lt.sm ? 5 : 9" class="dt-loading-hint">
                         <q-spinner-dots size="12px" color="teal" />
                         Carregando dados por conta…
                       </td>
@@ -531,14 +554,15 @@
                   </td>
                   <td class="col-num dt-gmv">{{ fmt(chartTotals.gmv) }}</td>
                   <td class="col-num">{{ fmt(chartTotals.net_revenue) }}</td>
-                  <td class="col-num" :class="(chartTotals.gross_profit || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(chartTotals.gross_profit) }}</td>
+                  <td class="col-num col-before" :class="(chartTotals.gross_profit || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(chartTotals.gross_profit) }}</td>
                   <td class="col-num col-ads dt-warn">{{ fmt(chartTotals.ads_cost) }}</td>
                   <td class="col-num col-ads">{{ chartTotals.gmv > 0 ? (chartTotals.ads_cost / chartTotals.gmv * 100).toFixed(1) + '%' : '—' }}</td>
                   <td class="col-num col-ll" :class="(chartTotals.lucro_liquido || 0) >= 0 ? 'dt-pos' : 'dt-neg'">
                     <strong>{{ fmt(chartTotals.lucro_liquido) }}</strong>
+                    <span class="dt-mobile-pct">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</span>
                   </td>
                   <td class="col-num">{{ chartTotals.orders_count }}</td>
-                  <td class="col-num">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</td>
+                  <td class="col-num col-margin">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -4956,6 +4980,10 @@ watch(selectedAccountKeys, () => {
 .daily-table thead th.col-num { text-align: right; }
 .daily-table thead th.col-ll { color: #0d9488; }
 .daily-table thead th.col-ads { color: #f59e0b; }
+.desktop-only-label { display: inline; }
+.mobile-only-label { display: none; }
+.dt-mobile-pct { display: none; }
+.dt-mobile-detail-row { display: none; }
 
 .daily-table td {
   padding: 9px 14px;
@@ -6046,11 +6074,65 @@ tr.pareto-line-95 td {
     font-size: 9.5px;
   }
 
-  /* Hide Ads (cost + TACoS) and Margem Pós-Ads columns on mobile */
+  .desktop-only-label { display: none; }
+  .mobile-only-label { display: inline; }
+  .dt-mobile-pct {
+    display: block;
+    font-size: 9px;
+    font-weight: 500;
+    color: inherit;
+    opacity: .8;
+  }
+
+  /* Keep the final contribution value visible; details move below the row. */
   .daily-table .col-ads,
-  .daily-table .col-ll {
+  .daily-table .col-before,
+  .daily-table .col-margin {
     display: none;
   }
+
+  .daily-table .dt-mobile-detail-row {
+    display: table-row;
+  }
+
+  .dt-mobile-detail-row td {
+    background: #f8fafc;
+    border-bottom: 1px solid #eef1f5;
+    padding: 8px 10px !important;
+  }
+
+  .dt-mobile-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dt-mobile-detail-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .dt-mobile-detail-label {
+    color: #94a3b8;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .35px;
+    text-transform: uppercase;
+  }
+
+  .dt-mobile-detail-grid strong {
+    color: #374151;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dt-mobile-detail-grid strong.dt-pos { color: #0d9488; }
+  .dt-mobile-detail-grid strong.dt-neg { color: #ef4444; }
+  .dt-mobile-detail-grid strong.dt-warn { color: #f59e0b; }
 
   /* ── Ranking grids — 1 coluna ── */
   .ranking-highlights {

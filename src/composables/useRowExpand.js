@@ -3,7 +3,7 @@ import { ref } from 'vue'
 /**
  * Estado de "linha expandida" para tabelas responsivas: no mobile, colunas
  * secundárias somem da linha e ficam disponíveis num painel expandido inline
- * (ver SbResponsiveTable.md / plano de paridade mobile).
+ * usando as classes compartilhadas `sb-expand-*`.
  */
 export function useRowExpand() {
   const expandedKeys = ref(new Set())

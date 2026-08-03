@@ -262,7 +262,7 @@
       <q-table
         flat
         :rows="orders"
-        :columns="columns"
+        :columns="displayColumns"
         row-key="id"
         :loading="loading"
         v-model:pagination="pagination"
@@ -274,6 +274,7 @@
 
         <template v-slot:header="props">
           <q-tr :props="props">
+            <q-th v-if="isCompact" auto-width class="sb-expand-toggle-th" />
             <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">
               {{ col.label }}
             </q-th>
@@ -283,7 +284,12 @@
         <template v-slot:body="props">
           <q-tr :props="props"
             class="hover-row cursor-pointer"
-            @click="openDetail(props.row)">
+            @click="isCompact ? toggleExpand(props.row.id) : openDetail(props.row)">
+
+            <q-td v-if="isCompact" auto-width class="sb-expand-toggle-td"
+              @click.stop="toggleExpand(props.row.id)">
+              <q-icon :name="isExpanded(props.row.id) ? 'expand_less' : 'expand_more'" size="20px" color="grey-6" />
+            </q-td>
 
             <!-- ① Pedido / Produto -->
             <q-td key="order" :props="props" style="max-width:320px;white-space:normal">
@@ -356,11 +362,21 @@
                 <div v-if="(props.row.items || []).length" class="amount-sub">
                   {{ props.row.items.reduce((s,i) => s + (i.quantity || 1), 0) }} un
                 </div>
+                <div v-if="isCompact" class="mobile-financial-summary"
+                  :class="props.row.lucro_apos_cmp == null
+                    ? 'mobile-financial-summary--muted'
+                    : props.row.lucro_apos_cmp >= 0
+                      ? 'mobile-financial-summary--positive'
+                      : 'mobile-financial-summary--negative'">
+                  <span>Após CMV</span>
+                  <strong v-if="props.row.lucro_apos_cmp != null">{{ formatCurrency(props.row.lucro_apos_cmp) }}</strong>
+                  <strong v-else>S/ Custo</strong>
+                </div>
               </div>
             </q-td>
 
             <!-- ⑥ Taxas -->
-            <q-td key="taxas" :props="props" align="right">
+            <q-td v-if="!isCompact" key="taxas" :props="props" align="right">
               <div class="column items-end">
                 <span v-if="props.row.platform_fee != null" class="frete-val">-{{ formatCurrency(props.row.platform_fee) }}</span>
                 <span v-else class="text-caption text-grey-4">—</span>
@@ -368,7 +384,7 @@
             </q-td>
 
             <!-- ⑦ Repasse -->
-            <q-td key="liquido" :props="props" align="right">
+            <q-td v-if="!isCompact" key="liquido" :props="props" align="right">
               <div class="cell-liquido">
                 <div :class="['liquido-main', getLiquido(props.row) >= 0 ? 'pos' : 'neg']">
                   {{ formatCurrency(getLiquido(props.row)) }}
@@ -377,6 +393,64 @@
               </div>
             </q-td>
 
+            <!-- ⑧ Lucro após CMV -->
+            <q-td v-if="!isCompact" key="lucro" :props="props" align="right">
+              <div v-if="props.row.lucro_apos_cmp != null" class="cell-lucro">
+                <div :class="['lucro-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
+                  {{ formatCurrency(props.row.lucro_apos_cmp) }}
+                </div>
+                <div class="lucro-hint">
+                  Custo: {{ formatCurrency(props.row.custo_medio_produto) }}
+                </div>
+              </div>
+              <span v-else class="text-caption text-grey-5">S/ Custo</span>
+            </q-td>
+
+          </q-tr>
+
+          <!-- Painel de expansão inline no mobile: taxas, repasse e lucro após CMV. -->
+          <q-tr v-if="isCompact" v-show="isExpanded(props.row.id)" class="sb-expand-row" :props="props">
+            <q-td colspan="100%">
+              <div class="sb-expand-panel">
+                <div class="sb-expand-field">
+                  <span class="sb-expand-label">Taxas TikTok</span>
+                  <span v-if="props.row.platform_fee != null" class="frete-val">
+                    -{{ formatCurrency(props.row.platform_fee) }}
+                  </span>
+                  <span v-else class="text-caption text-grey-4">—</span>
+                </div>
+
+                <div class="sb-expand-field">
+                  <span class="sb-expand-label">Repasse</span>
+                  <div class="cell-liquido">
+                    <div :class="['liquido-main', getLiquido(props.row) >= 0 ? 'pos' : 'neg']">
+                      {{ formatCurrency(getLiquido(props.row)) }}
+                    </div>
+                    <div class="liquido-hint">
+                      {{ props.row.settlement_amount != null ? 'repasse' : 'estimado' }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="sb-expand-field">
+                  <span class="sb-expand-label">Lucro após CMV</span>
+                  <div v-if="props.row.lucro_apos_cmp != null" class="cell-lucro">
+                    <div :class="['lucro-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
+                      {{ formatCurrency(props.row.lucro_apos_cmp) }}
+                    </div>
+                    <div class="lucro-hint">
+                      Custo: {{ formatCurrency(props.row.custo_medio_produto) }}
+                    </div>
+                  </div>
+                  <span v-else class="text-caption text-grey-5">S/ Custo</span>
+                </div>
+
+                <div class="row justify-end">
+                  <q-btn flat dense no-caps size="sm" color="indigo-7" label="Ver detalhamento completo"
+                    icon="open_in_new" @click.stop="openDetail(props.row)" />
+                </div>
+              </div>
+            </q-td>
           </q-tr>
         </template>
 
@@ -577,8 +651,10 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import TikTokShopService from 'src/services/TikTokShopService'
+import { useRowExpand } from 'src/composables/useRowExpand'
 
 const $q = useQuasar()
+const { isExpanded, toggleExpand } = useRowExpand()
 
 // ── Estado ──────────────────────────────────────────────────────────────────
 const orders          = ref([])
@@ -621,9 +697,15 @@ const columns = [
   { name: 'comprador', label: 'COMPRADOR',         field: 'buyer_username', sortable: false, align: 'left',   style: 'min-width:110px' },
   { name: 'status',    label: 'STATUS',            field: 'status',         sortable: false, align: 'center', style: 'min-width:120px' },
   { name: 'bruto',     label: 'VENDA',             field: 'total_amount',   sortable: true,  align: 'right',  style: 'min-width:90px'  },
-  { name: 'taxas',     label: 'TAXAS',             field: 'platform_fee',   sortable: false, align: 'right',  style: 'min-width:80px',  classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
-  { name: 'liquido',   label: 'REPASSE',           field: 'settlement_amount', sortable: false, align: 'right',  style: 'min-width:110px', classes: 'col-hide-mobile', headerClasses: 'col-hide-mobile' },
+  { name: 'taxas',     label: 'TAXAS',             field: 'platform_fee',   sortable: false, align: 'right',  style: 'min-width:80px', priority: 'secondary' },
+  { name: 'liquido',   label: 'REPASSE',           field: 'settlement_amount', sortable: false, align: 'right',  style: 'min-width:110px', priority: 'secondary' },
+  { name: 'lucro',     label: 'LUCRO APÓS CMV',    field: 'lucro_apos_cmp', sortable: false, align: 'right', style: 'min-width:115px', priority: 'secondary' },
 ]
+
+const isCompact = computed(() => $q.screen.lt.sm)
+const displayColumns = computed(() =>
+  isCompact.value ? columns.filter(c => c.priority !== 'secondary') : columns
+)
 
 // ── Opções ─────────────────────────────────────────────────────────────────
 const statusOptions = [
@@ -1280,6 +1362,5 @@ onMounted(() => {
   .fb-search { max-width: 100%; min-width: 0; }
   .fadv-section { padding: 10px 12px; }
   .detail-section { padding: 10px 12px; }
-  .col-hide-mobile { display: none !important; }
 }
 </style>
