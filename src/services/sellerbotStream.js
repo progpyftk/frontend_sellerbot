@@ -110,7 +110,7 @@ function mergeImages(message, images) {
 function sanitizeDraft(draft) {
   if (!draft || typeof draft !== 'object') return null
   const allowed = [
-    'draft_id', 'marketplace', 'action', 'status', 'title', 'family_name',
+    'draft_id', 'approval_id', 'marketplace', 'action', 'status', 'title', 'family_name',
     'category_name', 'price', 'available_quantity', 'condition', 'listing_type_id', 'warnings',
   ]
   return Object.fromEntries(allowed.filter(key => key in draft).map(key => [key, draft[key]]))

@@ -1031,13 +1031,15 @@ const formatText = (content) => {
 // ===========================================================================
 const approveDraft = async (msg) => {
   const draftId = msg.pendingDraft?.draft?.draft_id
-  if (!draftId) {
+  const approvalId = msg.pendingDraft?.draft?.approval_id
+  if (!draftId && !approvalId) {
     $q.notify({ type: 'negative', message: 'Rascunho não foi salvo — peça ao agente para gerar o preview novamente.' })
     return
   }
   msg.pendingDraft.loading = true
   try {
-    await api.post(`/sellerbot-ai/drafts/${draftId}/approve/`)
+    if (draftId) await api.post(`/sellerbot-ai/drafts/${draftId}/approve/`)
+    else await api.post(`/sellerbot-ai/approvals/${approvalId}/approve/`)
     msg.pendingDraft.status = 'approved'
     $q.notify({ type: 'positive', message: 'Rascunho aprovado. Peça ao agente para publicar.' })
   } catch (err) {
@@ -1049,13 +1051,15 @@ const approveDraft = async (msg) => {
 
 const cancelDraft = async (msg) => {
   const draftId = msg.pendingDraft?.draft?.draft_id
-  if (!draftId) {
+  const approvalId = msg.pendingDraft?.draft?.approval_id
+  if (!draftId && !approvalId) {
     msg.pendingDraft.status = 'cancelled'
     return
   }
   msg.pendingDraft.loading = true
   try {
-    await api.post(`/sellerbot-ai/drafts/${draftId}/cancel/`)
+    if (draftId) await api.post(`/sellerbot-ai/drafts/${draftId}/cancel/`)
+    else await api.post(`/sellerbot-ai/approvals/${approvalId}/cancel/`)
     msg.pendingDraft.status = 'cancelled'
     $q.notify({ type: 'info', message: 'Rascunho cancelado.' })
   } catch (err) {
