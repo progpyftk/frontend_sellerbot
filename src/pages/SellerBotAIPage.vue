@@ -259,6 +259,16 @@
                    <span>Falhas: {{ msg.batchStatus.failed || 0 }}</span>
                    <span>Pendentes: {{ msg.batchStatus.pending || 0 }}</span>
                  </div>
+                 <div v-if="msg.batchStatus.skus?.length" class="batch-sku-list" aria-label="SKUs do lote">
+                   <q-checkbox
+                     v-for="sku in msg.batchStatus.skus"
+                     :key="sku.sku"
+                     v-model="sku.selected"
+                     dense
+                     :disable="sku.status === 'executed'"
+                     :label="`${sku.sku} · ${batchStatusLabel(sku.status)}`"
+                   />
+                 </div>
                  <q-btn
                    v-if="msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length"
                    flat dense no-caps color="teal-8" label="Tentar falhas novamente"
@@ -318,6 +328,11 @@
            <span class="artifact-preview-name">{{ artifact.file.name }}</span>
            <q-badge v-if="artifact.preview && !artifact.preview.valid" color="negative" label="Revise" />
            <q-btn flat round dense icon="close" size="xs" color="negative" @click="removeFile(i)" />
+         </div>
+         <div v-for="artifact in pendingFiles" :key="`${artifact.file.name}-errors`">
+           <div v-for="error in artifact.preview?.errors || []" :key="`${artifact.file.name}-${error.row}-${error.message}`" class="artifact-preview-error">
+             {{ artifact.file.name }} · linha {{ error.row }}: {{ error.message }}
+           </div>
          </div>
        </div>
       </div>
@@ -383,7 +398,7 @@
             <span>Nova conversa</span>
           </button>
         </div>
-        <div class="history-panel-list">
+         <div class="history-panel-list">
           <div v-if="sessions.length === 0" class="history-empty">
             <q-icon name="chat_bubble_outline" size="28px" color="grey-4" />
             <span>Nenhuma conversa ainda</span>
@@ -402,8 +417,20 @@
                 <q-icon name="delete_outline" size="14px" />
               </button>
             </div>
-          </template>
-        </div>
+           </template>
+           <div v-if="recentRuns.length" class="history-group-label history-runs-label">Lotes recentes</div>
+           <div v-for="run in recentRuns" :key="run.run_id" class="history-run-item">
+             <div class="history-run-copy">
+               <span class="history-item-title">Lote {{ run.run_id.slice(0, 8) }}</span>
+               <span class="history-run-status">{{ batchStatusLabel(run.status) }}</span>
+             </div>
+             <q-btn
+               v-if="['partial', 'paused', 'failed', 'running'].includes(run.status)"
+               flat dense no-caps color="teal-8" label="Retomar"
+               @click="resumeRun(run)"
+             />
+           </div>
+         </div>
       </div>
     </transition>
     <!-- ══ fim HISTORY PANEL ══ -->
@@ -522,6 +549,7 @@ const selectedModel = ref(VALID_MODEL_IDS.value.has(_savedModel) ? _savedModel :
 // Sessões
 const currentSessionId = ref(null)
 const sessions = ref([])
+const recentRuns = ref([])
 const showHistory = ref(false)
 
 // Upload de imagens
@@ -1236,12 +1264,35 @@ const retryBatch = async (msg) => {
   const runId = msg.batchStatus?.run_id
   if (!runId) return
   try {
-    const response = await api.post(`/sellerbot-ai/runs/${runId}/resume/`)
+    const selectedSkus = (msg.batchStatus.skus || [])
+      .filter(sku => sku.selected && sku.status !== 'executed')
+      .map(sku => sku.sku)
+    const response = await api.post(`/sellerbot-ai/runs/${runId}/resume/`, { skus: selectedSkus })
     msg.batchStatus = {
       ...(msg.batchStatus || {}),
       status: response.data.status || 'running',
     }
     $q.notify({ type: 'positive', message: 'Retomada iniciada para os SKUs que falharam.' })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao retomar lote.' })
+  }
+}
+
+const loadRuns = async () => {
+  try {
+    const response = await api.get('/sellerbot-ai/runs/')
+    recentRuns.value = Array.isArray(response.data?.runs) ? response.data.runs : []
+  } catch {
+    recentRuns.value = []
+  }
+}
+
+const resumeRun = async (run) => {
+  try {
+    const response = await api.post(`/sellerbot-ai/runs/${run.run_id}/resume/`)
+    $q.notify({ type: 'positive', message: 'Lote retomado.' })
+    run.status = response.data?.status || 'running'
+    await loadRuns()
   } catch (error) {
     $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao retomar lote.' })
   }
@@ -1288,6 +1339,7 @@ onMounted(() => {
   checkHealth()
   fetchBalance()
   loadSessions()
+  loadRuns()
 })
 </script>
 
@@ -1663,6 +1715,7 @@ onMounted(() => {
 .batch-status-title { font-weight: 600; color: #334155; }
 .artifact-validation-error { color: #b91c1c; margin-top: 4px; }
 .batch-status-counts { display: flex; flex-wrap: wrap; gap: 10px; color: #64748b; margin: 6px 0; }
+.batch-sku-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 4px 0 8px; }
 
 /* Live log panel */
 .live-log-panel {
@@ -1861,6 +1914,12 @@ onMounted(() => {
   background: #f8fafc;
 }
 .artifact-preview-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #334155; }
+.artifact-preview-error { color: #b91c1c; font-size: 11px; padding: 2px 4px; }
+
+.history-runs-label { margin-top: 18px; }
+.history-run-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #f8fafc; margin-bottom: 5px; }
+.history-run-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.history-run-status { color: #64748b; font-size: 11px; }
 
 /* Images in messages */
 .message-images {

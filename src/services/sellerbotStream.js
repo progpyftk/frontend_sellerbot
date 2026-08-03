@@ -168,6 +168,14 @@ function sanitizeBatchStatus(event) {
   if (Array.isArray(event?.retryable)) {
     result.retryable = event.retryable.filter(item => typeof item === 'string').slice(0, 100).map(item => item.slice(0, 120))
   }
+  if (Array.isArray(event?.skus)) {
+    result.skus = event.skus.filter(item => item && typeof item.sku === 'string')
+      .slice(0, 500).map(item => ({
+        sku: item.sku.slice(0, 120),
+        status: typeof item.status === 'string' ? item.status.slice(0, 80) : 'pending',
+        selected: item.selected !== false,
+      }))
+  }
   return result
 }
 

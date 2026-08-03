@@ -104,6 +104,7 @@ describe('sellerbotStream reducer', () => {
       succeeded: 8,
       failed: 2,
       retryable: ['SKU-2'],
+      skus: [{ sku: 'SKU-2', status: 'failed', selected: true }],
     })
 
     expect(message.pendingApproval).toEqual({
@@ -118,6 +119,7 @@ describe('sellerbotStream reducer', () => {
       succeeded: 8,
       failed: 2,
       retryable: ['SKU-2'],
+      skus: [{ sku: 'SKU-2', status: 'failed', selected: true }],
     })
     expect(JSON.stringify(message)).not.toContain('secret')
   })
