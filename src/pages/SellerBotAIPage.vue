@@ -1288,6 +1288,11 @@ const maybeExecutePublication = async (msg) => {
     }
     $q.notify({ type: 'positive', message: 'Publicação Tiny -> Mercado Livre iniciada.' })
   } catch (error) {
+    if (error?.response?.status === 400) {
+      for (const approval of msg.approvals || []) {
+        if (approval.status === 'approved') approval.status = 'expired'
+      }
+    }
     $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao executar publicação.' })
   } finally {
     batch.executing = false
