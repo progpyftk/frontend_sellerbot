@@ -142,7 +142,7 @@ function sanitizeDraft(draft) {
 }
 
 function sanitizeApproval(event) {
-  const allowed = ['approval_id', 'sku', 'status', 'expires_at', 'reason']
+  const allowed = ['approval_id', 'sku', 'status', 'expires_at', 'reason', 'marketplace', 'action']
   return Object.fromEntries(allowed.filter(key => typeof event?.[key] === 'string').map(key => [key, event[key].slice(0, 255)]))
 }
 

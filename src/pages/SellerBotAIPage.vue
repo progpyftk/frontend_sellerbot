@@ -1233,9 +1233,11 @@ const retryBatch = async (msg) => {
       .filter(sku => sku.selected && sku.status !== 'executed')
       .map(sku => sku.sku)
     const response = await api.post(`/sellerbot-ai/runs/${runId}/resume/`, { skus: selectedSkus })
+    const returnedSkus = Array.isArray(response.data?.skus) ? response.data.skus : null
     msg.batchStatus = {
       ...(msg.batchStatus || {}),
       status: response.data.status || 'running',
+      ...(returnedSkus ? { skus: returnedSkus.map(item => ({ ...item, selected: item.selected !== false })) } : {}),
     }
     $q.notify({ type: 'positive', message: 'Retomada iniciada para os SKUs que falharam.' })
   } catch (error) {
