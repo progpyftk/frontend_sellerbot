@@ -213,15 +213,17 @@
                  </div>
                </div>
 
-               <div v-if="msg.pendingApproval" class="listing-draft-card approval-card" aria-live="polite">
-                 <div class="listing-draft-instructions"><q-icon name="verified_user" size="16px" class="q-mr-xs" />{{ approvalStatusLabel(msg.pendingApproval.status) }}<span v-if="msg.pendingApproval.sku"> · {{ msg.pendingApproval.sku }}</span></div>
-                 <div v-if="msg.pendingApproval.status === 'pending'" class="listing-draft-actions">
-                   <q-btn unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="msg.pendingApproval.loading" @click="approveApproval(msg)" />
-                   <q-btn flat color="negative" label="Rejeitar" icon="close" no-caps dense :loading="msg.pendingApproval.loading" @click="rejectApproval(msg)" />
-                   <q-btn flat color="teal-8" label="Ajustar" icon="edit" no-caps dense :loading="msg.pendingApproval.loading" @click="adjustApproval(msg)" />
-                 </div>
-                 <div v-else class="listing-draft-status" :class="`listing-draft-status--${msg.pendingApproval.status}`"><q-icon :name="approvalStatusIcon(msg.pendingApproval.status)" size="16px" />{{ approvalStatusLabel(msg.pendingApproval.status) }}</div>
-               </div>
+                <div v-if="msg.approvals?.length" class="approval-list" aria-live="polite">
+                  <div v-for="approval in msg.approvals" :key="approval.approval_id" class="listing-draft-card approval-card">
+                    <div class="listing-draft-instructions"><q-icon name="verified_user" size="16px" class="q-mr-xs" />{{ approval.marketplace === 'tiny' ? 'Tiny ERP' : 'Mercado Livre' }} · {{ approvalStatusLabel(approval.status) }}<span v-if="approval.sku"> · {{ approval.sku }}</span></div>
+                    <div v-if="approval.status === 'pending'" class="listing-draft-actions">
+                      <q-btn unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="approval.loading" @click="approveApproval(msg, approval)" />
+                      <q-btn flat color="negative" label="Rejeitar" icon="close" no-caps dense :loading="approval.loading" @click="rejectApproval(msg, approval)" />
+                      <q-btn v-if="approval.marketplace !== 'tiny'" flat color="teal-8" label="Ajustar" icon="edit" no-caps dense :loading="approval.loading" @click="adjustApproval(msg, approval)" />
+                    </div>
+                    <div v-else class="listing-draft-status" :class="`listing-draft-status--${approval.status}`"><q-icon :name="approvalStatusIcon(approval.status)" size="16px" />{{ approvalStatusLabel(approval.status) }}</div>
+                  </div>
+                </div>
 
                <div v-if="msg.artifactValidation" class="artifact-validation-card" aria-live="polite">
                  <div class="artifact-validation-title"><q-icon :name="msg.artifactValidation.valid ? 'check_circle' : 'error'" size="16px" />{{ msg.artifactValidation.valid ? 'Arquivo validado' : 'Revise as linhas inválidas' }}</div>
@@ -1148,13 +1150,13 @@ const cancelDraft = async (msg) => {
   }
 }
 
-const approveApproval = async (msg) => {
-  const approval = msg.pendingApproval
+const approveApproval = async (msg, approval = msg.pendingApproval) => {
   if (!approval?.approval_id) return
   approval.loading = true
   try {
     await api.post(`/sellerbot-ai/approvals/${approval.approval_id}/approve/`)
     approval.status = 'approved'
+    await maybeExecutePublication(msg)
     $q.notify({ type: 'positive', message: 'Ação aprovada.' })
   } catch (error) {
     approval.status = error?.response?.status === 400 ? 'expired' : approval.status
@@ -1164,8 +1166,7 @@ const approveApproval = async (msg) => {
   }
 }
 
-const rejectApproval = async (msg) => {
-  const approval = msg.pendingApproval
+const rejectApproval = async (msg, approval = msg.pendingApproval) => {
   if (!approval?.approval_id) return
   approval.loading = true
   try {
@@ -1179,8 +1180,7 @@ const rejectApproval = async (msg) => {
   }
 }
 
-const adjustApproval = async (msg) => {
-  const approval = msg.pendingApproval
+const adjustApproval = async (msg, approval = msg.pendingApproval) => {
   if (!approval?.approval_id) return
   const value = await new Promise(resolve => {
     let settled = false
@@ -1232,16 +1232,70 @@ const retryBatch = async (msg) => {
     const selectedSkus = (msg.batchStatus.skus || [])
       .filter(sku => sku.selected && sku.status !== 'executed')
       .map(sku => sku.sku)
-    const response = await api.post(`/sellerbot-ai/runs/${runId}/resume/`, { skus: selectedSkus })
+    const response = msg.batchStatus.kind === 'publication'
+      ? await api.post(`/sellerbot-ai/runs/${runId}/publication/execute/`, {
+        skus: selectedSkus,
+        approval_ids: Object.fromEntries((msg.batchStatus.skus || []).filter(item => selectedSkus.includes(item.sku) && item.approval_id).map(item => [item.sku, item.approval_id])),
+        tiny_approval_ids: Object.fromEntries((msg.batchStatus.skus || []).filter(item => selectedSkus.includes(item.sku) && item.tiny_approval_id).map(item => [item.sku, item.tiny_approval_id])),
+      })
+      : await api.post(`/sellerbot-ai/runs/${runId}/resume/`, { skus: selectedSkus })
+    const returnedSkus = Array.isArray(response.data?.skus)
+      ? response.data.skus
+      : response.data?.skus && typeof response.data.skus === 'object'
+        ? Object.entries(response.data.skus).map(([sku, state]) => ({ sku, ...state }))
+        : null
     msg.batchStatus = {
       ...(msg.batchStatus || {}),
       status: response.data.status || 'running',
+      ...(returnedSkus ? { skus: returnedSkus.map(item => ({ ...item, selected: item.selected !== false })) } : {}),
     }
     $q.notify({ type: 'positive', message: 'Retomada iniciada para os SKUs que falharam.' })
   } catch (error) {
     $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao retomar lote.' })
   } finally {
     msg.batchStatus.retrying = false
+  }
+}
+
+const maybeExecutePublication = async (msg) => {
+  const batch = msg.batchStatus
+  if (!batch?.run_id || batch.kind !== 'publication' || batch.executing) return
+  const selected = (batch.skus || []).filter(item => item.selected !== false)
+  const approvals = msg.approvals || []
+  const mlApprovals = {}
+  const tinyApprovals = {}
+  for (const item of selected) {
+    const ml = approvals.find(approval => approval.sku === item.sku && approval.marketplace !== 'tiny' && approval.status === 'approved')
+    const tiny = approvals.find(approval => approval.sku === item.sku && approval.marketplace === 'tiny' && approval.status === 'approved')
+    if (!ml || !tiny) return
+    mlApprovals[item.sku] = ml.approval_id
+    tinyApprovals[item.sku] = tiny.approval_id
+  }
+  batch.executing = true
+  try {
+    const response = await api.post(`/sellerbot-ai/runs/${batch.run_id}/publication/execute/`, {
+      skus: selected.map(item => item.sku),
+      approval_ids: mlApprovals,
+      tiny_approval_ids: tinyApprovals,
+    })
+    const returnedSkus = response.data?.skus && typeof response.data.skus === 'object'
+      ? Object.entries(response.data.skus).map(([sku, state]) => ({ sku, ...state, selected: true }))
+      : null
+    msg.batchStatus = {
+      ...batch,
+      status: response.data?.status || 'running',
+      ...(returnedSkus ? { skus: returnedSkus } : {}),
+    }
+    $q.notify({ type: 'positive', message: 'Publicação Tiny -> Mercado Livre iniciada.' })
+  } catch (error) {
+    if (error?.response?.status === 400) {
+      for (const approval of msg.approvals || []) {
+        if (approval.status === 'approved') approval.status = 'expired'
+      }
+    }
+    $q.notify({ type: 'negative', message: error?.response?.data?.error || 'Falha ao executar publicação.' })
+  } finally {
+    batch.executing = false
   }
 }
 

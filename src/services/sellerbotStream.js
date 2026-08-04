@@ -16,6 +16,7 @@ export const createAssistantMessage = () => ({
   elapsedSec: 0,
   agent: null,
   pendingApproval: null,
+  approvals: [],
   artifactValidation: null,
   batchStatus: null,
 })
@@ -57,6 +58,7 @@ export function reduceSellerbotEvent(message, event) {
 
     case 'approval_required':
       next.pendingApproval = sanitizeApproval(event)
+      next.approvals = [...(next.approvals || []).filter(item => item.approval_id !== next.pendingApproval.approval_id), next.pendingApproval]
       appendLog(next, { type: 'tool_result', text: 'Aprovação humana necessária' })
       break
 
@@ -65,6 +67,7 @@ export function reduceSellerbotEvent(message, event) {
         ...(next.pendingApproval || {}),
         ...sanitizeApproval(event),
       }
+      next.approvals = (next.approvals || []).map(item => item.approval_id === next.pendingApproval.approval_id ? next.pendingApproval : item)
       break
 
     case 'artifact_validation':
@@ -142,7 +145,7 @@ function sanitizeDraft(draft) {
 }
 
 function sanitizeApproval(event) {
-  const allowed = ['approval_id', 'sku', 'status', 'expires_at', 'reason']
+  const allowed = ['approval_id', 'sku', 'status', 'expires_at', 'reason', 'marketplace', 'action']
   return Object.fromEntries(allowed.filter(key => typeof event?.[key] === 'string').map(key => [key, event[key].slice(0, 255)]))
 }
 
@@ -174,8 +177,11 @@ function sanitizeBatchStatus(event) {
         sku: item.sku.slice(0, 120),
         status: typeof item.status === 'string' ? item.status.slice(0, 80) : 'pending',
         selected: item.selected !== false,
+        ...(typeof item.approval_id === 'string' && item.approval_id ? { approval_id: item.approval_id.slice(0, 120) } : {}),
+        ...(typeof item.tiny_approval_id === 'string' && item.tiny_approval_id ? { tiny_approval_id: item.tiny_approval_id.slice(0, 120) } : {}),
       }))
   }
+  if (typeof event?.kind === 'string') result.kind = event.kind.slice(0, 80)
   return result
 }
 

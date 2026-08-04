@@ -88,6 +88,8 @@ describe('sellerbotStream reducer', () => {
       approval_id: 'approval-1',
       sku: 'SKU-1',
       status: 'pending',
+      marketplace: 'tiny',
+      action: 'upsert_tiny_product',
       payload: { secret: 'must-not-leak' },
     })
     message = reduceSellerbotEvent(message, {
@@ -111,6 +113,8 @@ describe('sellerbotStream reducer', () => {
       approval_id: 'approval-1',
       sku: 'SKU-1',
       status: 'pending',
+      marketplace: 'tiny',
+      action: 'upsert_tiny_product',
     })
     expect(message.artifactValidation.errors).toEqual([{ row: 2, message: 'Preço inválido' }])
     expect(message.batchStatus).toEqual({
@@ -134,5 +138,19 @@ describe('sellerbotStream reducer', () => {
 
     expect(message.pendingApproval.status).toBe('expired')
     expect(message.pendingApproval.reason).toBe('ttl')
+  })
+
+  it('keeps marketplace and action to distinguish Tiny and ML approvals', () => {
+    const message = reduceSellerbotEvent(createAssistantMessage(), {
+      type: 'approval_required',
+      approval_id: 'tiny-1',
+      sku: 'SKU-1',
+      status: 'pending',
+      marketplace: 'tiny',
+      action: 'upsert_tiny_product',
+    })
+
+    expect(message.pendingApproval.marketplace).toBe('tiny')
+    expect(message.pendingApproval.action).toBe('upsert_tiny_product')
   })
 })
