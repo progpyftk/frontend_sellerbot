@@ -141,9 +141,22 @@ export default {
   // ANÁLISE DE ANÚNCIOS (Item Analytics)
   // ==========================================
   getAnalyticsItems(params) {
+    return api.get('/mercadolivre/analytics/v2/items/', { params })
+  },
+
+  getAnalyticsItemsLegacy(params) {
     return api.get('/mercadolivre/analytics/items/', { params })
   },
 
+  getItemAnalyticsOverview(itemId, params) {
+    return api.get(`/mercadolivre/analytics/v2/items/${itemId}/`, { params })
+  },
+
+  getItemAnalyticsTimeline(itemId, params) {
+    return api.get(`/mercadolivre/analytics/v2/items/${itemId}/timeline/`, { params })
+  },
+
+  // Endpoints legados permanecem disponíveis durante o rollout do contrato v2.
   getItemTimelineChart(itemId, params) {
     return api.get(`/mercadolivre/analytics/items/${itemId}/chart/`, { params })
   },
