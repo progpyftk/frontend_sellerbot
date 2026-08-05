@@ -201,8 +201,8 @@
                  <div v-if="msg.pendingDraft.status === 'pending'">
                    <div class="listing-draft-instructions">{{ msg.pendingDraft.instructions }}</div>
                    <div class="listing-draft-actions">
-                     <q-btn unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="msg.pendingDraft.loading" @click="approveDraft(msg)" />
-                     <q-btn flat color="negative" label="Cancelar" icon="close" no-caps dense :loading="msg.pendingDraft.loading" @click="cancelDraft(msg)" />
+                      <q-btn v-if="canWrite" unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="msg.pendingDraft.loading" @click="approveDraft(msg)" />
+                      <q-btn v-if="canWrite" flat color="negative" label="Cancelar" icon="close" no-caps dense :loading="msg.pendingDraft.loading" @click="cancelDraft(msg)" />
                    </div>
                  </div>
                  <div v-else-if="msg.pendingDraft.status === 'approved'" class="listing-draft-status listing-draft-status--approved">
@@ -217,9 +217,9 @@
                   <div v-for="approval in msg.approvals" :key="approval.approval_id" class="listing-draft-card approval-card">
                     <div class="listing-draft-instructions"><q-icon name="verified_user" size="16px" class="q-mr-xs" />{{ approval.marketplace === 'tiny' ? 'Tiny ERP' : 'Mercado Livre' }} · {{ approvalStatusLabel(approval.status) }}<span v-if="approval.sku"> · {{ approval.sku }}</span></div>
                     <div v-if="approval.status === 'pending'" class="listing-draft-actions">
-                      <q-btn unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="approval.loading" @click="approveApproval(msg, approval)" />
-                      <q-btn flat color="negative" label="Rejeitar" icon="close" no-caps dense :loading="approval.loading" @click="rejectApproval(msg, approval)" />
-                      <q-btn v-if="approval.marketplace !== 'tiny'" flat color="teal-8" label="Ajustar" icon="edit" no-caps dense :loading="approval.loading" @click="adjustApproval(msg, approval)" />
+                       <q-btn v-if="canWrite" unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="approval.loading" @click="approveApproval(msg, approval)" />
+                       <q-btn v-if="canWrite" flat color="negative" label="Rejeitar" icon="close" no-caps dense :loading="approval.loading" @click="rejectApproval(msg, approval)" />
+                       <q-btn v-if="canWrite && approval.marketplace !== 'tiny'" flat color="teal-8" label="Ajustar" icon="edit" no-caps dense :loading="approval.loading" @click="adjustApproval(msg, approval)" />
                     </div>
                     <div v-else class="listing-draft-status" :class="`listing-draft-status--${approval.status}`"><q-icon :name="approvalStatusIcon(approval.status)" size="16px" />{{ approvalStatusLabel(approval.status) }}</div>
                   </div>
@@ -234,7 +234,7 @@
                  <div class="batch-status-title">Lote {{ batchStatusLabel(msg.batchStatus.status) }}</div>
                  <div class="batch-status-counts"><span>Sucesso: {{ msg.batchStatus.succeeded || 0 }}</span><span>Falhas: {{ msg.batchStatus.failed || 0 }}</span><span>Pendentes: {{ msg.batchStatus.pending || 0 }}</span></div>
                  <div v-if="msg.batchStatus.skus?.length" class="batch-sku-list" aria-label="SKUs do lote"><q-checkbox v-for="sku in msg.batchStatus.skus" :key="sku.sku" v-model="sku.selected" dense :disable="sku.status === 'executed'" :label="`${sku.sku} · ${batchStatusLabel(sku.status)}`" /></div>
-                  <q-btn v-if="msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length" flat dense no-caps color="teal-8" label="Tentar falhas novamente" :loading="msg.batchStatus.retrying" @click="retryBatch(msg)" />
+                   <q-btn v-if="canWrite && msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length" flat dense no-caps color="teal-8" label="Tentar falhas novamente" :loading="msg.batchStatus.retrying" @click="retryBatch(msg)" />
                </div>
 
               <!-- Cursor piscante enquanto tokens chegam -->
@@ -409,6 +409,7 @@ import {
 
 const $q = useQuasar()
 const store = useStore()
+const canWrite = computed(() => store.canWrite)
 const API_BASE = api.defaults.baseURL || 'http://localhost:8000'
 
 // ===========================================================================

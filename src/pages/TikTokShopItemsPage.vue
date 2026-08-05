@@ -15,7 +15,7 @@
         <q-btn flat dense icon="refresh" color="grey-6" size="sm" @click="loadItems" :loading="loading">
           <q-tooltip>Atualizar lista</q-tooltip>
         </q-btn>
-        <q-btn unelevated color="grey-10" icon="sync" label="Sincronizar" size="sm"
+        <q-btn v-if="canWrite" unelevated color="grey-10" icon="sync" label="Sincronizar" size="sm"
           :loading="syncing" @click="syncItems" class="q-px-md" style="border-radius:8px" />
       </div>
     </div>
@@ -148,7 +148,7 @@
 
             <!-- Ações -->
             <q-td key="actions" :props="props" align="center">
-              <q-btn flat dense round icon="more_horiz" color="grey-6" size="sm">
+              <q-btn v-if="canWrite" flat dense round icon="more_horiz" color="grey-6" size="sm">
                 <q-menu anchor="bottom right" self="top right" class="fb-menu">
                   <q-list style="min-width:150px">
                     <q-item clickable v-close-popup @click="openPriceDialog(props.row)">
@@ -188,7 +188,7 @@
       </q-card-section>
       <q-card-actions align="right" class="q-px-md q-pb-md">
         <q-btn flat label="Cancelar" v-close-popup color="grey-7" />
-        <q-btn unelevated label="Salvar" color="grey-10" :loading="priceDialog.saving"
+        <q-btn v-if="canWrite" unelevated label="Salvar" color="grey-10" :loading="priceDialog.saving"
           @click="savePrice" :disable="priceDialog.price <= 0" />
       </q-card-actions>
     </q-card>
@@ -207,7 +207,7 @@
       </q-card-section>
       <q-card-actions align="right" class="q-px-md q-pb-md">
         <q-btn flat label="Cancelar" v-close-popup color="grey-7" />
-        <q-btn unelevated label="Salvar" color="grey-10" :loading="stockDialog.saving"
+        <q-btn v-if="canWrite" unelevated label="Salvar" color="grey-10" :loading="stockDialog.saving"
           @click="saveStock" :disable="stockDialog.stock < 0" />
       </q-card-actions>
     </q-card>
@@ -218,8 +218,11 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import TikTokShopService from 'src/services/TikTokShopService'
+import { useStore } from 'src/stores/store'
 
 const $q = useQuasar()
+const authStore = useStore()
+const canWrite = computed(() => authStore.canWrite)
 
 const priceDialog = reactive({
   open: false,

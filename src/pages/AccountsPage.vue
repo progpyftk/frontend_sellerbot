@@ -56,7 +56,7 @@
       <div v-show="activeTab === 'ml'" class="tab-content">
         <div class="tab-header">
           <div class="tab-title">Contas Mercado Livre</div>
-          <q-btn unelevated color="teal-7" icon="add_circle" label="Adicionar Conta ML" @click="startMLAuth"
+          <q-btn v-if="canWrite" unelevated color="teal-7" icon="add_circle" label="Adicionar Conta ML" @click="startMLAuth"
             :loading="isAuthenticating" size="sm">
             <q-tooltip>Conectar nova conta do MercadoLivre</q-tooltip>
           </q-btn>
@@ -79,7 +79,7 @@
                   <span :class="props.row.cnpj ? 'td-val' : 'td-empty'">
                     {{ props.row.cnpj ? formatCNPJ(props.row.cnpj) : 'Clique para editar' }}
                   </span>
-                  <q-popup-edit :model-value="props.row.cnpj || ''" @save="(val) => saveCnpj(props.row, val)"
+                   <q-popup-edit v-if="canWrite" :model-value="props.row.cnpj || ''" @save="(val) => saveCnpj(props.row, val)"
                     v-slot="scope" buttons label-set="Salvar" label-cancel="Cancelar">
                     <q-input v-model="scope.value" label="CNPJ (somente números)" dense autofocus
                       mask="##.###.###/####-##" unmasked-value hint="Ex: 41641514000103" />
@@ -90,7 +90,7 @@
               <template v-slot:body-cell-flex_delivery_cost="props">
                 <q-td :props="props" class="text-center">
                   <span class="td-val">R$ {{ Number(props.row.flex_delivery_cost || 12.50).toFixed(2) }}</span>
-                  <q-popup-edit :model-value="String(props.row.flex_delivery_cost || 12.50)"
+                   <q-popup-edit v-if="canWrite" :model-value="String(props.row.flex_delivery_cost || 12.50)"
                     @save="(val) => saveFlexDeliveryCost(props.row, val)" v-slot="scope" buttons label-set="Salvar"
                     label-cancel="Cancelar">
                     <q-input v-model="scope.value" label="Custo estimado de entrega Flex (R$)" type="number" step="0.01"
@@ -145,23 +145,23 @@
 
               <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="text-center q-gutter-xs">
-                  <q-btn flat round dense size="sm" :color="props.row.is_tiny_connected ? 'grey-6' : 'amber-8'"
+                   <q-btn v-if="canWrite" flat round dense size="sm" :color="props.row.is_tiny_connected ? 'grey-6' : 'amber-8'"
                     icon="link" @click="openTinySetup(props.row)">
                     <q-tooltip>{{ props.row.is_tiny_connected ? 'Reconfigurar Tiny ERP' : 'Conectar Tiny ERP'
                       }}</q-tooltip>
                   </q-btn>
 
-                  <q-btn v-if="props.row.is_tiny_connected" flat round dense size="sm" color="teal-7" icon="sync"
+                   <q-btn v-if="canWrite && props.row.is_tiny_connected" flat round dense size="sm" color="teal-7" icon="sync"
                     :loading="syncingCnpj === props.row.cnpj" @click="syncCustoMedioProduto(props.row)">
                     <q-tooltip>Sync Custos (Tiny)</q-tooltip>
                   </q-btn>
 
-                  <q-btn v-if="props.row.user === currentUserId" flat round dense size="sm" color="indigo-5" icon="group"
+                   <q-btn v-if="canWrite && props.row.user === currentUserId" flat round dense size="sm" color="indigo-5" icon="group"
                     @click="openShareDialog('ml', props.row)">
                     <q-tooltip>Compartilhar conta</q-tooltip>
                   </q-btn>
 
-                  <q-btn v-if="props.row.user === currentUserId" flat round size="sm" color="negative" icon="delete" @click="confirmDeleteML(props.row)">
+                   <q-btn v-if="canWrite && props.row.user === currentUserId" flat round size="sm" color="negative" icon="delete" @click="confirmDeleteML(props.row)">
                     <q-tooltip>Excluir conta ML</q-tooltip>
                   </q-btn>
                 </q-td>
@@ -181,7 +181,7 @@
       <div v-show="activeTab === 'shopee'" class="tab-content">
         <div class="tab-header">
           <div class="tab-title">Contas Shopee</div>
-          <q-btn unelevated color="deep-orange" icon="add_circle" label="Conectar Conta Shopee" @click="connectShopee"
+           <q-btn v-if="canWrite" unelevated color="deep-orange" icon="add_circle" label="Conectar Conta Shopee" @click="connectShopee"
             :loading="connectingShopee" size="sm">
             <q-tooltip>Conectar nova conta da Shopee</q-tooltip>
           </q-btn>
@@ -223,7 +223,7 @@
               <template v-slot:body-cell-direct_delivery_cost="props">
                 <q-td :props="props" class="text-center">
                   <span class="td-val">R$ {{ Number(props.row.direct_delivery_cost ?? 8.00).toFixed(2) }}</span>
-                  <q-popup-edit :model-value="String(props.row.direct_delivery_cost ?? 8.00)"
+                   <q-popup-edit v-if="canWrite" :model-value="String(props.row.direct_delivery_cost ?? 8.00)"
                     @save="(val) => saveDirectDeliveryCost(props.row, val)" v-slot="scope" buttons label-set="Salvar"
                     label-cancel="Cancelar">
                     <q-input v-model="scope.value" label="Custo estimado de Entrega Direta (R$)" type="number" step="0.01"
@@ -241,8 +241,8 @@
                  </q-td>
                </template>
 
-               <template v-slot:body-cell-partner_key_configured="props">
-                 <q-td :props="props" class="text-center">
+                <template v-slot:body-cell-partner_key_configured="props">
+                  <q-td :props="props" class="text-center">
                    <span :class="['status-chip', props.row.partner_key_configured ? 'status-chip--pos' : 'status-chip--neutral']">
                      <q-icon :name="props.row.partner_key_configured ? 'verified_user' : 'vpn_key'" size="12px" class="q-mr-xs" />
                      {{ props.row.partner_key_configured ? 'API configurada' : 'API pendente' }}
@@ -250,8 +250,8 @@
                  </q-td>
                </template>
 
-              <template v-slot:body-cell-actions="props">
-                <q-td :props="props" class="text-center">
+               <template v-slot:body-cell-actions="props">
+                 <q-td v-if="canWrite" :props="props" class="text-center">
                   <div class="shopee-actions">
                    <q-btn v-if="canEditShopeeCredentials(props.row) && !props.row.is_connected" flat round dense size="sm" color="negative"
                      icon="link_off" @click="reconnectShopee(props.row)">
@@ -306,7 +306,7 @@
       <div v-show="activeTab === 'tiktokshop'" class="tab-content">
         <div class="tab-header">
           <div class="tab-title">Contas TikTok Shop</div>
-          <q-btn unelevated color="grey-10" icon="add_circle" label="Conectar Conta TikTok" @click="connectTiktok"
+           <q-btn v-if="canWrite" unelevated color="grey-10" icon="add_circle" label="Conectar Conta TikTok" @click="connectTiktok"
             :loading="connectingTiktok" size="sm">
             <q-tooltip>Conectar nova conta do TikTok Shop</q-tooltip>
           </q-btn>
@@ -346,7 +346,7 @@
               </template>
 
               <template v-slot:body-cell-actions="props">
-                <q-td :props="props" class="text-center q-gutter-xs">
+                 <q-td v-if="canWrite" :props="props" class="text-center q-gutter-xs">
                   <q-btn flat round dense size="sm" color="grey-10" icon="sync"
                     :loading="syncingTiktok === props.row.id" @click="syncTiktokOrders(props.row.id)">
                     <q-tooltip>Sync Pedidos</q-tooltip>
@@ -619,6 +619,7 @@ import { useStore } from 'src/stores/store'
 const $q = useQuasar()
 const authStore = useStore()
 const currentUserId = computed(() => authStore.currentUser?.id)
+const canWrite = computed(() => authStore.canWrite)
 
 // --- TABS ---
 const activeTab = ref('ml')

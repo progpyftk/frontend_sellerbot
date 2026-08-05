@@ -15,7 +15,7 @@
         <q-btn flat dense icon="refresh" color="grey-6" size="sm" @click="loadItems" :loading="loading">
           <q-tooltip>Atualizar lista</q-tooltip>
         </q-btn>
-        <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar" size="sm"
+         <q-btn v-if="canWrite" unelevated color="deep-orange" icon="sync" label="Sincronizar" size="sm"
           :loading="syncing" @click="syncItems" class="q-px-md" style="border-radius:8px" />
       </div>
     </div>
@@ -168,7 +168,7 @@
 
     <!-- ══ BULK BAR ══════════════════════════════════════════════ -->
     <transition name="slide-fade">
-      <div v-if="selectedItems.length" class="bulk-bar q-px-lg q-py-sm row items-center q-gutter-sm">
+       <div v-if="canWrite && selectedItems.length" class="bulk-bar q-px-lg q-py-sm row items-center q-gutter-sm">
         <q-icon name="check_box" color="deep-orange" size="18px" />
         <span class="text-weight-bold" style="color:#EE4D2D">{{ selectedItems.length }} selecionado(s)</span>
         <q-space />
@@ -186,7 +186,7 @@
       <template v-slot:header="props">
         <q-tr :props="props" class="shopee-table-header">
           <q-th auto-width>
-            <q-checkbox :model-value="allSelected" :indeterminate="someSelected" @update:model-value="toggleAll" color="teal-7" dense />
+             <q-checkbox v-if="canWrite" :model-value="allSelected" :indeterminate="someSelected" @update:model-value="toggleAll" color="teal-7" dense />
           </q-th>
           <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">{{ col.label }}</q-th>
           <q-th auto-width />
@@ -199,7 +199,7 @@
           class="cursor-pointer" @click="openDetail(props.row)">
 
           <q-td auto-width @click.stop>
-            <q-checkbox :model-value="isSelected(props.row)" @update:model-value="toggleSelect(props.row)" color="teal-7" dense />
+             <q-checkbox v-if="canWrite" :model-value="isSelected(props.row)" @update:model-value="toggleSelect(props.row)" color="teal-7" dense />
           </q-td>
 
           <q-td key="thumbnail" :props="props" style="width:70px">
@@ -674,8 +674,11 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { api } from 'src/boot/axios'
 import { useQuasar } from 'quasar'
 import { DateTime } from 'luxon'
+import { useStore } from 'src/stores/store'
 
 const $q = useQuasar()
+const authStore = useStore()
+const canWrite = computed(() => authStore.canWrite)
 
 // ── Estado ──────────────────────────────────────────────────────────────────
 const items          = ref([])

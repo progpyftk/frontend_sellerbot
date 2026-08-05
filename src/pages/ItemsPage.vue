@@ -406,7 +406,7 @@
 
         <!-- ── Barra de Ações em Massa ──────────────────────────── -->
         <transition name="slide-fade">
-          <div v-if="selectedItems.length || selectAllFiltered" class="bulk-bar-wrap">
+           <div v-if="canWrite && (selectedItems.length || selectAllFiltered)" class="bulk-bar-wrap">
             <!-- Barra principal de ações -->
             <div class="bulk-bar q-px-lg q-py-sm row items-center q-gutter-sm">
               <q-icon name="check_box" color="indigo-6" size="18px" />
@@ -465,7 +465,7 @@
           <template v-slot:header="props">
             <q-tr :props="props" class="bg-grey-2 text-grey-8 text-uppercase text-caption">
               <q-th auto-width>
-                <q-checkbox :model-value="allSelected" :indeterminate="someSelected"
+                 <q-checkbox v-if="canWrite" :model-value="allSelected" :indeterminate="someSelected"
                   @update:model-value="toggleAll" color="indigo-6" dense />
               </q-th>
               <q-th auto-width />
@@ -481,7 +481,7 @@
               class="cursor-pointer">
 
               <q-td auto-width>
-                <q-checkbox :model-value="isSelected(props.row)" @update:model-value="toggleSelect(props.row)"
+                 <q-checkbox v-if="canWrite" :model-value="isSelected(props.row)" @update:model-value="toggleSelect(props.row)"
                   @click.stop color="indigo-6" dense />
               </q-td>
 
@@ -636,7 +636,7 @@
                 <div class="row items-center justify-center no-wrap q-gutter-x-sm">
 
                   <q-btn
-                    v-if="(props.row.logistic_type === 'fulfillment' || props.row.is_full) && props.row.available_quantity <= 0"
+                     v-if="canWrite && (props.row.logistic_type === 'fulfillment' || props.row.is_full) && props.row.available_quantity <= 0"
                     unelevated round color="orange-1" text-color="orange-9" icon="open_in_new" size="sm"
                     class="transition-scale custom-btn-border" @click.stop="openSpaceManagement(props.row)">
                     <q-tooltip class="bg-orange-9 text-white text-weight-bold shadow-4" anchor="top middle"
@@ -646,7 +646,7 @@
                   </q-btn>
 
                   <q-btn
-                    v-if="props.row.logistic_type !== 'fulfillment' && !props.row.is_full && props.row.available_quantity <= 0"
+                     v-if="canWrite && props.row.logistic_type !== 'fulfillment' && !props.row.is_full && props.row.available_quantity <= 0"
                     unelevated round color="green-1" text-color="green-9" icon="add_shopping_cart" size="sm"
                     :loading="!!reactivatingItems[props.row.item_id]"
                     :disable="!!reactivatingItems[props.row.item_id]"
@@ -657,7 +657,7 @@
                     </q-tooltip>
                   </q-btn>
 
-                  <q-btn unelevated round color="white" text-color="blue-grey-6" icon="edit" size="sm"
+                   <q-btn v-if="canWrite" unelevated round color="white" text-color="blue-grey-6" icon="edit" size="sm"
                     class="transition-scale custom-btn-border" type="a"
                     :href="`https://www.mercadolivre.com.br/anuncios/${props.row.item_id}/modificar`" target="_blank"
                     @click.stop>
@@ -1207,8 +1207,11 @@
 import { ref, onMounted, reactive, computed, watch } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import { useQuasar, copyToClipboard } from 'quasar'
+import { useStore } from 'src/stores/store'
 
 const $q = useQuasar()
+const authStore = useStore()
+const canWrite = computed(() => authStore.canWrite)
 
 // ============================================================================
 // 1. ESTADO GLOBAL E TABELA

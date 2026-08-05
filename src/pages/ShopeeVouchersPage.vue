@@ -34,10 +34,10 @@
             @click="selectStatus('all')" aria-label="Limpar filtro" />
         </div>
 
-        <q-btn flat color="grey-7" icon="autorenew" label="Renovações automáticas" size="sm"
+         <q-btn v-if="canWrite" flat color="grey-7" icon="autorenew" label="Renovações automáticas" size="sm"
           @click="openAutoRenewList()" />
 
-        <q-btn unelevated color="orange-8" text-color="white" icon="add" label="Novo Cupom"
+         <q-btn v-if="canWrite" unelevated color="orange-8" text-color="white" icon="add" label="Novo Cupom"
           size="sm" class="q-ml-md" @click="openCreate()" />
       </div>
     </div>
@@ -72,7 +72,7 @@
       <q-icon name="confirmation_number" size="56px" color="grey-3" />
       <div class="text-grey-6 text-subtitle2 q-mt-md">Nenhum cupom encontrado</div>
       <div class="text-caption text-grey-4 q-mt-xs">Crie cupons para atrair compradores com descontos exclusivos</div>
-      <q-btn unelevated color="orange-8" icon="add" label="Criar primeiro cupom"
+       <q-btn v-if="canWrite" unelevated color="orange-8" icon="add" label="Criar primeiro cupom"
         class="q-mt-lg" size="sm" @click="openCreate()" />
     </div>
 
@@ -127,9 +127,9 @@
               </div>
             </td>
             <td class="right" @click.stop>
-              <q-btn v-if="v.status === 'ongoing'" flat round icon="stop_circle"
+               <q-btn v-if="canWrite && v.status === 'ongoing'" flat round icon="stop_circle"
                 color="red-6" size="xs" title="Encerrar" @click.stop="askEnd(v)" />
-              <q-btn v-if="v.status === 'upcoming'" flat round icon="delete_outline"
+               <q-btn v-if="canWrite && v.status === 'upcoming'" flat round icon="delete_outline"
                 color="grey-5" size="xs" title="Deletar" @click.stop="askDelete(v)" />
               <q-btn flat round icon="chevron_right" color="grey-4" size="xs" @click.stop="openDetail(v)" />
             </td>
@@ -561,8 +561,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
+import { useStore } from 'src/stores/store'
 
 const $q = useQuasar()
+const authStore = useStore()
+const canWrite = computed(() => authStore.canWrite)
 
 // ── Constantes ─────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [

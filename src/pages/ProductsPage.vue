@@ -13,7 +13,7 @@
       <div class="header-right">
         <q-btn
           unelevated color="teal-7" icon="sync" label="Sincronizar do Tiny"
-          :loading="syncing" :disable="!selectedCnpj" size="sm"
+           :loading="syncing" :disable="!canWrite || !selectedCnpj" size="sm"
           @click="syncProducts"
         >
           <q-tooltip v-if="!selectedCnpj">Selecione uma conta primeiro</q-tooltip>
@@ -72,7 +72,7 @@
 
       <!-- Legenda -->
       <div class="legend-row">
-        <span class="legend-item">
+           <span v-if="canWrite" class="legend-item">
           <q-icon name="edit" size="12px" class="q-mr-xs text-teal-6" />
           Clique no custo para editar
         </span>
@@ -114,7 +114,7 @@
           <!-- Custo Cadastrado (editável) -->
           <template v-slot:body-cell-cost_price="props">
             <q-td :props="props" class="text-right">
-              <div class="editable-cell" @click="startEdit(props.row, 'cost_price')">
+               <div class="editable-cell" @click="canWrite && startEdit(props.row, 'cost_price')">
                 <template v-if="editingCell?.id === props.row.id && editingCell?.field === 'cost_price'">
                   <input
                     ref="editInput"
@@ -131,7 +131,7 @@
                   <span :class="props.row.cost_price > 0 ? 'cost-val' : 'cost-zero'">
                     {{ formatCurrency(props.row.cost_price) }}
                   </span>
-                  <q-icon name="edit" size="11px" class="edit-icon" />
+                   <q-icon v-if="canWrite" name="edit" size="11px" class="edit-icon" />
                 </template>
               </div>
             </q-td>
@@ -140,7 +140,7 @@
           <!-- Custo Médio (editável) -->
           <template v-slot:body-cell-avg_cost_price="props">
             <q-td :props="props" class="text-right">
-              <div class="editable-cell" @click="startEdit(props.row, 'avg_cost_price')">
+               <div class="editable-cell" @click="canWrite && startEdit(props.row, 'avg_cost_price')">
                 <template v-if="editingCell?.id === props.row.id && editingCell?.field === 'avg_cost_price'">
                   <input
                     ref="editInput"
@@ -171,7 +171,8 @@
                 :model-value="props.row.lock_from_tiny"
                 color="amber-7"
                 size="sm"
-                :loading="savingId === props.row.id"
+                 :loading="savingId === props.row.id"
+                 :disable="!canWrite"
                 @update:model-value="toggleLock(props.row, $event)"
               >
                 <q-tooltip class="bg-grey-9" style="max-width:220px">
@@ -213,8 +214,11 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { api } from 'src/boot/axios'
 import { useQuasar } from 'quasar'
 import { DateTime } from 'luxon'
+import { useStore } from 'src/stores/store'
 
 const $q = useQuasar()
+const authStore = useStore()
+const canWrite = computed(() => authStore.canWrite)
 
 // --- Estado ---
 const products        = ref([])

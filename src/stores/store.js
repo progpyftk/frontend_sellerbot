@@ -17,6 +17,8 @@ export const useStore = defineStore("main", {
   // Um getter para a interface saber facilmente se está logado
   getters: {
     isAuthenticated: (state) => !!state.authToken,
+    isReadOnly: (state) => state.currentUser?.is_read_only === true || state.currentUser?.role === "read_only",
+    canWrite: (state) => !(state.currentUser?.is_read_only === true || state.currentUser?.role === "read_only"),
   },
 
   actions: {

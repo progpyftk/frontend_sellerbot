@@ -22,9 +22,9 @@
               <q-btn flat color="grey-7" icon="receipt_long" label="Ver Logs"
                 @click="showLogsDialog = true" />
 
-              <q-btn v-if="selectedCount > 0" unelevated color="orange-8" text-color="white" icon="bolt"
+               <q-btn v-if="canWrite && selectedCount > 0" unelevated color="orange-8" text-color="white" icon="bolt"
                 :label="`Ativar Selecionadas (${selectedCount})`" @click="openSelectedActivation" />
-              <q-btn v-else unelevated color="amber-8" text-color="white" icon="bolt" label="Ativar Todas"
+               <q-btn v-else-if="canWrite" unelevated color="amber-8" text-color="white" icon="bolt" label="Ativar Todas"
                 @click="openAllActivation" :disable="loading || totalElegiveis == 0"
                 title="Ativa todas as campanhas elegíveis de todas as contas" />
             </div>
@@ -101,7 +101,7 @@
                   <template v-slot:body="props">
                     <q-tr :props="props" class="hover-row">
                       <q-td key="select" :props="props" style="width: 42px;">
-                        <q-checkbox v-if="!props.row.is_processing"
+                         <q-checkbox v-if="canWrite && !props.row.is_processing"
                           :model-value="isSelected(accountData, props.row)"
                           @update:model-value="toggleSelect(accountData, props.row)"
                           color="orange-8" dense />
@@ -140,7 +140,7 @@
                             {{ props.row.last_activated_count }} itens
                           </q-chip>
 
-                          <q-toggle v-if="props.row.record_id" dense size="sm" color="teal"
+                           <q-toggle v-if="canWrite && props.row.record_id" dense size="sm" color="teal"
                             :model-value="props.row.auto_activate"
                             @update:model-value="v => toggleAutoActivate(props.row, v)"
                             class="q-ml-sm" />
@@ -208,7 +208,7 @@
                           </q-btn>
                         </div>
                         <div v-else class="column items-end q-gutter-y-xs">
-                          <q-btn outline color="orange-8" icon="bolt" label="Ativar" size="sm"
+                           <q-btn v-if="canWrite" outline color="orange-8" icon="bolt" label="Ativar" size="sm"
                             class="text-weight-bold bg-white transition-scale"
                             @click="openActivationDialog(accountData, props.row)"
                             title="Ativar esta promoção" />
@@ -532,8 +532,11 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import { useQuasar } from 'quasar'
+import { useStore } from 'src/stores/store'
 
 const $q = useQuasar()
+const authStore = useStore()
+const canWrite = computed(() => authStore.canWrite)
 const loading = ref(false)
 const accountsPromotions = ref([])
 let pollInterval = null

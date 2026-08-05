@@ -16,14 +16,14 @@
             {{ pagination.rowsNumber.toLocaleString('pt-BR') }} pedidos
           </div>
         </div>
-        <q-btn unelevated color="teal-7" icon="account_balance_wallet" label="Backfill Escrow"
+         <q-btn v-if="canWrite" unelevated color="teal-7" icon="account_balance_wallet" label="Backfill Escrow"
           :loading="backfillingEscrow" size="sm" class="q-px-md q-mr-sm"
           @click="backfillEscrow">
           <q-tooltip class="bg-grey-9" style="max-width:260px">
             Sincroniza dados financeiros reais (escrow) de todos os pedidos pagos que ainda mostram valores estimados
           </q-tooltip>
         </q-btn>
-        <q-btn unelevated color="deep-orange" icon="sync" label="Sincronizar"
+         <q-btn v-if="canWrite" unelevated color="deep-orange" icon="sync" label="Sincronizar"
           :loading="syncing" :disable="!filters.account?.length && accountOptions.length > 1" size="sm" class="q-px-md"
           @click="syncOrders">
           <q-tooltip v-if="!filters.account?.length && accountOptions.length > 1">Selecione uma conta primeiro</q-tooltip>
@@ -948,9 +948,12 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
+import { useStore } from 'src/stores/store'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 
 const $q = useQuasar()
+const authStore = useStore()
+const canWrite = computed(() => authStore.canWrite)
 
 // ── Estado ──────────────────────────────────────────────────────────────────
 const orders         = ref([])

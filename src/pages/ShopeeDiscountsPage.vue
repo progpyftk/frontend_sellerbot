@@ -31,9 +31,9 @@
           </button>
         </div>
 
-        <q-btn unelevated color="orange-7" text-color="white" icon="add" label="Novo Desconto"
+         <q-btn v-if="canWrite" unelevated color="orange-7" text-color="white" icon="add" label="Novo Desconto"
           size="sm" class="q-ml-sm" @click="openCreate()" />
-        <q-btn v-if="selectedCount > 0" unelevated color="red-7" text-color="white"
+         <q-btn v-if="canWrite && selectedCount > 0" unelevated color="red-7" text-color="white"
           icon="stop_circle" :label="`Encerrar ${selectedCount} selecionado(s)`" size="sm"
           class="q-ml-sm" :disable="isProcessing" :loading="isProcessing" @click="bulkEnd()" />
       </div>
@@ -90,9 +90,9 @@
           </div>
 
           <div class="sd-card-actions" @click.stop>
-            <q-btn v-if="d.status === 'ongoing'" flat round icon="stop_circle" color="red-7" size="sm"
+              <q-btn v-if="canWrite && d.status === 'ongoing'" flat round icon="stop_circle" color="red-7" size="sm"
               title="Encerrar agora" :disable="isProcessing" @click="confirmEnd(d)" />
-            <q-btn v-if="d.status === 'upcoming'" flat round icon="delete" color="grey-6" size="sm"
+              <q-btn v-if="canWrite && d.status === 'upcoming'" flat round icon="delete" color="grey-6" size="sm"
               title="Deletar desconto" :disable="isProcessing" @click="confirmDelete(d)" />
             <q-btn flat round icon="chevron_right" color="grey-5" size="sm" @click="openDetail(d)" />
           </div>
@@ -202,13 +202,13 @@
 
         <q-card-section class="col-auto q-py-sm q-px-md row justify-between bg-grey-1 items-center" style="border-top:1px solid #eee">
           <div class="row items-center q-gutter-sm">
-            <q-btn v-if="activeDiscount?.status !== 'expired'" unelevated color="teal-7" icon="add"
+              <q-btn v-if="canWrite && activeDiscount?.status !== 'expired'" unelevated color="teal-7" icon="add"
               label="Adicionar Itens" size="sm" @click="openAddItems(activeDiscount)" />
           </div>
           <div class="row items-center q-gutter-sm">
-            <q-btn v-if="activeDiscount?.status === 'ongoing'" unelevated color="red-7" icon="stop_circle"
+              <q-btn v-if="canWrite && activeDiscount?.status === 'ongoing'" unelevated color="red-7" icon="stop_circle"
               label="Encerrar" size="sm" @click="confirmEnd(activeDiscount)" />
-            <q-btn v-if="activeDiscount?.status === 'upcoming'" unelevated color="grey-7" icon="delete"
+              <q-btn v-if="canWrite && activeDiscount?.status === 'upcoming'" unelevated color="grey-7" icon="delete"
               label="Deletar" size="sm" @click="confirmDelete(activeDiscount)" />
           </div>
         </q-card-section>
@@ -371,8 +371,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
+import { useStore } from 'src/stores/store'
 
 const $q = useQuasar()
+const authStore = useStore()
+const canWrite = computed(() => authStore.canWrite)
 
 // ── State ──────────────────────────────────────────────────────────────────
 const accounts        = ref([])
