@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createAssistantMessage,
+  createSseParser,
   normalizeHistoricalMessage,
   reduceSellerbotEvent,
 } from '../../src/services/sellerbotStream.js'
@@ -41,6 +42,14 @@ describe('sellerbotStream reducer', () => {
     message = reduceSellerbotEvent(message, { type: 'done', response: 'Resposta final em **Markdown**.' })
 
     expect(message.content).toBe('Resposta final em **Markdown**.')
+    expect(message.loading).toBe(false)
+  })
+
+  it('keeps streamed content when the terminal event has no response', () => {
+    let message = reduceSellerbotEvent(createAssistantMessage(), { type: 'token', text: 'Resposta completa' })
+    message = reduceSellerbotEvent(message, { type: 'done', response: '' })
+
+    expect(message.content).toBe('Resposta completa')
     expect(message.loading).toBe(false)
   })
 
@@ -152,5 +161,28 @@ describe('sellerbotStream reducer', () => {
 
     expect(message.pendingApproval.marketplace).toBe('tiny')
     expect(message.pendingApproval.action).toBe('upsert_tiny_product')
+  })
+})
+
+describe('sellerbot SSE parser', () => {
+  it('emits a final data frame when the stream closes without a trailing newline', () => {
+    const events = []
+    const parser = createSseParser((event) => events.push(event))
+
+    parser.push('data: {"type":"token","text":"Resposta parcial"}')
+    parser.flush()
+
+    expect(events).toEqual([{ type: 'token', text: 'Resposta parcial' }])
+  })
+
+  it('handles a JSON frame split across chunks and flushes its final event', () => {
+    const events = []
+    const parser = createSseParser((event) => events.push(event))
+
+    parser.push('data: {"type":"done","response":"Resposta fi')
+    parser.push('nal"}\n')
+    parser.flush()
+
+    expect(events).toEqual([{ type: 'done', response: 'Resposta final' }])
   })
 })

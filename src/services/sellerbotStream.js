@@ -4,6 +4,49 @@ const SAFE_ERROR = 'Não foi possível processar a mensagem. Tente novamente.'
 const MAX_LOGS = 100
 const MAX_IMAGES = 4
 
+/** Incremental SSE parser that also flushes a frame when fetch closes abruptly. */
+export function createSseParser(onEvent) {
+  let buffer = ''
+  let dataLines = []
+
+  const emitFrame = () => {
+    if (!dataLines.length) return
+    const payload = dataLines.join('\n')
+    dataLines = []
+    let event
+    try {
+      event = JSON.parse(payload)
+    } catch {
+      // A malformed frame must not stop subsequent SSE events.
+      return
+    }
+    if (event && typeof event === 'object') onEvent(event)
+  }
+
+  const processLine = (rawLine) => {
+    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine
+    if (!line) {
+      emitFrame()
+      return
+    }
+    if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''))
+  }
+
+  return {
+    push(chunk) {
+      buffer += chunk
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+      lines.forEach(processLine)
+    },
+    flush() {
+      if (buffer) processLine(buffer)
+      buffer = ''
+      emitFrame()
+    },
+  }
+}
+
 export const createAssistantMessage = () => ({
   role: 'assistant',
   content: '',

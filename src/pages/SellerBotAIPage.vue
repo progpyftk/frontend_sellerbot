@@ -393,7 +393,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import { useStore } from 'src/stores/store'
 import { api } from 'src/boot/axios'
@@ -402,6 +402,7 @@ import ChatChart from 'src/components/ChatChart.vue'
 import ChatTable from 'src/components/ChatTable.vue'
 import {
   createAssistantMessage,
+  createSseParser,
   normalizeHistoricalMessage,
   reduceSellerbotEvent,
 } from 'src/services/sellerbotStream.js'
@@ -510,6 +511,16 @@ const showHistory = ref(false)
 const pendingImages = ref([])  // [{file: File, preview: string(base64)}]
 const pendingFiles = ref([])  // [{file: File, preview: object|null, artifact: object|null}]
 const fileInput = ref(null)
+let activeStreamController = null
+let assistantSequence = 0
+
+const stopActiveStream = () => {
+  activeStreamController?.abort()
+  activeStreamController = null
+  isLoading.value = false
+}
+
+const findMessageIndex = (messageId) => messages.value.findIndex(msg => msg.streamId === messageId)
 
 const selectedModelName = computed(() => {
   const m = MODELS.value.find(m => m.id === selectedModel.value)
@@ -739,6 +750,7 @@ const loadSessions = async () => {
 }
 
 const loadSession = async (id) => {
+  stopActiveStream()
   try {
     const res = await api.get(`/sellerbot-ai/sessions/${id}/`)
     const msgs = res.data.messages || []
@@ -756,6 +768,7 @@ const loadSession = async (id) => {
 }
 
 const newChat = () => {
+  stopActiveStream()
   messages.value = []
   currentSessionId.value = null
   showHistory.value = false
@@ -846,19 +859,24 @@ const sendMessage = async () => {
     time: nowTime(),
   })
 
-  const assistantIndex = messages.value.length
+  const assistantMessageId = `assistant-${Date.now()}-${++assistantSequence}`
   messages.value.push({
     ...createAssistantMessage(),
+    streamId: assistantMessageId,
     time: nowTime(),
     loadingText: 'Iniciando...',
   })
 
   // Timer de tempo decorrido — atualiza a cada segundo enquanto loading
   const elapsedTimer = setInterval(() => {
-    const msg = messages.value[assistantIndex]
+    const index = findMessageIndex(assistantMessageId)
+    const msg = index >= 0 ? messages.value[index] : null
     if (!msg || !msg.loading) { clearInterval(elapsedTimer); return }
     msg.elapsedSec = Math.floor((Date.now() - msg.startedAt) / 1000)
   }, 1000)
+
+  const streamController = new AbortController()
+  activeStreamController = streamController
 
   scrollToBottom()
   // Helper: faz o fetch SSE; se receber 401 força refresh via axios (que tem o interceptor)
@@ -873,6 +891,7 @@ const sendMessage = async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
+        signal: streamController.signal,
       })
     }
 
@@ -894,41 +913,35 @@ const sendMessage = async () => {
 
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
-    let buffer = ''
+    const parser = createSseParser(event => handleStreamEvent(assistantMessageId, event))
 
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() // keep incomplete line
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        try {
-          const event = JSON.parse(line.slice(6))
-          handleStreamEvent(assistantIndex, event)
-        } catch {
-          // ignore parse errors
-        }
-      }
+      parser.push(decoder.decode(value, { stream: true }))
     }
+    parser.push(decoder.decode())
+    parser.flush()
   } catch (error) {
+    if (streamController.signal.aborted) return
     console.error('Stream error:', error)
-    handleStreamEvent(assistantIndex, { type: 'error' })
+    handleStreamEvent(assistantMessageId, { type: 'error' })
     $q.notify({ message: 'Erro ao enviar mensagem', color: 'negative', position: 'top' })
   } finally {
     clearInterval(elapsedTimer)
-    messages.value[assistantIndex].loading = false
+    const index = findMessageIndex(assistantMessageId)
+    if (index >= 0) messages.value[index].loading = false
+    if (activeStreamController === streamController) activeStreamController = null
     isLoading.value = false
     scrollToBottom()
   }
 }
 
-const handleStreamEvent = (index, event) => {
+const handleStreamEvent = (messageId, event) => {
+  const index = findMessageIndex(messageId)
   const msg = messages.value[index]
-  if (!msg) return
+  if (index < 0 || !msg) return
 
   if (event.type === 'session') {
     currentSessionId.value = event.session_id
@@ -1366,6 +1379,8 @@ onMounted(() => {
   loadSessions()
   loadRuns()
 })
+
+onBeforeUnmount(stopActiveStream)
 </script>
 
 <style scoped>
