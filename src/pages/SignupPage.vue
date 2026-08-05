@@ -133,6 +133,7 @@ import { useRouter } from "vue-router";
 import { api } from "boot/axios";
 import { useQuasar } from "quasar";
 import HomeToolbar from "src/layouts/HomeToolbar.vue";
+import { normalizeUsername } from "src/utils/username";
 
 const $q = useQuasar();
 const router = useRouter();
@@ -164,7 +165,7 @@ const notify = (message, type = "positive") => {
 const formattedUsername = computed({
   get: () => username.value,
   set: (value) => {
-    username.value = value.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    username.value = normalizeUsername(value);
   },
 });
 

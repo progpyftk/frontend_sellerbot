@@ -89,6 +89,7 @@ import { api } from "boot/axios";
 import { useQuasar } from "quasar";
 import { useStore } from "../stores/store";
 import HomeToolbar from "src/layouts/HomeToolbar.vue";
+import { normalizeUsername } from "src/utils/username";
 
 const $q = useQuasar();
 const router = useRouter();
@@ -109,7 +110,7 @@ const formattedUsernameOrEmail = computed({
     if (value.includes("@")) {
       usernameOrEmail.value = value.toLowerCase();
     } else {
-      usernameOrEmail.value = value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+       usernameOrEmail.value = normalizeUsername(value);
     }
   },
 });
@@ -259,4 +260,3 @@ const goToSignup = () => {
   }
 }
 </style>
-
