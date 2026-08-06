@@ -162,10 +162,9 @@ const hasData = computed(() => {
 })
 
 function hovertemplateFor(def) {
-  if (def.format === 'currency') return '%{y:$,.2f}<extra>%{fullData.name}</extra>'
   if (def.format === 'percent') return '%{y:.2f}%<extra>%{fullData.name}</extra>'
   if (def.format === 'boolean') return '%{y}<extra>%{fullData.name}</extra>'
-  return '%{y}<extra>%{fullData.name}</extra>'
+  return '%{y:.2f}<extra>%{fullData.name}</extra>'
 }
 
 function buildTrace(def, values) {
