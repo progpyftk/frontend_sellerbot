@@ -5,7 +5,9 @@ product_contract_source: ce-plan-bootstrap
 execution: code
 title: Item Analytics — Gráfico combinado com overlay de métricas
 type: feature
+status: done
 date: 2026-08-06
+completed: 2026-08-06
 supersedes_section: UI.5 do PLAN_ITEM_ANALYTICS_REVAMP.md
 ---
 
