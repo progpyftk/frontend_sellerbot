@@ -8,6 +8,8 @@ import {
   normalizeTimelineResponse,
   queryValue,
   ANALYTICS_MODES,
+  METRIC_CATALOG,
+  COMBINE_DEFAULT_METRICS,
 } from 'src/utils/itemAnalytics'
 
 const DEFAULTS = {
@@ -21,10 +23,19 @@ const DEFAULTS = {
   stock_status: '',
   sort: 'last_synced',
   mode: 'traffic',
+  metrics: [...COMBINE_DEFAULT_METRICS],
   page: 1,
 }
 
 const requestError = (error, fallback) => error?.response?.data?.detail || error?.response?.data?.error || fallback
+
+const normalizeMetrics = (input) => {
+  const raw = Array.isArray(input) ? input : [input]
+  const valid = raw
+    .flatMap((value) => (typeof value === 'string' ? value.split(',').filter(Boolean) : []))
+    .filter((key) => METRIC_CATALOG.some((metric) => metric.key === key))
+  return valid.length ? valid : [...COMBINE_DEFAULT_METRICS]
+}
 
 export function useItemAnalytics() {
   const route = useRoute()
@@ -66,13 +77,19 @@ export function useItemAnalytics() {
       else filters[key] = value
     })
     if (!ANALYTICS_MODES.includes(filters.mode)) filters.mode = DEFAULTS.mode
+    filters.metrics = normalizeMetrics(route.query.metrics)
     selectedItemId.value = queryValue(route.query.item)
   }
 
   function syncRoute() {
     const nextQuery = {}
     Object.entries(filters).forEach(([key, value]) => {
-      if (value !== DEFAULTS[key] && value !== '') nextQuery[key] = value
+      const isDefault = Array.isArray(value)
+        ? value.join(',') === (DEFAULTS[key] || []).join(',')
+        : value === DEFAULTS[key]
+      if (!isDefault && value !== '' && (!Array.isArray(value) || value.length)) {
+        nextQuery[key] = Array.isArray(value) ? value.join(',') : value
+      }
     })
     if (selectedItemId.value) nextQuery.item = selectedItemId.value
     router.replace({ query: nextQuery })
@@ -208,6 +225,12 @@ export function useItemAnalytics() {
     }
   }
 
+  function setMetrics(keys) {
+    const normalized = normalizeMetrics(keys)
+    filters.metrics = normalized
+    syncRoute()
+  }
+
   function setPage(page) {
     filters.page = page
     syncRoute()
@@ -246,6 +269,7 @@ export function useItemAnalytics() {
     setDays,
     setFilter,
     setMode,
+    setMetrics,
     setPage,
     selectItem,
     clearSelection,
