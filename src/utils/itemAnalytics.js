@@ -19,7 +19,7 @@ export const formatCurrency = (value) => {
 }
 
 // Ads entra quando o endpoint de timeline passar a entregar ads_cost/ads_roas.
-export const ANALYTICS_MODES = Object.freeze(['traffic', 'price', 'stock'])
+export const ANALYTICS_MODES = Object.freeze(['traffic', 'price', 'stock', 'combine'])
 
 export const COMBINE_MODE = 'combine'
 

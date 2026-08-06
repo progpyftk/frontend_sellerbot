@@ -69,7 +69,7 @@ describe('item analytics normalizers', () => {
 
 describe('combine chart catalog', () => {
   it('includes combine mode while preserving existing presets', () => {
-    expect(ANALYTICS_MODES).toEqual(['traffic', 'price', 'stock'])
+    expect(ANALYTICS_MODES).toEqual(['traffic', 'price', 'stock', 'combine'])
     expect(COMBINE_MODE).toBe('combine')
   })
 
