@@ -45,7 +45,7 @@
         </div>
         <template v-else>
           <ItemAnalyticsOverview :overview="overview" :loading="loading.overview" :error="errors.overview" @copied="notifyCopied" />
-          <ItemAnalyticsTimeline :timeline="timeline" :loading="loading.timeline" :error="errors.timeline" :mode="filters.mode" @update:mode="setMode" @retry="reloadDetail" />
+          <ItemAnalyticsTimeline :timeline="timeline" :loading="loading.timeline" :error="errors.timeline" :mode="filters.mode" :metrics="filters.metrics" @update:mode="setMode" @update:metrics="setMetrics" @retry="reloadDetail" />
           <ItemAnalyticsInsights :causal="causal" :timeline="timeline" :loading="loading.causal" :error="errors.causal" @retry="reloadDetail" />
         </template>
       </main>
@@ -67,7 +67,7 @@ import { useItemAnalytics } from 'src/composables/useItemAnalytics'
 const $q = useQuasar()
 const {
   accounts, causal, errors, filters, items, loading, mobileListOpen, overview, pagination,
-  selectedItem, selectedItemId, setDays, setFilter, setMode, setPage, selectItem, refresh, timeline,
+  selectedItem, selectedItemId, setDays, setFilter, setMode, setMetrics, setPage, selectItem, refresh, timeline,
 } = useItemAnalytics()
 
 const isMobile = computed(() => $q.screen.lt.md)
