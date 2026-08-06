@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ANALYTICS_MODES,
+  COMBINE_MODE,
+  METRIC_CATALOG,
+  axisRangeFor,
   formatCurrency,
+  metricByKey,
+  normalizeForOverlay,
   normalizeItem,
   normalizeListResponse,
   normalizeTimelineResponse,
@@ -58,5 +64,67 @@ describe('item analytics normalizers', () => {
 
   it('formats currency for Brazilian users', () => {
     expect(formatCurrency(1234.5)).toContain('1.234,50')
+  })
+})
+
+describe('combine chart catalog', () => {
+  it('includes combine mode while preserving existing presets', () => {
+    expect(ANALYTICS_MODES).toEqual(['traffic', 'price', 'stock'])
+    expect(COMBINE_MODE).toBe('combine')
+  })
+
+  it('assigns each metric to the axis matching its unit nature', () => {
+    expect(metricByKey('available_quantity').axis).toBe('y')
+    expect(metricByKey('visits').axis).toBe('y')
+    expect(metricByKey('conversion_rate').axis).toBe('y2')
+    expect(metricByKey('price').axis).toBe('y3')
+    expect(metricByKey('gmv').axis).toBe('y3')
+  })
+
+  it('marks unavailable ads metric as disabled with a hint', () => {
+    const ads = metricByKey('ads_cost')
+    expect(ads.disabled).toBe(true)
+    expect(ads.disabledHint).toBeTruthy()
+  })
+
+  it('routes every entry to a known category and format', () => {
+    const categories = ['traffic', 'price', 'stock']
+    const formats = ['count', 'percent', 'currency', 'boolean']
+    METRIC_CATALOG.forEach((metric) => {
+      expect(categories).toContain(metric.category)
+      expect(formats).toContain(metric.format)
+    })
+  })
+})
+
+describe('normalizeForOverlay', () => {
+  const rows = [
+    { date: '2026-08-01', price: 10, conversion_rate: 5 },
+    { date: '2026-08-02', price: 20, conversion_rate: 10 },
+    { date: '2026-08-03', price: 30, conversion_rate: null },
+  ]
+
+  it('maps a series to the 0..100 range by default', () => {
+    const result = normalizeForOverlay(rows, ['price'])
+    expect(result.price).toEqual([0, 50, 100])
+  })
+
+  it('preserves gaps as null and honors a custom range', () => {
+    const result = normalizeForOverlay(rows, ['conversion_rate'], { min: 0, max: 10 })
+    expect(result.conversion_rate).toEqual([0, 10, null])
+  })
+
+  it('does not produce NaN for a constant series', () => {
+    const flat = [{ price: 7 }, { price: 7 }, { price: 7 }]
+    const result = normalizeForOverlay(flat, ['price'])
+    result.price.forEach((value) => expect(Number.isNaN(value)).toBe(false))
+  })
+})
+
+describe('axisRangeFor', () => {
+  it('returns 0..100 only for normalized combine', () => {
+    expect(axisRangeFor('combine', true)).toEqual([0, 100])
+    expect(axisRangeFor('combine', false)).toBeUndefined()
+    expect(axisRangeFor('traffic', true)).toBeUndefined()
   })
 })

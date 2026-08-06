@@ -21,6 +21,66 @@ export const formatCurrency = (value) => {
 // Ads entra quando o endpoint de timeline passar a entregar ads_cost/ads_roas.
 export const ANALYTICS_MODES = Object.freeze(['traffic', 'price', 'stock'])
 
+export const COMBINE_MODE = 'combine'
+
+// Catálogo declarativo de métricas disponíveis no gráfico combinado.
+// `axis` define a natureza da unidade: 'y' = contagem/quantidade (esquerda),
+// 'y2' = percentual (direita), 'y3' = moeda (direita externa).
+// `band: true` indica métrica binária renderizada como faixa de fundo, não como curva.
+export const METRIC_CATALOG = [
+  { key: 'visits', label: 'Visitas', category: 'traffic', axis: 'y', format: 'count', color: '#0284c7' },
+  { key: 'orders_count', label: 'Pedidos', category: 'traffic', axis: 'y', format: 'count', color: '#0f766e' },
+  { key: 'units_sold', label: 'Unidades vendidas', category: 'traffic', axis: 'y', format: 'count', color: '#eab308' },
+  { key: 'conversion_rate', label: 'Conversão', category: 'traffic', axis: 'y2', format: 'percent', color: '#f59e0b' },
+  { key: 'ads_cost', label: 'Ads (custo)', category: 'traffic', axis: 'y', format: 'currency', color: '#7c3aed', disabled: true, disabledHint: 'disponível quando o backend entregar ads_cost/ads_roas' },
+  { key: 'price', label: 'Preço', category: 'price', axis: 'y3', format: 'currency', color: '#6366f1' },
+  { key: 'original_price', label: 'Preço original', category: 'price', axis: 'y3', format: 'currency', color: '#a78bfa' },
+  { key: 'gmv', label: 'GMV', category: 'price', axis: 'y3', format: 'currency', color: '#d97706' },
+  { key: 'has_promotion', label: 'Com promoção', category: 'price', axis: null, format: 'boolean', color: '#fb923c', band: true },
+  { key: 'available_quantity', label: 'Estoque informado', category: 'stock', axis: 'y', format: 'count', color: '#64748b' },
+  { key: 'fulfillment_available_quantity', label: 'Full disponível', category: 'stock', axis: 'y', format: 'count', color: '#16a34a' },
+  { key: 'fulfillment_total_quantity', label: 'Full total', category: 'stock', axis: 'y', format: 'count', color: '#94a3b8' },
+]
+
+export const COMBINE_CATEGORIES = Object.freeze([
+  { value: 'traffic', label: 'Tráfego' },
+  { value: 'price', label: 'Preço' },
+  { value: 'stock', label: 'Estoque' },
+])
+
+export const COMBINE_DEFAULT_METRICS = Object.freeze(['price', 'conversion_rate', 'visits'])
+
+export const metricByKey = (key) => METRIC_CATALOG.find((metric) => metric.key === key)
+
+// Normaliza séries selecionadas para um intervalo comum (default 0–100) por série,
+// para comparar formato/tendência entre métricas de unidades diferentes (ex.: preço x conversão).
+// Retorna { [key]: number[] } alinhado a `rows`; valores ausentes/não numéricos viram lacuna (null).
+export function normalizeForOverlay(rows, keys, { min = 0, max = 100 } = {}) {
+  const result = {}
+  for (const key of keys) {
+    const numbers = rows.map((row) => {
+      const raw = row?.[key]
+      if (raw === null || raw === undefined) return null
+      const number = Number(raw)
+      return Number.isFinite(number) ? number : null
+    })
+    const finite = numbers.filter((value) => value !== null)
+    const spread = finite.length ? Math.max(...finite) - Math.min(...finite) : 0
+    const floor = finite.length ? Math.min(...finite) : null
+    result[key] = numbers.map((value) => {
+      if (value === null) return null
+      if (floor === null || spread === 0) return min
+      return min + ((value - floor) / spread) * (max - min)
+    })
+  }
+  return result
+}
+
+// Resolve o range dos eixos: [0, 100] quando o modo combinado está normalizado, senão undefined (auto).
+export function axisRangeFor(mode, normalized) {
+  return mode === COMBINE_MODE && normalized ? [0, 100] : undefined
+}
+
 export const formatPercent = (value, digits = 1) => {
   if (value === null || value === undefined || value === '') return '—'
   return `${formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`
