@@ -194,6 +194,24 @@ export default {
   getFulfillmentRecommendations(params) {
     return api.get('/mercadolivre/fulfillment/recommendations/', { params })
   },
+  getFulfillmentOpportunities(params) {
+    return api.get('/mercadolivre/fulfillment/opportunities/', { params })
+  },
+  getFulfillmentOpportunity(itemId, params) {
+    return api.get(`/mercadolivre/fulfillment/opportunities/${itemId}/`, { params })
+  },
+  getFulfillmentOpportunityTimeline(itemId, params) {
+    return api.get(`/mercadolivre/fulfillment/opportunities/${itemId}/timeline/`, { params })
+  },
+  getFulfillmentPackageProfiles(params) {
+    return api.get('/mercadolivre/fulfillment/package-profiles/', { params })
+  },
+  saveFulfillmentPackageProfile(payload) {
+    return api.post('/mercadolivre/fulfillment/package-profiles/', payload)
+  },
+  updateFulfillmentPackageProfile(profileId, payload) {
+    return api.patch(`/mercadolivre/fulfillment/package-profiles/${profileId}/`, payload)
+  },
   getFulfillmentItem(itemId, params) {
     return api.get(`/mercadolivre/fulfillment/items/${itemId}/`, { params })
   },
