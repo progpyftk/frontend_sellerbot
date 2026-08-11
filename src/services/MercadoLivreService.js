@@ -184,4 +184,29 @@ export default {
   getBuyerClassification(params) {
     return api.get('/mercadolivre/orders/buyer-classification/', { params })
   },
+
+  // ==========================================
+  // GESTAO FULL
+  // ==========================================
+  getFulfillmentOverview(params) {
+    return api.get('/mercadolivre/fulfillment/overview/', { params })
+  },
+  getFulfillmentRecommendations(params) {
+    return api.get('/mercadolivre/fulfillment/recommendations/', { params })
+  },
+  getFulfillmentItem(itemId, params) {
+    return api.get(`/mercadolivre/fulfillment/items/${itemId}/`, { params })
+  },
+  getFulfillmentTimeline(itemId, params) {
+    return api.get(`/mercadolivre/fulfillment/items/${itemId}/timeline/`, { params })
+  },
+  getFulfillmentOperations(itemId, params) {
+    return api.get(`/mercadolivre/fulfillment/items/${itemId}/operations/`, { params })
+  },
+  getFulfillmentCapacity(params) {
+    return api.get('/mercadolivre/fulfillment/capacity/', { params })
+  },
+  saveFulfillmentCapacity(payload) {
+    return api.post('/mercadolivre/fulfillment/capacity/', payload)
+  },
 }
