@@ -578,6 +578,7 @@ import {
   activationStatusMeta,
   canSelectPromotion,
   getPromotionTypeMeta,
+  getPromotionTypeFilterOptions,
   normalizePromotion,
   promotionCountTotal,
 } from 'src/utils/promotionCapabilities'
@@ -593,11 +594,7 @@ const promotionTypeFilter = ref(null)
 const listingStatusFilter = ref('all')
 const promotionTypeOptions = [
   { label: 'Todos os tipos', value: null },
-  { label: 'Campanha tradicional', value: 'DEAL' },
-  { label: 'Campanha do seller', value: 'SELLER_CAMPAIGN' },
-  { label: 'Smart', value: 'SMART' },
-  { label: 'Preço competitivo', value: 'PRICE_MATCHING' },
-  { label: 'Ofertas relâmpago', value: 'LIGHTNING' },
+  ...getPromotionTypeFilterOptions(),
   { label: 'Outros tipos', value: 'other' },
 ]
 const listingStatusOptions = [

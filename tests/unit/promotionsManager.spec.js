@@ -40,6 +40,8 @@ describe('promotion capability helpers', () => {
       candidate_count: 2,
       active_count: 3,
       paused_count: 4,
+      can_manual_activate: true,
+      activation_mode: 'price',
     })
 
     expect(promotionCountTotal(promotion)).toBe(9)
