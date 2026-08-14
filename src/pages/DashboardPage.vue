@@ -1321,7 +1321,7 @@
 
         <div class="info-box q-mt-md">
           <q-icon name="info" size="16px" class="q-mr-xs" />
-          O custo Flex é o valor estimado registrado no momento da venda (snapshot).
+           O custo Flex e o valor operacional configurado e registrado no momento da venda (snapshot).
           Pedidos sem entrega Flex não são contabilizados aqui.
         </div>
       </div>
