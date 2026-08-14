@@ -55,8 +55,8 @@ export default {
     return api.post('/mercadolivre/items/bulk-stock/', payload)
   },
 
-  getPromotions() {
-    return api.get('/mercadolivre/promotions/')
+  getPromotions(params = {}) {
+    return api.get('/mercadolivre/promotions/', { params })
   },
 
   activatePromotions(payload) {

@@ -31,7 +31,22 @@
           </div>
         </q-card-section>
 
-        <q-card-section class="q-pa-lg">
+         <q-card-section class="q-pa-lg">
+           <div class="promotions-filters row items-center q-col-gutter-sm q-mb-lg">
+             <div class="col-12 col-sm-4">
+               <q-select v-model="promotionTypeFilter" :options="promotionTypeOptions"
+                 emit-value map-options outlined dense clearable label="Tipo de campanha"
+                 bg-color="white" />
+             </div>
+             <div class="col-12 col-sm-4">
+               <q-select v-model="listingStatusFilter" :options="listingStatusOptions"
+                 emit-value map-options outlined dense label="Estado dos anúncios"
+                 bg-color="white" />
+             </div>
+             <div class="col text-caption text-blue-grey-6">
+               O estado do anúncio é separado do estado da campanha no Mercado Livre.
+             </div>
+           </div>
 
           <transition name="q-transition--slide-down">
             <q-banner v-if="isAnyPromoProcessing" rounded
@@ -80,14 +95,14 @@
                 </q-item-section>
                 <q-item-section side>
                   <q-chip color="green-1" text-color="green-9" class="text-weight-bold" size="sm">
-                    {{ accountData.promotions.length }} campanhas ativas
+                     {{ visiblePromotions(accountData.promotions).length }} campanhas exibidas
                   </q-chip>
                 </q-item-section>
               </template>
 
               <div class="bg-white q-pa-md">
                 <div class="table-responsive">
-                <q-table :rows="accountData.promotions" :columns="columns" row-key="id" flat hide-pagination
+                 <q-table :rows="visiblePromotions(accountData.promotions)" :columns="columns" row-key="id" flat hide-pagination
                   :pagination="{ rowsPerPage: 0 }" class="promotions-table" :dense="$q.screen.lt.md">
                   <template v-slot:header="props">
                     <q-tr :props="props"
@@ -101,16 +116,16 @@
                   <template v-slot:body="props">
                     <q-tr :props="props" class="hover-row">
                       <q-td key="select" :props="props" style="width: 42px;">
-                         <q-checkbox v-if="canWrite && !props.row.is_processing"
+                         <q-checkbox v-if="canWrite && canSelectPromotion(props.row)"
                           :model-value="isSelected(accountData, props.row)"
                           @update:model-value="toggleSelect(accountData, props.row)"
                           color="orange-8" dense />
                       </q-td>
 
                       <q-td key="type" :props="props" style="width: 120px;">
-                        <q-chip square size="sm" class="text-weight-bold" :color="getTypeMeta(props.row.type).color"
-                          :text-color="getTypeMeta(props.row.type).textColor">
-                          {{ getTypeMeta(props.row.type).label }}
+                         <q-chip square size="sm" class="text-weight-bold" :color="getPromotionTypeMeta(props.row.type).color"
+                           :text-color="getPromotionTypeMeta(props.row.type).textColor">
+                           {{ getPromotionTypeMeta(props.row.type).label }}
                         </q-chip>
                       </q-td>
 
@@ -120,6 +135,22 @@
                         </div>
                         <div class="text-caption text-grey-6 font-mono q-mt-xs">
                           ID: {{ props.row.id }}
+                        </div>
+                        <div class="row items-center q-gutter-x-xs q-mt-xs">
+                          <q-chip v-if="activationStatusMeta(props.row)" dense square size="xs"
+                            :color="activationStatusMeta(props.row).color"
+                            :text-color="activationStatusMeta(props.row).textColor"
+                            :icon="activationStatusMeta(props.row).icon"
+                            :label="activationStatusMeta(props.row).label" />
+                          <q-chip v-if="props.row.boosted_offer" dense square size="xs"
+                            color="teal-1" text-color="teal-9" icon="savings"
+                            :label="`Boost ML ${props.row.boosted_discount_pct ?? '—'}%`">
+                            <q-tooltip>
+                              Benefício ML: {{ props.row.boosted_discount_pct ?? '—' }}% ·
+                              R$ {{ props.row.boosted_discount_amount ?? '—' }} nos custos ·
+                              preço ao comprador: R$ {{ props.row.buyer_price_after_boost ?? '—' }}
+                            </q-tooltip>
+                          </q-chip>
                         </div>
 
                         <div v-if="props.row.last_activated_at"
@@ -140,14 +171,14 @@
                             {{ props.row.last_activated_count }} itens
                           </q-chip>
 
-                           <q-toggle v-if="canWrite && props.row.record_id" dense size="sm" color="teal"
+                           <q-toggle v-if="canWrite && props.row.record_id && props.row.can_auto_activate" dense size="sm" color="teal"
                             :model-value="props.row.auto_activate"
                             @update:model-value="v => toggleAutoActivate(props.row, v)"
                             class="q-ml-sm" />
                           <q-chip v-if="props.row.auto_activate && props.row.auto_max_discount_pct"
                             dense size="sm" color="orange-2" text-color="orange-9"
                             :label="`Trava ${props.row.auto_max_discount_pct}%`" />
-                          <span v-if="props.row.record_id" class="q-ml-xs" style="font-size:0.68rem;color:#64748b">
+                           <span v-if="props.row.record_id && props.row.can_auto_activate" class="q-ml-xs" style="font-size:0.68rem;color:#64748b">
                             Ativar automaticamente
                           </span>
                         </div>
@@ -157,9 +188,12 @@
                         <div class="row items-center q-gutter-x-xs">
                           <q-icon :name="props.row.status === 'started' ? 'play_circle' : 'schedule'"
                             :color="props.row.status === 'started' ? 'green-6' : 'orange-6'" size="xs" />
-                          <span class="text-weight-medium text-blue-grey-8">
-                            {{ props.row.status === 'started' ? 'Em Andamento' : 'Pendente/Agendada' }}
-                          </span>
+                           <span class="text-weight-medium text-blue-grey-8">
+                             {{ props.row.status === 'started' ? 'Em Andamento' : 'Pendente/Agendada' }}
+                           </span>
+                           <q-chip v-if="props.row.paused_count > 0" dense square size="xs"
+                             color="orange-1" text-color="orange-9" icon="pause_circle"
+                             :label="`${props.row.paused_count} pausados`" />
                         </div>
                       </q-td>
 
@@ -174,8 +208,8 @@
 
                       <q-td key="items" :props="props" align="center">
                         <div class="column items-center q-gutter-y-xs">
-                          <div class="text-caption text-weight-bold text-blue-grey-8">
-                            Total: {{ (props.row.candidate_count || 0) + (props.row.active_count || 0) }} anúncios
+                           <div class="text-caption text-weight-bold text-blue-grey-8">
+                             Total: {{ promotionCountTotal(props.row) }} anúncios
                           </div>
                           <div class="row justify-center q-gutter-x-sm">
                             <q-chip outline square color="blue-grey-6" size="sm" class="text-weight-bold q-ma-none"
@@ -183,11 +217,16 @@
                               <q-icon name="list_alt" size="xs" class="q-mr-xs" /> {{ props.row.candidate_count || 0 }}
                               Elegíveis
                             </q-chip>
-                            <q-chip outline square color="green-6" size="sm" class="text-weight-bold q-ma-none"
+                             <q-chip outline square color="green-6" size="sm" class="text-weight-bold q-ma-none"
                               title="Já ativados nesta promoção">
-                              <q-icon name="check_circle" size="xs" class="q-mr-xs" /> {{ props.row.active_count || 0 }}
-                              Ativos
-                            </q-chip>
+                               <q-icon name="check_circle" size="xs" class="q-mr-xs" /> {{ props.row.active_count || 0 }}
+                               Ativos
+                             </q-chip>
+                             <q-chip outline square color="orange-7" size="sm" class="text-weight-bold q-ma-none"
+                               title="Anúncios pausados no Mercado Livre">
+                               <q-icon name="pause_circle" size="xs" class="q-mr-xs" /> {{ props.row.paused_count || 0 }}
+                               Pausados
+                             </q-chip>
                           </div>
                         </div>
                       </q-td>
@@ -208,10 +247,14 @@
                           </q-btn>
                         </div>
                         <div v-else class="column items-end q-gutter-y-xs">
-                           <q-btn v-if="canWrite" outline color="orange-8" icon="bolt" label="Ativar" size="sm"
-                            class="text-weight-bold bg-white transition-scale"
-                            @click="openActivationDialog(accountData, props.row)"
-                            title="Ativar esta promoção" />
+                           <q-btn v-if="canWrite && props.row.can_manual_activate && props.row.candidate_count > 0" outline color="orange-8" icon="bolt" label="Ativar" size="sm"
+                             class="text-weight-bold bg-white transition-scale"
+                             @click="openActivationDialog(accountData, props.row)"
+                             title="Ativar esta promoção" />
+                           <q-chip v-else-if="!props.row.can_manual_activate" dense square size="sm"
+                             color="blue-grey-1" text-color="blue-grey-8" icon="visibility"
+                             :label="props.row.activation_block_reason || 'Somente leitura'"
+                             class="activation-reason" />
                           <div v-if="promoSummary(props.row)"
                             class="row items-center q-gutter-x-xs cursor-pointer result-chips"
                             title="Ver o log completo desta execução"
@@ -281,10 +324,8 @@
           <div class="bg-grey-1 q-pa-md rounded-borders custom-shadow q-mb-sm">
             <div class="text-weight-bold text-blue-grey-9 q-mb-sm">Como aplicar o desconto?</div>
 
-            <q-option-group v-model="discountMode" color="orange-8" :options="[
-              { label: 'Aceitar o desconto que o ML sugere para cada anúncio, até um limite (trava)', value: 'suggested' },
-              { label: 'Aplicar exatamente o mesmo desconto em todos os anúncios (fixo)', value: 'fixed' },
-            ]" class="q-mb-md text-body2" />
+             <q-option-group v-model="discountMode" color="orange-8" :options="discountModeOptions"
+               class="q-mb-md text-body2" />
 
             <template v-if="discountMode === 'suggested'">
               <div class="text-caption text-grey-7 q-mb-sm">
@@ -533,6 +574,13 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import { useQuasar } from 'quasar'
 import { useStore } from 'src/stores/store'
+import {
+  activationStatusMeta,
+  canSelectPromotion,
+  getPromotionTypeMeta,
+  normalizePromotion,
+  promotionCountTotal,
+} from 'src/utils/promotionCapabilities'
 
 const $q = useQuasar()
 const authStore = useStore()
@@ -540,6 +588,50 @@ const canWrite = computed(() => authStore.canWrite)
 const loading = ref(false)
 const accountsPromotions = ref([])
 let pollInterval = null
+
+const promotionTypeFilter = ref(null)
+const listingStatusFilter = ref('all')
+const promotionTypeOptions = [
+  { label: 'Todos os tipos', value: null },
+  { label: 'Campanha tradicional', value: 'DEAL' },
+  { label: 'Campanha do seller', value: 'SELLER_CAMPAIGN' },
+  { label: 'Smart', value: 'SMART' },
+  { label: 'Preço competitivo', value: 'PRICE_MATCHING' },
+  { label: 'Ofertas relâmpago', value: 'LIGHTNING' },
+  { label: 'Outros tipos', value: 'other' },
+]
+const listingStatusOptions = [
+  { label: 'Ativos e pausados', value: 'all' },
+  { label: 'Somente ativos', value: 'active' },
+  { label: 'Somente pausados', value: 'paused' },
+]
+
+function visiblePromotions(promotions = []) {
+  return promotions.filter((promo) => {
+      if (promotionTypeFilter.value === 'other') {
+        const known = promotionTypeOptions.map((option) => option.value).filter(Boolean)
+        if (known.includes(promo.type)) return false
+      } else if (promotionTypeFilter.value && promo.type !== promotionTypeFilter.value) {
+        return false
+      }
+      if (listingStatusFilter.value === 'active') return promo.active_count > 0
+      if (listingStatusFilter.value === 'paused') return promo.paused_count > 0
+      return true
+    })
+}
+
+const discountModeOptions = computed(() => {
+  const canUseFixed = activationTargets.value.length > 0
+    && activationTargets.value.every((target) => ['price', 'price_stock'].includes(target.activation_mode))
+  const options = [
+    { label: 'Aceitar o desconto do ML até um limite (trava)', value: 'suggested' },
+  ]
+  if (canUseFixed) {
+    options.push({ label: 'Aplicar o mesmo desconto em todos os anúncios (fixo)', value: 'fixed' })
+  }
+  if (!canUseFixed && discountMode.value === 'fixed') discountMode.value = 'suggested'
+  return options
+})
 
 // COMPUTED PARA SABER SE ALGO ESTÁ PROCESSANDO
 const processingCount = computed(() => {
@@ -635,7 +727,7 @@ const totalElegiveis = computed(() => {
   let count = 0;
   accountsPromotions.value.forEach(account => {
     account.promotions.forEach(promo => {
-      if ((promo.candidate_count > 0 || promo.type === 'SELLER_CAMPAIGN') && !promo.is_processing) {
+      if (canSelectPromotion(promo)) {
         count++;
       }
     });
@@ -717,7 +809,16 @@ const loadPromotions = async (silent = false, forceRefresh = false) => {
       acc.promotions.forEach(p => { if (p.is_processing) prevProcessing.add(`${acc.account_id}:${p.id}`) })
     )
 
-    accountsPromotions.value = response.data?.data || []
+    accountsPromotions.value = (response.data?.data || []).map(account => ({
+      ...account,
+      promotions: (account.promotions || []).map(normalizePromotion),
+    }))
+    const visibleKeys = new Set(
+      accountsPromotions.value.flatMap(account =>
+        account.promotions.map(promo => `${account.account_id}:${promo.id}`),
+      ),
+    )
+    selectedKeys.value = selectedKeys.value.filter(key => visibleKeys.has(key))
 
     // Toast individual por campanha concluída, com o resumo da execução
     if (prevProcessing.size) {
@@ -783,13 +884,16 @@ onBeforeUnmount(() => {
 // ATIVAÇÃO (dialog único para 1 ou N promoções)
 // ============================================================================
 const openActivationDialog = (account, promo) => {
+  if (!canSelectPromotion(promo)) return
   maxDiscount.value = promo.max_discount_pct_used != null ? Number(promo.max_discount_pct_used) : 15
+  discountMode.value = 'suggested'
   activationTargets.value = [{
     account_id: account.account_id,
     account_nickname: account.account_nickname,
     promotion_id: promo.id,
     promotion_type: promo.type,
     name: promo.name,
+    activation_mode: promo.activation_mode,
   }]
   showActivateDialog.value = true
 }
@@ -798,7 +902,7 @@ const collectEligible = (filterFn = null) => {
   const targets = []
   accountsPromotions.value.forEach(account => {
     account.promotions.forEach(promo => {
-      if ((promo.candidate_count > 0 || promo.type === 'SELLER_CAMPAIGN') && !promo.is_processing) {
+      if (canSelectPromotion(promo)) {
         if (!filterFn || filterFn(account, promo)) {
           targets.push({
             account_id: account.account_id,
@@ -806,6 +910,7 @@ const collectEligible = (filterFn = null) => {
             promotion_id: promo.id,
             promotion_type: promo.type,
             name: promo.name,
+            activation_mode: promo.activation_mode,
           })
         }
       }
@@ -819,18 +924,20 @@ const openSelectedActivation = () => {
   const targets = []
   accountsPromotions.value.forEach(account => {
     account.promotions.forEach(promo => {
-      if (isSelected(account, promo) && !promo.is_processing) {
+       if (isSelected(account, promo) && canSelectPromotion(promo)) {
         targets.push({
           account_id: account.account_id,
           account_nickname: account.account_nickname,
           promotion_id: promo.id,
           promotion_type: promo.type,
           name: promo.name,
+          activation_mode: promo.activation_mode,
         })
       }
     })
   })
   if (!targets.length) return
+  discountMode.value = 'suggested'
   activationTargets.value = targets
   showActivateDialog.value = true
 }
@@ -841,6 +948,7 @@ const openAllActivation = () => {
     $q.notify({ type: 'info', message: 'Nenhuma campanha elegível no momento.', position: 'top' })
     return
   }
+  discountMode.value = 'suggested'
   activationTargets.value = targets
   showActivateDialog.value = true
 }
@@ -852,6 +960,11 @@ const confirmActivate = async () => {
   }
   const targets = activationTargets.value
   if (!targets.length) return
+
+  if (targets.some(target => !['price', 'price_stock', 'offer_acceptance'].includes(target.activation_mode))) {
+    $q.notify({ type: 'warning', message: 'Uma das campanhas selecionadas não possui ação de ativação disponível.', position: 'top' })
+    return
+  }
 
   const isFixed = discountMode.value === 'fixed'
   // No modo fixo, a trava assume o próprio percentual: itens em que o ML exige
@@ -908,7 +1021,8 @@ const confirmActivate = async () => {
 
   } catch (error) {
     console.error(error)
-    $q.notify({ type: 'negative', message: 'Falha ao iniciar a ativação.', position: 'top' })
+    const reason = error?.response?.data?.message || error?.response?.data?.error
+    $q.notify({ type: 'negative', message: reason || 'Falha ao iniciar a ativação.', position: 'top' })
     loadPromotions(true, true)
   } finally {
     $q.loading.hide()
@@ -976,16 +1090,6 @@ const cancelAutoTrava = () => {
   autoTravaPercent.value = null
 }
 
-const getTypeMeta = (type) => {
-  const map = {
-    'MARKETPLACE_CAMPAIGN': { label: 'Campanha MKT', color: 'purple-1', textColor: 'purple-9' },
-    'DEAL': { label: 'Oferta do Dia', color: 'orange-1', textColor: 'orange-9' },
-    'LIGHTNING': { label: 'Relâmpago', color: 'red-1', textColor: 'red-9' },
-    'CO_FUNDED': { label: 'Co-patrocinada', color: 'blue-1', textColor: 'blue-9' },
-  }
-  return map[type] || { label: type || 'Outros', color: 'grey-2', textColor: 'grey-8' }
-}
-
 const formatDate = (isoString, includeSeconds = false) => {
   if (!isoString) return ''
   const d = new Date(isoString)
@@ -1047,10 +1151,14 @@ onMounted(() => {
 .header-title-promos   { font-size: 16px; font-weight: 700; color: #1a1f36; }
 
 .table-responsive { overflow-x: auto; }
+.promotions-filters { border: 1px solid #e8edf3; border-radius: 10px; padding: 10px; background: #f8fafc; }
+.activation-reason { max-width: 220px; white-space: normal; text-align: left; }
 
 @media (max-width: 600px) {
-  .page-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .promos-page-header .row { flex-wrap: wrap; gap: 8px; }
+  .promos-page-header .q-btn { flex: 1 1 auto; }
   .promo-progress { min-width: 100%; }
+  .activation-reason { max-width: 150px; font-size: 10px; }
 }
 
 .promo-progress { min-width: 170px; display: inline-block; text-align: right; }
