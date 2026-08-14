@@ -16,10 +16,13 @@
             </div>
 
             <div class="row q-gutter-sm">
-              <q-btn flat color="grey-7" icon="refresh" label="Atualizar"
-                @click="() => loadPromotions(false, true)" :loading="loading" />
+               <q-btn flat color="grey-7" icon="refresh" label="Atualizar"
+                 @click="() => loadPromotions(false, true)" :loading="loading" />
 
-              <q-btn flat color="grey-7" icon="receipt_long" label="Ver Logs"
+               <q-btn flat color="blue-grey-7" icon="help_outline" label="Como funciona?"
+                 @click="showGuideDialog = true" />
+
+               <q-btn flat color="grey-7" icon="receipt_long" label="Ver Logs"
                 @click="showLogsDialog = true" />
 
                <q-btn v-if="canWrite && selectedCount > 0" unelevated color="orange-8" text-color="white" icon="bolt"
@@ -283,8 +286,65 @@
             </q-expansion-item>
           </div>
         </q-card-section>
+     </q-card>
+   </div>
+
+    <q-dialog v-model="showGuideDialog">
+      <q-card style="width: 680px; max-width: 95vw;">
+        <q-card-section class="row items-center bg-blue-grey-9 text-white">
+          <q-icon name="school" size="sm" class="q-mr-sm" />
+          <div class="text-h6 text-weight-bold">Como usar as promoções</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+        <q-card-section class="q-pa-lg">
+          <div class="guide-intro q-mb-md">
+            O SellerBot lê as regras calculadas pelo Mercado Livre e só tenta
+            anúncios que respeitam a trava de desconto escolhida.
+          </div>
+          <q-list separator>
+            <q-item class="q-py-md">
+              <q-item-section avatar><q-avatar color="orange-1" text-color="orange-9" icon="local_offer" /></q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold">1. Escolha uma campanha</q-item-label>
+                <q-item-label caption>O tipo define se o SellerBot informa um preço, aceita uma oferta do ML ou apenas exibe informações.</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item class="q-py-md">
+              <q-item-section avatar><q-avatar color="blue-1" text-color="blue-9" icon="inventory_2" /></q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold">2. Entenda os anúncios</q-item-label>
+                <q-item-label caption><b>Elegíveis</b> podem entrar; <b>ativos</b> estão publicados; <b>pausados</b> precisam ser reativados no ML.</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item class="q-py-md">
+              <q-item-section avatar><q-avatar color="teal-1" text-color="teal-9" icon="security" /></q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold">3. Use a trava de desconto</q-item-label>
+                <q-item-label caption>Uma trava de <b>15%</b> aceita descontos de até 15%. Se o ML sugerir 8%, usa 8%; se exigir 20%, ignora o anúncio.</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item class="q-py-md">
+              <q-item-section avatar><q-avatar color="purple-1" text-color="purple-9" icon="savings" /></q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold">4. Separe promoção base e Boost ML</q-item-label>
+                <q-item-label caption>O desconto base protege sua margem. O Boost é um benefício adicional financiado pelo Mercado Livre.</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item class="q-py-md">
+              <q-item-section avatar><q-avatar color="green-1" text-color="green-9" icon="receipt_long" /></q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold">5. Confira o resultado</q-item-label>
+                <q-item-label caption>Abra os logs para ver ativados, rejeitados, itens fora da trava e o motivo de cada falha.</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+        <q-card-actions align="right" class="bg-grey-1">
+          <q-btn unelevated color="orange-8" label="Entendi" v-close-popup />
+        </q-card-actions>
       </q-card>
-    </div>
+    </q-dialog>
 
     <!-- ── DIALOG ÚNICO DE ATIVAÇÃO (1 ou N promoções) ── -->
     <q-dialog v-model="showActivateDialog" persistent>
@@ -318,9 +378,27 @@
                 <b>[{{ t.account_nickname }}]</b> {{ t.name || t.promotion_id }}
               </div>
             </div>
-          </div>
+           </div>
 
-          <!-- Modo de desconto -->
+          <q-banner rounded class="activation-preview q-mb-md" dense>
+            <template v-slot:avatar><q-icon name="fact_check" color="orange-8" /></template>
+            <div class="text-weight-bold">Resumo antes de executar</div>
+            <div class="text-caption">
+              {{ activationSummary.candidates }} anúncio(s) elegível(is) serão analisados.
+              {{ activationSummary.paused }} pausado(s) não entrarão nesta execução.
+            </div>
+            <div class="text-caption q-mt-xs">
+              A trava é um limite máximo: ela não força exatamente esse percentual.
+            </div>
+          </q-banner>
+
+          <q-banner v-if="hasOfferAcceptanceTarget" rounded class="bg-blue-1 text-blue-10 q-mb-sm" dense>
+            <template v-slot:avatar><q-icon name="handshake" color="blue-8" /></template>
+            Esta campanha já tem uma oferta calculada pelo Mercado Livre. O SellerBot
+            apenas aceita ou recusa essa oferta; desconto fixo não se aplica.
+          </q-banner>
+
+           <!-- Modo de desconto -->
           <div class="bg-grey-1 q-pa-md rounded-borders custom-shadow q-mb-sm">
             <div class="text-weight-bold text-blue-grey-9 q-mb-sm">Como aplicar o desconto?</div>
 
@@ -588,6 +666,7 @@ const authStore = useStore()
 const canWrite = computed(() => authStore.canWrite)
 const loading = ref(false)
 const accountsPromotions = ref([])
+const showGuideDialog = ref(false)
 let pollInterval = null
 
 const promotionTypeFilter = ref(null)
@@ -688,6 +767,15 @@ const activationTargets = ref([])          // [{account_id, account_nickname, pr
 const discountMode = ref('suggested')      // 'suggested' (trava) | 'fixed'
 const maxDiscount = ref(15)
 const fixedDiscountPct = ref(5)
+
+const activationSummary = computed(() => activationTargets.value.reduce((summary, target) => ({
+  candidates: summary.candidates + Number(target.candidate_count || 0),
+  paused: summary.paused + Number(target.paused_count || 0),
+}), { candidates: 0, paused: 0 }))
+
+const hasOfferAcceptanceTarget = computed(() =>
+  activationTargets.value.some(target => target.activation_mode === 'offer_acceptance')
+)
 
 const showLogsDialog = ref(false)
 const expandedLogKey = ref(null)           // foco em um log específico ao abrir pelo chip da linha
@@ -891,6 +979,8 @@ const openActivationDialog = (account, promo) => {
     promotion_type: promo.type,
     name: promo.name,
     activation_mode: promo.activation_mode,
+    candidate_count: promo.candidate_count,
+    paused_count: promo.paused_count,
   }]
   showActivateDialog.value = true
 }
@@ -908,6 +998,8 @@ const collectEligible = (filterFn = null) => {
             promotion_type: promo.type,
             name: promo.name,
             activation_mode: promo.activation_mode,
+            candidate_count: promo.candidate_count,
+            paused_count: promo.paused_count,
           })
         }
       }
@@ -929,6 +1021,8 @@ const openSelectedActivation = () => {
           promotion_type: promo.type,
           name: promo.name,
           activation_mode: promo.activation_mode,
+          candidate_count: promo.candidate_count,
+          paused_count: promo.paused_count,
         })
       }
     })
@@ -1150,6 +1244,8 @@ onMounted(() => {
 .table-responsive { overflow-x: auto; }
 .promotions-filters { border: 1px solid #e8edf3; border-radius: 10px; padding: 10px; background: #f8fafc; }
 .activation-reason { max-width: 220px; white-space: normal; text-align: left; }
+.activation-preview { background: #fff8e8; color: #7c4a03; border: 1px solid #f3d28a; }
+.guide-intro { padding: 12px 14px; border-radius: 8px; background: #f1f5f9; color: #334155; line-height: 1.45; }
 
 @media (max-width: 600px) {
   .promos-page-header .row { flex-wrap: wrap; gap: 8px; }
