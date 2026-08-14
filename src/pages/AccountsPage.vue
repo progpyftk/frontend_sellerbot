@@ -93,7 +93,7 @@
                    <q-popup-edit v-if="canWrite" :model-value="String(props.row.flex_delivery_cost || 12.50)"
                     @save="(val) => saveFlexDeliveryCost(props.row, val)" v-slot="scope" buttons label-set="Salvar"
                     label-cancel="Cancelar">
-                    <q-input v-model="scope.value" label="Custo estimado de entrega Flex (R$)" type="number" step="0.01"
+                    <q-input v-model="scope.value" label="Custo operacional de entrega Flex (R$)" type="number" step="0.01"
                       dense autofocus hint="Ex: 12.50" />
                   </q-popup-edit>
                 </q-td>

@@ -686,8 +686,8 @@
                   {{ props.row.items.length }} item{{ props.row.items.length > 1 ? 's' : '' }}
                   · {{ props.row.items[0]?.quantity }}×
                 </div>
-                <div v-if="(props.row.coupon_amount || 0) > 0" class="coupon-chip">
-                  <q-icon name="local_offer" size="9px" />-{{ formatCurrency(props.row.coupon_amount) }}
+                <div v-if="getSellerCouponAmount(props.row) > 0" class="coupon-chip">
+                  <q-icon name="local_offer" size="9px" />-{{ formatCurrency(getSellerCouponAmount(props.row)) }} seller
                 </div>
               </div>
             </q-td>
@@ -901,9 +901,19 @@
                     <span class="receipt-value pos-t">+{{ formatCurrency(selectedOrder.total_amount) }}</span>
                   </div>
                 </template>
-                <div v-if="(selectedOrder.coupon_amount || 0) > 0" class="receipt-row sub-row">
-                  <span class="receipt-label">Cupom</span>
-                  <span class="receipt-value ded-t">-{{ formatCurrency(selectedOrder.coupon_amount) }}</span>
+                <div v-if="getSellerCouponAmount(selectedOrder) > 0" class="receipt-row sub-row">
+                  <div class="receipt-label-g">
+                    <span class="receipt-label">(-) Cupom do seller</span>
+                    <span class="receipt-sub">Parcela custeada pelo seller — API /orders/{id}/discounts</span>
+                  </div>
+                  <span class="receipt-value ded-t">-{{ formatCurrency(getSellerCouponAmount(selectedOrder)) }}</span>
+                </div>
+                <div v-else-if="getDiscountSyncStatus(selectedOrder) !== 'synced'" class="receipt-row sub-row">
+                  <div class="receipt-label-g">
+                    <span class="receipt-label">Cupons ML</span>
+                    <span class="receipt-sub">{{ getDiscountSyncStatusLabel(selectedOrder) }}</span>
+                  </div>
+                  <span class="receipt-value" style="color:#f59e0b">—</span>
                 </div>
                 <div class="receipt-sep" />
                 <div v-for="item in (selectedOrder.items || [])" :key="'rf-' + item.item_id_ml + (item.variation_id || '')" class="receipt-row sub-row">
@@ -1418,6 +1428,7 @@ const groupPackOrders = (rawRows) => {
         pack.fee_breakdown = {
           total_sale_fee:       (Number(fb?.total_sale_fee      || 0) + Number(row.fee_breakdown.total_sale_fee      || 0)),
           seller_shipping_cost: (Number(fb?.seller_shipping_cost|| 0) + Number(row.fee_breakdown.seller_shipping_cost|| 0)),
+          seller_coupon_amount: (Number(fb?.seller_coupon_amount|| 0) + Number(row.fee_breakdown.seller_coupon_amount|| 0)),
           net_received:         (Number(fb?.net_received        || 0) + Number(row.fee_breakdown.net_received        || 0)),
         }
       }
@@ -1902,16 +1913,32 @@ const getSellerShippingCost = (row) => {
   const fromFb = Number(row.fee_breakdown?.seller_shipping_cost || 0)
   if (fromFb > 0) return fromFb
   // Fallback 2: derive from net_received if available
-  // net_received = total_amount - sale_fee - seller_shipping + flex_credit
+  // net_received = total_amount - sale_fee - seller_shipping + flex_credit - seller_coupon
   if (row.fee_breakdown?.net_received != null) {
     const derived = Number(row.total_amount || 0)
       - Number(row.fee_breakdown?.total_sale_fee || 0)
       - Number(row.fee_breakdown.net_received)
       + Number(row.fee_breakdown?.flex_credit || 0)
+      - getSellerCouponAmount(row)
     return Math.max(0, Math.round(derived * 100) / 100)
   }
   return 0
 }
+
+// Fonte: details[type=coupon].items[].amounts.seller do endpoint ML /discounts.
+// Nao usar coupon_amount do Order/Payment: pode ser zero, total do comprador ou repetido.
+const getSellerCouponAmount = (row) => Number(
+  row.seller_coupon_amount ?? row.fee_breakdown?.seller_coupon_amount ?? 0
+)
+
+const getDiscountSyncStatus = (row) =>
+  row.discounts_sync_status ?? row.fee_breakdown?.discounts_sync_status ?? 'pending'
+
+const getDiscountSyncStatusLabel = (row) => ({
+  pending: 'Ainda nao consultado no endpoint /discounts',
+  error: 'Falha na consulta; margem pode estar sem cupom',
+  unavailable: 'Detalhe indisponivel na janela de retencao da API',
+}[getDiscountSyncStatus(row)] || 'Estado de consulta desconhecido')
 
 // Retorna o Custo Médio do Produto total da order.
 // Preferência: campo custo_medio_produto gravado no banco.
@@ -1927,7 +1954,10 @@ const getCustoMedioProduto = (row) => {
 }
 const getNetMargin = (row) => {
   if (row.fee_breakdown) return Number(row.fee_breakdown.net_received || 0)
-  return Number(row.total_amount || 0) - getOrderFeeBreakdown(row).totalSaleFee - getSellerShippingCost(row)
+  return Number(row.total_amount || 0)
+    - getOrderFeeBreakdown(row).totalSaleFee
+    - getSellerShippingCost(row)
+    - getSellerCouponAmount(row)
 }
 const calculateMarginPct = (row) => {
   const t = getBrutoAmount(row)
