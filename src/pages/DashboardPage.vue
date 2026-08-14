@@ -277,7 +277,7 @@
           label="Margem Contrib. Após Ads"
           :value="fmt(op?.lucro_liquido)"
           variant="teal"
-          :sub="'Margem ' + pct(op?.lucro_liquido, op?.net_revenue)"
+          :sub="'Margem ' + pct(op?.lucro_liquido, op?.gmv)"
           :delta="deltaFmt(op?.vs_prev?.lucro_liquido)"
           :sparkline-data="sparklineData('lucro_liquido')"
           sparkline-color="#0f766e"
@@ -369,7 +369,7 @@
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Margem de Contribuição (após CMV e Ads) ÷ Receita Líquida. Não desconta despesas fixas nem impostos — para isso, veja a aba DRE-Aproximada.
+                Margem de Contribuição (após CMV e Ads) ÷ GMV. Não desconta despesas fixas nem impostos — para isso, veja a aba DRE-Aproximada.
               </q-tooltip>
             </q-icon>
           </template>
@@ -488,12 +488,12 @@
                     </td>
                     <td class="col-num col-ll" :class="d.lucro_liquido >= 0 ? 'dt-pos' : 'dt-neg'">
                       <strong>{{ fmt(d.lucro_liquido) }}</strong>
-                      <span class="dt-mobile-pct">{{ pct(d.lucro_liquido, d.net_revenue) }}</span>
+                      <span class="dt-mobile-pct">{{ pct(d.lucro_liquido, d.gmv) }}</span>
                     </td>
                     <td class="col-num">{{ d.orders_count }}</td>
                     <td class="col-num col-margin">
-                      <span :class="d.net_revenue > 0 ? (d.lucro_liquido / d.net_revenue >= 0.15 ? 'dt-pos' : d.lucro_liquido / d.net_revenue >= 0.05 ? '' : 'dt-warn-text') : ''">
-                        {{ pct(d.lucro_liquido, d.net_revenue) }}
+                      <span :class="d.gmv > 0 ? (d.lucro_liquido / d.gmv >= 0.15 ? 'dt-pos' : d.lucro_liquido / d.gmv >= 0.05 ? '' : 'dt-warn-text') : ''">
+                        {{ pct(d.lucro_liquido, d.gmv) }}
                       </span>
                     </td>
                   </tr>
@@ -517,7 +517,7 @@
                       </td>
                       <td class="col-num col-ll dt-sub" :class="(a.lucro_liquido || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(a.lucro_liquido) }}</td>
                       <td class="col-num dt-sub">{{ a.orders_count || 0 }}</td>
-                      <td class="col-num col-margin dt-sub">{{ pct(a.lucro_liquido, a.net_revenue) }}</td>
+                      <td class="col-num col-margin dt-sub">{{ pct(a.lucro_liquido, a.gmv) }}</td>
                     </tr>
                     <tr v-if="!dayAccountRows(d.date).length" class="dt-acct-row">
                       <td colspan="9" class="dt-loading-hint">
@@ -541,10 +541,10 @@
                   <td class="col-num col-ads">{{ chartTotals.gmv > 0 ? (chartTotals.ads_cost / chartTotals.gmv * 100).toFixed(1) + '%' : '—' }}</td>
                   <td class="col-num col-ll" :class="(chartTotals.lucro_liquido || 0) >= 0 ? 'dt-pos' : 'dt-neg'">
                     <strong>{{ fmt(chartTotals.lucro_liquido) }}</strong>
-                    <span class="dt-mobile-pct">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</span>
+                    <span class="dt-mobile-pct">{{ pct(chartTotals.lucro_liquido, chartTotals.gmv) }}</span>
                   </td>
                   <td class="col-num">{{ chartTotals.orders_count }}</td>
-                  <td class="col-num col-margin">{{ pct(chartTotals.lucro_liquido, chartTotals.net_revenue) }}</td>
+                  <td class="col-num col-margin">{{ pct(chartTotals.lucro_liquido, chartTotals.gmv) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -849,7 +849,7 @@
                       <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
                       <td class="right warn">{{ fmt(a.ads_cost) }}</td>
                       <td class="right" :class="(a.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido) }}</td>
-                      <td class="right">{{ pct(a.lucro_liquido, a.net_revenue) }}</td>
+                      <td class="right">{{ pct(a.lucro_liquido, a.gmv) }}</td>
                     </tr>
                   </template>
                   <template v-if="activeMarketplaces.includes('shopee') && shopeeData?.by_account">
@@ -866,9 +866,9 @@
                       <td class="right">{{ fmt(a.net_revenue) }}</td>
                       <td class="right warn">{{ a.gross_profit != null ? fmt(a.net_revenue - a.gross_profit) : '—' }}</td>
                       <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
-                      <td class="right warn">—</td>
-                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
-                      <td class="right">{{ pct(a.gross_profit, a.net_revenue) }}</td>
+                      <td class="right warn">{{ a.ads_cost ? fmt(a.ads_cost) : '—' }}</td>
+                      <td class="right" :class="(a.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ a.lucro_liquido != null ? fmt(a.lucro_liquido) : '—' }}</td>
+                      <td class="right">{{ pct(a.lucro_liquido, a.gmv) }}</td>
                     </tr>
                   </template>
                   <template v-if="activeMarketplaces.includes('tiktokshop') && tiktokData?.by_account">
@@ -885,7 +885,7 @@
                       <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
                       <td class="right warn">—</td>
                       <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
-                      <td class="right">{{ pct(a.gross_profit, a.net_revenue) }}</td>
+                      <td class="right">{{ pct(a.gross_profit, a.gmv) }}</td>
                   </tr>
               </template>
               <!-- TikTok Shop accounts -->
@@ -918,7 +918,7 @@
                     <td class="right" :class="(op?.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(op?.gross_profit) }}</td>
                     <td class="right warn">{{ fmt(op?.ads_cost) }}</td>
                     <td class="right" :class="(op?.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(op?.lucro_liquido) }}</td>
-                    <td class="right">{{ pct(op?.lucro_liquido, op?.net_revenue) }}</td>
+                    <td class="right">{{ pct(op?.lucro_liquido, op?.gmv) }}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -1632,6 +1632,7 @@ import { useQuasar } from 'quasar'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
 import TikTokShopService from 'src/services/TikTokShopService'
+import { calculateNetMarginPct } from 'src/utils/dashboardMetrics'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
@@ -1883,7 +1884,7 @@ const filteredMlOp = computed(() => {
     orders_count: orders, units_sold: units,
     avg_ticket: averageTicket(gmv, orders),
     total_fees: +(gmv - net).toFixed(2), cmv_total: s('cmv_total'),
-    lucro_liquido_pct: net ? +(ll / net * 100).toFixed(2) : null,
+    lucro_liquido_pct: calculateNetMarginPct(gmv, gp, ads, 2),
     gross_margin_pct: net ? +(gp / net * 100).toFixed(2) : null,
     roas: ads ? +(gmv / ads).toFixed(2) : null,
     acos: gmv ? +(ads / gmv * 100).toFixed(2) : null,
@@ -2625,7 +2626,7 @@ function tiktokToMLFormat(tk) {
 const combinedOp = computed(() => {
   if (activeDatePreset.value === 'hoje' && combinedToday.value) {
     const d = combinedToday.value
-    const ll_pct = d.net_revenue ? +(d.lucro_liquido / d.net_revenue * 100).toFixed(2) : null
+    const ll_pct = calculateNetMarginPct(d.gmv, d.gross_profit, d.ads_cost, 2)
     const gm_pct = d.net_revenue ? +(d.gross_profit / d.net_revenue * 100).toFixed(2) : null
     return { ...d, lucro_liquido_pct: ll_pct, gross_margin_pct: gm_pct, roas: null, acos: null, catalog_orders_count: 0, flex_orders_count: 0, canceled_count: null, vs_prev: null }
   }
@@ -2648,7 +2649,7 @@ const combinedOp = computed(() => {
     affiliate_cost: sh.affiliate_cost || 0,
     total_fees:   sh.marketplace_fees || 0,
     cmv_total:    0,
-    lucro_liquido_pct: sh.net_revenue ? +((sh.lucro_liquido ?? sh.gross_profit ?? 0) / sh.net_revenue * 100).toFixed(2) : null,
+    lucro_liquido_pct: calculateNetMarginPct(sh.gmv, sh.gross_profit, sh.ads_cost, 2),
     gross_margin_pct:  null,
     vs_prev: null,
   }
@@ -2662,27 +2663,31 @@ const combinedOp = computed(() => {
     units_sold:   tk.units_sold,
     ads_cost:     tk.ads_cost || 0,
     cmv_total:    0,
-    lucro_liquido_pct: tk.net_revenue ? +((tk.gross_profit || 0) / tk.net_revenue * 100).toFixed(2) : null,
+    lucro_liquido_pct: calculateNetMarginPct(tk.gmv, tk.gross_profit, tk.ads_cost, 2),
     gross_margin_pct:  null,
     vs_prev: null,
   }
 
   const gmv = (ml?.gmv || 0) + (sh?.gmv || 0) + (tk?.gmv || 0)
   const orders = (ml?.orders_count || 0) + (sh?.orders_count || 0) + (tk?.orders_count || 0)
+  const netRevenue = (ml?.net_revenue || 0) + (sh?.net_revenue || 0) + (tk?.net_revenue || 0)
+  const grossProfit = (ml?.gross_profit || 0) + (sh?.gross_profit || 0) + (tk?.gross_profit || 0)
+  const adsCost = (ml?.ads_cost || 0) + (sh?.ads_cost || 0) + (tk?.ads_cost || 0)
+  const lucroLiquido = (ml?.lucro_liquido || 0) + (sh?.lucro_liquido ?? sh?.gross_profit ?? 0) + (tk?.gross_profit || 0)
   return {
     gmv,
-    net_revenue:   (ml?.net_revenue || 0) + (sh?.net_revenue || 0) + (tk?.net_revenue || 0),
-    gross_profit:  (ml?.gross_profit || 0) + (sh?.gross_profit || 0) + (tk?.gross_profit || 0),
-    lucro_liquido: (ml?.lucro_liquido || 0) + (sh?.lucro_liquido ?? sh?.gross_profit ?? 0) + (tk?.gross_profit || 0),
+    net_revenue:   netRevenue,
+    gross_profit:  grossProfit,
+    lucro_liquido: lucroLiquido,
     orders_count:  orders,
     units_sold:    (ml?.units_sold || 0) + (sh?.units_sold || 0) + (tk?.units_sold || 0),
     avg_ticket:    averageTicket(gmv, orders),
-    ads_cost:      (ml?.ads_cost || 0) + (sh?.ads_cost || 0) + (tk?.ads_cost || 0),
+    ads_cost:      adsCost,
     affiliate_cost: sh?.affiliate_cost || 0,
     total_fees:    (ml?.total_fees || 0) + (sh?.marketplace_fees || 0),
     cmv_total:     ml?.cmv_total || 0,
-    lucro_liquido_pct: null,
-    gross_margin_pct:  null,
+    lucro_liquido_pct: calculateNetMarginPct(gmv, grossProfit, adsCost, 2),
+    gross_margin_pct:  netRevenue ? +(grossProfit / netRevenue * 100).toFixed(2) : null,
     roas: ml?.roas, acos: ml?.acos, tacos: ml?.tacos,
     canceled_count: ml?.canceled_count,
     catalog_orders_count: ml?.catalog_orders_count,
@@ -3488,7 +3493,7 @@ const rankingRows = computed(() => {
       ads_cost: ads,
       tacos: gmv ? +(ads / gmv * 100).toFixed(1) : null,
       lucro_liquido: ll,
-      lucro_liquido_pct: net ? +(ll / net * 100).toFixed(1) : null,
+      lucro_liquido_pct: calculateNetMarginPct(gmv, gp, ads, 1),
       roas: a.roas || null,
       orders_count: a.orders_count || 0,
     })
@@ -3501,6 +3506,8 @@ const rankingRows = computed(() => {
     const gmv = a.gmv || 0
     const net = a.net_revenue || 0
     const gp  = a.gross_profit || 0
+    const ads = a.ads_cost || 0
+    const ll  = a.lucro_liquido ?? (gp - ads)
     rows.push({
       key,
       marketplace: 'shopee',
@@ -3509,10 +3516,10 @@ const rankingRows = computed(() => {
       net_revenue: net,
       gross_profit: gp,
       gross_margin_pct: net ? +(gp / net * 100).toFixed(1) : null,
-      ads_cost: null,
-      tacos: null,
-      lucro_liquido: gp,
-      lucro_liquido_pct: net ? +(gp / net * 100).toFixed(1) : null,
+      ads_cost: ads,
+      tacos: gmv ? +(ads / gmv * 100).toFixed(1) : null,
+      lucro_liquido: ll,
+      lucro_liquido_pct: calculateNetMarginPct(gmv, gp, ads, 1),
       roas: null,
       orders_count: a.orders_count || 0,
     })
@@ -3536,7 +3543,7 @@ const rankingRows = computed(() => {
       ads_cost: null,
       tacos: null,
       lucro_liquido: gp,
-      lucro_liquido_pct: net ? +(gp / net * 100).toFixed(1) : null,
+      lucro_liquido_pct: calculateNetMarginPct(gmv, gp, 0, 1),
       roas: null,
       orders_count: a.orders_count || 0,
     })
