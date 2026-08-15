@@ -676,6 +676,9 @@ const promotionTypeOptions = [
   ...getPromotionTypeFilterOptions(),
   { label: 'Outros tipos', value: 'other' },
 ]
+const knownPromotionTypes = new Set(
+  promotionTypeOptions.map(option => option.value).filter(value => value !== null && value !== 'other'),
+)
 const listingStatusOptions = [
   { label: 'Ativos e pausados', value: 'all' },
   { label: 'Somente ativos', value: 'active' },
@@ -685,8 +688,7 @@ const listingStatusOptions = [
 function visiblePromotions(promotions = []) {
   return promotions.filter((promo) => {
       if (promotionTypeFilter.value === 'other') {
-        const known = promotionTypeOptions.map((option) => option.value).filter(Boolean)
-        if (known.includes(promo.type)) return false
+        if (knownPromotionTypes.has(promo.type)) return false
       } else if (promotionTypeFilter.value && promo.type !== promotionTypeFilter.value) {
         return false
       }
@@ -705,7 +707,6 @@ const discountModeOptions = computed(() => {
   if (canUseFixed) {
     options.push({ label: 'Aplicar o mesmo desconto em todos os anúncios (fixo)', value: 'fixed' })
   }
-  if (!canUseFixed && discountMode.value === 'fixed') discountMode.value = 'suggested'
   return options
 })
 
