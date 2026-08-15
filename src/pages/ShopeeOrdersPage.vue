@@ -71,9 +71,11 @@
             <div class="today-card-val">{{ formatCurrency(todayStats.faturamento) }}</div>
             <div class="today-card-label">Receita líquida</div>
             <div class="today-card-sub">
-              <span v-if="todayStats.faturamento_note === 'escrow'" class="text-teal-6">repasse real (escrow)</span>
-              <span v-else class="text-grey-5">
-                {{ todayStats.escrow_count }}/{{ todayStats.count_paid }} c/ escrow
+              <span :class="todayStats.revenue_basis === 'escrow' ? 'text-teal-6' : 'text-orange-6'">
+                {{ revenueBasisLabel(todayStats) }}
+              </span>
+              <span v-if="todayStats.revenue_basis !== 'escrow'" class="text-grey-5">
+                · {{ todayStats.orders_with_escrow ?? todayStats.escrow_count ?? 0 }}/{{ todayStats.count_paid }} c/ escrow
               </span>
             </div>
           </div>
@@ -487,7 +489,7 @@
             <!-- ⑥ Taxas Shopee (comissão + serviço, do escrow) -->
             <q-td key="frete" :props="props" align="right">
               <div class="column items-end">
-                <template v-if="props.row.escrow_synced">
+                <template v-if="isEscrowReal(props.row)">
                   <span class="frete-val">-{{ formatCurrency(getTaxasShopee(props.row)) }}</span>
                   <span class="frete-hint">comissão + taxas</span>
                 </template>
@@ -498,7 +500,7 @@
             <!-- ⑦ Repasse Shopee (escrow_amount) -->
             <q-td key="liquido" :props="props" align="right">
               <div class="cell-liquido">
-                <template v-if="props.row.escrow_synced">
+                <template v-if="isEscrowReal(props.row)">
                   <div :class="['liquido-main', props.row.escrow_amount >= 0 ? 'pos' : 'neg']">
                     {{ formatCurrency(props.row.escrow_amount) }}
                   </div>
@@ -556,7 +558,7 @@
             </div>
             <div class="column items-end q-gutter-y-xs">
               <q-btn flat round dense icon="close" color="grey-6" @click="detailOpen = false" />
-              <q-btn v-if="!selectedOrder.escrow_synced"
+              <q-btn v-if="!isEscrowReal(selectedOrder)"
                 unelevated dense size="xs" color="teal-7" icon="sync" label="Sync Escrow"
                 :loading="syncingEscrow"
                 @click="syncOrderEscrow(selectedOrder)"
@@ -639,8 +641,10 @@
           <div class="detail-section">
             <div class="detail-section-title">
               <q-icon name="account_balance_wallet" size="14px" /> Auditoria Financeira
-              <q-badge v-if="selectedOrder.escrow_synced" color="teal-7" class="q-ml-sm" style="font-size:9px">ESCROW</q-badge>
-              <q-badge v-else color="grey-5" class="q-ml-sm" style="font-size:9px">ESTIMADO</q-badge>
+              <q-badge v-if="isEscrowReal(selectedOrder)" color="teal-7" class="q-ml-sm" style="font-size:9px">ESCROW</q-badge>
+              <q-badge v-else :color="selectedOrder.escrow_sync_status === 'error' ? 'negative' : 'grey-5'" class="q-ml-sm" style="font-size:9px">
+                {{ escrowStatusLabel(selectedOrder) }}
+              </q-badge>
             </div>
 
             <!-- ── BLOCO RECEITA ── -->
@@ -648,7 +652,7 @@
               <div class="finance-block-label">Receita do Comprador</div>
 
               <!-- Com escrow: preço original → desconto → preço final -->
-              <template v-if="selectedOrder.escrow_synced">
+              <template v-if="isEscrowReal(selectedOrder)">
 
                 <!-- ▸ Quadrinho: formação do preço (descontos do seller) -->
                 <div class="price-box">
@@ -728,7 +732,7 @@
             </div>
 
             <!-- ── BLOCO DEDUÇÕES (escrow disponível) ── -->
-            <template v-if="selectedOrder.escrow_synced">
+            <template v-if="isEscrowReal(selectedOrder)">
               <div class="finance-block">
                 <div class="finance-block-label">Deduções Shopee</div>
 
@@ -750,6 +754,15 @@
                     <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
                   </span>
                   <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.service_fee) }}</span>
+                </div>
+
+                <div v-if="Number(selectedOrder.ams_commission_fee) > 0" class="finance-row">
+                  <span class="finance-label">
+                    Comissão de afiliados (AMS)
+                    <q-tooltip class="bg-grey-9" style="max-width:260px">Custo do programa de afiliados/creators, já incluído no repasse escrow.</q-tooltip>
+                    <q-icon name="info_outline" size="10px" class="q-ml-xs text-grey-4" />
+                  </span>
+                  <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.ams_commission_fee) }}</span>
                 </div>
 
                 <!-- ▸ Quadrinho de logística -->
@@ -950,6 +963,7 @@ import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
+import { isEscrowReal, orderRevenue, revenueBasisLabel } from 'src/utils/shopeeFinance'
 
 const $q = useQuasar()
 const authStore = useStore()
@@ -1105,6 +1119,14 @@ function statusIcon(s) {
   return map[s] || 'circle'
 }
 
+function escrowStatusLabel(row) {
+  return {
+    pending: 'PENDENTE',
+    unavailable: 'INDISPONÍVEL',
+    error: 'ERRO NO ESCROW',
+  }[row?.escrow_sync_status] || 'ESTIMADO'
+}
+
 // ── Helpers financeiros ────────────────────────────────────────────────────
 // escrow_amount   = repasse real da Shopee (confirmado via get_escrow_detail)
 // commission_fee  = comissão Shopee (~16%)
@@ -1129,9 +1151,7 @@ function getTaxasShopee(row) {
 }
 
 function getLiquido(row) {
-  if (row.escrow_synced && row.escrow_amount != null) return Number(row.escrow_amount)
-  // Sem escrow: total_amount - shipping_fee (logística Shopee) — mesma base usada pelo backend no sync_cmv
-  return Number(row.total_amount || 0) - Number(row.shipping_fee || 0)
+  return orderRevenue(row)
 }
 
 // Soma de unit_price × qty — preço real de venda dos produtos (sem frete)

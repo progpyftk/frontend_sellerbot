@@ -988,9 +988,12 @@
             </div>
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.gmv) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Rec. Estimada</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.net_revenue) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Rec. Auditada</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.audited_net_revenue ?? filteredShopeeOp.net_revenue) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Margem Contrib. Após Ads</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit ?? 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ filteredShopeeOp.orders_count }}</span></div>
+            </div>
+            <div v-if="filteredShopeeOp.revenue_basis && filteredShopeeOp.revenue_basis !== 'escrow'" class="text-caption text-orange-7 q-mt-xs">
+              {{ filteredShopeeOp.orders_with_escrow || 0 }}/{{ filteredShopeeOp.orders_count || 0 }} pedidos com escrow; restante estimado.
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
               <div class="gmv-bar-fill gmv-bar-fill--shopee" :style="{ width: combinedGmvShare('shopee', filteredShopeeOp.gmv) + '%' }"></div>
@@ -1912,10 +1915,18 @@ const filteredShopeeOp = computed(() => {
   const selected = byAccount.filter(a => selectedIds.has(String(a.account_id)))
   if (!selected.length) return null
   const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
-  const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
+  const gmv = s('gmv'), net = s('net_revenue'), audited = s('audited_net_revenue'), estimated = s('estimated_net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
   const ads = s('ads_cost'), ll = s('lucro_liquido')
   const affiliate_cost = s('affiliate_cost'), marketplace_fees = s('marketplace_fees')
-  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: ads, affiliate_cost, marketplace_fees, lucro_liquido: ll || null, orders_count: orders, avg_ticket: averageTicket(gmv, orders), units_sold: 0, by_account: selected }
+  const ordersWithEscrow = s('orders_with_escrow')
+  const revenueBasis = ordersWithEscrow === orders ? 'escrow' : ordersWithEscrow ? 'mixed' : 'estimated'
+  return {
+    gmv, net_revenue: net, audited_net_revenue: audited, estimated_net_revenue: estimated,
+    revenue_basis: revenueBasis, orders_with_escrow: ordersWithEscrow,
+    orders_without_escrow: s('orders_without_escrow'), gross_profit: gp, ads_cost: ads,
+    affiliate_cost, marketplace_fees, lucro_liquido: ll || null, orders_count: orders,
+    avg_ticket: averageTicket(gmv, orders), units_sold: 0, by_account: selected,
+  }
 })
 
 // Modalidade de envio Shopee (feedback #18) — agregado de todas as contas Shopee
