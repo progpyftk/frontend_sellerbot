@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isEscrowReal, orderRevenue, revenueBasisLabel } from 'src/utils/shopeeFinance'
+import { isDirectDeliveryCarrier, isEscrowReal, orderRevenue, revenueBasisLabel } from 'src/utils/shopeeFinance'
 
 describe('shopee finance helpers', () => {
   it('requires a real escrow amount before treating an order as audited', () => {
@@ -19,5 +19,11 @@ describe('shopee finance helpers', () => {
     expect(revenueBasisLabel({ revenue_basis: 'mixed' })).toBe('período misto: escrow + estimativa')
     expect(revenueBasisLabel({ faturamento_note: 'misto' })).toBe('período misto: escrow + estimativa')
     expect(revenueBasisLabel({ faturamento_note: 'escrow' })).toBe('repasse real (escrow)')
+  })
+
+  it('recognizes both Shopee direct-delivery carrier names', () => {
+    expect(isDirectDeliveryCarrier('Entrega Direta')).toBe(true)
+    expect(isDirectDeliveryCarrier(' SHOPEE  ENTREGA DIRETA ')).toBe(true)
+    expect(isDirectDeliveryCarrier('Shopee Xpress')).toBe(false)
   })
 })

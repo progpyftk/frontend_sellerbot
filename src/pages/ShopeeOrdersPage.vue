@@ -410,8 +410,8 @@
                     <q-icon name="storefront" size="10px" /> {{ props.row.shop_name }}
                   </span>
                   <span v-if="props.row.shipping_carrier" class="shop-badge"
-                    :class="{ 'shop-badge--direta': props.row.shipping_carrier === 'Entrega Direta' }"
-                    :title="props.row.shipping_carrier === 'Entrega Direta' ? 'Entrega Direta — equivalente ao Flex do ML' : props.row.shipping_carrier">
+                    :class="{ 'shop-badge--direta': isDirectDeliveryCarrier(props.row.shipping_carrier) }"
+                    :title="isDirectDeliveryCarrier(props.row.shipping_carrier) ? 'Entrega Direta — equivalente ao Flex do ML' : props.row.shipping_carrier">
                     <q-icon name="local_shipping" size="10px" /> {{ props.row.shipping_carrier }}
                   </span>
                 </div>
@@ -843,13 +843,17 @@
               </div>
             </template>
 
-            <!-- ── CMV + LUCRO ── -->
+            <!-- ── CMV + custo operacional + LUCRO ── -->
             <template v-if="selectedOrder.custo_medio_produto != null">
               <div class="finance-block q-mt-xs">
                 <div class="finance-block-label">Custo do Produto (CMV)</div>
                 <div class="finance-row">
                   <span class="finance-label">Custo médio do produto</span>
                   <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.custo_medio_produto) }}</span>
+                </div>
+                <div v-if="isDirectDeliveryCarrier(selectedOrder.shipping_carrier) && selectedOrder.direct_delivery_cost_snapshot != null" class="finance-row">
+                  <span class="finance-label">Custo Entrega Direta</span>
+                  <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.direct_delivery_cost_snapshot) }}</span>
                 </div>
               </div>
               <div class="finance-divider" />
@@ -963,7 +967,7 @@ import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
-import { isEscrowReal, orderRevenue, revenueBasisLabel } from 'src/utils/shopeeFinance'
+import { isDirectDeliveryCarrier, isEscrowReal, orderRevenue, revenueBasisLabel } from 'src/utils/shopeeFinance'
 
 const $q = useQuasar()
 const authStore = useStore()

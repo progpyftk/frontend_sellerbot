@@ -992,6 +992,9 @@
               <div class="mp-kpi"><span class="mp-kpi-label">Margem Contrib. Após Ads</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit ?? 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ filteredShopeeOp.orders_count }}</span></div>
             </div>
+            <div v-if="Number(filteredShopeeOp.direct_delivery_cost_total || 0) > 0" class="text-caption text-orange-7 q-mt-xs">
+              Custo Entrega Direta: {{ fmt(filteredShopeeOp.direct_delivery_cost_total) }}
+            </div>
             <div v-if="filteredShopeeOp.revenue_basis && filteredShopeeOp.revenue_basis !== 'escrow'" class="text-caption text-orange-7 q-mt-xs">
               {{ filteredShopeeOp.orders_with_escrow || 0 }}/{{ filteredShopeeOp.orders_count || 0 }} pedidos com escrow; restante estimado.
             </div>
@@ -1004,13 +1007,16 @@
             <div v-if="shopeeCarrierBreakdown.length" class="carrier-breakdown q-mt-sm">
               <div class="carrier-breakdown-title">Por modalidade de envio</div>
               <div v-for="c in shopeeCarrierBreakdown" :key="c.shipping_carrier" class="carrier-row">
-                <span class="carrier-label" :class="{ 'carrier-label--direta': c.shipping_carrier === 'Entrega Direta' }">
+                 <span class="carrier-label" :class="{ 'carrier-label--direta': isDirectDeliveryCarrier(c.shipping_carrier) }">
                   {{ c.shipping_carrier }}
                 </span>
                 <span class="carrier-bar-wrap">
                   <span class="carrier-bar-fill" :style="{ width: carrierPct(c) + '%' }"></span>
                 </span>
-                <span class="carrier-val">{{ c.orders_count }} <span class="carrier-val-sub">({{ fmt(c.gmv) }})</span></span>
+                <span class="carrier-val">
+                  {{ c.orders_count }} <span class="carrier-val-sub">({{ fmt(c.gmv) }})</span>
+                  <span v-if="Number(c.delivery_cost || 0) > 0" class="carrier-val-sub"> · custo {{ fmt(c.delivery_cost) }}</span>
+                </span>
               </div>
             </div>
           </div>
@@ -1636,6 +1642,7 @@ import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
 import TikTokShopService from 'src/services/TikTokShopService'
 import { calculateNetMarginPct } from 'src/utils/dashboardMetrics'
+import { isDirectDeliveryCarrier } from 'src/utils/shopeeFinance'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
@@ -1918,13 +1925,14 @@ const filteredShopeeOp = computed(() => {
   const gmv = s('gmv'), net = s('net_revenue'), audited = s('audited_net_revenue'), estimated = s('estimated_net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
   const ads = s('ads_cost'), ll = s('lucro_liquido')
   const affiliate_cost = s('affiliate_cost'), marketplace_fees = s('marketplace_fees')
+  const direct_delivery_cost_total = s('direct_delivery_cost_total')
   const ordersWithEscrow = s('orders_with_escrow')
   const revenueBasis = ordersWithEscrow === orders ? 'escrow' : ordersWithEscrow ? 'mixed' : 'estimated'
   return {
     gmv, net_revenue: net, audited_net_revenue: audited, estimated_net_revenue: estimated,
     revenue_basis: revenueBasis, orders_with_escrow: ordersWithEscrow,
     orders_without_escrow: s('orders_without_escrow'), gross_profit: gp, ads_cost: ads,
-    affiliate_cost, marketplace_fees, lucro_liquido: ll || null, orders_count: orders,
+    direct_delivery_cost_total, affiliate_cost, marketplace_fees, lucro_liquido: ll || null, orders_count: orders,
     avg_ticket: averageTicket(gmv, orders), units_sold: 0, by_account: selected,
   }
 })

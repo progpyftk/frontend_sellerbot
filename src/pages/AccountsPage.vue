@@ -222,12 +222,12 @@
 
               <template v-slot:body-cell-direct_delivery_cost="props">
                 <q-td :props="props" class="text-center">
-                  <span class="td-val">R$ {{ Number(props.row.direct_delivery_cost ?? 8.00).toFixed(2) }}</span>
-                   <q-popup-edit v-if="canWrite" :model-value="String(props.row.direct_delivery_cost ?? 8.00)"
+                   <span class="td-val">R$ {{ Number(props.row.direct_delivery_cost ?? 11.00).toFixed(2) }}</span>
+                    <q-popup-edit v-if="canWrite" :model-value="String(props.row.direct_delivery_cost ?? 11.00)"
                     @save="(val) => saveDirectDeliveryCost(props.row, val)" v-slot="scope" buttons label-set="Salvar"
                     label-cancel="Cancelar">
-                    <q-input v-model="scope.value" label="Custo estimado de Entrega Direta (R$)" type="number" step="0.01"
-                      dense autofocus hint="Ex: 8.00" />
+                     <q-input v-model="scope.value" label="Custo operacional de Entrega Direta (R$)" type="number" step="0.01"
+                       dense autofocus hint="Ex: 11.00" />
                   </q-popup-edit>
                 </q-td>
               </template>

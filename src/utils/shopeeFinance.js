@@ -17,3 +17,8 @@ export function orderRevenue(order) {
   if (isEscrowReal(order)) return Number(order.escrow_amount || 0)
   return Number(order.total_amount || 0) - Number(order.shipping_fee || 0)
 }
+
+export function isDirectDeliveryCarrier(carrier) {
+  const normalized = String(carrier || '').trim().replace(/\s+/g, ' ').toLowerCase()
+  return normalized === 'entrega direta' || normalized === 'shopee entrega direta'
+}
