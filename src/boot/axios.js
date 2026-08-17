@@ -17,7 +17,14 @@ const apiBaseUrl =
     ? "http://127.0.0.1:8001"
     : "VITE_BACKEND_HOST_PLACEHOLDER";
 
-const api = axios.create({ baseURL: apiBaseUrl });
+// `indexes: null` serializa arrays como chave repetida (`?status=PAID&status=SHIPPED`),
+// que é o formato lido por `request.query_params.getlist(...)` no Django. Sem isso o
+// axios manda `?status[]=PAID` e o backend ignora o filtro em silêncio — foi assim que
+// o filtro de status da página de pedidos Shopee parou de funcionar (FB-8).
+const api = axios.create({
+  baseURL: apiBaseUrl,
+  paramsSerializer: { indexes: null },
+});
 
 export default boot(({ app, store }) => {
   setupInterceptors(store);

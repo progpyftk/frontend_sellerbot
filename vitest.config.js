@@ -7,6 +7,10 @@ module.exports = defineConfig({
   resolve: {
     alias: {
       src: path.resolve(__dirname, 'src'),
+      // Aliases que o quasar.config.js injeta no build e que alguns módulos usam
+      // internamente (ex.: src/stores/store.js importa 'boot/axios').
+      boot: path.resolve(__dirname, 'src/boot'),
+      stores: path.resolve(__dirname, 'src/stores'),
     },
   },
   test: {
