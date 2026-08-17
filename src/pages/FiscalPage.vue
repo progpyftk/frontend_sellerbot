@@ -1162,21 +1162,41 @@ async function submitZipUpload() {
   if (!zipFile.value) return;
   uploadingZip.value = true;
   try {
-    $q.notify({ type: "info", message: "Solicitando upload seguro para Cloud Storage..." });
-    const signedRes = await FiscalService.getStagingUploadUrl(zipFile.value.name);
-    const { url, object } = signedRes.data;
+    let success = false;
+    // Tenta primeiro staging via URL assinada se arquivo > 15MB
+    if (zipFile.value.size > 15 * 1024 * 1024) {
+      try {
+        $q.notify({ type: "info", message: "Solicitando upload direto para Cloud Storage..." });
+        const signedRes = await FiscalService.getStagingUploadUrl(zipFile.value.name);
+        const { url, object } = signedRes.data;
 
-    $q.notify({ type: "info", message: "Enviando arquivo ZIP..." });
-    await FiscalService.uploadToStagingUrl(url, zipFile.value);
+        $q.notify({ type: "info", message: "Enviando arquivo ZIP para o Storage..." });
+        await FiscalService.uploadToStagingUrl(url, zipFile.value);
 
-    $q.notify({ type: "info", message: "Iniciando processamento assíncrono..." });
-    const batchRes = await FiscalService.submitStagingBatch(zipFile.value.name, object);
+        $q.notify({ type: "info", message: "Iniciando processamento assíncrono em segundo plano..." });
+        const batchRes = await FiscalService.submitStagingBatch(zipFile.value.name, object);
 
-    activeBatch.value = batchRes.data;
+        activeBatch.value = batchRes.data;
+        success = true;
+      } catch (stagingErr) {
+        console.warn("Upload via staging falhou ou indisponível, tentando envio multipart direto:", stagingErr);
+      }
+    }
+
+    // Se não usou staging ou fallback multipart direto
+    if (!success) {
+      $q.notify({ type: "info", message: "Processando arquivo ZIP..." });
+      const res = await FiscalService.uploadFiles([zipFile.value]);
+      activeBatch.value = res.data;
+      success = true;
+    }
+
     zipFile.value = null;
-    $q.notify({ type: "positive", message: "Lote enviado! Acompanhe o progresso." });
+    $q.notify({ type: "positive", message: "Lote enviado com sucesso!" });
     startPollingBatch();
     loadImportBatches();
+    loadBalance();
+    loadDocuments(1);
   } catch (err) {
     console.error("Erro no upload do ZIP:", err);
     $q.notify({ type: "negative", message: "Erro ao enviar ZIP: " + (err.response?.data?.detail || err.message) });
