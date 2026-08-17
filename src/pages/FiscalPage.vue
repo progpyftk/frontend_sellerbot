@@ -61,12 +61,12 @@
               <div class="col-12 col-md-3">
                 <q-select
                   v-model="balanceFilters.cnpj"
-                  :options="cnpjOptions"
+                  :options="cnpjOptionsForBalance"
                   emit-value
                   map-options
                   dense
                   outlined
-                  label="CNPJ Fiscal"
+                  label="CNPJ Fiscal (Obrigatório)"
                   bg-color="white"
                   @update:model-value="loadBalance"
                 />
@@ -237,34 +237,69 @@
 
               <template #body-cell-unit="props">
                 <q-td :props="props">
-                  <q-chip dense size="sm" color="blue-grey-1" text-color="blue-grey-8" class="text-weight-bold">
+                  <q-chip
+                    dense
+                    size="sm"
+                    :color="props.row.has_mixed_units ? 'amber-2' : 'blue-grey-1'"
+                    :text-color="props.row.has_mixed_units ? 'amber-10' : 'blue-grey-8'"
+                    class="text-weight-bold"
+                  >
                     {{ props.row.unit }}
+                    <q-tooltip v-if="props.row.has_mixed_units">
+                      Unidades envolvidas: {{ props.row.units_breakdown?.map(u => u.unit).join(', ') }}
+                    </q-tooltip>
                   </q-chip>
                 </q-td>
               </template>
 
               <template #body-cell-qty_in="props">
                 <q-td :props="props" class="text-green-8 text-weight-medium">
-                  +{{ formatNumber(props.row.qty_in) }}
+                  <div v-if="!props.row.has_mixed_units">
+                    +{{ formatNumber(props.row.qty_in) }}
+                  </div>
+                  <div v-else>
+                    <div v-for="u in props.row.units_breakdown" :key="u.unit" class="text-caption">
+                      +{{ formatNumber(u.qty_in) }} <span class="text-grey-6 font-mono">{{ u.unit }}</span>
+                    </div>
+                  </div>
                 </q-td>
               </template>
 
               <template #body-cell-qty_out="props">
                 <q-td :props="props" class="text-red-8 text-weight-medium">
-                  -{{ formatNumber(props.row.qty_out) }}
+                  <div v-if="!props.row.has_mixed_units">
+                    -{{ formatNumber(props.row.qty_out) }}
+                  </div>
+                  <div v-else>
+                    <div v-for="u in props.row.units_breakdown" :key="u.unit" class="text-caption">
+                      -{{ formatNumber(u.qty_out) }} <span class="text-grey-6 font-mono">{{ u.unit }}</span>
+                    </div>
+                  </div>
                 </q-td>
               </template>
 
               <template #body-cell-balance_qty="props">
                 <q-td :props="props">
-                  <span
-                    :class="[
-                      'text-weight-bold',
-                      props.row.balance_qty > 0 ? 'text-teal-9' : props.row.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'
-                    ]"
-                  >
-                    {{ formatNumber(props.row.balance_qty) }}
-                  </span>
+                  <div v-if="!props.row.has_mixed_units">
+                    <span
+                      :class="[
+                        'text-weight-bold',
+                        props.row.balance_qty > 0 ? 'text-teal-9' : props.row.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'
+                      ]"
+                    >
+                      {{ formatNumber(props.row.balance_qty) }}
+                    </span>
+                  </div>
+                  <div v-else>
+                    <div
+                      v-for="u in props.row.units_breakdown"
+                      :key="u.unit"
+                      class="text-caption text-weight-bold"
+                      :class="u.balance_qty > 0 ? 'text-teal-9' : u.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'"
+                    >
+                      {{ formatNumber(u.balance_qty) }} <span class="text-grey-6 font-mono">{{ u.unit }}</span>
+                    </div>
+                  </div>
                 </q-td>
               </template>
 
@@ -953,7 +988,8 @@ const balanceFilters = ref({
   search: "",
 });
 
-const cnpjOptions = ref([{ label: "Todos os CNPJs", value: null }]);
+const cnpjOptionsForBalance = ref([]);
+const cnpjOptionsForDocs = ref([{ label: "Todos os CNPJs", value: null }]);
 const periodPresets = [
   { label: "Todo o Histórico", value: "all" },
   { label: "Este Mês", value: "this_month" },
@@ -1067,23 +1103,34 @@ async function loadCnpjs() {
   try {
     const res = await FiscalService.getCnpjs();
     const list = res.data?.results || res.data || [];
-    cnpjOptions.value = [
+    const formatted = list.map((c) => ({
+      label: `${formatCnpj(c.cnpj)} — ${c.razao_social || 'CNPJ Fiscal'}`,
+      value: c.id,
+      cnpj: c.cnpj,
+      razao_social: c.razao_social,
+    }));
+    cnpjOptionsForBalance.value = formatted;
+    cnpjOptionsForDocs.value = [
       { label: "Todos os CNPJs", value: null },
-      ...list.map((c) => ({
-        label: `${formatCnpj(c.cnpj)} — ${c.razao_social || 'CNPJ Fiscal'}`,
-        value: c.id,
-      })),
+      ...formatted,
     ];
+    if (formatted.length > 0 && !balanceFilters.value.cnpj) {
+      balanceFilters.value.cnpj = formatted[0].value;
+      loadBalance();
+    }
   } catch (err) {
     console.error("Erro ao carregar CNPJs:", err);
   }
 }
 
 async function loadBalance() {
+  if (!balanceFilters.value.cnpj && cnpjOptionsForBalance.value.length > 0) {
+    balanceFilters.value.cnpj = cnpjOptionsForBalance.value[0].value;
+  }
   loadingBalance.value = true;
   try {
     const params = {
-      fiscal_account_id: balanceFilters.value.cnpj,
+      fiscal_account_id: balanceFilters.value.cnpj || undefined,
       start_date: balanceFilters.value.startDate || undefined,
       end_date: balanceFilters.value.endDate || undefined,
       search: balanceFilters.value.search || undefined,
@@ -1092,7 +1139,7 @@ async function loadBalance() {
     balanceKpis.value = res.data.kpis || {};
     balanceRows.value = (res.data.results || []).map((r) => ({
       ...r,
-      ncm_unit_key: `${r.ncm}_${r.unit}`,
+      ncm_unit_key: r.ncm,
     }));
   } catch (err) {
     console.error("Erro ao carregar balanço de NCMs:", err);
@@ -1208,18 +1255,40 @@ async function submitZipUpload() {
 async function submitXmlsUpload() {
   if (!xmlFiles.value?.length) return;
   uploadingXmls.value = true;
+  const filesToUpload = [...xmlFiles.value];
+  const CHUNK_SIZE = 15;
+  const totalChunks = Math.ceil(filesToUpload.length / CHUNK_SIZE);
+
   try {
-    $q.notify({ type: "info", message: `Enviando ${xmlFiles.value.length} arquivo(s) XML...` });
-    const res = await FiscalService.uploadFiles(xmlFiles.value);
-    activeBatch.value = res.data;
+    for (let i = 0; i < filesToUpload.length; i += CHUNK_SIZE) {
+      const chunk = filesToUpload.slice(i, i + CHUNK_SIZE);
+      const chunkNum = Math.floor(i / CHUNK_SIZE) + 1;
+      const currentProcessed = Math.min(i + CHUNK_SIZE, filesToUpload.length);
+
+      $q.notify({
+        type: "info",
+        message: `Processando pacote ${chunkNum}/${totalChunks} (${currentProcessed} de ${filesToUpload.length} XMLs)...`,
+        timeout: 2500,
+      });
+
+      const res = await FiscalService.uploadFiles(chunk);
+      activeBatch.value = res.data;
+    }
+
     xmlFiles.value = [];
-    $q.notify({ type: "positive", message: "XMLs processados com sucesso!" });
+    $q.notify({
+      type: "positive",
+      message: `${filesToUpload.length} arquivo(s) XML enviados e processados com sucesso!`,
+    });
     loadImportBatches();
     loadBalance();
     loadDocuments(1);
   } catch (err) {
     console.error("Erro ao enviar XMLs:", err);
-    $q.notify({ type: "negative", message: "Erro ao enviar XMLs: " + (err.response?.data?.detail || err.message) });
+    $q.notify({
+      type: "negative",
+      message: "Erro ao enviar XMLs: " + (err.response?.data?.detail || err.message),
+    });
   } finally {
     uploadingXmls.value = false;
   }
