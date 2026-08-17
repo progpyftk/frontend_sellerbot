@@ -135,6 +135,11 @@ const routes = [
         name: 'market-intelligence',
         component: () => import('pages/MarketIntelligencePage.vue')
       },
+      {
+        path: 'fiscal',
+        name: 'fiscal',
+        component: () => import('pages/FiscalPage.vue')
+      },
     ],
   },
   // Krivus CRM — acesso exclusivo para is_staff

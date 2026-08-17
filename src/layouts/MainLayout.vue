@@ -211,6 +211,13 @@ const menuSections = [
     ],
   },
   {
+    title: "Fiscal",
+    sectionIcon: "account_balance",
+    items: [
+      { label: "Balanço de NCMs & NF-e", icon: "table_chart", route: "fiscal" },
+    ],
+  },
+  {
     title: "Sistema",
     sectionIcon: "settings",
     items: [
