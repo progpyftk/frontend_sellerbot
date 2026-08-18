@@ -555,12 +555,14 @@
                   @drop.prevent="handleZipDrop"
                 >
                   <q-file
-                    v-model="zipFile"
+                    v-model="zipFiles"
+                    multiple
+                    use-chips
                     accept=".zip"
                     outlined
                     dense
                     class="full-width"
-                    label="Selecione ou arraste um arquivo .zip"
+                    label="Selecione ou arraste um ou mais arquivos .zip"
                   >
                     <template #prepend>
                       <q-icon name="attach_file" />
@@ -568,7 +570,7 @@
                   </q-file>
 
                   <div class="text-caption text-grey-6 q-mt-sm text-center">
-                    Limite: até 250 MB comprimido / 10.000 XMLs por lote. O arquivo original é descartado com segurança após a extração.
+                    Limite: até 250 MB comprimido / 10.000 XMLs por arquivo. Suporta envio de múltiplos .zip simultâneos. O arquivo original é descartado com segurança após a extração.
                   </div>
 
                   <div class="row justify-end q-mt-md">
@@ -577,8 +579,8 @@
                       color="teal-8"
                       text-color="white"
                       icon="upload"
-                      label="Enviar Lote ZIP"
-                      :disable="!zipFile || uploadingZip"
+                      label="Enviar Lote(s) ZIP"
+                      :disable="!zipFiles || zipFiles.length === 0 || uploadingZip"
                       :loading="uploadingZip"
                       @click="submitZipUpload"
                     />
@@ -1066,7 +1068,7 @@ const docItemColumns = [
 ];
 
 // ────────────────────────────────────────── ESTADO DE IMPORTAÇÕES (ABA 3)
-const zipFile = ref(null);
+const zipFiles = ref([]);
 const isZipDragging = ref(false);
 const uploadingZip = ref(false);
 const xmlFiles = ref([]);
@@ -1206,40 +1208,66 @@ async function loadImportBatches() {
 }
 
 async function submitZipUpload() {
-  if (!zipFile.value) return;
+  if (!zipFiles.value || zipFiles.value.length === 0) return;
   uploadingZip.value = true;
+  const zipsToUpload = Array.isArray(zipFiles.value) ? [...zipFiles.value] : [zipFiles.value];
+  const totalZips = zipsToUpload.length;
+
   try {
-    let success = false;
-    // Tenta primeiro staging via URL assinada se arquivo > 15MB
-    if (zipFile.value.size > 15 * 1024 * 1024) {
-      try {
-        $q.notify({ type: "info", message: "Solicitando upload direto para Cloud Storage..." });
-        const signedRes = await FiscalService.getStagingUploadUrl(zipFile.value.name);
-        const { url, object } = signedRes.data;
+    for (let i = 0; i < totalZips; i++) {
+      const file = zipsToUpload[i];
+      const zipIndex = i + 1;
+      let success = false;
 
-        $q.notify({ type: "info", message: "Enviando arquivo ZIP para o Storage..." });
-        await FiscalService.uploadToStagingUrl(url, zipFile.value);
+      // Tenta primeiro staging via URL assinada se arquivo > 15MB
+      if (file.size > 15 * 1024 * 1024) {
+        try {
+          $q.notify({
+            type: "info",
+            message: `Solicitando upload direto para Cloud Storage (${zipIndex}/${totalZips}): ${file.name}...`,
+            timeout: 2500,
+          });
+          const signedRes = await FiscalService.getStagingUploadUrl(file.name);
+          const { url, object } = signedRes.data;
 
-        $q.notify({ type: "info", message: "Iniciando processamento assíncrono em segundo plano..." });
-        const batchRes = await FiscalService.submitStagingBatch(zipFile.value.name, object);
+          $q.notify({
+            type: "info",
+            message: `Enviando arquivo ZIP para o Storage (${zipIndex}/${totalZips}): ${file.name}...`,
+            timeout: 2500,
+          });
+          await FiscalService.uploadToStagingUrl(url, file);
 
-        activeBatch.value = batchRes.data;
-        success = true;
-      } catch (stagingErr) {
-        console.warn("Upload via staging falhou ou indisponível, tentando envio multipart direto:", stagingErr);
+          $q.notify({
+            type: "info",
+            message: `Iniciando processamento assíncrono (${zipIndex}/${totalZips}): ${file.name}...`,
+            timeout: 2500,
+          });
+          const batchRes = await FiscalService.submitStagingBatch(file.name, object);
+
+          activeBatch.value = batchRes.data;
+          success = true;
+        } catch (stagingErr) {
+          console.warn(`Upload via staging falhou para ${file.name}, tentando fallback multipart:`, stagingErr);
+        }
+      }
+
+      // Se não usou staging ou fallback multipart direto
+      if (!success) {
+        $q.notify({
+          type: "info",
+          message: `Processando arquivo ZIP (${zipIndex}/${totalZips}): ${file.name}...`,
+          timeout: 2500,
+        });
+        const res = await FiscalService.uploadFiles([file]);
+        activeBatch.value = res.data;
       }
     }
 
-    // Se não usou staging ou fallback multipart direto
-    if (!success) {
-      $q.notify({ type: "info", message: "Processando arquivo ZIP..." });
-      const res = await FiscalService.uploadFiles([zipFile.value]);
-      activeBatch.value = res.data;
-      success = true;
-    }
-
-    zipFile.value = null;
-    $q.notify({ type: "positive", message: "Lote enviado com sucesso!" });
+    zipFiles.value = [];
+    $q.notify({
+      type: "positive",
+      message: `${totalZips} arquivo(s) ZIP enviados com sucesso! Acompanhe o progresso.`,
+    });
     startPollingBatch();
     loadImportBatches();
     loadBalance();
@@ -1296,11 +1324,12 @@ async function submitXmlsUpload() {
 
 function handleZipDrop(e) {
   isZipDragging.value = false;
-  const files = e.dataTransfer?.files;
-  if (files?.length && files[0].name.endsWith(".zip")) {
-    zipFile.value = files[0];
+  const dropped = Array.from(e.dataTransfer?.files || []).filter((f) => f.name.toLowerCase().endsWith(".zip"));
+  if (dropped.length > 0) {
+    zipFiles.value = [...(zipFiles.value || []), ...dropped];
+    $q.notify({ type: "info", message: `${dropped.length} arquivo(s) .zip adicionado(s).` });
   } else {
-    $q.notify({ type: "warning", message: "Por favor solte um arquivo .zip válido." });
+    $q.notify({ type: "warning", message: "Por favor solte um ou mais arquivos .zip válidos." });
   }
 }
 
