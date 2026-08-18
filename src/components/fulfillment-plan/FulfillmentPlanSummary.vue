@@ -38,12 +38,19 @@ const cards = computed(() => [
   { action: 'next_cycle', value: actionableCount('next_cycle'), label: 'próximo ciclo', ...ACTIONS.next_cycle },
   { action: 'data_review', value: props.summary.data_review || 0, label: 'revisar dados', ...ACTIONS.data_review },
 ])
-const capitalLabel = computed(() => props.summary.estimated_capital == null
-  ? `${formatMoney(props.summary.known_estimated_capital || 0)}+`
-  : formatMoney(props.summary.estimated_capital))
-const capitalCaption = computed(() => props.summary.estimated_capital == null
-  ? 'capital conhecido · total incompleto'
-  : 'capital estimado')
+const capitalLabel = computed(() => {
+  if (props.summary.estimated_capital != null) return formatMoney(props.summary.estimated_capital)
+  if (Number(props.summary.known_estimated_capital || 0) > 0) {
+    return `${formatMoney(props.summary.known_estimated_capital)}+`
+  }
+  return 'Não calculado'
+})
+const capitalCaption = computed(() => {
+  if (props.summary.estimated_capital != null) return 'capital estimado'
+  return Number(props.summary.known_estimated_capital || 0) > 0
+    ? 'capital conhecido · total incompleto'
+    : 'custo atual ausente'
+})
 
 function actionableCount(action) {
   return props.summary.actionable_by_action?.[action] ?? props.summary[action] ?? 0
