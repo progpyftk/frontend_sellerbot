@@ -227,6 +227,30 @@ export default {
   markFulfillmentDraftSubmitted(draftId, payload = {}) {
     return api.post(`/mercadolivre/fulfillment/drafts/${draftId}/mark-submitted/`, payload)
   },
+  listFulfillmentShipmentPlans(params = {}) {
+    return api.get('/mercadolivre/fulfillment/shipment-plans/', { params })
+  },
+  createFulfillmentShipmentPlan(payload) {
+    return api.post('/mercadolivre/fulfillment/shipment-plans/', payload)
+  },
+  getFulfillmentShipmentPlan(planId) {
+    return api.get(`/mercadolivre/fulfillment/shipment-plans/${planId}/`)
+  },
+  getFulfillmentShipmentPlanLines(planId, params = {}) {
+    return api.get(`/mercadolivre/fulfillment/shipment-plans/${planId}/lines/`, { params })
+  },
+  adjustFulfillmentShipmentPlanLine(planId, lineId, payload) {
+    return api.patch(`/mercadolivre/fulfillment/shipment-plans/${planId}/lines/${lineId}/`, payload)
+  },
+  reviewFulfillmentShipmentPlan(planId) {
+    return api.post(`/mercadolivre/fulfillment/shipment-plans/${planId}/review/`, {})
+  },
+  exportFulfillmentShipmentPlan(planId) {
+    return api.post(`/mercadolivre/fulfillment/shipment-plans/${planId}/export/`, {})
+  },
+  markFulfillmentShipmentPlanSubmitted(planId, payload = {}) {
+    return api.post(`/mercadolivre/fulfillment/shipment-plans/${planId}/mark-submitted/`, payload)
+  },
   getFulfillmentRecommendations(params) {
     return api.get('/mercadolivre/fulfillment/recommendations/', { params })
   },
