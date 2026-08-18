@@ -100,4 +100,23 @@ describe('fulfillment catalog plan UI', () => {
     expect(wrapper.text()).toMatch(/120,00\+/)
     expect(wrapper.text()).toContain('total incompleto')
   })
+
+  it('does not display zero when every actionable cost is unknown', () => {
+    const wrapper = mount(FulfillmentPlanSummary, {
+      props: {
+        summary: {
+          actionable_by_action: { replenish_full: 0, start_full: 2, next_cycle: 0 },
+          estimated_capital: null,
+          known_estimated_capital: 0,
+          capital_missing_lines: 2,
+        },
+        activeActions: [],
+      },
+      global: { stubs: { QIcon: iconStub } },
+    })
+
+    expect(wrapper.text()).toContain('Não calculado')
+    expect(wrapper.text()).toContain('custo atual ausente')
+    expect(wrapper.text()).not.toMatch(/R\$\s*0/)
+  })
 })
