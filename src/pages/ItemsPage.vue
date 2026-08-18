@@ -544,17 +544,6 @@
                     </div>
                   </div>
 
-                  <div class="row q-gutter-x-xs q-mt-xs"
-                    v-if="getPromotions(props.row).length > 0 || (props.expand && isDetailLoading(props.row))">
-                    <q-badge v-if="props.expand && isDetailLoading(props.row)" color="grey-3" text-color="grey-8"
-                      class="text-weight-bold q-py-xs">
-                      <q-spinner-dots size="14px" class="q-mr-xs" /> Carregando promoções...
-                    </q-badge>
-                    <q-badge v-for="promo in getPromotions(props.row)" :key="promo" color="purple-1"
-                      text-color="purple-9" class="text-weight-bold q-py-xs">
-                      <q-icon name="local_offer" size="10px" class="q-mr-xs" /> {{ promo }}
-                    </q-badge>
-                  </div>
                 </div>
               </q-td>
 
@@ -657,6 +646,21 @@
                     </q-tooltip>
                   </q-btn>
 
+                  <q-btn unelevated round icon="local_offer" size="sm"
+                    :color="hasActivePromotion(props.row) ? 'purple-1' : 'white'"
+                    :text-color="hasActivePromotion(props.row) ? 'purple-9' : 'blue-grey-6'"
+                    class="transition-scale custom-btn-border"
+                    @click.stop="openPromotionsDialog(props.row)">
+                    <!-- Ponto roxo = anúncio com promoção ativa, para não obrigar
+                         a abrir o diálogo só para descobrir se tem alguma. -->
+                    <q-badge v-if="hasActivePromotion(props.row)" floating rounded color="purple-6"
+                      style="padding:3px" />
+                    <q-tooltip class="bg-purple-9 text-white text-weight-bold shadow-4"
+                      anchor="top middle" self="bottom middle">
+                      {{ hasActivePromotion(props.row) ? 'Ver e remover promoções' : 'Promoções do anúncio' }}
+                    </q-tooltip>
+                  </q-btn>
+
                    <q-btn v-if="canWrite" unelevated round color="white" text-color="blue-grey-6" icon="edit" size="sm"
                     class="transition-scale custom-btn-border" type="a"
                     :href="`https://www.mercadolivre.com.br/anuncios/${props.row.item_id}/modificar`" target="_blank"
@@ -740,6 +744,30 @@
           </template>
         </q-table>
         </div>
+
+    <!-- ══ PROMOÇÕES DO ANÚNCIO (botão da coluna de ações) ═══════════════ -->
+    <!-- Reaproveita o mesmo ItemPromotionsPanel da linha expandida: uma única
+         implementação da listagem e da remoção, dois pontos de entrada. -->
+    <q-dialog v-model="showPromotionsDialog">
+      <q-card style="width:760px; max-width:95vw">
+        <q-card-section class="row items-center q-pb-sm bg-purple-1">
+          <q-icon name="local_offer" color="purple-9" size="sm" class="q-mr-sm" />
+          <div>
+            <div class="text-h6 text-grey-9">Promoções do anúncio</div>
+            <div class="text-caption text-grey-7">
+              {{ promotionsDialogRow?.item_id }} — {{ promotionsDialogRow?.title }}
+            </div>
+          </div>
+          <q-space />
+          <q-btn flat round dense icon="close" color="grey-7" v-close-popup />
+        </q-card-section>
+        <q-card-section>
+          <ItemPromotionsPanel v-if="promotionsDialogRow" :key="promotionsDialogRow.item_id"
+            :item-id="promotionsDialogRow.item_id" :can-write="canWrite"
+            @changed="refreshItemAfterPromoChange(promotionsDialogRow)" />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 
     <q-dialog v-model="showHealthDialog">
       <q-card style="width: 600px; max-width: 95vw;">
@@ -1646,55 +1674,11 @@ const getPrimaryLogistic = (row) => {
   return { label: t || '—', icon: 'help', color: 'grey-6', textColor: 'white', helper: '' }
 }
 
-// Helpers Promoções
-const toNum = (v) => {
-  const n = Number(v)
-  return Number.isFinite(n) ? n : null
-}
-const calcDiscountPct = (regular, price) => {
-  const r = toNum(regular)
-  const p = toNum(price)
-  if (!r || !p || r <= 0 || p >= r) return 0
-  return Math.round(((r - p) / r) * 100)
-}
-
-const getPromotionBadges = (row) => {
-  const promos = Array.isArray(row?.promotions_info) ? row.promotions_info : []
-  const fallbackRegular = row?.effective_regular_price ?? row?.original_price ?? row?.base_price ?? null
-
-  return promos.filter(p => p && typeof p === 'object').map(p => {
-    const label = p.name || p.type || 'Promoção'
-    const price = p.price
-    const regular = p.original_price ?? fallbackRegular
-    const discount_pct = calcDiscountPct(regular, price)
-
-    const tooltipParts = [/* mantem igual... */].filter(Boolean)
-
-    return {
-      key: p.id || `${label}-${p.status || ''}-${p.price || ''}`,
-      label,
-      status: p.status,
-      discount_pct,
-      tooltip: tooltipParts.join('\n'),
-      // Adicionando mapeamento direto de cores aqui para o template
-      bgColor: p.status === 'started' ? 'orange-1' : 'grey-2',
-      textColor: p.status === 'started' ? 'orange-9' : 'grey-8'
-    }
-  })
-}
-
-const getPromotions = (row) => {
-  const promosInfo = row?._detail?.promotions_info
-  if (Array.isArray(promosInfo) && promosInfo.length) {
-    const labels = promosInfo.map(p => p?.name || p?.type).filter(Boolean)
-    return [...new Set(labels)]
-  }
-  const p = row?.active_promotion
-  if (p) return [p.name || p.type || 'Promoção'].filter(Boolean)
-  if (row?.price_source === 'PROMOTION_INFO') return ['Promoção']
-  if (row?.price_source === 'PRICES_API') return ['Oferta']
-  return []
-}
+// Os badges roxos de promoção saíram da linha da tabela: dependiam de
+// `_detail`, então só apareciam depois de expandir o anúncio, e mostravam o
+// `promotions_info` do banco — que pode estar defasado (o ML já tinha um DEAL
+// que o banco não conhecia). Agora o selo do botão de ações indica que existe
+// promoção, e o painel mostra os detalhes lendo ao vivo.
 
 // Helpers Preço
 const getEffectivePrice = (row) => row.effective_price || row.price
@@ -1728,6 +1712,23 @@ const ensureItemDetail = async (row) => {
   } finally {
     detailLoading.value[row.item_id] = false
   }
+}
+
+// ── Promoções do anúncio (botão da coluna de ações) ───────────────────────
+const showPromotionsDialog = ref(false)
+const promotionsDialogRow = ref(null)
+
+// Sinaliza promoção ativa sem consultar o ML: usa o que a listagem já trouxe.
+// É só para o selo do botão — a verdade vem do painel, que lê ao vivo.
+const hasActivePromotion = (row) => {
+  const promos = Array.isArray(row?.promotions_info) ? row.promotions_info : []
+  if (promos.some(p => p && ['started', 'pending'].includes(p.status))) return true
+  return !!row?.active_promotion || row?.price_source === 'PROMOTION_INFO'
+}
+
+const openPromotionsDialog = (row) => {
+  promotionsDialogRow.value = row
+  showPromotionsDialog.value = true
 }
 
 // Após remover promoção: o backend já regravou promotions_info a partir da
@@ -2111,23 +2112,6 @@ const reactivateItem = (row) => {
   min-height: 65px;
   height: auto;
   vertical-align: top;
-}
-
-.promo-td {
-  min-width: 260px;
-}
-
-.promo-badge {
-  font-size: 12px;
-  line-height: 1.1;
-  padding: 2px 6px;
-  width: fit-content;
-  max-width: 100%;
-}
-
-.promo-label {
-  white-space: normal;
-  overflow-wrap: anywhere;
 }
 
 .hover-link:hover {
