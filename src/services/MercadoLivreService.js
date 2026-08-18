@@ -191,6 +191,42 @@ export default {
   getFulfillmentOverview(params) {
     return api.get('/mercadolivre/fulfillment/overview/', { params })
   },
+  getFulfillmentHealth(params = {}) {
+    return api.get('/mercadolivre/fulfillment/health/', { params })
+  },
+  listFulfillmentImports(params = {}) {
+    return api.get('/mercadolivre/fulfillment/imports/', { params })
+  },
+  uploadFulfillmentImport(payload) {
+    return api.post('/mercadolivre/fulfillment/imports/', payload)
+  },
+  getFulfillmentImport(importId, params = {}) {
+    return api.get(`/mercadolivre/fulfillment/imports/${importId}/`, { params })
+  },
+  previewFulfillmentDraft(payload) {
+    return api.post('/mercadolivre/fulfillment/drafts/preview/', payload)
+  },
+  listFulfillmentDrafts(params = {}) {
+    return api.get('/mercadolivre/fulfillment/drafts/', { params })
+  },
+  createFulfillmentDraft(payload) {
+    return api.post('/mercadolivre/fulfillment/drafts/', payload)
+  },
+  getFulfillmentDraft(draftId) {
+    return api.get(`/mercadolivre/fulfillment/drafts/${draftId}/`)
+  },
+  adjustFulfillmentDraftLine(draftId, lineId, payload) {
+    return api.patch(`/mercadolivre/fulfillment/drafts/${draftId}/lines/${lineId}/`, payload)
+  },
+  reviewFulfillmentDraft(draftId) {
+    return api.post(`/mercadolivre/fulfillment/drafts/${draftId}/review/`, {})
+  },
+  exportFulfillmentDraft(draftId) {
+    return api.post(`/mercadolivre/fulfillment/drafts/${draftId}/export/`, {})
+  },
+  markFulfillmentDraftSubmitted(draftId, payload = {}) {
+    return api.post(`/mercadolivre/fulfillment/drafts/${draftId}/mark-submitted/`, payload)
+  },
   getFulfillmentRecommendations(params) {
     return api.get('/mercadolivre/fulfillment/recommendations/', { params })
   },
