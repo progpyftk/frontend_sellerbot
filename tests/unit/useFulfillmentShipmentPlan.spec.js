@@ -96,4 +96,37 @@ describe('useFulfillmentShipmentPlan', () => {
     })
     expect(flow.lines.value[0].effective_quantity).toBe(3)
   })
+
+  it('ignores a late history response after the account changes', async () => {
+    let resolveFirstHistory
+    const service = serviceMock()
+    service.listAccounts.mockResolvedValue({ data: [
+      { account_id: 'ACCOUNT-1', account_nickname: 'Principal', is_connected: true },
+      { account_id: 'ACCOUNT-2', account_nickname: 'Secundária', is_connected: true },
+    ] })
+    service.listFulfillmentShipmentPlans
+      .mockImplementationOnce(() => new Promise(resolve => { resolveFirstHistory = resolve }))
+      .mockResolvedValueOnce({ data: { items: [{ id: 82, account_id: 'ACCOUNT-2' }] } })
+    const flow = useFulfillmentShipmentPlan(service)
+    const initialization = flow.initialize()
+    await Promise.resolve()
+
+    await flow.selectAccount('ACCOUNT-2')
+    resolveFirstHistory({ data: { items: [{ id: 41, account_id: 'ACCOUNT-1' }] } })
+    await initialization
+
+    expect(flow.accountId.value).toBe('ACCOUNT-2')
+    expect(flow.history.value).toEqual([{ id: 82, account_id: 'ACCOUNT-2' }])
+  })
+
+  it('marks an opened plan stale when operational parameters change', async () => {
+    const service = serviceMock()
+    const flow = useFulfillmentShipmentPlan(service)
+    await flow.initialize()
+    await flow.generate()
+
+    flow.parameters.frequencyDays = 14
+
+    expect(flow.parametersChanged.value).toBe(true)
+  })
 })

@@ -8,7 +8,7 @@
 
       <div class="fp-detail__hero">
         <span class="fp-action" :class="`fp-action--${meta.tone}`"><q-icon :name="meta.icon" />{{ meta.label }}</span>
-        <div><span>Quantidade<strong>{{ line.effective_quantity ?? line.recommended_quantity ?? '—' }}</strong></span><span>Despachar até<strong>{{ formatDate(line.dispatch_by) }}</strong></span></div>
+        <div><span>Quantidade<strong>{{ quantityLabel }}</strong></span><span>Despachar até<strong>{{ formatDate(line.dispatch_by) }}</strong></span></div>
         <p>{{ reasonText(line.decision?.reasons?.[0]) }}</p>
       </div>
 
@@ -48,6 +48,17 @@
         <ul><li v-for="warning in warnings" :key="warning">{{ reasonText(warning) }}</li></ul>
       </section>
 
+      <section v-if="adjustments.length" class="fp-detail__section">
+        <h3><q-icon name="history" /> Histórico de ajustes</h3>
+        <ol class="fp-adjustment-history">
+          <li v-for="entry in adjustments" :key="entry.id">
+            <span>{{ formatTimestamp(entry.created_at) }} · {{ entry.actor || 'Operador' }}</span>
+            <strong>{{ actionMeta(entry.previous_action).label }} {{ entry.previous_quantity ?? 0 }} → {{ actionMeta(entry.new_action).label }} {{ entry.new_quantity }}</strong>
+            <p>{{ entry.reason }}</p>
+          </li>
+        </ol>
+      </section>
+
       <section v-if="canWrite && editable" class="fp-detail__section fp-adjustment">
         <h3>Ajustar decisão</h3>
         <p>O ajuste fica registrado com o valor anterior e a justificativa.</p>
@@ -72,13 +83,17 @@ const props = defineProps({
   canWrite: Boolean,
   editable: Boolean,
   saving: Boolean,
+  adjustments: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['update:modelValue', 'adjust'])
 const form = reactive({ action: '', quantity: 0, reason: '' })
+const sendActions = new Set(['replenish_full', 'start_full', 'next_cycle'])
 const meta = computed(() => actionMeta(props.line?.action))
 const warnings = computed(() => props.line?.decision?.warnings || [])
+const quantityLabel = computed(() => sendActions.has(props.line?.action)
+  ? (props.line?.effective_quantity ?? props.line?.recommended_quantity ?? '—')
+  : 'Sem envio')
 const coverageProgress = computed(() => Math.min(1, Number(props.line?.inventory?.coverage_before_days || 0) / Math.max(1, Number(props.line?.inventory?.coverage_after_days || 30))))
-const sendActions = new Set(['replenish_full', 'start_full', 'next_cycle'])
 const validAdjustment = computed(() => {
   const quantity = Number(form.quantity)
   const quantityIsValid = sendActions.has(form.action) ? quantity > 0 : quantity === 0
@@ -106,4 +121,5 @@ function percent(value) { return value == null ? '—' : Number(value).toLocaleS
 function percentPoints(value) { return value == null ? '—' : `${formatNumber(value, 2)}%` }
 function confidence(value) { return { high: 'Alta', medium: 'Média', low: 'Baixa' }[value] || '—' }
 function modelLabel(value) { return { naive_7: 'ritmo dos últimos 7 dias', moving_15: 'média de 15 dias', moving_30: 'média de 30 dias', weighted_trend: 'tendência ponderada', croston_sba: 'demanda intermitente', zero_demand: 'sem demanda' }[value] || value }
+function formatTimestamp(value) { return value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—' }
 </script>

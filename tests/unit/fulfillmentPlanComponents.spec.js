@@ -2,6 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import FulfillmentPlanLines from 'src/components/fulfillment-plan/FulfillmentPlanLines.vue'
+import FulfillmentPlanSummary from 'src/components/fulfillment-plan/FulfillmentPlanSummary.vue'
 import FulfillmentStrategyBanner from 'src/components/fulfillment-plan/FulfillmentStrategyBanner.vue'
 
 const iconStub = { template: '<i />' }
@@ -53,5 +54,50 @@ describe('fulfillment catalog plan UI', () => {
     expect(wrapper.text()).toContain('7')
     expect(wrapper.text()).toContain('25/08/2026')
     expect(wrapper.text()).toContain('primeiro lote')
+  })
+
+  it('does not describe a blocked decision as units to send', () => {
+    const wrapper = mount(FulfillmentPlanLines, {
+      props: {
+        loading: false,
+        pagination: { page: 1, pageSize: 100, total: 1, hasNext: false },
+        lines: [{
+          id: 9,
+          title: 'Produto em revisão',
+          sku: 'SKU-REVIEW',
+          item_id_ml: 'MLB-9',
+          action: 'data_review',
+          effective_quantity: null,
+          need_quantity: 10,
+          forecast: { daily_units: 0.4, confidence: 'low' },
+          inventory: {},
+          economics: {},
+          decision: { reasons: ['forecast_confidence_low'], warnings: [] },
+        }],
+      },
+      global: { stubs: { QIcon: iconStub, QPagination: paginationStub } },
+    })
+
+    expect(wrapper.text()).toContain('sem separação')
+    expect(wrapper.text()).toContain('Sem envio')
+    expect(wrapper.text()).not.toContain('necessidade 10 · confirmar ERP')
+  })
+
+  it('labels partial capital as incomplete instead of zero total', () => {
+    const wrapper = mount(FulfillmentPlanSummary, {
+      props: {
+        summary: {
+          actionable_by_action: { replenish_full: 2, start_full: 1, next_cycle: 0 },
+          data_review: 3,
+          estimated_capital: null,
+          known_estimated_capital: 120,
+        },
+        activeActions: [],
+      },
+      global: { stubs: { QIcon: iconStub } },
+    })
+
+    expect(wrapper.text()).toMatch(/120,00\+/)
+    expect(wrapper.text()).toContain('total incompleto')
   })
 })
