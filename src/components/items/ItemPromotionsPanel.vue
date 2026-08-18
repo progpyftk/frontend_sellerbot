@@ -70,6 +70,12 @@
               -{{ promo.discount_pct }}%
             </span>
             <span v-else class="text-grey-5">—</span>
+            <!-- Campanha cofinanciada: só `seller_percentage` sai do bolso do
+                 vendedor. Sem isso um SMART de 47% parece todo custo dele. -->
+            <div v-if="promo.seller_percentage != null" class="text-caption text-grey-6">
+              você {{ promo.seller_percentage }}%
+              <span v-if="promo.meli_percentage != null">· ML {{ promo.meli_percentage }}%</span>
+            </div>
           </td>
           <td class="text-center">
             <q-btn v-if="canWrite && promo.can_remove" unelevated dense size="sm"
