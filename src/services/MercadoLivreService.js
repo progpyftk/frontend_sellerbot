@@ -31,6 +31,22 @@ export default {
   },
 
   // ==========================================
+  // PROMOÇÕES DO ANÚNCIO
+  // ==========================================
+  // Lidas ao vivo do Mercado Livre (cache de 60s no backend; refresh=true pula).
+  getItemPromotions(itemId, params = {}) {
+    return api.get(`/mercadolivre/items/${itemId}/promotions/`, { params })
+  },
+
+  // payload: { all: true } ou
+  // { promotions: [{ promotion_type, promotion_id, offer_id }] }
+  // Responde 200 quando tudo saiu e 207 quando alguma promoção resistiu —
+  // "results" traz o motivo por promoção.
+  removeItemPromotions(itemId, payload) {
+    return api.post(`/mercadolivre/items/${itemId}/promotions/remove/`, payload)
+  },
+
+  // ==========================================
   // AÇÕES EM MASSA (BULK)
   // ==========================================
   bulkPriceUpdate(payload) {

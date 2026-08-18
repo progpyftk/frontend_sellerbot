@@ -727,6 +727,10 @@
                         </q-item>
                       </q-list>
                     </div>
+                    <div class="col-12">
+                      <ItemPromotionsPanel v-if="props.expand" :item-id="props.row.item_id"
+                        :can-write="canWrite" @changed="refreshItemAfterPromoChange(props.row)" />
+                    </div>
                   </div>
                 </div>
               </q-td>
@@ -1036,7 +1040,9 @@
 
           <q-banner v-if="bulkPromoForm.action === 'deactivate'" class="bg-red-1 text-red-9 rounded-borders">
             <template v-slot:avatar><q-icon name="warning" color="red-7" /></template>
-            Remove a promoção PRICE_DISCOUNT ativa de todos os anúncios selecionados.
+            Remove todas as promoções ativas dos anúncios selecionados, de qualquer tipo
+            (desconto individual, campanhas, relâmpago). Cada remoção é confirmada no
+            Mercado Livre — anúncio em que a promoção resistir aparece na lista de erros.
           </q-banner>
         </q-card-section>
 
@@ -1208,6 +1214,7 @@ import { ref, onMounted, reactive, computed, watch } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import { useQuasar, copyToClipboard } from 'quasar'
 import { useStore } from 'src/stores/store'
+import ItemPromotionsPanel from 'src/components/items/ItemPromotionsPanel.vue'
 
 const $q = useQuasar()
 const authStore = useStore()
@@ -1721,6 +1728,24 @@ const ensureItemDetail = async (row) => {
   } finally {
     detailLoading.value[row.item_id] = false
   }
+}
+
+// Após remover promoção: o backend já regravou promotions_info a partir da
+// releitura no ML, então basta buscar o detalhe de novo para o preço efetivo
+// e os badges da linha refletirem o estado novo.
+const refreshItemAfterPromoChange = async (row) => {
+  row._detail = null
+  await ensureItemDetail(row)
+  const detail = row._detail
+  if (!detail) return
+  Object.assign(row, {
+    promotions_info: detail.promotions_info,
+    effective_price: detail.effective_price,
+    effective_regular_price: detail.effective_regular_price,
+    price_source: detail.price_source,
+    discount_percentage: detail.discount_percentage,
+    active_promotion: detail.active_promotion,
+  })
 }
 
 // ============================================================================
