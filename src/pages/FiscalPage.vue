@@ -1045,8 +1045,16 @@ const balanceColumns = [
   { name: "balance_qty", label: "Saldo Estoque", field: "balance_qty", align: "right", sortable: true },
   { name: "value_in", label: "Entradas (R$)", field: "value_in", align: "right", sortable: true },
   { name: "value_out", label: "Saídas (R$)", field: "value_out", align: "right", sortable: true },
-  { name: "balance_value", label: "Saldo Financeiro", field: "balance_value", align: "right", sortable: true },
   { name: "actions", label: "Ações", align: "center" },
+  {
+    name: "balance_value",
+    label: "Saldo Financeiro",
+    field: "balance_value",
+    align: "right",
+    sortable: true,
+    classes: "balance-financial-column",
+    headerClasses: "balance-financial-column",
+  },
 ];
 
 // ────────────────────────────────────────── ESTADO DAS NOTAS (ABA 2)
@@ -1658,5 +1666,25 @@ onUnmounted(() => {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
+}
+
+.balance-table {
+  :deep(.q-table__middle) {
+    overflow-x: auto;
+  }
+
+  :deep(.balance-financial-column) {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    min-width: 150px;
+    background: #ffffff;
+    box-shadow: -5px 0 10px rgba(15, 23, 42, 0.08);
+  }
+
+  :deep(thead .balance-financial-column) {
+    z-index: 3;
+    background: #f8fafc;
+  }
 }
 </style>
