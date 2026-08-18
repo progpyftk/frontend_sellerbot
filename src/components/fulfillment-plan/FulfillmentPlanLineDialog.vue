@@ -78,7 +78,12 @@ const form = reactive({ action: '', quantity: 0, reason: '' })
 const meta = computed(() => actionMeta(props.line?.action))
 const warnings = computed(() => props.line?.decision?.warnings || [])
 const coverageProgress = computed(() => Math.min(1, Number(props.line?.inventory?.coverage_before_days || 0) / Math.max(1, Number(props.line?.inventory?.coverage_after_days || 30))))
-const validAdjustment = computed(() => form.action && Number(form.quantity) >= 0 && form.reason.trim().length >= 5)
+const sendActions = new Set(['replenish_full', 'start_full', 'next_cycle'])
+const validAdjustment = computed(() => {
+  const quantity = Number(form.quantity)
+  const quantityIsValid = sendActions.has(form.action) ? quantity > 0 : quantity === 0
+  return form.action && quantityIsValid && form.reason.trim().length >= 5
+})
 const actionOptions = Object.entries(ACTIONS).map(([value, row]) => ({ value, label: row.label }))
 
 watch(() => props.line, line => {
@@ -87,6 +92,11 @@ watch(() => props.line, line => {
   form.quantity = line.effective_quantity ?? line.recommended_quantity ?? line.need_quantity ?? 0
   form.reason = ''
 }, { immediate: true })
+
+watch(() => form.action, action => {
+  if (!action || sendActions.has(action)) return
+  form.quantity = 0
+})
 
 function save() {
   if (!validAdjustment.value) return

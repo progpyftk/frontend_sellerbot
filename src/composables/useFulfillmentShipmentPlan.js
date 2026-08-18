@@ -95,7 +95,7 @@ export function useFulfillmentShipmentPlan(service = MercadoLivreService) {
   }
 
   async function pollPlan(planId) {
-    for (let attempt = 0; attempt < 90 && !cancelled; attempt += 1) {
+    for (let attempt = 0; attempt < 300 && !cancelled; attempt += 1) {
       await new Promise(resolve => setTimeout(resolve, 2000))
       const response = await service.getFulfillmentShipmentPlan(planId)
       plan.value = response.data?.plan || response.data

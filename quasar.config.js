@@ -70,7 +70,14 @@ module.exports = configure(function (ctx) {
       // polyfillModulePreload: true,
       // distDir
 
-      // extendViteConf (viteConf) {},
+      extendViteConf(viteConf) {
+        if (!ctx.dev) return;
+        const extrasRoot = path.dirname(require.resolve("@quasar/extras/package.json"));
+        viteConf.server = viteConf.server || {};
+        viteConf.server.fs = viteConf.server.fs || {};
+        const current = viteConf.server.fs.allow || [];
+        viteConf.server.fs.allow = [...new Set([...current, __dirname, extrasRoot])];
+      },
       // viteVuePluginOptions: {},
 
       // vitePlugins: [

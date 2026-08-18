@@ -22,6 +22,7 @@ const REASONS = {
   coverage_sufficient: 'O estoque já cobre o horizonte planejado.',
   no_observed_demand: 'Não há demanda recente suficiente para enviar.',
   non_positive_contribution_margin: 'A margem de contribuição não sustenta novo estoque no Full.',
+  contribution_margin_unavailable: 'A margem de contribuição ainda não está completa para esta decisão.',
   excess_full_coverage: 'Há estoque demais para o ritmo atual de vendas.',
   sku_missing: 'SKU ausente; não é possível confirmar o estoque físico.',
   full_inventory_missing_or_stale: 'O saldo Full está ausente ou desatualizado.',

@@ -12,7 +12,7 @@
       </div>
     </div>
     <button type="button" class="fp-explain-link" @click="$emit('explain')">
-      Como o SellerBot decidiu <q-icon name="arrow_forward" />
+      Entender estratégia <q-icon name="arrow_forward" />
     </button>
   </section>
 </template>
