@@ -657,6 +657,21 @@
                     </q-tooltip>
                   </q-btn>
 
+                  <q-btn unelevated round icon="local_offer" size="sm"
+                    :color="hasActivePromotion(props.row) ? 'purple-1' : 'white'"
+                    :text-color="hasActivePromotion(props.row) ? 'purple-9' : 'blue-grey-6'"
+                    class="transition-scale custom-btn-border"
+                    @click.stop="openPromotionsDialog(props.row)">
+                    <!-- Ponto roxo = anúncio com promoção ativa, para não obrigar
+                         a abrir o diálogo só para descobrir se tem alguma. -->
+                    <q-badge v-if="hasActivePromotion(props.row)" floating rounded color="purple-6"
+                      style="padding:3px" />
+                    <q-tooltip class="bg-purple-9 text-white text-weight-bold shadow-4"
+                      anchor="top middle" self="bottom middle">
+                      {{ hasActivePromotion(props.row) ? 'Ver e remover promoções' : 'Promoções do anúncio' }}
+                    </q-tooltip>
+                  </q-btn>
+
                    <q-btn v-if="canWrite" unelevated round color="white" text-color="blue-grey-6" icon="edit" size="sm"
                     class="transition-scale custom-btn-border" type="a"
                     :href="`https://www.mercadolivre.com.br/anuncios/${props.row.item_id}/modificar`" target="_blank"
@@ -740,6 +755,30 @@
           </template>
         </q-table>
         </div>
+
+    <!-- ══ PROMOÇÕES DO ANÚNCIO (botão da coluna de ações) ═══════════════ -->
+    <!-- Reaproveita o mesmo ItemPromotionsPanel da linha expandida: uma única
+         implementação da listagem e da remoção, dois pontos de entrada. -->
+    <q-dialog v-model="showPromotionsDialog">
+      <q-card style="width:760px; max-width:95vw">
+        <q-card-section class="row items-center q-pb-sm bg-purple-1">
+          <q-icon name="local_offer" color="purple-9" size="sm" class="q-mr-sm" />
+          <div>
+            <div class="text-h6 text-grey-9">Promoções do anúncio</div>
+            <div class="text-caption text-grey-7">
+              {{ promotionsDialogRow?.item_id }} — {{ promotionsDialogRow?.title }}
+            </div>
+          </div>
+          <q-space />
+          <q-btn flat round dense icon="close" color="grey-7" v-close-popup />
+        </q-card-section>
+        <q-card-section>
+          <ItemPromotionsPanel v-if="promotionsDialogRow" :key="promotionsDialogRow.item_id"
+            :item-id="promotionsDialogRow.item_id" :can-write="canWrite"
+            @changed="refreshItemAfterPromoChange(promotionsDialogRow)" />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 
     <q-dialog v-model="showHealthDialog">
       <q-card style="width: 600px; max-width: 95vw;">
@@ -1728,6 +1767,23 @@ const ensureItemDetail = async (row) => {
   } finally {
     detailLoading.value[row.item_id] = false
   }
+}
+
+// ── Promoções do anúncio (botão da coluna de ações) ───────────────────────
+const showPromotionsDialog = ref(false)
+const promotionsDialogRow = ref(null)
+
+// Sinaliza promoção ativa sem consultar o ML: usa o que a listagem já trouxe.
+// É só para o selo do botão — a verdade vem do painel, que lê ao vivo.
+const hasActivePromotion = (row) => {
+  const promos = Array.isArray(row?.promotions_info) ? row.promotions_info : []
+  if (promos.some(p => p && ['started', 'pending'].includes(p.status))) return true
+  return !!row?.active_promotion || row?.price_source === 'PROMOTION_INFO'
+}
+
+const openPromotionsDialog = (row) => {
+  promotionsDialogRow.value = row
+  showPromotionsDialog.value = true
 }
 
 // Após remover promoção: o backend já regravou promotions_info a partir da

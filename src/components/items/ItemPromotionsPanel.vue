@@ -206,6 +206,18 @@ const formatCurrency = (val) => (val || val === 0)
   ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val))
   : '—'
 
+// Mensagem de erro que diz QUAL camada falhou. A primeira versão dizia sempre
+// "não foi possível consultar no Mercado Livre", o que culpava o ML mesmo quando
+// o backend é que estava fora do ar — e mandava investigar no lugar errado.
+const describeError = (e) => {
+  if (!e.response) return 'Sem resposta do SellerBot — o backend está rodando?'
+  const { status, data } = e.response
+  if (data?.error) return data.error
+  if (status === 404) return 'Anúncio não encontrado nesta conta.'
+  if (status === 401 || status === 403) return 'Sessão expirada ou sem permissão.'
+  return `O SellerBot respondeu ${status} ao consultar as promoções.`
+}
+
 const load = async (refresh = false) => {
   loading.value = true
   error.value = ''
@@ -216,7 +228,7 @@ const load = async (refresh = false) => {
     promotions.value = data.data || []
   } catch (e) {
     promotions.value = []
-    error.value = e.response?.data?.error || 'Não foi possível consultar as promoções no Mercado Livre.'
+    error.value = describeError(e)
   } finally {
     loading.value = false
   }
@@ -264,11 +276,7 @@ const runRemove = async () => {
     // Preço e badges da linha mudaram: pede recarga do detalhe ao pai.
     emit('changed')
   } catch (e) {
-    $q.notify({
-      type: 'negative',
-      timeout: 8000,
-      message: e.response?.data?.error || 'Falha ao remover a promoção.',
-    })
+    $q.notify({ type: 'negative', timeout: 8000, message: describeError(e) })
   } finally {
     removingKey.value = ''
     removingAll.value = false
