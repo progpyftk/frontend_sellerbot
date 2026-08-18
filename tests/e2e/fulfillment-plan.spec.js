@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 const plan = {
   id: 91,
+  account_id: 'ACC-FULL',
   status: 'ready_with_warnings',
   frequency_days: 7,
   next_dispatch_date: '2026-08-20',
@@ -22,6 +23,10 @@ const plan = {
     recommended_units: 286,
     estimated_capital: 8430.5,
     actionable_lines: 37,
+    actionable_by_action: { replenish_full: 12, start_full: 8, next_cycle: 17 },
+    capital_missing_lines: 0,
+    blocked_send_lines: 0,
+    warning_counts: {},
   },
   source_snapshot: { as_of: '2026-08-18' },
 }
