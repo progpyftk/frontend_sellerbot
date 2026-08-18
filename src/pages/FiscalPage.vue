@@ -1113,6 +1113,7 @@ const uploadingXmls = ref(false);
 const activeBatch = ref(null);
 const importBatches = ref([]);
 const loadingBatches = ref(false);
+const trackedBatchIds = ref([]);
 let batchPollingTimer = null;
 
 const batchColumns = [
@@ -1245,77 +1246,73 @@ async function loadImportBatches() {
   }
 }
 
+async function submitOneZip(file, zipIndex, totalZips) {
+  let stagingUploaded = false;
+  try {
+    $q.notify({
+      type: "info",
+      message: `Enviando ZIP para processamento assíncrono (${zipIndex}/${totalZips}): ${file.name}...`,
+      timeout: 2500,
+    });
+    const signedRes = await FiscalService.getStagingUploadUrl(file.name);
+    const { url, object } = signedRes.data;
+    await FiscalService.uploadToStagingUrl(url, file);
+    stagingUploaded = true;
+
+    const batchRes = await FiscalService.submitStagingBatch(file.name, object);
+    const batch = batchRes.data;
+    trackedBatchIds.value = [...new Set([...trackedBatchIds.value, batch.id])];
+    activeBatch.value = batch;
+    startPollingBatch();
+    await loadImportBatches();
+    return batch;
+  } catch (stagingErr) {
+    if (stagingUploaded) throw stagingErr;
+    console.warn(`Upload via staging falhou para ${file.name}, tentando fallback multipart:`, stagingErr);
+    const res = await FiscalService.uploadFiles([file]);
+    const batch = res.data;
+    trackedBatchIds.value = [...new Set([...trackedBatchIds.value, batch.id])];
+    activeBatch.value = batch;
+    startPollingBatch();
+    await loadImportBatches();
+    return batch;
+  }
+}
+
 async function submitZipUpload() {
   if (!zipFiles.value || zipFiles.value.length === 0) return;
   uploadingZip.value = true;
+  trackedBatchIds.value = [];
   const zipsToUpload = Array.isArray(zipFiles.value) ? [...zipFiles.value] : [zipFiles.value];
   const totalZips = zipsToUpload.length;
 
   try {
-    for (let i = 0; i < totalZips; i++) {
-      const file = zipsToUpload[i];
-      const zipIndex = i + 1;
-      let success = false;
+    const results = await Promise.allSettled(
+      zipsToUpload.map((file, index) => submitOneZip(file, index + 1, totalZips))
+    );
+    const succeeded = results.filter((result) => result.status === "fulfilled");
+    const failedFiles = results
+      .map((result, index) => (result.status === "rejected" ? zipsToUpload[index] : null))
+      .filter(Boolean);
 
-      // Tenta primeiro staging via URL assinada se arquivo > 15MB
-      if (file.size > 15 * 1024 * 1024) {
-        let stagingUploaded = false;
-        try {
-          $q.notify({
-            type: "info",
-            message: `Solicitando upload direto para Cloud Storage (${zipIndex}/${totalZips}): ${file.name}...`,
-            timeout: 2500,
-          });
-          const signedRes = await FiscalService.getStagingUploadUrl(file.name);
-          const { url, object } = signedRes.data;
-
-          $q.notify({
-            type: "info",
-            message: `Enviando arquivo ZIP para o Storage (${zipIndex}/${totalZips}): ${file.name}...`,
-            timeout: 2500,
-          });
-          await FiscalService.uploadToStagingUrl(url, file);
-          stagingUploaded = true;
-
-          $q.notify({
-            type: "info",
-            message: `Iniciando processamento assíncrono (${zipIndex}/${totalZips}): ${file.name}...`,
-            timeout: 2500,
-          });
-          const batchRes = await FiscalService.submitStagingBatch(file.name, object);
-
-          activeBatch.value = batchRes.data;
-          success = true;
-        } catch (stagingErr) {
-          if (stagingUploaded) throw stagingErr;
-          console.warn(`Upload via staging falhou para ${file.name}, tentando fallback multipart:`, stagingErr);
-        }
-      }
-
-      // Se não usou staging ou fallback multipart direto
-      if (!success) {
-        $q.notify({
-          type: "info",
-          message: `Processando arquivo ZIP (${zipIndex}/${totalZips}): ${file.name}...`,
-          timeout: 2500,
-        });
-        const res = await FiscalService.uploadFiles([file]);
-        activeBatch.value = res.data;
-      }
+    zipFiles.value = failedFiles;
+    if (succeeded.length) {
+      await loadImportBatches();
+      loadBalance();
+      loadDocuments(1);
     }
-
-    zipFiles.value = [];
-    $q.notify({
-      type: "positive",
-      message: `${totalZips} arquivo(s) ZIP enviados com sucesso! Acompanhe o progresso.`,
-    });
-    startPollingBatch();
-    loadImportBatches();
-    loadBalance();
-    loadDocuments(1);
-  } catch (err) {
-    console.error("Erro no upload do ZIP:", err);
-    $q.notify({ type: "negative", message: "Erro ao enviar ZIP: " + (err.response?.data?.detail || err.message) });
+    if (failedFiles.length) {
+      $q.notify({
+        type: succeeded.length ? "warning" : "negative",
+        message: `${succeeded.length} ZIP(s) enviados; ${failedFiles.length} falharam. Os arquivos com erro permanecem selecionados.`,
+      });
+    } else {
+      zipFiles.value = [];
+      $q.notify({
+        type: "positive",
+        message: `${succeeded.length} arquivo(s) ZIP enviados e processando em lotes separados.`,
+      });
+    }
   } finally {
     uploadingZip.value = false;
   }
@@ -1419,13 +1416,23 @@ function handleZipDrop(e) {
 }
 
 async function pollActiveBatch() {
-  if (!activeBatch.value?.id) return;
+  const batchIds = trackedBatchIds.value.length
+    ? [...trackedBatchIds.value]
+    : activeBatch.value?.id
+      ? [activeBatch.value.id]
+      : [];
+  if (!batchIds.length) return;
   try {
-    const res = await FiscalService.getImportDetail(activeBatch.value.id);
-    activeBatch.value = res.data;
-    if (activeBatch.value.status === "completed" || activeBatch.value.status === "failed") {
+    const results = await Promise.allSettled(batchIds.map((batchId) => FiscalService.getImportDetail(batchId)));
+    const details = results
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => result.value.data);
+    const active = details.find((batch) => batch.id === activeBatch.value?.id) || details.at(-1);
+    if (active) activeBatch.value = active;
+    await loadImportBatches();
+    if (details.length && details.every((batch) => ["completed", "failed"].includes(batch.status))) {
+      trackedBatchIds.value = [];
       stopPollingBatch();
-      loadImportBatches();
       loadBalance();
       loadDocuments(1);
     }
