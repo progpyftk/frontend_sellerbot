@@ -555,14 +555,15 @@
                   @drop.prevent="handleZipDrop"
                 >
                   <q-file
-                    v-model="zipFiles"
+                    :model-value="zipFiles"
+                    @update:model-value="onZipPick"
                     multiple
                     use-chips
                     accept=".zip"
                     outlined
                     dense
                     class="full-width"
-                    label="Selecione ou arraste um ou mais arquivos .zip"
+                    label="Selecione ou arraste arquivos .zip (pode adicionar em etapas)"
                   >
                     <template #prepend>
                       <q-icon name="attach_file" />
@@ -570,20 +571,35 @@
                   </q-file>
 
                   <div class="text-caption text-grey-6 q-mt-sm text-center">
-                    Limite: até 250 MB comprimido / 10.000 XMLs por arquivo. Suporta envio de múltiplos .zip simultâneos. O arquivo original é descartado com segurança após a extração.
+                    Limite: até 250 MB comprimido / 10.000 XMLs por arquivo. Você pode anexar vários .zip em etapas (selecione, depois selecione mais) e enviá-los juntos. Remova um item pelo X do chip. O arquivo original é descartado com segurança após a extração.
                   </div>
 
-                  <div class="row justify-end q-mt-md">
-                    <q-btn
-                      unelevated
-                      color="teal-8"
-                      text-color="white"
-                      icon="upload"
-                      label="Enviar Lote(s) ZIP"
-                      :disable="!zipFiles || zipFiles.length === 0 || uploadingZip"
-                      :loading="uploadingZip"
-                      @click="submitZipUpload"
-                    />
+                  <div class="row items-center justify-between q-mt-md">
+                    <div class="text-caption text-grey-7">
+                      <span v-if="zipFiles && zipFiles.length">{{ zipFiles.length }} arquivo(s) .zip anexado(s)</span>
+                      <span v-else>Nenhum .zip anexado</span>
+                    </div>
+                    <div class="row q-gutter-sm">
+                      <q-btn
+                        flat
+                        color="grey-7"
+                        icon="cleaning_services"
+                        label="Limpar"
+                        no-caps
+                        :disable="!zipFiles || zipFiles.length === 0"
+                        @click="clearZipFiles"
+                      />
+                      <q-btn
+                        unelevated
+                        color="teal-8"
+                        text-color="white"
+                        icon="upload"
+                        label="Enviar Lote(s) ZIP"
+                        :disable="!zipFiles || zipFiles.length === 0 || uploadingZip"
+                        :loading="uploadingZip"
+                        @click="submitZipUpload"
+                      />
+                    </div>
                   </div>
                 </div>
               </SbCard>
@@ -1320,6 +1336,50 @@ async function submitXmlsUpload() {
   } finally {
     uploadingXmls.value = false;
   }
+}
+
+function fileKey(f) {
+  return `${f.name}|${f.size}|${f.lastModified}`;
+}
+
+function dedupeZip(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const f of arr) {
+    const k = fileKey(f);
+    if (!seen.has(k)) {
+      seen.add(k);
+      out.push(f);
+    }
+  }
+  return out;
+}
+
+/**
+ * Acumula .zip anexados em etapas (o q-file com v-model substituiria a seleção).
+ * Detecta adição (seletor nativo) vs remoção (chip X) pelo conjunto de arquivos.
+ */
+function onZipPick(newFiles) {
+  if (!newFiles || newFiles.length === 0) {
+    zipFiles.value = [];
+    return;
+  }
+  const existingKeys = new Set((zipFiles.value || []).map(fileKey));
+  const hasNew = newFiles.some((f) => !existingKeys.has(fileKey(f)));
+  if (hasNew) {
+    zipFiles.value = dedupeZip([...(zipFiles.value || []), ...newFiles]);
+    $q.notify({
+      type: "info",
+      message: `${zipFiles.value.length} arquivo(s) .zip anexado(s).`,
+      timeout: 1500,
+    });
+  } else {
+    zipFiles.value = newFiles;
+  }
+}
+
+function clearZipFiles() {
+  zipFiles.value = [];
 }
 
 function handleZipDrop(e) {
