@@ -635,6 +635,38 @@
             :rules="[val => !!val || 'Obrigatório']" />
           <q-input :model-value="TINY_REDIRECT_URI" label="URL de Redirecionamento" outlined dense readonly
             hint="Use exatamente esta URL" />
+
+          <q-separator />
+          <div v-if="tinyForm.is_connected" class="q-gutter-sm">
+            <div class="text-subtitle2 text-grey-8">Notas fiscais no Balanço de NCMs</div>
+            <q-toggle
+              :model-value="tinyForm.fiscal_sync_enabled"
+              color="teal-7"
+              :loading="tinyFiscalSaving"
+              label="Sincronizar NF-e deste CNPJ pelo Tiny"
+              @update:model-value="saveTinyFiscalSync"
+            />
+            <div class="text-caption text-grey-6">
+              Importa entradas, saídas e cancelamentos do Tiny; o XML é processado pelo módulo fiscal e não fica retido.
+            </div>
+            <div class="row q-col-gutter-sm">
+              <q-input v-model="tinyForm.fiscal_start_date" type="date" outlined dense class="col"
+                label="Data inicial" />
+              <q-input v-model="tinyForm.fiscal_end_date" type="date" outlined dense class="col"
+                label="Data final" />
+            </div>
+            <div v-if="tinyForm.fiscal_sync?.last_succeeded_at" class="text-caption text-grey-7">
+              Último sync: {{ formatDate(tinyForm.fiscal_sync.last_succeeded_at) }}
+            </div>
+            <q-btn
+              v-if="tinyForm.fiscal_sync_enabled"
+              flat dense no-caps color="teal-7" icon="sync" label="Sincronizar período selecionado"
+              :loading="tinyFiscalSyncing" @click="syncTinyFiscal"
+            />
+            <div v-if="tinyForm.fiscal_sync?.last_error" class="text-caption text-negative">
+              {{ tinyForm.fiscal_sync.last_error }}
+            </div>
+          </div>
         </q-card-section>
         <q-card-actions align="right" class="q-pa-md">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
@@ -715,6 +747,8 @@ const tiktokAccountToDelete = ref(null)
 const tinyDialog = ref(false)
 const tinyConnecting = ref(false)
 const syncingCnpj = ref(null)
+const tinyFiscalSaving = ref(false)
+const tinyFiscalSyncing = ref(false)
 const TINY_REDIRECT_URI = isDevEnvironment
   ? `${NGROK_URL}/tiny/callback`
   : 'https://sellerbot-frontend-367123809032.us-central1.run.app/tiny/callback'
@@ -724,6 +758,11 @@ const tinyForm = ref({
   cnpj: '',
   client_id: '',
   client_secret: '',
+  is_connected: false,
+  fiscal_sync_enabled: false,
+  fiscal_sync: null,
+  fiscal_start_date: '',
+  fiscal_end_date: '',
 })
 
 // --- Colunas ML ---
@@ -1113,17 +1152,29 @@ const openTinySetup = async (account) => {
     $q.notify({ message: 'Informe o CNPJ primeiro.', color: 'warning', position: 'top' })
     return
   }
+  const today = new Date()
+  const start = new Date(today)
+  start.setDate(today.getDate() - 3)
+  const isoDate = (value) => value.toISOString().slice(0, 10)
   tinyForm.value = {
     account_nickname: account.account_nickname,
     cnpj: account.cnpj,
     client_id: '',
     client_secret: '',
+    is_connected: false,
+    fiscal_sync_enabled: false,
+    fiscal_sync: null,
+    fiscal_start_date: isoDate(start),
+    fiscal_end_date: isoDate(today),
   }
   // Pré-preenche credenciais se a conta Tiny já existir
   try {
     const { data } = await api.get('/api/erps/tiny/status/', { params: { cnpj: account.cnpj } })
     if (data.client_id)     tinyForm.value.client_id     = data.client_id
     if (data.client_secret) tinyForm.value.client_secret = data.client_secret
+    tinyForm.value.is_connected = !!data.is_connected
+    tinyForm.value.fiscal_sync = data.fiscal_sync || null
+    tinyForm.value.fiscal_sync_enabled = !!data.fiscal_sync?.enabled
   } catch {
     // Conta Tiny ainda não existe — form fica em branco mesmo
   }
@@ -1217,6 +1268,42 @@ const submitTinySetup = async () => {
     $q.notify({ message: 'Erro ao configurar Tiny.', color: 'negative', position: 'top' })
   } finally {
     tinyConnecting.value = false
+  }
+}
+
+const saveTinyFiscalSync = async (enabled) => {
+  tinyFiscalSaving.value = true
+  try {
+    const { data } = await api.post('/api/erps/tiny/fiscal-sync/config/', {
+      cnpj: tinyForm.value.cnpj,
+      enabled: !!enabled,
+    })
+    tinyForm.value.fiscal_sync = data
+    tinyForm.value.fiscal_sync_enabled = !!data.enabled
+    $q.notify({
+      message: enabled ? 'Sincronização fiscal do Tiny ativada.' : 'Sincronização fiscal do Tiny desativada.',
+      color: 'positive', position: 'top', timeout: 2500,
+    })
+  } catch (error) {
+    $q.notify({ message: error.response?.data?.error || 'Não foi possível alterar o sync fiscal do Tiny.', color: 'negative', position: 'top' })
+  } finally {
+    tinyFiscalSaving.value = false
+  }
+}
+
+const syncTinyFiscal = async () => {
+  tinyFiscalSyncing.value = true
+  try {
+    await api.post('/api/erps/tiny/sync-fiscal/', {
+      cnpj: tinyForm.value.cnpj,
+      start_date: tinyForm.value.fiscal_start_date || undefined,
+      end_date: tinyForm.value.fiscal_end_date || undefined,
+    })
+    $q.notify({ message: 'Sincronização fiscal do Tiny enfileirada.', color: 'positive', position: 'top', timeout: 3000 })
+  } catch (error) {
+    $q.notify({ message: error.response?.data?.error || 'Não foi possível enfileirar o sync fiscal.', color: 'negative', position: 'top' })
+  } finally {
+    tinyFiscalSyncing.value = false
   }
 }
 
