@@ -150,7 +150,7 @@
               <SbKpiCard
                 label="Total Entradas"
                 :value="formatCurrency(balanceKpis.total_value_in)"
-                :sub="`${formatNumber(balanceKpis.total_qty_in)} itens movimentados`"
+                :sub="`${formatQuantity(balanceKpis.total_qty_in)} itens movimentados`"
                 variant="green"
               />
             </div>
@@ -158,7 +158,7 @@
               <SbKpiCard
                 label="Total Saídas / Vendas"
                 :value="formatCurrency(balanceKpis.total_value_out)"
-                :sub="`${formatNumber(balanceKpis.total_qty_out)} itens movimentados`"
+                :sub="`${formatQuantity(balanceKpis.total_qty_out)} itens movimentados`"
                 variant="red"
               />
             </div>
@@ -218,7 +218,7 @@
                       class="q-ml-xs text-bold"
                     >
                       Unidades Mistas
-                      <q-tooltip>Possui entradas/saídas em: {{ props.row.units_for_ncm?.join(', ') }}</q-tooltip>
+                      <q-tooltip>Possui entradas/saídas em: {{ props.row.units_breakdown?.map(u => u.unit).join(', ') }}</q-tooltip>
                     </q-badge>
                   </div>
                 </q-td>
@@ -281,7 +281,7 @@
               <template #body-cell-balance_qty="props">
                 <q-td :props="props">
                   <div v-if="!props.row.has_mixed_units">
-                    <span
+                    <span v-if="props.row.balance_status !== 'unknown'"
                       :class="[
                         'text-weight-bold',
                         props.row.balance_qty > 0 ? 'text-teal-9' : props.row.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'
@@ -289,6 +289,7 @@
                     >
                       {{ formatNumber(props.row.balance_qty) }}
                     </span>
+                    <span v-else class="text-amber-9 text-caption">Desconhecido</span>
                   </div>
                   <div v-else>
                     <div
@@ -297,7 +298,9 @@
                       class="text-caption text-weight-bold"
                       :class="u.balance_qty > 0 ? 'text-teal-9' : u.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'"
                     >
-                      {{ formatNumber(u.balance_qty) }} <span class="text-grey-6 font-mono">{{ u.unit }}</span>
+                      <span v-if="u.balance_qty !== null && u.balance_qty !== undefined">{{ formatNumber(u.balance_qty) }}</span>
+                      <span v-else class="text-amber-9">Desconhecido</span>
+                      <span class="text-grey-6 font-mono">{{ u.unit }}</span>
                     </div>
                   </div>
                 </q-td>
@@ -384,6 +387,20 @@
                   dense
                   outlined
                   label="Status da Nota"
+                  bg-color="white"
+                  @update:model-value="loadDocuments(1)"
+                />
+              </div>
+
+              <div class="col-12 col-md-3">
+                <q-select
+                  v-model="docFilters.fiscalAccount"
+                  :options="cnpjOptionsForDocs"
+                  emit-value
+                  map-options
+                  dense
+                  outlined
+                  label="CNPJ Fiscal"
                   bg-color="white"
                   @update:model-value="loadDocuments(1)"
                 />
@@ -996,6 +1013,8 @@ const balanceKpis = ref({
   total_ncms: 0,
   mixed_units_count: 0,
   total_movements: 0,
+  quantity_status: "known",
+  balance_status: "known",
 });
 
 const balanceFilters = ref({
@@ -1039,6 +1058,7 @@ const docFilters = ref({
   documentStatus: null,
   ncm: "",
   search: "",
+  fiscalAccount: null,
 });
 
 const stockEffectOptions = [
@@ -1145,6 +1165,7 @@ async function loadBalance() {
   if (!balanceFilters.value.cnpj && cnpjOptionsForBalance.value.length > 0) {
     balanceFilters.value.cnpj = cnpjOptionsForBalance.value[0].value;
   }
+  if (!balanceFilters.value.cnpj) return;
   loadingBalance.value = true;
   try {
     const params = {
@@ -1177,6 +1198,7 @@ async function loadDocuments(page = 1) {
       document_status: docFilters.value.documentStatus || undefined,
       ncm: docFilters.value.ncm || undefined,
       search: docFilters.value.search || undefined,
+      fiscal_account: docFilters.value.fiscalAccount || undefined,
     };
     const res = await FiscalService.getDocuments(params);
     documents.value = res.data.results || [];
@@ -1237,6 +1259,7 @@ async function submitZipUpload() {
 
       // Tenta primeiro staging via URL assinada se arquivo > 15MB
       if (file.size > 15 * 1024 * 1024) {
+        let stagingUploaded = false;
         try {
           $q.notify({
             type: "info",
@@ -1252,6 +1275,7 @@ async function submitZipUpload() {
             timeout: 2500,
           });
           await FiscalService.uploadToStagingUrl(url, file);
+          stagingUploaded = true;
 
           $q.notify({
             type: "info",
@@ -1263,6 +1287,7 @@ async function submitZipUpload() {
           activeBatch.value = batchRes.data;
           success = true;
         } catch (stagingErr) {
+          if (stagingUploaded) throw stagingErr;
           console.warn(`Upload via staging falhou para ${file.name}, tentando fallback multipart:`, stagingErr);
         }
       }
@@ -1386,7 +1411,7 @@ function handleZipDrop(e) {
   isZipDragging.value = false;
   const dropped = Array.from(e.dataTransfer?.files || []).filter((f) => f.name.toLowerCase().endsWith(".zip"));
   if (dropped.length > 0) {
-    zipFiles.value = [...(zipFiles.value || []), ...dropped];
+    zipFiles.value = dedupeZip([...(zipFiles.value || []), ...dropped]);
     $q.notify({ type: "info", message: `${dropped.length} arquivo(s) .zip adicionado(s).` });
   } else {
     $q.notify({ type: "warning", message: "Por favor solte um ou mais arquivos .zip válidos." });
@@ -1473,17 +1498,20 @@ function refreshActiveTab() {
 function exportBalanceCSV() {
   if (!balanceRows.value.length) return;
   const headers = ["NCM", "Descricao", "Unidade", "Qtd_Entrada", "Qtd_Saida", "Saldo_Qtd", "Valor_Entrada_R$", "Valor_Saida_R$", "Saldo_Financeiro_R$"];
-  const rows = balanceRows.value.map((r) => [
-    r.ncm,
-    `"${(r.description || '').replace(/"/g, '""')}"`,
-    r.unit,
-    r.qty_in,
-    r.qty_out,
-    r.balance_qty,
-    r.value_in,
-    r.value_out,
-    r.balance_value,
-  ]);
+  const rows = balanceRows.value.flatMap((r) => {
+    const units = r.has_mixed_units ? r.units_breakdown : [r];
+    return units.map((u) => [
+      r.ncm,
+      `"${(r.description || '').replace(/"/g, '""')}"`,
+      u.unit,
+      u.qty_in,
+      u.qty_out,
+      u.balance_qty,
+      u.value_in ?? r.value_in,
+      u.value_out ?? r.value_out,
+      u.balance_value ?? r.balance_value,
+    ]);
+  });
   const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
@@ -1503,6 +1531,10 @@ function formatCurrency(val) {
 function formatNumber(val) {
   const num = parseFloat(val) || 0;
   return num.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
+function formatQuantity(val) {
+  return val === null || val === undefined ? "—" : formatNumber(val);
 }
 
 function formatDate(isoStr) {
