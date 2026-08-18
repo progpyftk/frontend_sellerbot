@@ -111,12 +111,16 @@
     <q-list v-if="results.length" dense class="q-mt-sm rounded-borders bg-white" bordered>
       <q-item v-for="(res, idx) in results" :key="idx">
         <q-item-section avatar min-width>
-          <q-icon :name="res.ok ? 'check_circle' : 'error_outline'"
-            :color="res.ok ? 'green-7' : 'red-6'" size="xs" />
+          <q-icon :name="resultIcon(res)" :color="resultColor(res)" size="xs" />
         </q-item-section>
-        <q-item-section class="text-caption"
-          :class="res.ok ? 'text-grey-8' : 'text-red-9'">
+        <q-item-section class="text-caption" :class="`text-${resultColor(res)}`">
           <span class="text-weight-medium">{{ res.promotion_type }}</span> — {{ res.message }}
+        </q-item-section>
+        <!-- Remoção pendente: o ML já aceitou, só falta refletir. Reconsultar
+             resolve, e é melhor que o usuário mandar remover de novo. -->
+        <q-item-section side v-if="isPending(res)">
+          <q-btn flat dense size="sm" color="orange-8" label="Reconsultar"
+            :loading="loading" @click="load(true)" />
         </q-item-section>
       </q-item>
     </q-list>
@@ -191,6 +195,13 @@ const pendingWarning = computed(() => {
 
 const promoKey = (promo) => `${promo.promotion_type}:${promo.promotion_id || ''}:${promo.offer_id || ''}`
 
+// A remoção no ML é assíncrona: o DELETE é aceito e a oferta leva alguns
+// segundos para sair de "started". Isso não é falha — tratar como erro faria o
+// usuário repetir uma remoção que já foi aceita.
+const isPending = (res) => res.code === 'PENDING_CONFIRMATION'
+const resultIcon = (res) => res.ok ? 'check_circle' : (isPending(res) ? 'hourglass_top' : 'error_outline')
+const resultColor = (res) => res.ok ? 'green-7' : (isPending(res) ? 'orange-8' : 'red-6')
+
 const formatCurrency = (val) => (val || val === 0)
   ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val))
   : '—'
@@ -242,11 +253,12 @@ const runRemove = async () => {
     if (data.success) {
       $q.notify({ type: 'positive', message: 'Promoção removida e confirmada no Mercado Livre.' })
     } else {
-      const falha = (data.results || []).find(r => !r.ok)
+      const naoOk = (data.results || []).filter(r => !r.ok)
+      const pendente = naoOk.every(isPending)
       $q.notify({
-        type: 'warning',
+        type: pendente ? 'ongoing' : 'warning',
         timeout: 8000,
-        message: falha?.message || 'O Mercado Livre não confirmou a remoção.',
+        message: naoOk[0]?.message || 'O Mercado Livre não confirmou a remoção.',
       })
     }
     // Preço e badges da linha mudaram: pede recarga do detalhe ao pai.
