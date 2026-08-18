@@ -87,6 +87,31 @@
                 </q-td>
               </template>
 
+              <template v-slot:body-cell-fiscal_invoice_sync_enabled="props">
+                <q-td :props="props" class="text-center">
+                  <q-toggle
+                    v-if="canWrite"
+                    :model-value="!!props.row.fiscal_invoice_sync_enabled"
+                    color="teal-7"
+                    :loading="savingFiscalAccount === `ml:${props.row.account_id}`"
+                    @update:model-value="(value) => saveFiscalInvoiceSync(props.row, value, 'ml')"
+                  >
+                    <q-tooltip>Importar NFs de venda desta conta no balanço</q-tooltip>
+                  </q-toggle>
+                  <span v-else :class="['status-chip', props.row.fiscal_invoice_sync_enabled ? 'status-chip--pos' : 'status-chip--neutral']">
+                    {{ props.row.fiscal_invoice_sync_enabled ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-fiscal_invoice_capability="props">
+                <q-td :props="props" class="text-center">
+                  <span :class="['status-chip', capabilityClass(props.row.fiscal_invoice_capability)]">
+                    {{ capabilityLabel(props.row.fiscal_invoice_capability) }}
+                  </span>
+                </q-td>
+              </template>
+
               <template v-slot:body-cell-flex_delivery_cost="props">
                 <q-td :props="props" class="text-center">
                   <span class="td-val">R$ {{ Number(props.row.flex_delivery_cost || 12.50).toFixed(2) }}</span>
@@ -96,26 +121,6 @@
                     <q-input v-model="scope.value" label="Custo operacional de entrega Flex (R$)" type="number" step="0.01"
                       dense autofocus hint="Ex: 12.50" />
                   </q-popup-edit>
-                </q-td>
-              </template>
-
-              <template v-slot:body-cell-access_token="props">
-                <q-td :props="props" class="text-no-wrap">
-                  <span class="token-preview">{{ truncateToken(props.row.access_token) }}</span>
-                  <q-btn flat round dense color="teal-7" icon="content_copy" size="sm"
-                    @click="copyToClipboard(props.row.access_token)">
-                    <q-tooltip>Copiar token completo</q-tooltip>
-                  </q-btn>
-                </q-td>
-              </template>
-
-              <template v-slot:body-cell-refresh_token="props">
-                <q-td :props="props" class="text-no-wrap">
-                  <span class="token-preview">{{ truncateToken(props.row.refresh_token) }}</span>
-                  <q-btn flat round dense color="teal-7" icon="content_copy" size="sm"
-                    @click="copyToClipboard(props.row.refresh_token)">
-                    <q-tooltip>Copiar token completo</q-tooltip>
-                  </q-btn>
                 </q-td>
               </template>
 
@@ -203,6 +208,39 @@
                 <q-td :props="props">
                   <div class="shopee-name">{{ props.row.shop_name || props.row.shop_id }}</div>
                   <div class="td-muted">ID: {{ props.row.shop_id }}</div>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-cnpj="props">
+                <q-td :props="props">
+                  <span :class="props.row.cnpj ? 'td-val' : 'td-empty'">
+                    {{ props.row.cnpj ? formatCNPJ(props.row.cnpj) : 'Não configurado' }}
+                  </span>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-fiscal_invoice_sync_enabled="props">
+                <q-td :props="props" class="text-center">
+                  <q-toggle
+                    v-if="canWrite"
+                    :model-value="!!props.row.fiscal_invoice_sync_enabled"
+                    color="deep-orange"
+                    :loading="savingFiscalAccount === `shopee:${props.row.id}`"
+                    @update:model-value="(value) => saveFiscalInvoiceSync(props.row, value, 'shopee')"
+                  >
+                    <q-tooltip>Importar NFs de venda desta conta no balanço</q-tooltip>
+                  </q-toggle>
+                  <span v-else :class="['status-chip', props.row.fiscal_invoice_sync_enabled ? 'status-chip--pos' : 'status-chip--neutral']">
+                    {{ props.row.fiscal_invoice_sync_enabled ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-fiscal_invoice_capability="props">
+                <q-td :props="props" class="text-center">
+                  <span :class="['status-chip', capabilityClass(props.row.fiscal_invoice_capability)]">
+                    {{ capabilityLabel(props.row.fiscal_invoice_capability) }}
+                  </span>
                 </q-td>
               </template>
 
@@ -658,6 +696,7 @@ const shopeeCredentialsDialog = ref(false)
 const shopeeCredentialsAccount = ref(null)
 const shopeeCredentialsForm = ref({ partner_id: '', partner_key: '', push_partner_key: '' })
 const savingShopeeCredentials = ref(false)
+const savingFiscalAccount = ref('')
 
 const SHOPEE_REDIRECT_URI = isDevEnvironment
   ? `${NGROK_URL}/shopee-redirect`
@@ -692,8 +731,8 @@ const mlColumns = [
   { name: 'account_id', align: 'left', label: 'Seller ID', field: 'account_id' },
   { name: 'account_nickname', align: 'left', label: 'Nickname', field: 'account_nickname' },
   { name: 'cnpj', align: 'left', label: 'CNPJ', field: 'cnpj' },
-  { name: 'access_token', align: 'left', label: 'Access Token', field: 'access_token' },
-  { name: 'refresh_token', align: 'left', label: 'Refresh Token', field: 'refresh_token' },
+  { name: 'fiscal_invoice_sync_enabled', align: 'center', label: 'NFs no balanço', field: 'fiscal_invoice_sync_enabled' },
+  { name: 'fiscal_invoice_capability', align: 'center', label: 'Capacidade NF', field: 'fiscal_invoice_capability' },
   { name: 'is_connected', align: 'center', label: 'ML Status', field: 'is_connected' },
   { name: 'token_expires_at', align: 'left', label: 'Token Expira em', field: 'token_expires_at' },
   { name: 'flex_delivery_cost', align: 'center', label: 'Frete Flex (R$)', field: 'flex_delivery_cost' },
@@ -704,6 +743,9 @@ const mlColumns = [
 // --- Colunas Shopee ---
 const shopeeColumns = [
   { name: 'shop_name', align: 'left', label: 'Loja', field: 'shop_name' },
+  { name: 'cnpj', align: 'left', label: 'CNPJ fiscal', field: 'cnpj' },
+  { name: 'fiscal_invoice_sync_enabled', align: 'center', label: 'NFs no balanço', field: 'fiscal_invoice_sync_enabled' },
+  { name: 'fiscal_invoice_capability', align: 'center', label: 'Capacidade NF', field: 'fiscal_invoice_capability' },
   { name: 'is_connected', align: 'center', label: 'Status', field: 'is_connected' },
   { name: 'direct_delivery_cost', align: 'center', label: 'Frete Entrega Direta (R$)', field: 'direct_delivery_cost' },
   { name: 'partner_key_configured', align: 'center', label: 'API Shopee', field: 'partner_key_configured' },
@@ -721,11 +763,6 @@ const tiktokColumns = [
 ]
 
 // --- Helpers ---
-const truncateToken = (token) =>
-  token && token.length > 10
-    ? token.substring(0, 5) + '...' + token.substring(token.length - 5)
-    : token || ''
-
 const formatCNPJ = (value) => {
   if (!value) return ''
   return value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
@@ -738,11 +775,21 @@ const formatDate = (dateString) => {
     .toFormat('dd/MM/yyyy HH:mm')
 }
 
-const copyToClipboard = (text) => {
-  navigator.clipboard.writeText(text)
-    .then(() => $q.notify({ message: 'Token copiado!', color: 'positive', position: 'top', timeout: 2000 }))
-    .catch(err => $q.notify({ message: `Erro ao copiar: ${err.message}`, color: 'negative', position: 'top' }))
-}
+const capabilityLabel = (value) => ({
+  downloadable_xml: 'XML disponível',
+  metadata_only: 'Somente metadados',
+  unsupported: 'Não disponível',
+  error: 'Erro de consulta',
+  unknown: 'Ainda não testada',
+}[value] || 'Ainda não testada')
+
+const capabilityClass = (value) => ({
+  downloadable_xml: 'status-chip--pos',
+  metadata_only: 'status-chip--neutral',
+  unsupported: 'status-chip--neg',
+  error: 'status-chip--neg',
+  unknown: 'status-chip--neutral',
+}[value] || 'status-chip--neutral')
 
 // ==================== ML ====================
 
@@ -1121,6 +1168,32 @@ const saveCnpj = async (account, cnpj) => {
     $q.notify({ message: 'CNPJ salvo!', color: 'positive', position: 'top', timeout: 2000 })
   } catch (error) {
     $q.notify({ message: 'Erro ao salvar CNPJ.', color: 'negative', position: 'top' })
+  }
+}
+
+const saveFiscalInvoiceSync = async (account, enabled, marketplace) => {
+  const key = marketplace === 'ml' ? `ml:${account.account_id}` : `shopee:${account.id}`
+  const previous = !!account.fiscal_invoice_sync_enabled
+  account.fiscal_invoice_sync_enabled = enabled
+  savingFiscalAccount.value = key
+  try {
+    const endpoint = marketplace === 'ml'
+      ? `/mercadolivre/accounts/${account.account_id}/settings/`
+      : `/shopee/accounts/${account.id}/settings/`
+    const { data } = await api.patch(endpoint, { fiscal_invoice_sync_enabled: enabled })
+    account.fiscal_invoice_sync_enabled = !!data.fiscal_invoice_sync_enabled
+    $q.notify({
+      message: enabled ? 'Importação fiscal ativada para esta conta.' : 'Importação fiscal desativada para esta conta.',
+      color: 'positive',
+      position: 'top',
+      timeout: 2500,
+    })
+  } catch (error) {
+    account.fiscal_invoice_sync_enabled = previous
+    const message = error?.response?.data?.error || 'Não foi possível alterar a importação fiscal.'
+    $q.notify({ message, color: 'negative', position: 'top', timeout: 3500 })
+  } finally {
+    savingFiscalAccount.value = ''
   }
 }
 
