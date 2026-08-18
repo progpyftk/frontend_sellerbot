@@ -2,9 +2,9 @@
   <section class="full-panel" aria-labelledby="full-review-title">
     <div class="full-panel__header">
       <div>
-        <span class="full-kicker">ETAPA 3 · DECISÃO</span>
+        <span class="full-kicker">ETAPA 2 · DECISÃO</span>
         <h2 id="full-review-title">Compare antes de confirmar</h2>
-        <p>Sugestão oficial, cálculo SellerBot e decisão humana nunca são misturados.</p>
+        <p>Confira o estoque Full, a demanda calculada e a quantidade que será usada no envio.</p>
       </div>
       <div v-if="draft" class="full-version-chip"><q-icon name="history" /> Versão {{ draft.version }} · {{ draft.status === 'draft' ? 'não revisada' : draft.status }}</div>
     </div>
@@ -19,12 +19,13 @@
     <template v-else>
       <div class="full-table-wrap">
         <table class="full-table full-table--review">
-          <thead><tr><th>Produto</th><th>Oficial ML</th><th>SellerBot</th><th>Decisão atual</th><th>Desempenho</th><th>Situação</th><th></th></tr></thead>
+          <thead><tr><th>Produto</th><th>Estoque Full</th><th>Demanda</th><th>Sugestão</th><th>Decisão atual</th><th>Desempenho</th><th>Situação</th><th></th></tr></thead>
           <tbody>
             <tr v-for="line in lines" :key="line.id">
               <td><div class="full-product"><span class="full-product__icon"><q-icon name="inventory_2" /></span><span><strong>{{ line.title || line.inventory_id }}</strong><small>{{ line.sku || 'Sem SKU' }} · {{ line.inventory_id }}</small></span></div></td>
-              <td><strong class="full-quantity">{{ line.official_suggested_units ?? '—' }}</strong><FulfillmentSourceBadge :source="line.sources.planning" /></td>
-              <td><strong class="full-quantity">{{ line.calculated_quantity ?? '—' }}</strong><FulfillmentSourceBadge source="sellerbot_proxy" /><small>{{ demandText(line) }}</small></td>
+              <td><strong>{{ line.full_available ?? '—' }} disponíveis</strong><FulfillmentSourceBadge source="official_ml_inventory" /><small>{{ line.full_total ?? '—' }} unidades no Full</small></td>
+              <td><strong>{{ formatDecimal(line.weighted_demand, 2) }} un./dia</strong><FulfillmentSourceBadge source="sellerbot_observed_sales" /><small>7d {{ formatDecimal(line.demand_7, 2) }} · 30d {{ formatDecimal(line.demand_30, 2) }}</small></td>
+              <td><strong class="full-quantity">{{ line.calculated_quantity ?? '—' }}</strong><FulfillmentSourceBadge source="sellerbot_proxy" /></td>
               <td><strong class="full-quantity" :class="line.adjusted_quantity != null && 'full-quantity--adjusted'">{{ line.effective_quantity ?? '—' }}</strong><FulfillmentSourceBadge :source="line.adjusted_quantity != null ? 'manual' : 'sellerbot_proxy'" /><small v-if="line.adjusted_quantity != null">Ajustado de {{ line.calculated_quantity }}</small></td>
               <td><strong>{{ line.stock_age_days ?? '—' }} dias</strong><small>Rotatividade {{ formatDecimal(line.turnover, 2) }}</small></td>
               <td><span class="full-status" :class="`full-status--${decisionMeta(line.decision_status).tone}`"><q-icon :name="decisionMeta(line.decision_status).icon" /> {{ decisionMeta(line.decision_status).label }}</span><small class="full-reason">{{ primaryReason(line) }}</small></td>
@@ -37,7 +38,7 @@
       <div class="full-mobile-cards">
         <article v-for="line in lines" :key="`review-${line.id}`" class="full-line-card">
           <div class="full-line-card__head"><span><strong>{{ line.title }}</strong><small>{{ line.sku || line.inventory_id }}</small></span><span class="full-status" :class="`full-status--${decisionMeta(line.decision_status).tone}`">{{ decisionMeta(line.decision_status).label }}</span></div>
-          <div class="full-compare-grid"><span>Oficial ML<strong>{{ line.official_suggested_units ?? '—' }}</strong></span><span>SellerBot<strong>{{ line.calculated_quantity ?? '—' }}</strong></span><span>Decisão<strong>{{ line.effective_quantity ?? '—' }}</strong></span></div>
+          <div class="full-compare-grid"><span>Full disponível<strong>{{ line.full_available ?? '—' }}</strong></span><span>Sugestão<strong>{{ line.calculated_quantity ?? '—' }}</strong></span><span>Decisão<strong>{{ line.effective_quantity ?? '—' }}</strong></span></div>
           <small class="full-reason">{{ primaryReason(line) }}</small>
           <q-btn v-if="line.decision_status !== 'blocked' && line.calculated_quantity != null" outline color="primary" no-caps icon="edit" label="Ajustar com motivo" :disable="!canWrite" @click="openAdjustment(line)" />
         </article>
@@ -52,7 +53,7 @@
     </template>
 
     <div class="full-actions">
-      <q-btn flat no-caps icon="arrow_back" label="Voltar aos parâmetros" @click="$emit('back')" />
+      <q-btn flat no-caps icon="arrow_back" label="Voltar às sugestões" @click="$emit('back')" />
       <div class="full-actions__right">
         <span v-if="!canReview" class="full-action-warning"><q-icon name="block" /> Nenhuma linha revisável com quantidade positiva.</span>
         <q-btn unelevated color="primary" no-caps icon="verified" label="Confirmar revisão" :loading="reviewing" :disable="!canWrite || !canReview || draft?.status !== 'draft'" @click="$emit('review')" />
@@ -94,7 +95,6 @@ const selectedLine = ref(null)
 const adjustForm = reactive({ quantity: null, reason: '' })
 const adjustValid = computed(() => Number.isInteger(Number(adjustForm.quantity)) && Number(adjustForm.quantity) >= 0 && adjustForm.reason.trim().length >= 5 && Number(adjustForm.quantity) % (selectedLine.value?.case_pack || 1) === 0)
 
-function demandText(line) { return `${formatDecimal(line.weighted_demand, 2)} un./dia · 7d ${formatDecimal(line.demand_7, 2)} · 30d ${formatDecimal(line.demand_30, 2)}` }
 function primaryReason(line) { return reasonLabel(primaryDecisionReason(line)) }
 function openAdjustment(line) { selectedLine.value = line; adjustForm.quantity = line.effective_quantity; adjustForm.reason = ''; adjustOpen.value = true }
 function submitAdjustment() { emit('adjust', { lineId: selectedLine.value.id, quantity: Number(adjustForm.quantity), reason: adjustForm.reason.trim() }); adjustOpen.value = false }

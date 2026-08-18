@@ -1,8 +1,7 @@
 export const STEP_OPTIONS = [
-  { name: 'health', label: 'Saúde', helper: 'Fontes e relatório', icon: 'health_and_safety' },
-  { name: 'parameters', label: 'Parâmetros', helper: 'Datas e estoque local', icon: 'tune' },
+  { name: 'suggestions', label: 'Sugestões', helper: 'Priorizar por conta', icon: 'auto_awesome' },
   { name: 'review', label: 'Revisão', helper: 'Comparar e ajustar', icon: 'fact_check' },
-  { name: 'execution', label: 'Execução', helper: 'Exportar e concluir', icon: 'local_shipping' },
+  { name: 'execution', label: 'Execução', helper: 'Concluir no Full', icon: 'local_shipping' },
 ]
 
 const sourceDefinitions = {
@@ -27,6 +26,15 @@ export function decisionMeta(status) {
   }[status] || { label: 'Sem avaliação', tone: 'unknown', icon: 'help_outline' }
 }
 
+export function queueMeta(queue) {
+  return {
+    send_now: { label: 'Enviar agora', tone: 'urgent', icon: 'priority_high' },
+    prepare: { label: 'Preparar', tone: 'prepare', icon: 'schedule_send' },
+    monitor: { label: 'Não enviar agora', tone: 'monitor', icon: 'visibility' },
+    blocked: { label: 'Dados pendentes', tone: 'blocked', icon: 'warning_amber' },
+  }[queue] || { label: 'Sem prioridade', tone: 'unknown', icon: 'help_outline' }
+}
+
 export function healthMeta(status) {
   return {
     ready: { label: 'Saudável', tone: 'ready', icon: 'check_circle' },
@@ -40,6 +48,8 @@ export function reasonLabel(reason) {
     blocked_identity_inventory: 'Inventory ID ausente',
     blocked_identity_sku: 'SKU ausente',
     blocked_identity_package: 'Embalagem incompleta',
+    review_identity_sku: 'SKU não informado; confira antes de executar',
+    review_package_unknown: 'Dimensões da embalagem ainda não conhecidas',
     blocked_identity_variation: 'Variação não identificada',
     blocked_variation_demand_unavailable: 'Demanda ainda não separada por variação',
     blocked_data_inventory_missing: 'Inventário físico ausente',
@@ -59,6 +69,11 @@ export function reasonLabel(reason) {
     review_stock_age_proxy: 'Tempo de estoque estimado por recepções',
     review_out_of_sale_unknown: 'Unidades fora de venda não confirmadas',
     review_eligibility_unknown: 'Elegibilidade não confirmada',
+    data_required: 'Faltam dados obrigatórios para recomendar',
+    no_demand: 'Sem demanda recente para reposição',
+    coverage_sufficient: 'Estoque Full já cobre o período alvo',
+    below_reorder_point: 'Cobertura termina antes da próxima reposição',
+    target_coverage_gap: 'Há uma lacuna até a cobertura desejada',
     manual_adjustment: 'Quantidade ajustada pelo operador',
   }[reason] || String(reason || 'Motivo não informado').replaceAll('_', ' ')
 }

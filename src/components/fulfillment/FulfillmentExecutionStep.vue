@@ -2,7 +2,7 @@
   <section class="full-panel" aria-labelledby="full-execution-title">
     <div class="full-panel__header">
       <div>
-        <span class="full-kicker">ETAPA 4 · EXECUÇÃO ASSISTIDA</span>
+        <span class="full-kicker">ETAPA 3 · EXECUÇÃO ASSISTIDA</span>
         <h2 id="full-execution-title">Leve a versão revisada ao Mercado Livre</h2>
         <p>O SellerBot prepara e registra. A criação, etiquetas e agenda continuam no painel oficial.</p>
       </div>

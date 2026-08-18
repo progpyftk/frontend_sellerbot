@@ -13,15 +13,14 @@ function randomKey() {
 
 export function useFulfillmentDraft(service = MercadoLivreService) {
   const dates = createDefaultDates()
-  const step = ref('health')
+  const step = ref('suggestions')
   const accounts = ref([])
   const accountId = ref('')
   const health = ref(null)
-  const imports = ref([])
   const drafts = ref([])
   const preview = ref(null)
   const draftDetail = ref(null)
-  const selectedImportId = ref(null)
+  const selectedInventoryIds = ref([])
   const draftKey = ref(randomKey())
   const lineInputs = reactive({})
   const error = ref('')
@@ -29,14 +28,12 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
   const loading = reactive({
     initialize: false,
     account: false,
-    import: false,
     preview: false,
     draft: false,
     adjust: false,
     review: false,
     export: false,
     submit: false,
-    package: false,
   })
   const parameters = reactive({
     dispatchDate: dates.dispatchDate,
@@ -56,10 +53,14 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
   const draft = computed(() => draftDetail.value?.draft || null)
   const draftLines = computed(() => draftDetail.value?.lines || [])
   const canReview = computed(() => canReviewLines(draftLines.value))
+  const selectedLines = computed(() => previewLines.value.filter(line => (
+    selectedInventoryIds.value.includes(line.identity.inventory_id)
+  )))
 
   function clearPlanning() {
     preview.value = null
     draftDetail.value = null
+    selectedInventoryIds.value = []
     exportNotice.value = ''
     draftKey.value = randomKey()
     Object.keys(lineInputs).forEach(key => delete lineInputs[key])
@@ -83,11 +84,9 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
   async function selectAccount(value) {
     accountId.value = value || ''
     health.value = null
-    imports.value = []
     drafts.value = []
-    selectedImportId.value = null
     clearPlanning()
-    step.value = 'health'
+    step.value = 'suggestions'
     await loadAccountContext()
   }
 
@@ -96,17 +95,13 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
     loading.account = true
     error.value = ''
     try {
-      const [healthResponse, importsResponse, draftsResponse] = await Promise.all([
+      const [healthResponse, draftsResponse] = await Promise.all([
         service.getFulfillmentHealth({ account_id: accountId.value }),
-        service.listFulfillmentImports({ account_id: accountId.value, limit: 10 }),
         service.listFulfillmentDrafts({ account_id: accountId.value, limit: 10 }),
       ])
       health.value = healthResponse.data
-      imports.value = importsResponse.data?.items || []
       drafts.value = draftsResponse.data?.items || []
-      if (!selectedImportId.value || !imports.value.some(item => item.id === selectedImportId.value)) {
-        selectedImportId.value = imports.value.find(item => ['valid', 'partial'].includes(item.status))?.id || null
-      }
+      await calculatePreview({ resetSelection: true })
       return true
     } catch (err) {
       error.value = apiErrorMessage(err)
@@ -116,49 +111,33 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
     }
   }
 
-  async function uploadImport(file, reportType = 'planning') {
-    if (!file || !accountId.value) return null
-    loading.import = true
-    error.value = ''
-    try {
-      const payload = new FormData()
-      payload.append('account_id', accountId.value)
-      payload.append('report_type', reportType)
-      payload.append('file', file)
-      const response = await service.uploadFulfillmentImport(payload)
-      await loadAccountContext()
-      selectedImportId.value = response.data?.import?.id || selectedImportId.value
-      return response.data
-    } catch (err) {
-      error.value = apiErrorMessage(err)
-      throw err
-    } finally {
-      loading.import = false
-    }
+  function inputLines(inventoryIds = null) {
+    const selected = inventoryIds ? new Set(inventoryIds) : null
+    return Object.entries(lineInputs)
+      .filter(([inventoryId]) => !selected || selected.has(inventoryId))
+      .map(([inventoryId, values]) => ({
+        inventory_id: inventoryId,
+        local_available: values.localAvailable,
+        pending_inbound: values.pendingInbound || 0,
+        case_pack: values.casePack || 1,
+        space_limit_units: values.spaceLimit,
+      }))
   }
 
-  function inputLines() {
-    return Object.entries(lineInputs).map(([inventoryId, values]) => ({
-      inventory_id: inventoryId,
-      local_available: values.localAvailable,
-      pending_inbound: values.pendingInbound || 0,
-      case_pack: values.casePack || 1,
-      space_limit_units: values.spaceLimit,
-    }))
-  }
-
-  function payload({ includeKey = false } = {}) {
+  function payload({ includeKey = false, selectedOnly = false } = {}) {
+    const inventoryIds = selectedOnly ? selectedInventoryIds.value : null
     return {
       account_id: accountId.value,
       ...(includeKey ? { draft_key: draftKey.value } : {}),
       dispatch_date: parameters.dispatchDate,
       expected_receipt_date: parameters.receiptDate,
-      planning_import_id: selectedImportId.value,
+      planning_import_id: null,
       target_days: Number(parameters.targetDays),
       safety_stock_days: Number(parameters.safetyStockDays),
       inventory_ttl_hours: Number(parameters.inventoryTtlHours),
       max_stock_age_days: parameters.maxStockAgeDays ? Number(parameters.maxStockAgeDays) : null,
-      lines: inputLines(),
+      ...(inventoryIds ? { inventory_ids: [...inventoryIds] } : {}),
+      lines: inputLines(inventoryIds),
     }
   }
 
@@ -176,14 +155,33 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
     })
   }
 
-  async function calculatePreview() {
+  function automaticSelection(lines) {
+    return lines
+      .filter(line => (
+        ['send_now', 'prepare'].includes(line.recommendation?.queue)
+        && Number(line.calculated_quantity) > 0
+        && line.decision_status !== 'blocked'
+      ))
+      .map(line => line.identity.inventory_id)
+  }
+
+  async function calculatePreview({ resetSelection = false } = {}) {
     if (!accountId.value) return null
     loading.preview = true
     error.value = ''
     try {
+      const previousSelection = new Set(selectedInventoryIds.value)
       const response = await service.previewFulfillmentDraft(payload())
       preview.value = response.data
-      seedLineInputs(preview.value?.lines || [])
+      const lines = preview.value?.lines || []
+      seedLineInputs(lines)
+      if (resetSelection || !selectedInventoryIds.value.length) {
+        selectedInventoryIds.value = automaticSelection(lines)
+      } else {
+        selectedInventoryIds.value = lines
+          .map(line => line.identity.inventory_id)
+          .filter(inventoryId => previousSelection.has(inventoryId))
+      }
       return preview.value
     } catch (err) {
       error.value = apiErrorMessage(err)
@@ -193,33 +191,32 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
     }
   }
 
-  async function openParameters() {
-    await calculatePreview()
-    step.value = 'parameters'
-  }
-
   async function createDraft() {
+    if (!selectedInventoryIds.value.length) {
+      error.value = 'Selecione ao menos uma sugestão com quantidade positiva para revisar.'
+      throw new Error(error.value)
+    }
     loading.draft = true
     error.value = ''
     try {
-      const response = await service.createFulfillmentDraft(payload({ includeKey: true }))
+      const response = await service.createFulfillmentDraft(payload({ includeKey: true, selectedOnly: true }))
       draftDetail.value = response.data
       step.value = 'review'
       await loadDraftHistory()
       return response.data
     } catch (err) {
-      error.value = apiErrorMessage(err)
+      error.value = error.value || apiErrorMessage(err)
       throw err
     } finally {
       loading.draft = false
     }
   }
 
-  function reopenParameters() {
+  function reopenSuggestions() {
     draftDetail.value = null
     draftKey.value = randomKey()
     exportNotice.value = ''
-    step.value = 'parameters'
+    step.value = 'suggestions'
   }
 
   async function loadDraft(draftId) {
@@ -307,20 +304,6 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
     }
   }
 
-  async function savePackage(line, packageData) {
-    loading.package = true
-    error.value = ''
-    try {
-      await service.saveFulfillmentPackageProfile({ item_id: line.identity.item_id, ...packageData })
-      await calculatePreview()
-    } catch (err) {
-      error.value = apiErrorMessage(err)
-      throw err
-    } finally {
-      loading.package = false
-    }
-  }
-
   return {
     step,
     accounts,
@@ -328,11 +311,11 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
     accountOptions,
     health,
     accountHealth,
-    imports,
     drafts,
-    selectedImportId,
     preview,
     previewLines,
+    selectedInventoryIds,
+    selectedLines,
     draftDetail,
     draft,
     draftLines,
@@ -345,16 +328,13 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
     initialize,
     selectAccount,
     loadAccountContext,
-    uploadImport,
     calculatePreview,
-    openParameters,
     createDraft,
-    reopenParameters,
+    reopenSuggestions,
     loadDraft,
     adjustLine,
     reviewDraft,
     exportDraft,
     markSubmitted,
-    savePackage,
   }
 }

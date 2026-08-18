@@ -5,6 +5,7 @@ import {
   createDefaultDates,
   decisionMeta,
   primaryDecisionReason,
+  queueMeta,
   reasonLabel,
   sourceMeta,
 } from 'src/utils/fulfillmentDraft'
@@ -30,6 +31,12 @@ describe('fulfillment draft UI helpers', () => {
     expect(reasonLabel('blocked_identity_package')).toBe('Embalagem incompleta')
     expect(reasonLabel('review_local_stock_missing')).toBe('Informe o estoque local')
     expect(decisionMeta('blocked').label).toBe('Bloqueado')
+  })
+
+  it('labels the automatic recommendation queues for the operator', () => {
+    expect(queueMeta('send_now').label).toBe('Enviar agora')
+    expect(queueMeta('prepare').label).toBe('Preparar')
+    expect(reasonLabel('target_coverage_gap')).toContain('cobertura')
   })
 
   it('shows a warning when the blockers array exists but is empty', () => {

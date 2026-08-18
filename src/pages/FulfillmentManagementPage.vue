@@ -2,13 +2,13 @@
   <q-page class="full-page">
     <header class="full-page-header">
       <div>
-        <span class="full-kicker">MERCADO LIVRE · CRIAÇÃO ASSISTIDA</span>
-        <h1>Planejar envio ao Full</h1>
-        <p>Da saúde dos dados a um checklist revisável, sem fingir que o SellerBot cria a remessa pela API.</p>
+        <span class="full-kicker">MERCADO LIVRE · REPOSIÇÃO INTELIGENTE</span>
+        <h1>Sugestões de envio Full</h1>
+        <p>Veja por conta o que enviar agora, o que preparar e o que não precisa ocupar espaço.</p>
       </div>
       <div class="full-page-header__actions">
         <span v-if="!canWrite" class="full-readonly"><q-icon name="visibility" /> Modo consulta</span>
-        <q-btn outline color="primary" no-caps icon="refresh" label="Atualizar fontes" :loading="loading.account" @click="refresh" />
+        <q-btn outline color="primary" no-caps icon="refresh" label="Recalcular" :loading="loading.account" @click="refresh" />
       </div>
     </header>
 
@@ -20,40 +20,25 @@
       <q-btn flat round dense icon="close" aria-label="Fechar aviso" @click="error = ''" />
     </div>
 
-    <FulfillmentHealthStep
-      v-if="step === 'health'"
+    <FulfillmentSuggestionsStep
+      v-if="step === 'suggestions'"
       :account-id="accountId"
       :account-options="accountOptions"
       :health="accountHealth"
-      :imports="imports"
-      :selected-import-id="selectedImportId"
-      :drafts="drafts"
-      :loading="loading.initialize || loading.account"
-      :importing="loading.import"
-      :can-write="canWrite"
-      @account="selectAccount"
-      @import-id="selectedImportId = $event"
-      @upload="uploadReport"
-      @continue="goToParameters"
-      @open-draft="openDraft"
-    />
-
-    <FulfillmentParametersStep
-      v-else-if="step === 'parameters'"
       :preview="preview"
       :lines="previewLines"
-      :line-inputs="lineInputs"
+      :selected-ids="selectedInventoryIds"
+      :drafts="drafts"
       :parameters="parameters"
-      :loading="loading.preview"
+      :loading="loading.initialize || loading.account || loading.preview"
       :saving="loading.draft"
-      :package-saving="loading.package"
       :can-write="canWrite"
+      @account="selectAccount"
+      @selection="selectedInventoryIds = $event"
       @parameter="updateParameter"
-      @line="updateLineInput"
-      @recalculate="recalculate"
+      @refresh="recalculate"
       @create="saveDraft"
-      @save-package="savePackageProfile"
-      @back="step = 'health'"
+      @open-draft="openDraft"
     />
 
     <FulfillmentReviewStep
@@ -68,7 +53,7 @@
       :can-write="canWrite"
       @adjust="adjustQuantity"
       @review="confirmReview"
-      @back="flow.reopenParameters"
+      @back="flow.reopenSuggestions"
     />
 
     <FulfillmentExecutionStep
@@ -96,9 +81,8 @@ import { useStore } from 'src/stores/store'
 import { useFulfillmentDraft } from 'src/composables/useFulfillmentDraft'
 import { STEP_OPTIONS, downloadCsv } from 'src/utils/fulfillmentDraft'
 import FulfillmentExecutionStep from 'src/components/fulfillment/FulfillmentExecutionStep.vue'
-import FulfillmentHealthStep from 'src/components/fulfillment/FulfillmentHealthStep.vue'
-import FulfillmentParametersStep from 'src/components/fulfillment/FulfillmentParametersStep.vue'
 import FulfillmentReviewStep from 'src/components/fulfillment/FulfillmentReviewStep.vue'
+import FulfillmentSuggestionsStep from 'src/components/fulfillment/FulfillmentSuggestionsStep.vue'
 import FulfillmentStepRail from 'src/components/fulfillment/FulfillmentStepRail.vue'
 
 const MERCADO_LIVRE_FULL_URL = 'https://www.mercadolivre.com.br/anuncios/lista/space_management?filters=with-fulfillment'
@@ -107,16 +91,15 @@ const store = useStore()
 const { canWrite } = storeToRefs(store)
 const flow = useFulfillmentDraft()
 const {
-  step, accountId, accountOptions, accountHealth, imports, drafts, selectedImportId,
+  step, accountId, accountOptions, accountHealth, drafts, selectedInventoryIds,
   preview, previewLines, draftDetail, draft, draftLines, canReview, parameters,
-  lineInputs, loading, error, exportNotice,
+  loading, error, exportNotice,
 } = flow
 
 const maxStep = computed(() => {
   if (draft.value?.status && ['reviewed', 'exported', 'submitted_manually'].includes(draft.value.status)) return 'execution'
   if (draft.value) return 'review'
-  if (preview.value) return 'parameters'
-  return 'health'
+  return 'suggestions'
 })
 
 function selectStep(nextStep) {
@@ -125,28 +108,15 @@ function selectStep(nextStep) {
   if (target <= allowed) step.value = nextStep
 }
 function updateParameter({ key, value }) { parameters[key] = value }
-function updateLineInput({ inventoryId, key, value }) {
-  if (!lineInputs[inventoryId]) lineInputs[inventoryId] = {}
-  lineInputs[inventoryId][key] = value == null ? null : Number(value)
-}
 async function refresh() {
   const loaded = await flow.loadAccountContext()
-  if (loaded) $q.notify({ type: 'positive', message: 'Fontes atualizadas.' })
+  if (loaded) $q.notify({ type: 'positive', message: 'Sugestões recalculadas com os dados sincronizados.' })
 }
 async function selectAccount(value) {
   await flow.selectAccount(value)
 }
-async function uploadReport({ file, reportType }) {
-  try {
-    const result = await flow.uploadImport(file, reportType)
-    $q.notify({ type: result?.duplicate ? 'info' : 'positive', message: result?.duplicate ? 'Este arquivo já estava importado.' : 'Relatório validado e importado.' })
-  } catch { /* O banner global já explica. */ }
-}
-async function goToParameters() {
-  try { await flow.openParameters() } catch { /* Banner global. */ }
-}
 async function recalculate() {
-  try { await flow.calculatePreview(); $q.notify({ type: 'positive', message: 'Prévia recalculada.' }) } catch { /* Banner global. */ }
+  try { await flow.calculatePreview(); $q.notify({ type: 'positive', message: 'Sugestões recalculadas com os critérios atuais.' }) } catch { /* Banner global. */ }
 }
 async function saveDraft() {
   try { await flow.createDraft(); $q.notify({ type: 'positive', message: 'Rascunho versionado salvo.' }) } catch { /* Banner global. */ }
@@ -171,10 +141,6 @@ async function downloadExport() {
 async function registerSubmission(reference) {
   try { await flow.markSubmitted(reference); $q.notify({ type: 'positive', message: 'Envio manual registrado.' }) } catch { /* Banner global. */ }
 }
-async function savePackageProfile({ line, packageData }) {
-  try { await flow.savePackage(line, packageData); $q.notify({ type: 'positive', message: 'Embalagem salva e prévia recalculada.' }) } catch { /* Banner global. */ }
-}
-
 onMounted(flow.initialize)
 </script>
 

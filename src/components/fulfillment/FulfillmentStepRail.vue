@@ -30,7 +30,7 @@ import { STEP_OPTIONS } from 'src/utils/fulfillmentDraft'
 
 const props = defineProps({
   current: { type: String, required: true },
-  maxStep: { type: String, default: 'health' },
+  maxStep: { type: String, default: 'suggestions' },
 })
 defineEmits(['select'])
 

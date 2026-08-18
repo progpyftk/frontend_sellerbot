@@ -4,12 +4,21 @@ import { useFulfillmentDraft } from 'src/composables/useFulfillmentDraft'
 
 function serviceMock() {
   const preview = {
-    summary: { ready: 0, review: 1, blocked: 1 },
+    summary: { ready: 0, review: 2, blocked: 0 },
+    queues: { send_now: 1, prepare: 1, monitor: 0, blocked: 0 },
+    suggested_units: 30,
     lines: [
       {
-        identity: { inventory_id: 'INV-1', item_id: 'MLB-1', sku: 'SKU-1' },
+        identity: { inventory_id: 'INV-1', item_id: 'MLB-1', sku: 'SKU-1', title: 'Produto urgente' },
         decision_status: 'review',
-        calculated_quantity: null,
+        calculated_quantity: 12,
+        recommendation: { queue: 'send_now', reason: 'below_reorder_point', coverage_days: '2.0' },
+      },
+      {
+        identity: { inventory_id: 'INV-2', item_id: 'MLB-2', sku: 'SKU-2', title: 'Produto para preparar' },
+        decision_status: 'review',
+        calculated_quantity: 18,
+        recommendation: { queue: 'prepare', reason: 'target_coverage_gap', coverage_days: '15.0' },
       },
     ],
   }
@@ -22,7 +31,6 @@ function serviceMock() {
   return {
     listAccounts: vi.fn().mockResolvedValue({ data: [{ account_id: 'ACCOUNT-1', account_nickname: 'Principal', is_connected: true }] }),
     getFulfillmentHealth: vi.fn().mockResolvedValue({ data: { accounts: [{ account: { id: 'ACCOUNT-1' }, status: 'review' }] } }),
-    listFulfillmentImports: vi.fn().mockResolvedValue({ data: { items: [{ id: 3, status: 'valid', original_filename: 'full.csv' }] } }),
     listFulfillmentDrafts: vi.fn().mockResolvedValue({ data: { items: [] } }),
     previewFulfillmentDraft: vi.fn().mockResolvedValue({ data: preview }),
     createFulfillmentDraft: vi.fn().mockResolvedValue({ data: draft }),
@@ -31,13 +39,11 @@ function serviceMock() {
     reviewFulfillmentDraft: vi.fn().mockResolvedValue({ data: { ...draft, draft: { ...draft.draft, status: 'reviewed' } } }),
     exportFulfillmentDraft: vi.fn(),
     markFulfillmentDraftSubmitted: vi.fn(),
-    uploadFulfillmentImport: vi.fn(),
-    saveFulfillmentPackageProfile: vi.fn(),
   }
 }
 
 describe('useFulfillmentDraft', () => {
-  it('loads account health, latest valid import and history together', async () => {
+  it('loads the account and calculates suggestions automatically', async () => {
     const service = serviceMock()
     const flow = useFulfillmentDraft(service)
 
@@ -45,44 +51,42 @@ describe('useFulfillmentDraft', () => {
 
     expect(flow.accountId.value).toBe('ACCOUNT-1')
     expect(flow.accountHealth.value.status).toBe('review')
-    expect(flow.selectedImportId.value).toBe(3)
-    expect(service.getFulfillmentHealth).toHaveBeenCalledWith({ account_id: 'ACCOUNT-1' })
+    expect(flow.step.value).toBe('suggestions')
+    expect(service.previewFulfillmentDraft).toHaveBeenCalledOnce()
+    expect(flow.selectedInventoryIds.value).toEqual(['INV-1', 'INV-2'])
   })
 
-  it('opens parameters with null manual stock instead of manufacturing zero', async () => {
+  it('keeps unavailable local stock unknown without blocking the calculated need', async () => {
     const service = serviceMock()
     const flow = useFulfillmentDraft(service)
     await flow.initialize()
 
-    await flow.openParameters()
-
-    expect(flow.step.value).toBe('parameters')
     expect(flow.lineInputs['INV-1'].localAvailable).toBeNull()
-    expect(flow.previewLines.value[0].calculated_quantity).toBeNull()
+    expect(flow.previewLines.value[0].calculated_quantity).toBe(12)
   })
 
-  it('sends explicit manual inputs and advances to versioned review', async () => {
+  it('creates a draft only with the products selected in the suggestion queue', async () => {
     const service = serviceMock()
     const flow = useFulfillmentDraft(service)
     await flow.initialize()
-    await flow.openParameters()
-    flow.lineInputs['INV-1'].localAvailable = 30
-    flow.lineInputs['INV-1'].casePack = 6
+    flow.selectedInventoryIds.value = ['INV-1']
 
     await flow.createDraft()
 
     const payload = service.createFulfillmentDraft.mock.calls[0][0]
-    expect(payload.lines[0]).toMatchObject({ inventory_id: 'INV-1', local_available: 30, case_pack: 6 })
+    expect(payload.inventory_ids).toEqual(['INV-1'])
+    expect(payload.lines).toHaveLength(1)
+    expect(payload.lines[0]).toMatchObject({ inventory_id: 'INV-1', local_available: null, case_pack: 1 })
+    expect(payload.planning_import_id).toBeNull()
     expect(payload.draft_key).toBeTruthy()
     expect(flow.step.value).toBe('review')
-    expect(flow.draft.value.version).toBe(1)
   })
 
   it('replaces the active draft with the new adjustment version', async () => {
     const service = serviceMock()
     const flow = useFulfillmentDraft(service)
     await flow.initialize()
-    await flow.openParameters()
+    flow.selectedInventoryIds.value = ['INV-1']
     await flow.createDraft()
 
     await flow.adjustLine(21, 6, 'Contagem física revisada')
@@ -91,15 +95,16 @@ describe('useFulfillmentDraft', () => {
     expect(flow.draft.value.version).toBe(2)
   })
 
-  it('starts a new idempotency scope when the operator revises parameters', async () => {
+  it('starts a new idempotency scope when returning to suggestions', async () => {
     const service = serviceMock()
     const flow = useFulfillmentDraft(service)
     await flow.initialize()
-    await flow.openParameters()
+    flow.selectedInventoryIds.value = ['INV-1']
     await flow.createDraft()
     const firstKey = service.createFulfillmentDraft.mock.calls[0][0].draft_key
 
-    flow.reopenParameters()
+    flow.reopenSuggestions()
+    flow.selectedInventoryIds.value = ['INV-1']
     await flow.createDraft()
 
     const secondKey = service.createFulfillmentDraft.mock.calls[1][0].draft_key
@@ -111,7 +116,7 @@ describe('useFulfillmentDraft', () => {
     service.exportFulfillmentDraft.mockRejectedValue({ response: { data: { code: 'shadow_mode', detail: 'Validação de oito semanas em andamento.' } } })
     const flow = useFulfillmentDraft(service)
     await flow.initialize()
-    await flow.openParameters()
+    flow.selectedInventoryIds.value = ['INV-1']
     await flow.createDraft()
 
     await expect(flow.exportDraft()).rejects.toBeTruthy()
