@@ -127,7 +127,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import FiscalService from 'src/services/FiscalService'
 
@@ -155,8 +155,8 @@ const aliasColumns = [
   { name: 'status', label: 'Status', align: 'center' },
   { name: 'actions', label: 'Revisão', align: 'right' },
 ]
-const pendingCount = computed(() => aliases.value.filter((alias) => alias.status === 'suggested').length)
-const approvedCount = computed(() => aliases.value.filter((alias) => alias.status === 'approved').length)
+const pendingCount = ref(0)
+const approvedCount = ref(0)
 
 function statusLabel(status) { return ({ suggested: 'Pendente', approved: 'Aprovado', rejected: 'Rejeitado', expired: 'Expirado' })[status] || status }
 function statusColor(status) { return ({ suggested: 'amber-2', approved: 'teal-2', rejected: 'red-2', expired: 'grey-3' })[status] || 'grey-3' }
@@ -166,8 +166,14 @@ function evidenceLabel(type) { return ({ xml_tax_unit: 'Unidade tributável XML'
 async function loadAliases() {
   loading.value = true
   try {
-    const { data } = await FiscalService.getProductAliases({ status: filters.value.status || undefined, fiscal_account: filters.value.fiscalAccount || undefined, ncm: filters.value.ncm || undefined, search: filters.value.search || undefined, page_size: 200 })
+    const [{ data }, pendingSummary, approvedSummary] = await Promise.all([
+      FiscalService.getProductAliases({ status: filters.value.status || undefined, fiscal_account: filters.value.fiscalAccount || undefined, ncm: filters.value.ncm || undefined, search: filters.value.search || undefined, page_size: 200 }),
+      FiscalService.getProductAliases({ status: 'suggested', page_size: 1 }),
+      FiscalService.getProductAliases({ status: 'approved', page_size: 1 }),
+    ])
     aliases.value = data.results || data || []
+    pendingCount.value = pendingSummary.data?.count ?? (pendingSummary.data?.results || []).length
+    approvedCount.value = approvedSummary.data?.count ?? (approvedSummary.data?.results || []).length
   } catch (error) {
     $q.notify({ type: 'negative', message: error.response?.data?.detail || 'Não foi possível carregar os aliases.' })
   } finally { loading.value = false }
