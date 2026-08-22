@@ -185,7 +185,7 @@
           <SbCard>
             <div class="row items-center justify-between q-pb-md border-bottom">
               <div class="text-subtitle1 text-weight-bold text-grey-9">
-                Saldo Consolidado por NCM
+                Saldo Fiscal Documentado por NCM
               </div>
               <q-btn
                 flat
@@ -1050,7 +1050,7 @@ const balanceColumns = [
   { name: "unit", label: "Unid.", field: "unit", align: "center", sortable: true },
   { name: "qty_in", label: "Entradas (Qtd)", field: "qty_in", align: "right", sortable: true },
   { name: "qty_out", label: "Saídas (Qtd)", field: "qty_out", align: "right", sortable: true },
-  { name: "balance_qty", label: "Saldo Estoque", field: "balance_qty", align: "right", sortable: true },
+  { name: "balance_qty", label: "Saldo Fiscal Documentado", field: "balance_qty", align: "right", sortable: true },
   { name: "value_in", label: "Entradas (R$)", field: "value_in", align: "right", sortable: true },
   { name: "value_out", label: "Saídas (R$)", field: "value_out", align: "right", sortable: true },
   { name: "actions", label: "Ações", align: "center" },
@@ -1521,7 +1521,7 @@ function refreshActiveTab() {
 
 function exportBalanceCSV() {
   if (!balanceRows.value.length) return;
-  const headers = ["NCM", "Descricao", "Unidade", "Qtd_Entrada", "Qtd_Saida", "Saldo_Qtd", "Valor_Entrada_R$", "Valor_Saida_R$", "Saldo_Financeiro_R$"];
+  const headers = ["NCM", "Descricao", "Unidade", "Qtd_Entrada", "Qtd_Saida", "Saldo_Fiscal_Documentado_Qtd", "Valor_Entrada_R$", "Valor_Saida_R$", "Saldo_Financeiro_R$"];
   const rows = balanceRows.value.flatMap((r) => {
     const units = r.has_mixed_units ? r.units_breakdown : [r];
     return units.map((u) => [
