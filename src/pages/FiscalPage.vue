@@ -44,6 +44,7 @@
           class="fiscal-tabs"
         >
           <q-tab name="balance" icon="bar_chart" label="Balanço de NCMs" />
+          <q-tab name="normalization" icon="rule" label="Normalização métrica" />
           <q-tab name="documents" icon="receipt_long" label="Todas as NF-e" />
           <q-tab name="imports" icon="upload_file" label="Importação de XMLs / ZIP" />
         </q-tabs>
@@ -358,7 +359,12 @@
 
         </q-tab-panel>
 
-        <!-- ────────────────────────────────────────── ABA 2: TODAS AS NF-E -->
+        <!-- ────────────────────────────────────────── ABA 2: NORMALIZAÇÃO MÉTRICA -->
+        <q-tab-panel name="normalization" class="q-pa-none">
+          <FiscalNormalizationReview :refresh-token="normalizationRefreshToken" />
+        </q-tab-panel>
+
+        <!-- ────────────────────────────────────────── ABA 3: TODAS AS NF-E -->
         <q-tab-panel name="documents" class="q-pa-none">
 
           <!-- Filtros de Notas -->
@@ -994,12 +1000,14 @@ import { useQuasar } from "quasar";
 import SbPageHeader from "src/components/common/SbPageHeader.vue";
 import SbCard from "src/components/common/SbCard.vue";
 import SbKpiCard from "src/components/common/SbKpiCard.vue";
+import FiscalNormalizationReview from "src/components/fiscal/FiscalNormalizationReview.vue";
 import FiscalService from "src/services/FiscalService";
 
 const $q = useQuasar();
 
 const activeTab = ref("balance");
 const loading = ref(false);
+const normalizationRefreshToken = ref(0);
 
 // ────────────────────────────────────────── ESTADO DO BALANÇO (ABA 1)
 const loadingBalance = ref(false);
@@ -1506,6 +1514,7 @@ function applyPeriodPreset(preset) {
 function refreshActiveTab() {
   loadCnpjs();
   if (activeTab.value === "balance") loadBalance();
+  else if (activeTab.value === "normalization") normalizationRefreshToken.value += 1;
   else if (activeTab.value === "documents") loadDocuments(1);
   else if (activeTab.value === "imports") loadImportBatches();
 }
