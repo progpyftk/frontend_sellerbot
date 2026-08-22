@@ -32,6 +32,36 @@ export default {
     return api.get("/api/fiscal/cnpjs/");
   },
 
+  /** Lista produtos canônicos da normalização métrica. */
+  getCanonicalProducts(params = {}) {
+    return api.get("/api/fiscal/normalization/canonical-products/", { params });
+  },
+
+  /** Cria produto canônico sugerido para revisão. */
+  createCanonicalProduct(payload) {
+    return api.post("/api/fiscal/normalization/canonical-products/", payload);
+  },
+
+  /** Aprova ou rejeita um produto canônico. */
+  reviewCanonicalProduct(productId, payload) {
+    return api.post(`/api/fiscal/normalization/canonical-products/${productId}/review/`, payload);
+  },
+
+  /** Lista aliases da normalização métrica. */
+  getProductAliases(params = {}) {
+    return api.get("/api/fiscal/normalization/aliases/", { params });
+  },
+
+  /** Cria alias em estado sugerido. */
+  createProductAlias(payload) {
+    return api.post("/api/fiscal/normalization/aliases/", payload);
+  },
+
+  /** Aprova ou rejeita um alias. */
+  reviewProductAlias(aliasId, payload) {
+    return api.post(`/api/fiscal/normalization/aliases/${aliasId}/review/`, payload);
+  },
+
   /**
    * Lista documentos que necessitam de revisão manual
    */
