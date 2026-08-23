@@ -953,16 +953,17 @@
           </q-banner>
         </q-card-section>
 
-        <!-- ── Pausar promoções ao aumentar preço (Ajuste-aumentar e Exato) ── -->
+        <!-- ── Pausar promoções + desativar preço dinâmico (Ajuste-aumentar e Exato) ── -->
         <q-card-section
           v-if="(bulkPriceForm.mode === 'adjust' && bulkPriceForm.direction === 'increase') || bulkPriceForm.mode === 'exact'"
           class="q-px-lg q-pt-none q-pb-md">
           <q-checkbox v-model="bulkPriceForm.pausePromotions" dense color="indigo-6"
-            label="Pausar promoções ativas antes de aumentar o preço" />
+            label="Pausar promoções ativas e desativar o ajuste automático de preço (preço dinâmico)" />
           <div class="text-caption text-grey-6 q-ml-lg">
             Anúncios em promoção continuam mostrando o preço promocional pro comprador mesmo
-            depois de aumentar o preço-base. Marque esta opção para pausar a(s) promoção(ões)
-            ativa(s) de cada anúncio antes de aplicar o aumento.
+            depois de alterar o preço-base. Marque esta opção para pausar a(s) promoção(ões)
+            ativa(s) de cada anúncio. Anúncios com ajuste automático de preço (preço dinâmico)
+            também terão a automatização desativada, para que o Mercado Livre aceite o novo preço.
           </div>
         </q-card-section>
 
