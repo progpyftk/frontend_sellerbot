@@ -99,6 +99,15 @@ export default {
   },
 
   /**
+   * Balanço fiscal métrico por SKU (product_code): entradas, saídas e saldo
+   * na unidade normalizada (KG/L/UN) + valor financeiro (entradas/saídas em R$).
+   * @param {Object} params { fiscal_account_id, start_date, end_date, ncm, search, normalization_version }
+   */
+  getNormalizedSkuBalance(params = {}) {
+    return api.get("/api/fiscal/balance/normalized/sku/", { params });
+  },
+
+  /**
    * Lista documentos que necessitam de revisão manual
    */
   getExceptions(params = {}) {

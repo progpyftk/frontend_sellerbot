@@ -99,28 +99,44 @@
       </div>
     </div>
 
-    <!-- Tabela do balanço métrico por NCM + dimensão + unidade -->
+    <!-- Tabela do balanço métrico por NCM ou por SKU -->
     <SbCard>
       <div class="row items-center justify-between q-pb-md border-bottom">
         <div class="text-subtitle1 text-weight-bold text-grey-9">
-          Saldo métrico por NCM (KG / L / UN)
+          <template v-if="granularity === 'ncm'">Saldo métrico por NCM (KG / L / UN)</template>
+          <template v-else>Saldo métrico por SKU (KG / L / UN + R$)</template>
         </div>
-        <q-btn
-          flat
-          dense
-          no-caps
-          icon="refresh"
-          label="Atualizar"
-          color="grey-7"
-          :loading="loading"
-          @click="load"
-        />
+        <div class="row items-center q-gutter-sm">
+          <q-btn-toggle
+            v-model="granularity"
+            dense
+            no-caps
+            unelevated
+            toggle-color="teal-8"
+            color="grey-3"
+            text-color="grey-8"
+            :options="[
+              { label: 'Por NCM', value: 'ncm' },
+              { label: 'Por SKU', value: 'sku' },
+            ]"
+          />
+          <q-btn
+            flat
+            dense
+            no-caps
+            icon="refresh"
+            label="Atualizar"
+            color="grey-7"
+            :loading="loading"
+            @click="load"
+          />
+        </div>
       </div>
 
       <q-table
         :rows="rows"
         :columns="columns"
-        row-key="ncm"
+        :row-key="(row) => granularity === 'sku' ? `${row.sku}|${row.ncm}|${row.dimension}|${row.unit}` : `${row.ncm}|${row.dimension}|${row.unit}`"
         :loading="loading"
         flat
         :pagination="{ rowsPerPage: 25 }"
@@ -128,7 +144,13 @@
       >
         <template #body-cell-ncm="props">
           <q-td :props="props">
-            <span class="text-weight-bold font-mono">{{ formatNcm(props.row.ncm) }}</span>
+            <template v-if="granularity === 'sku'">
+              <div class="text-weight-bold font-mono">{{ props.row.sku }}</div>
+              <div class="text-caption text-grey-6 font-mono">NCM {{ formatNcm(props.row.ncm) }}</div>
+            </template>
+            <template v-else>
+              <span class="text-weight-bold font-mono">{{ formatNcm(props.row.ncm) }}</span>
+            </template>
           </q-td>
         </template>
 
@@ -173,6 +195,31 @@
           </q-td>
         </template>
 
+        <template v-if="granularity === 'sku'" #body-cell-value_in="props">
+          <q-td :props="props" class="text-grey-9">
+            {{ formatCurrency(props.row.value_in) }}
+          </q-td>
+        </template>
+
+        <template v-if="granularity === 'sku'" #body-cell-value_out="props">
+          <q-td :props="props" class="text-grey-9">
+            {{ formatCurrency(props.row.value_out) }}
+          </q-td>
+        </template>
+
+        <template v-if="granularity === 'sku'" #body-cell-balance_value="props">
+          <q-td :props="props">
+            <span
+              :class="[
+                'text-weight-bold',
+                props.row.balance_value > 0 ? 'text-teal-9' : props.row.balance_value < 0 ? 'text-red-9' : 'text-grey-7'
+              ]"
+            >
+              {{ formatCurrency(props.row.balance_value) }}
+            </span>
+          </q-td>
+        </template>
+
         <template #body-cell-movements_count="props">
           <q-td :props="props" class="text-grey-7">
             {{ props.row.movements_count }}
@@ -213,6 +260,7 @@ const props = defineProps({
 const loading = ref(false)
 const rows = ref([])
 const pendingBreakdown = ref([])
+const granularity = ref('ncm')
 const kpis = ref({
   normalization_version: null,
   items_normalized: 0,
@@ -220,10 +268,14 @@ const kpis = ref({
   coverage_ratio: 1.0,
   quantity_status: 'known',
   qty_by_dimension_unit: {},
+  total_value_in: 0,
+  total_value_out: 0,
+  net_value: 0,
+  total_skus: 0,
   account_cnpj: '',
 })
 
-const columns = [
+const ncmColumns = [
   { name: 'ncm', label: 'NCM', field: 'ncm', align: 'left', sortable: true },
   { name: 'description', label: 'Descrição', field: 'description', align: 'left' },
   { name: 'unit', label: 'Unidade', field: 'unit', align: 'center', sortable: true },
@@ -232,6 +284,21 @@ const columns = [
   { name: 'balance_qty', label: 'Saldo Métrico', field: 'balance_qty', align: 'right', sortable: true },
   { name: 'movements_count', label: 'Movs', field: 'movements_count', align: 'center', sortable: true },
 ]
+
+const skuColumns = [
+  { name: 'ncm', label: 'SKU / NCM', field: 'sku', align: 'left', sortable: true },
+  { name: 'description', label: 'Descrição', field: 'description', align: 'left' },
+  { name: 'unit', label: 'Unidade', field: 'unit', align: 'center', sortable: true },
+  { name: 'qty_in', label: 'Entradas (Qtd)', field: 'qty_in', align: 'right', sortable: true },
+  { name: 'qty_out', label: 'Saídas (Qtd)', field: 'qty_out', align: 'right', sortable: true },
+  { name: 'balance_qty', label: 'Saldo Métrico', field: 'balance_qty', align: 'right', sortable: true },
+  { name: 'value_in', label: 'Entradas (R$)', field: 'value_in', align: 'right', sortable: true },
+  { name: 'value_out', label: 'Saídas (R$)', field: 'value_out', align: 'right', sortable: true },
+  { name: 'balance_value', label: 'Saldo Financeiro', field: 'balance_value', align: 'right', sortable: true },
+  { name: 'movements_count', label: 'Movs', field: 'movements_count', align: 'center', sortable: true },
+]
+
+const columns = computed(() => (granularity.value === 'sku' ? skuColumns : ncmColumns))
 
 const coverageVariant = computed(() => {
   const r = kpis.value.coverage_ratio
@@ -264,6 +331,10 @@ const coverageIconColor = computed(() => {
 function formatNumber(val) {
   const num = parseFloat(val) || 0
   return num.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+}
+function formatCurrency(val) {
+  const num = parseFloat(val) || 0
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 function formatPercent(val) {
   const num = parseFloat(val) || 0
@@ -299,7 +370,9 @@ async function load() {
       end_date: props.endDate || undefined,
       search: props.search || undefined,
     }
-    const { data } = await FiscalService.getNormalizedBalance(params)
+    const { data } = granularity.value === 'sku'
+      ? await FiscalService.getNormalizedSkuBalance(params)
+      : await FiscalService.getNormalizedBalance(params)
     kpis.value = data.kpis || {}
     rows.value = data.results || []
     pendingBreakdown.value = data.pending_breakdown || []
@@ -317,6 +390,7 @@ watch(() => props.startDate, () => { if (props.selectedAccountId) load() })
 watch(() => props.endDate, () => { if (props.selectedAccountId) load() })
 watch(() => props.search, (v, old) => { if (v !== old && props.selectedAccountId) load() })
 watch(() => props.refreshToken, (v, old) => { if (v !== old) load() })
+watch(granularity, () => load())
 
 defineExpose({ load })
 </script>
