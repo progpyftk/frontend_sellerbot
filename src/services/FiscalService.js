@@ -62,6 +62,42 @@ export default {
     return api.post(`/api/fiscal/normalization/aliases/${aliasId}/review/`, payload);
   },
 
+  // ────────────────────────────────────────── NORMALIZAÇÃO MÉTRICA (FB-38 Fases 1+3)
+
+  /** Lista execuções de normalização (runs) com filtros opcionais. */
+  getNormalizationRuns(params = {}) {
+    return api.get("/api/fiscal/normalization/runs/", { params });
+  },
+
+  /** Lista regras de conversão de unidades com filtros de revisão. */
+  getNormalizationRules(params = {}) {
+    return api.get("/api/fiscal/normalization/rules/", { params });
+  },
+
+  /** Aprova ou rejeita uma regra de conversão. */
+  reviewNormalizationRule(ruleId, payload) {
+    return api.post(`/api/fiscal/normalization/rules/${ruleId}/review/`, payload);
+  },
+
+  /** Lista análises de itens normalizados com filtros por run/status/CNPJ/NCM. */
+  getNormalizationItems(params = {}) {
+    return api.get("/api/fiscal/normalization/items/", { params });
+  },
+
+  /** Aprova ou devolve para revisão uma análise de item individual. */
+  reviewNormalizationItem(normalizationId, payload) {
+    return api.post(`/api/fiscal/normalization/items/${normalizationId}/review/`, payload);
+  },
+
+  /**
+   * Balanço fiscal métrico (Fase 3): entradas, saídas e saldo por NCM
+   * na unidade normalizada aprovada (KG/L/UN), com cobertura e pendências.
+   * @param {Object} params { fiscal_account_id, start_date, end_date, ncm, search, normalization_version }
+   */
+  getNormalizedBalance(params = {}) {
+    return api.get("/api/fiscal/balance/normalized/", { params });
+  },
+
   /**
    * Lista documentos que necessitam de revisão manual
    */

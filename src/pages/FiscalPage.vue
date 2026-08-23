@@ -357,11 +357,34 @@
             </q-table>
           </SbCard>
 
+          <!-- Balanço métrico normalizado (FB-38 Fase 3) -->
+          <div class="q-mt-lg">
+            <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-sm">
+              <q-icon name="straighten" class="q-mr-xs" /> Balanço Métrico (normalizado)
+            </div>
+            <FiscalNormalizedBalance
+              ref="normalizedBalanceRef"
+              :selected-account-id="balanceFilters.cnpj"
+              :start-date="balanceFilters.startDate"
+              :end-date="balanceFilters.endDate"
+              :search="balanceFilters.search"
+              :refresh-token="runsRefreshToken"
+            />
+          </div>
+
         </q-tab-panel>
 
         <!-- ────────────────────────────────────────── ABA 2: NORMALIZAÇÃO MÉTRICA -->
         <q-tab-panel name="normalization" class="q-pa-none">
           <FiscalNormalizationReview :refresh-token="normalizationRefreshToken" />
+
+          <!-- Fila de revisão de runs/regras/itens (FB-38 Fase 1+3) -->
+          <div class="q-mt-lg">
+            <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-sm">
+              <q-icon name="science" class="q-mr-xs" /> Execuções, Regras e Itens
+            </div>
+            <FiscalNormalizationRuns :refresh-token="runsRefreshToken" />
+          </div>
         </q-tab-panel>
 
         <!-- ────────────────────────────────────────── ABA 3: TODAS AS NF-E -->
@@ -1001,6 +1024,8 @@ import SbPageHeader from "src/components/common/SbPageHeader.vue";
 import SbCard from "src/components/common/SbCard.vue";
 import SbKpiCard from "src/components/common/SbKpiCard.vue";
 import FiscalNormalizationReview from "src/components/fiscal/FiscalNormalizationReview.vue";
+import FiscalNormalizationRuns from "src/components/fiscal/FiscalNormalizationRuns.vue";
+import FiscalNormalizedBalance from "src/components/fiscal/FiscalNormalizedBalance.vue";
 import FiscalService from "src/services/FiscalService";
 
 const $q = useQuasar();
@@ -1008,6 +1033,8 @@ const $q = useQuasar();
 const activeTab = ref("balance");
 const loading = ref(false);
 const normalizationRefreshToken = ref(0);
+const runsRefreshToken = ref(0);
+const normalizedBalanceRef = ref(null);
 
 // ────────────────────────────────────────── ESTADO DO BALANÇO (ABA 1)
 const loadingBalance = ref(false);
@@ -1513,9 +1540,13 @@ function applyPeriodPreset(preset) {
 
 function refreshActiveTab() {
   loadCnpjs();
-  if (activeTab.value === "balance") loadBalance();
-  else if (activeTab.value === "normalization") normalizationRefreshToken.value += 1;
-  else if (activeTab.value === "documents") loadDocuments(1);
+  if (activeTab.value === "balance") {
+    loadBalance();
+    normalizedBalanceRef.value?.load();
+  } else if (activeTab.value === "normalization") {
+    normalizationRefreshToken.value += 1;
+    runsRefreshToken.value += 1;
+  } else if (activeTab.value === "documents") loadDocuments(1);
   else if (activeTab.value === "imports") loadImportBatches();
 }
 

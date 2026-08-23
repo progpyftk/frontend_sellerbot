@@ -1,0 +1,335 @@
+<template>
+  <div class="normalized-balance">
+    <!-- Banner de cobertura da normalização -->
+    <q-banner
+      rounded
+      class="q-mb-md normalized-balance__banner"
+      :class="coverageBannerClass"
+    >
+      <template #avatar>
+        <q-icon :name="coverageIcon" :color="coverageIconColor" />
+      </template>
+      <div class="text-weight-bold">Balanço métrico normalizado</div>
+      <div class="text-body2 q-mt-xs">
+        <template v-if="!selectedAccountId">
+          Selecione um CNPJ fiscal para consultar o balanço em unidades comparáveis (KG/L/UN).
+        </template>
+        <template v-else-if="loading">
+          Consultando projeções aprovadas…
+        </template>
+        <template v-else-if="!kpis.normalization_version">
+          Nenhuma normalização aplicada para este CNPJ. Aprove regras na aba
+          <strong>Normalização métrica</strong> e execute
+          <code>fiscal_normalization_apply</code> para gerar o balanço métrico.
+        </template>
+        <template v-else>
+          Versão <strong class="font-mono">{{ kpis.normalization_version }}</strong> ·
+          <strong>{{ kpis.items_normalized }}</strong> itens normalizados,
+          <strong :class="kpis.items_pending > 0 ? 'text-amber-10' : ''">{{ kpis.items_pending }}</strong>
+          pendentes · cobertura <strong>{{ formatPercent(kpis.coverage_ratio) }}</strong>
+        </template>
+      </div>
+    </q-banner>
+
+    <!-- Pendências por unidade original -->
+    <transition name="q-transition--fade">
+      <div
+        v-if="pendingBreakdown.length > 0 && kpis.normalization_version"
+        class="normalized-pending-banner q-pa-md q-mb-md rounded-borders"
+      >
+        <div class="row items-center no-wrap">
+          <q-icon name="warning_amber" size="sm" color="amber-9" class="q-mr-sm" />
+          <div class="text-body2 text-grey-9">
+            <strong>{{ kpis.items_pending }} movimentos</strong> ainda sem normalização aprovada.
+            As grandezas abaixo não foram somadas ao balanço métrico e ficam discriminadas por unidade original.
+          </div>
+        </div>
+        <div class="row q-gutter-xs q-mt-sm">
+          <q-chip
+            v-for="p in pendingBreakdown.slice(0, 12)"
+            :key="`${p.ncm}-${p.original_unit}`"
+            dense
+            color="amber-1"
+            text-color="amber-10"
+            class="text-weight-medium"
+          >
+            {{ formatNcm(p.ncm) }} · {{ p.original_unit }}
+            <q-tooltip>{{ p.description || 'Sem descrição' }} — {{ p.movements_count }} movimento(s)</q-tooltip>
+          </q-chip>
+          <q-chip v-if="pendingBreakdown.length > 12" dense color="grey-3" text-color="grey-8">
+            +{{ pendingBreakdown.length - 12 }} grupos
+          </q-chip>
+        </div>
+      </div>
+    </transition>
+
+    <!-- KPIs do balanço métrico -->
+    <div v-if="kpis.normalization_version" class="row q-col-gutter-md q-mb-lg">
+      <div class="col-12 col-sm-6 col-md-3">
+        <SbKpiCard
+          label="Entradas (normalizado)"
+          :value="formatQtyByUnit(kpis.qty_by_dimension_unit, 'in')"
+          :sub="kpis.quantity_status === 'mixed_dimensions' ? 'Múltiplas dimensões' : 'Unidade comparável'"
+          variant="green"
+        />
+      </div>
+      <div class="col-12 col-sm-6 col-md-3">
+        <SbKpiCard
+          label="Saídas (normalizado)"
+          :value="formatQtyByUnit(kpis.qty_by_dimension_unit, 'out')"
+          :sub="kpis.quantity_status === 'mixed_dimensions' ? 'Múltiplas dimensões' : 'Unidade comparável'"
+          variant="red"
+        />
+      </div>
+      <div class="col-12 col-sm-6 col-md-3">
+        <SbKpiCard
+          label="Cobertura"
+          :value="formatPercent(kpis.coverage_ratio)"
+          :sub="`${kpis.items_normalized} de ${kpis.items_normalized + kpis.items_pending} itens`"
+          :variant="coverageVariant"
+        />
+      </div>
+      <div class="col-12 col-sm-6 col-md-3">
+        <SbKpiCard
+          label="Versão aplicada"
+          :value="kpis.normalization_version || '—'"
+          :sub="kpis.account_cnpj ? formatCnpj(kpis.account_cnpj) : ''"
+          variant="indigo"
+        />
+      </div>
+    </div>
+
+    <!-- Tabela do balanço métrico por NCM + dimensão + unidade -->
+    <SbCard>
+      <div class="row items-center justify-between q-pb-md border-bottom">
+        <div class="text-subtitle1 text-weight-bold text-grey-9">
+          Saldo métrico por NCM (KG / L / UN)
+        </div>
+        <q-btn
+          flat
+          dense
+          no-caps
+          icon="refresh"
+          label="Atualizar"
+          color="grey-7"
+          :loading="loading"
+          @click="load"
+        />
+      </div>
+
+      <q-table
+        :rows="rows"
+        :columns="columns"
+        row-key="ncm"
+        :loading="loading"
+        flat
+        :pagination="{ rowsPerPage: 25 }"
+        class="normalized-table"
+      >
+        <template #body-cell-ncm="props">
+          <q-td :props="props">
+            <span class="text-weight-bold font-mono">{{ formatNcm(props.row.ncm) }}</span>
+          </q-td>
+        </template>
+
+        <template #body-cell-description="props">
+          <q-td :props="props">
+            <div class="text-ellipsis" style="max-width: 300px;" :title="props.row.description">
+              {{ props.row.description || '—' }}
+            </div>
+          </q-td>
+        </template>
+
+        <template #body-cell-unit="props">
+          <q-td :props="props">
+            <q-chip dense size="sm" color="teal-1" text-color="teal-10" class="text-weight-bold">
+              {{ dimensionIcon(props.row.dimension) }} {{ props.row.unit }}
+            </q-chip>
+          </q-td>
+        </template>
+
+        <template #body-cell-qty_in="props">
+          <q-td :props="props" class="text-green-8 text-weight-medium">
+            +{{ formatNumber(props.row.qty_in) }}
+          </q-td>
+        </template>
+
+        <template #body-cell-qty_out="props">
+          <q-td :props="props" class="text-red-8 text-weight-medium">
+            -{{ formatNumber(props.row.qty_out) }}
+          </q-td>
+        </template>
+
+        <template #body-cell-balance_qty="props">
+          <q-td :props="props">
+            <span
+              :class="[
+                'text-weight-bold',
+                props.row.balance_qty > 0 ? 'text-teal-9' : props.row.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'
+              ]"
+            >
+              {{ formatNumber(props.row.balance_qty) }}
+            </span>
+          </q-td>
+        </template>
+
+        <template #body-cell-movements_count="props">
+          <q-td :props="props" class="text-grey-7">
+            {{ props.row.movements_count }}
+          </q-td>
+        </template>
+
+        <template #no-data>
+          <div class="full-width text-center q-pa-xl text-grey-6">
+            <q-icon name="straighten" size="3em" color="grey-4" />
+            <div class="text-h6 q-mt-sm">Nenhum saldo métrico disponível</div>
+            <div class="text-caption">
+              <template v-if="!selectedAccountId">Selecione um CNPJ fiscal para consultar.</template>
+              <template v-else>Aprove normalizações e execute <code>fiscal_normalization_apply</code> para projetar o saldo.</template>
+            </div>
+          </div>
+        </template>
+      </q-table>
+    </SbCard>
+  </div>
+</template>
+
+<script setup>
+import { ref, watch, computed } from 'vue'
+import { useQuasar } from 'quasar'
+import SbCard from 'src/components/common/SbCard.vue'
+import SbKpiCard from 'src/components/common/SbKpiCard.vue'
+import FiscalService from 'src/services/FiscalService'
+
+const $q = useQuasar()
+const props = defineProps({
+  selectedAccountId: { type: Number, default: null },
+  startDate: { type: String, default: '' },
+  endDate: { type: String, default: '' },
+  search: { type: String, default: '' },
+  refreshToken: { type: Number, default: 0 },
+})
+
+const loading = ref(false)
+const rows = ref([])
+const pendingBreakdown = ref([])
+const kpis = ref({
+  normalization_version: null,
+  items_normalized: 0,
+  items_pending: 0,
+  coverage_ratio: 1.0,
+  quantity_status: 'known',
+  qty_by_dimension_unit: {},
+  account_cnpj: '',
+})
+
+const columns = [
+  { name: 'ncm', label: 'NCM', field: 'ncm', align: 'left', sortable: true },
+  { name: 'description', label: 'Descrição', field: 'description', align: 'left' },
+  { name: 'unit', label: 'Unidade', field: 'unit', align: 'center', sortable: true },
+  { name: 'qty_in', label: 'Entradas', field: 'qty_in', align: 'right', sortable: true },
+  { name: 'qty_out', label: 'Saídas', field: 'qty_out', align: 'right', sortable: true },
+  { name: 'balance_qty', label: 'Saldo Métrico', field: 'balance_qty', align: 'right', sortable: true },
+  { name: 'movements_count', label: 'Movs', field: 'movements_count', align: 'center', sortable: true },
+]
+
+const coverageVariant = computed(() => {
+  const r = kpis.value.coverage_ratio
+  if (r >= 0.9) return 'teal'
+  if (r >= 0.5) return 'amber'
+  return 'red'
+})
+const coverageBannerClass = computed(() => {
+  if (!kpis.value.normalization_version) return 'normalized-balance__banner--empty'
+  const r = kpis.value.coverage_ratio
+  if (r >= 0.9) return 'normalized-balance__banner--good'
+  if (r >= 0.5) return 'normalized-balance__banner--warn'
+  return 'normalized-balance__banner--bad'
+})
+const coverageIcon = computed(() => {
+  if (!kpis.value.normalization_version) return 'info'
+  const r = kpis.value.coverage_ratio
+  if (r >= 0.9) return 'check_circle'
+  if (r >= 0.5) return 'warning'
+  return 'error'
+})
+const coverageIconColor = computed(() => {
+  if (!kpis.value.normalization_version) return 'grey-7'
+  const r = kpis.value.coverage_ratio
+  if (r >= 0.9) return 'teal-8'
+  if (r >= 0.5) return 'amber-9'
+  return 'red-8'
+})
+
+function formatNumber(val) {
+  const num = parseFloat(val) || 0
+  return num.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+}
+function formatPercent(val) {
+  const num = parseFloat(val) || 0
+  return `${(num * 100).toFixed(1)}%`
+}
+function formatCnpj(cnpj) {
+  if (!cnpj || cnpj.length !== 14) return cnpj || '—'
+  return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')
+}
+function formatNcm(ncm) {
+  if (!ncm || ncm.length !== 8) return ncm || '—'
+  return ncm.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1.$2.$3')
+}
+function dimensionIcon(dim) {
+  return ({ mass: '⚖', volume: '🫗', count: 'pcs' })[dim] || '·'
+}
+function formatQtyByUnit(qtyMap, direction) {
+  if (!qtyMap || Object.keys(qtyMap).length === 0) return '—'
+  const parts = Object.entries(qtyMap).map(([key, vals]) => {
+    const v = direction === 'in' ? vals.qty_in : vals.qty_out
+    return `${formatNumber(v)} ${key.split('/')[1]}`
+  })
+  return parts.join(' · ')
+}
+
+async function load() {
+  if (!props.selectedAccountId) return
+  loading.value = true
+  try {
+    const params = {
+      fiscal_account_id: props.selectedAccountId,
+      start_date: props.startDate || undefined,
+      end_date: props.endDate || undefined,
+      search: props.search || undefined,
+    }
+    const { data } = await FiscalService.getNormalizedBalance(params)
+    kpis.value = data.kpis || {}
+    rows.value = data.results || []
+    pendingBreakdown.value = data.pending_breakdown || []
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err.response?.data?.detail || 'Erro ao carregar balanço métrico.' })
+    rows.value = []
+    pendingBreakdown.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+watch(() => props.selectedAccountId, (v) => { if (v) load() })
+watch(() => props.startDate, () => { if (props.selectedAccountId) load() })
+watch(() => props.endDate, () => { if (props.selectedAccountId) load() })
+watch(() => props.search, (v, old) => { if (v !== old && props.selectedAccountId) load() })
+watch(() => props.refreshToken, (v, old) => { if (v !== old) load() })
+
+defineExpose({ load })
+</script>
+
+<style scoped>
+.normalized-balance__banner { border: 1px solid #a7f3d0; }
+.normalized-balance__banner--good { background: #ecfdf5; color: #134e4a; }
+.normalized-balance__banner--warn { background: #fffbeb; border-color: #fde68a; color: #78350f; }
+.normalized-balance__banner--bad { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+.normalized-balance__banner--empty { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+.normalized-pending-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; }
+.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.border-bottom { border-bottom: 1px solid #f1f5f9; }
+.normalized-table :deep(.q-table__middle) { overflow-x: auto; }
+</style>
