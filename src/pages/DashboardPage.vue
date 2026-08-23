@@ -1933,7 +1933,7 @@ const filteredShopeeOp = computed(() => {
     revenue_basis: revenueBasis, orders_with_escrow: ordersWithEscrow,
     orders_without_escrow: s('orders_without_escrow'), gross_profit: gp, ads_cost: ads,
     direct_delivery_cost_total, affiliate_cost, marketplace_fees, lucro_liquido: ll || null, orders_count: orders,
-    avg_ticket: averageTicket(gmv, orders), units_sold: 0, by_account: selected,
+    avg_ticket: averageTicket(gmv, orders), units_sold: s('units_sold'), by_account: selected,
   }
 })
 
@@ -1960,7 +1960,7 @@ const filteredTiktokOp = computed(() => {
   if (!selected.length) return null
   const s = (f) => selected.reduce((acc, a) => acc + (a[f] || 0), 0)
   const gmv = s('gmv'), net = s('net_revenue'), gp = s('gross_profit'), orders = s('orders_count')
-  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: s('ads_cost'), lucro_liquido: gp, orders_count: orders, avg_ticket: averageTicket(gmv, orders), units_sold: 0, by_account: selected }
+  return { gmv, net_revenue: net, gross_profit: gp, ads_cost: s('ads_cost'), lucro_liquido: gp, orders_count: orders, avg_ticket: averageTicket(gmv, orders), units_sold: s('units_sold'), by_account: selected }
 })
 
 // Filtered ML daily: sums selected accounts from accountDailyData (when partial multi-account selection)
@@ -2605,7 +2605,7 @@ const combinedToday = computed(() => {
     net_revenue:   (fml?.net_revenue || 0) + (sh?.faturamento || 0) + (tk?.faturamento || 0),
     gross_profit:  (fml?.gross_profit || 0) + (sh?.lucro_apos_cmp || 0) + (tk?.lucro_apos_cmp || 0),
     lucro_liquido: (fml?.lucro_liquido || 0) + (sh?.lucro_apos_cmp || 0) + (tk?.lucro_apos_cmp || 0),
-    units_sold:    (fml?.units_sold || 0),
+    units_sold:    (fml?.units_sold || 0) + (sh?.units_sold || 0) + (tk?.units_sold || 0),
     avg_ticket:    averageTicket(gmv, orders),
     _ml: fml,
     _shopee: sh,
@@ -2622,7 +2622,7 @@ function shopeeToMLFormat(sh) {
     net_revenue:  sh.faturamento || 0,  // receita líquida (escrow real ou estimado)
     gross_profit: sh.lucro_apos_cmp || 0,
     lucro_liquido: sh.lucro_apos_cmp || 0,
-    units_sold:   0,
+    units_sold:   sh.units_sold || 0,
     avg_ticket:   averageTicket(gmv, orders),
   }
 }
@@ -2636,7 +2636,7 @@ function tiktokToMLFormat(tk) {
     net_revenue:  tk.faturamento || 0,
     gross_profit: tk.lucro_apos_cmp || 0,
     lucro_liquido: tk.lucro_apos_cmp || 0,
-    units_sold:   0,
+    units_sold:   tk.units_sold || 0,
     avg_ticket:   averageTicket(gmv, orders),
   }
 }
