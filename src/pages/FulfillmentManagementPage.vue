@@ -9,9 +9,15 @@
       <span v-if="!canWrite" class="fp-readonly"><q-icon name="visibility" /> Modo consulta</span>
     </header>
 
-    <div v-if="error" class="fp-error" role="alert">
-      <q-icon name="error_outline" /><span><strong>Não foi possível concluir</strong>{{ error }}</span><q-btn flat round dense icon="close" @click="error = ''" />
-    </div>
+    <q-tabs v-model="activeTab" class="fp-tabs" dense align="left" active-color="primary" indicator-color="primary" no-caps>
+      <q-tab name="plan" icon="route" label="Plano de envios" />
+      <q-tab name="outOfFull" icon="rocket_launch" label="Itens fora do Full" />
+    </q-tabs>
+
+    <div v-show="activeTab === 'plan'">
+      <div v-if="error" class="fp-error" role="alert">
+        <q-icon name="error_outline" /><span><strong>Não foi possível concluir</strong>{{ error }}</span><q-btn flat round dense icon="close" @click="error = ''" />
+      </div>
 
     <section class="fp-planner">
       <div class="fp-planner__intro">
@@ -97,6 +103,10 @@
       <q-icon name="error_outline" size="42px" /><div><strong>Este plano não pôde ser gerado</strong><span>{{ plan.error_detail || 'Gere uma nova versão para tentar novamente.' }}</span></div>
     </section>
 
+    </div>
+
+    <FulfillmentOutOfFullPanel v-show="activeTab === 'outOfFull'" @use-in-plan="handleUseInPlan" />
+
     <FulfillmentPlanLineDialog v-model="lineOpen" :line="selectedLine" :adjustments="selectedAdjustments" :can-write="canWrite" :editable="!parametersChanged && ['ready', 'ready_with_warnings'].includes(plan?.status)" :saving="loading.adjust" @adjust="adjust" />
 
     <q-dialog v-model="strategyOpen">
@@ -125,6 +135,7 @@ import FulfillmentPlanLineDialog from 'src/components/fulfillment-plan/Fulfillme
 import FulfillmentPlanLines from 'src/components/fulfillment-plan/FulfillmentPlanLines.vue'
 import FulfillmentPlanSummary from 'src/components/fulfillment-plan/FulfillmentPlanSummary.vue'
 import FulfillmentStrategyBanner from 'src/components/fulfillment-plan/FulfillmentStrategyBanner.vue'
+import FulfillmentOutOfFullPanel from 'src/components/fulfillment-plan/FulfillmentOutOfFullPanel.vue'
 
 const MERCADO_LIVRE_FULL_URL = 'https://www.mercadolivre.com.br/anuncios/lista/space_management?filters=with-fulfillment'
 const $q = useQuasar()
@@ -135,6 +146,7 @@ const { accountId, accountOptions, history, plan, lines, selectedLine, adjustmen
 const lineOpen = ref(false)
 const strategyOpen = ref(false)
 const submissionReference = ref('')
+const activeTab = ref('plan')
 const actionOptions = Object.entries(ACTIONS).map(([value, row]) => ({ value, label: row.label }))
 const today = localISODate()
 const canGenerate = computed(() => Boolean(
@@ -168,9 +180,12 @@ async function review() { try { await flow.reviewPlan(); $q.notify({ type: 'posi
 async function exportPlan() { try { await flow.exportPlan(); $q.notify({ type: 'positive', message: 'Checklist baixado.' }) } catch { /* banner global */ } }
 async function submitPlan() { try { await flow.markSubmitted(submissionReference.value); $q.notify({ type: 'positive', message: 'Criação manual registrada.' }) } catch { /* banner global */ } }
 function statusLabel(value) { return { generating: 'Calculando', ready: 'Pronto para revisar', ready_with_warnings: 'Pronto com alertas', reviewed: 'Revisado', exported: 'Checklist baixado', submitted_manually: 'Criado no ML', failed: 'Falhou' }[value] || value }
+function handleUseInPlan(line) { activeTab.value = 'plan'; $q.notify({ type: 'info', message: `Leve "${line?.title || 'este produto'}" ao plano ajustando frequência e despacho.` }) }
 onMounted(flow.initialize)
 </script>
 
 <style lang="scss">
 @import 'src/css/fulfillment-plan.scss';
+
+.fp-tabs { margin-bottom: 16px; border-bottom: 1px solid #eef1f5; }
 </style>

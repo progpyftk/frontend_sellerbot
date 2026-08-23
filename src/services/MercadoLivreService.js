@@ -267,6 +267,15 @@ export default {
   markFulfillmentShipmentPlanSubmitted(planId, payload = {}) {
     return api.post(`/mercadolivre/fulfillment/shipment-plans/${planId}/mark-submitted/`, payload)
   },
+  createFulfillmentOutOfFullJob(payload) {
+    return api.post('/mercadolivre/fulfillment/out-of-full/jobs/', payload)
+  },
+  listFulfillmentOutOfFullSuggestions(params = {}) {
+    return api.get('/mercadolivre/fulfillment/out-of-full/suggestions/', { params })
+  },
+  getFulfillmentOutOfFullSuggestion(suggestionId, params = {}) {
+    return api.get(`/mercadolivre/fulfillment/out-of-full/suggestions/${suggestionId}/`, { params })
+  },
   getFulfillmentRecommendations(params) {
     return api.get('/mercadolivre/fulfillment/recommendations/', { params })
   },
