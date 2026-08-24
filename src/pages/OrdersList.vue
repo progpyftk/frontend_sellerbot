@@ -567,16 +567,17 @@
                       </div>
                     </template>
 
-                    <!-- SINGLE: título (max 2 linhas) + SKU/MLB abaixo -->
+                    <!-- SINGLE: título (max 2 linhas) + tudo mais numa linha só de metadados -->
                     <template v-else>
                       <div class="produto-title" :title="props.row.items?.[0]?.title || ''">{{ props.row.items?.[0]?.title || '—' }}</div>
-                      <div class="produto-ids">
-                        <span class="id-chip"><q-icon name="sell" size="8px" />{{ props.row.items?.[0]?.item_id_ml || '—' }}</span>
-                        <span v-if="props.row.items?.[0]?.seller_sku" class="id-chip sku">{{ props.row.items[0].seller_sku }}</span>
-                      </div>
                     </template>
 
+                    <!-- Metadados numa linha só (MLB/SKU só no caso single; conta e badges sempre) -->
                     <div class="produto-meta">
+                      <template v-if="!props.row._isPack">
+                        <span class="id-chip"><q-icon name="sell" size="8px" />{{ props.row.items?.[0]?.item_id_ml || '—' }}</span>
+                        <span v-if="props.row.items?.[0]?.seller_sku" class="id-chip sku">{{ props.row.items[0].seller_sku }}</span>
+                      </template>
                       <span class="account-chip" :title="props.row.account?.account_nickname || ''">
                         <q-icon name="storefront" size="8px" />{{ props.row.account?.account_nickname || '—' }}
                       </span>
@@ -2767,10 +2768,10 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   white-space: normal; overflow-wrap: break-word;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
-.produto-ids   { display: flex; align-items: center; gap: 3px; margin-top: 3px; flex-wrap: wrap; }
 .id-chip       { display: inline-flex; align-items: center; gap: 1px; font-size: 9px; font-family: 'Roboto Mono', monospace; color: #718096; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0 4px; }
 .id-chip.sku   { color: #4a5568; }
-.produto-meta  { display: flex; align-items: center; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+/* MLB/SKU + conta + badges de pack/catálogo, tudo numa linha só (quebra se não couber). */
+.produto-meta  { display: flex; align-items: center; gap: 3px; margin-top: 3px; flex-wrap: wrap; }
 .pedido-sub    { display: flex; align-items: flex-start; gap: 6px; margin-top: 7px; padding-top: 6px; border-top: 1px dashed #f0f2f5; flex-wrap: wrap; }
 .pedido-id     { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; color: #00897b; cursor: pointer; overflow-wrap: anywhere; }
 .pedido-id:hover .copy-icon { opacity: 1; }
