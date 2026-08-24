@@ -70,6 +70,11 @@ export default {
   bulkStock(payload) {
     return api.post('/mercadolivre/items/bulk-stock/', payload)
   },
+  getPendingPromotionRemovals(itemIds) {
+    return api.get('/mercadolivre/items/pending-promotion-removals/', {
+      params: { item_ids: itemIds.join(',') }
+    })
+  },
 
   getPromotions(params = {}) {
     return api.get('/mercadolivre/promotions/', { params })

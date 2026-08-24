@@ -647,17 +647,23 @@
                   </q-btn>
 
                   <q-btn unelevated round icon="local_offer" size="sm"
-                    :color="hasActivePromotion(props.row) ? 'purple-1' : 'white'"
-                    :text-color="hasActivePromotion(props.row) ? 'purple-9' : 'blue-grey-6'"
+                    :color="pendingPromoJobs[props.row.item_id] ? 'orange-1' : (hasActivePromotion(props.row) ? 'purple-1' : 'white')"
+                    :text-color="pendingPromoJobs[props.row.item_id] ? 'orange-9' : (hasActivePromotion(props.row) ? 'purple-9' : 'blue-grey-6')"
                     class="transition-scale custom-btn-border"
                     @click.stop="openPromotionsDialog(props.row)">
-                    <!-- Ponto roxo = anúncio com promoção ativa, para não obrigar
-                         a abrir o diálogo só para descobrir se tem alguma. -->
-                    <q-badge v-if="hasActivePromotion(props.row)" floating rounded color="purple-6"
+                    <!-- Ampulheta laranja = pausa de promoção enfileirada (PROMO-10),
+                         processando em segundo plano. Ponto roxo = anúncio com
+                         promoção ativa, para não obrigar a abrir o diálogo só para
+                         descobrir se tem alguma. -->
+                    <q-badge v-if="pendingPromoJobs[props.row.item_id]" floating rounded color="orange-6"
+                      style="padding:3px" />
+                    <q-badge v-else-if="hasActivePromotion(props.row)" floating rounded color="purple-6"
                       style="padding:3px" />
                     <q-tooltip class="bg-purple-9 text-white text-weight-bold shadow-4"
                       anchor="top middle" self="bottom middle">
-                      {{ hasActivePromotion(props.row) ? 'Ver e remover promoções' : 'Promoções do anúncio' }}
+                      {{ pendingPromoJobs[props.row.item_id]
+                        ? `Pausando ${pendingPromoJobs[props.row.item_id].types.join(', ')} — processando (pode levar alguns minutos)`
+                        : (hasActivePromotion(props.row) ? 'Ver e remover promoções' : 'Promoções do anúncio') }}
                     </q-tooltip>
                   </q-btn>
 
@@ -1255,6 +1261,7 @@ const canWrite = computed(() => authStore.canWrite)
 const items = ref([])
 const loading = ref(false)
 const reactivatingItems = reactive({}) // item_id → true enquanto reativação está em processamento
+const pendingPromoJobs = reactive({}) // item_id → { types } enquanto o job PROMO-10 está processando
 
 // ── Seleção múltipla ──────────────────────────────────────────────────────
 const selectedItems = ref([])
@@ -1825,16 +1832,78 @@ const _itemsPayload = () => selectedItems.value.map(r => ({ item_id: r.item_id }
 const showBulkResultDialog = ref(false)
 const bulkResultItems = ref([])
 
+// PROMO-10: item com promoção ativa não espera a confirmação do ML na hora —
+// volta em "queued" (nem sucesso nem erro) e o preço aplica em segundo plano.
+// Aqui só marcamos o item como "processando" e disparamos o polling; quem
+// mostra o resultado final (toast de sucesso/erro por item) é
+// pollPendingPromotionRemovals, quando o job terminar.
+const _handleQueuedItems = (queuedList) => {
+  if (!queuedList.length) return
+  queuedList.forEach(q => { pendingPromoJobs[q.item_id] = { types: q.promotion_types || [] } })
+  const tipos = [...new Set(queuedList.flatMap(q => q.promotion_types || []))].join(', ')
+  $q.notify({
+    type: 'info',
+    icon: 'hourglass_top',
+    position: 'top',
+    timeout: 8000,
+    message: `${queuedList.length} anúncio(s) com promoção ativa (${tipos}) na fila — o preço `
+      + `aplica assim que o Mercado Livre confirmar a remoção. Pode levar alguns minutos; você `
+      + `pode continuar navegando.`,
+  })
+  pollPendingPromotionRemovals(queuedList.map(q => q.item_id))
+}
+
+const pollPendingPromotionRemovals = async (itemIds, attempt = 0) => {
+  const MAX_ATTEMPTS = 18   // ~3min no total (18 x 10s), cobre a folga do worker (5 rodadas x ~22s)
+  const INTERVAL_MS = 10000
+  if (!itemIds.length) return
+  if (attempt >= MAX_ATTEMPTS) {
+    // Não força mais: o job continua rodando no backend, só paramos de pollar
+    // daqui. O selo "processando" some no próximo refresh manual da tela.
+    itemIds.forEach(id => delete pendingPromoJobs[id])
+    return
+  }
+  await new Promise(resolve => setTimeout(resolve, INTERVAL_MS))
+  try {
+    const res = await MercadoLivreService.getPendingPromotionRemovals(itemIds)
+    const jobs = res.data?.jobs || []
+    const resolved = jobs.filter(j => j.status === 'done' || j.status === 'failed')
+    const stillPending = itemIds.filter(id => !resolved.some(j => j.item_id === id))
+
+    resolved.forEach(job => {
+      delete pendingPromoJobs[job.item_id]
+      const title = items.value.find(r => r.item_id === job.item_id)?.title || job.item_id
+      if (job.status === 'done') {
+        $q.notify({ type: 'positive', position: 'top',
+          message: `Preço de "${title}" aplicado — promoção confirmada removida ✓` })
+      } else {
+        $q.notify({ type: 'negative', position: 'top',
+          message: `Não foi possível pausar a promoção de "${title}": ${job.error_message || 'erro no Mercado Livre'}` })
+      }
+    })
+    if (resolved.length) refreshData()
+    if (stillPending.length) pollPendingPromotionRemovals(stillPending, attempt + 1)
+  } catch {
+    // Falha ao consultar status não deve travar nada — tenta de novo na próxima rodada.
+    pollPendingPromotionRemovals(itemIds, attempt + 1)
+  }
+}
+
 const _bulkFinish = (result, closeRef) => {
   const successList = result.data?.success || []
   const errorList = result.data?.errors || []
   const warningList = result.data?.warnings || []
+  const queuedList = result.data?.queued || []
   const ok = successList.length
   const err = errorList.length
   const titleFor = (itemId) => selectedItems.value.find(r => r.item_id === itemId)?.title || itemId
 
+  _handleQueuedItems(queuedList)
+
   if (errorList.length === 0 && warningList.length === 0) {
-    $q.notify({ type: 'positive', message: `${ok} anúncio(s) atualizado(s) com sucesso!`, position: 'top' })
+    if (ok > 0) {
+      $q.notify({ type: 'positive', message: `${ok} anúncio(s) atualizado(s) com sucesso!`, position: 'top' })
+    }
   } else {
     bulkResultItems.value = [
       ...errorList.map(e => ({ item_id: e.item_id, title: titleFor(e.item_id), kind: 'error', message: e.error })),
