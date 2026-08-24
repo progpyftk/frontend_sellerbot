@@ -416,6 +416,50 @@
                 </div>
               </div>
 
+              <!-- ── Promoções / Descontos ─────────────────────── -->
+              <div class="dd-section">
+                <div class="dd-section-header">
+                  <div class="dd-section-label">Promoções e Descontos</div>
+                  <button v-if="!promoLoading[selectedItem?.item_id]" class="dd-edit-btn" @click="loadPromotions(selectedItem)">
+                    <q-icon name="refresh" size="12px" />Atualizar
+                  </button>
+                </div>
+
+                <div v-if="promoLoading[selectedItem?.item_id]" class="flex flex-center q-py-md">
+                  <q-spinner color="teal-7" size="20px" />
+                </div>
+
+                <div v-else-if="!itemPromotions[selectedItem?.item_id]?.length" class="dd-empty">
+                  <q-icon name="check_circle" size="16px" class="text-teal-7" />
+                  <span>Sem promoções ativas neste anúncio.</span>
+                </div>
+
+                <div v-else class="promo-list">
+                  <div v-for="(p, i) in itemPromotions[selectedItem?.item_id]" :key="i" class="promo-row">
+                    <div class="promo-main">
+                      <div class="promo-name">
+                        {{ p.type_label || p.promotion_type }}
+                        <q-badge v-if="p.promotion_staging === 'upcoming'" color="amber-7" class="q-ml-xs" style="font-size:9px">agendada</q-badge>
+                      </div>
+                      <div class="promo-sub">
+                        <template v-if="p.promotion_price != null">Preço promocional: <strong>{{ formatCurrency(p.promotion_price) }}</strong></template>
+                        <template v-else>ID {{ p.promotion_id }}</template>
+                        <span v-if="p.end_time"> · até {{ formatDateTs(p.end_time) }}</span>
+                      </div>
+                    </div>
+                    <div v-if="isRemovable(p.promotion_type)" class="promo-action">
+                      <q-btn dense flat size="sm" color="negative" icon="delete_outline" label="Remover"
+                        :loading="promoRemoving === i" @click="removePromotion(p, i)" />
+                    </div>
+                    <div v-else class="promo-action">
+                      <q-icon name="info" size="16px" color="grey-5">
+                        <q-tooltip anchor="top middle" self="bottom middle">{{ promotionReason(p.promotion_type) }}</q-tooltip>
+                      </q-icon>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- ── Preço e Desconto (somente para items SEM variações) ── -->
               <div v-if="!selectedItem.has_model" class="dd-section">
                 <div class="dd-section-header">
@@ -695,6 +739,9 @@ const detailLoading  = ref({})
 const selectedItems  = ref([])
 const showAllImages  = ref(false)
 const descExpanded   = ref(false)
+const itemPromotions = ref({})   // { item_id: [promoção, ...] }
+const promoLoading   = ref({})   // { item_id: bool }
+const promoRemoving  = ref(null) // índice da promoção em remoção
 
 // ── Estado de edição ──────────────────────────────────────────────────────────
 const editSection = ref(null)  // null | 'title' | 'basic' | 'price' | 'stock' | 'description' | 'variations'
@@ -777,10 +824,22 @@ const statusLabel      = (s) => ({ NORMAL: 'Ativo', UNLIST: 'Pausado', BANNED: '
 const statusColorClass = (s) => ({ NORMAL: 'active', UNLIST: 'paused', BANNED: 'banned', DELETED: 'deleted' })[s] || 'deleted'
 const formatCurrency   = (v) => v != null ? Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'
 const formatDate       = (v) => v ? DateTime.fromISO(v).setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm') : '—'
+const formatDateTs     = (ts) => ts ? DateTime.fromSeconds(ts).setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm') : '—'
 const fmtNum           = (n) => n > 999 ? (n / 1000).toFixed(1) + 'k' : (n || 0)
 const hasDiscount      = (row) => row?.original_price && Number(row.original_price) > Number(row.price) + 0.01
 const hasDiscountV     = (v)   => v?.original_price  && Number(v.original_price)  > Number(v.price)  + 0.01
 const discountPct      = (row) => Math.round((1 - Number(row.price) / Number(row.original_price)) * 100)
+
+// Tipos de promoção removíveis via Open API — espelha promotion_capabilities.py (backend)
+const REMOVABLE_TYPES = ['Discount Promotions', 'Bundle Deal', 'Add-on Deal', 'Shop Flash Sale', 'Wholesale']
+const PROMOTION_REASONS = {
+  Voucher: 'Cupom não é removível por item — use a aba Cupons.',
+  Campaign: 'Campanha de plataforma — não removível via API.',
+  'Flash Sale': 'Flash Sale de plataforma — não removível via API.',
+  'Group Buy': 'Compra coletiva — não removível via API.',
+}
+const isRemovable     = (t) => REMOVABLE_TYPES.includes(t)
+const promotionReason = (t) => PROMOTION_REASONS[t] || 'Não removível via API.'
 const copyText         = (t) => { navigator.clipboard.writeText(String(t)); $q.notify({ message: `Copiado: ${t}`, color: 'dark', position: 'top', timeout: 1500 }) }
 const isSelected       = (row) => selectedItems.value.some(r => r.item_id === row.item_id)
 const toggleSelect     = (row) => {
@@ -989,6 +1048,44 @@ const openDetail = async (row) => {
     finally { detailLoading.value[itemId] = false }
   } else {
     selectedItem.value = { ...row, ...itemDetails.value[itemId] }
+  }
+  loadPromotions(selectedItem.value)
+}
+
+const loadPromotions = async (item) => {
+  if (!item) return
+  const itemId = item.item_id
+  promoLoading.value[itemId] = true
+  try {
+    const { data } = await api.get(`/shopee/items/${item.id}/promotions/`)
+    itemPromotions.value[itemId] = data.promotions || []
+  } catch {
+    itemPromotions.value[itemId] = []
+    $q.notify({ message: 'Erro ao carregar promoções.', color: 'negative', position: 'top' })
+  } finally {
+    promoLoading.value[itemId] = false
+  }
+}
+
+const removePromotion = async (promo, index) => {
+  const item = selectedItem.value
+  if (!item || promoRemoving.value !== null) return
+  promoRemoving.value = index
+  try {
+    await api.post(`/shopee/items/${item.id}/promotions/remove/`, {
+      promotion_type: promo.promotion_type,
+      promotion_id: promo.promotion_id,
+      model_id: promo.model_id,
+    })
+    const itemId = item.item_id
+    itemPromotions.value[itemId] = (itemPromotions.value[itemId] || []).filter((_, i) => i !== index)
+    item.has_promotion = (itemPromotions.value[itemId] || []).length > 0
+    $q.notify({ message: 'Promoção removida com sucesso.', color: 'positive', position: 'top' })
+  } catch (e) {
+    const msg = e?.response?.data?.error || e?.message || 'Erro ao remover promoção.'
+    $q.notify({ message: msg, color: 'negative', position: 'top', timeout: 4000 })
+  } finally {
+    promoRemoving.value = null
   }
 }
 
@@ -1251,6 +1348,14 @@ onMounted(loadAccounts)
 .fadv-btn-clear:hover { background: #f8fafc; }
 .fadv-btn-apply { flex: 2; height: 36px; border-radius: 8px; border: none; background: #0d9488; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
 .fadv-btn-apply:hover { background: #0f766e; }
+
+/* ── Promoções (detail) ──────────────────────────────────────────────── */
+.dd-empty { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 12px; padding: 10px 0; }
+.promo-list { display: flex; flex-direction: column; gap: 8px; }
+.promo-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.promo-name { font-size: 12px; font-weight: 600; color: #0f172a; display: flex; align-items: center; }
+.promo-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+.promo-action { flex-shrink: 0; }
 
 /* ── Utilities & transitions ──────────────────────────────────────────── */
 .border-grey { border: 1px solid #e2e8f0; }
