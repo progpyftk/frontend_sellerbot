@@ -49,6 +49,14 @@
       </div>
     </div>
 
+    <!-- Contadores por status -->
+    <div class="row q-col-gutter-md q-mb-md">
+      <div class="col-6 col-sm-3"><div class="review-kpi"><span>Pendentes</span><strong class="text-amber-9">{{ counts.suggested }}</strong><small>aguardando revisão</small></div></div>
+      <div class="col-6 col-sm-3"><div class="review-kpi"><span>Aprovadas</span><strong class="text-teal-9">{{ counts.approved }}</strong><small>regras aptas a projetar</small></div></div>
+      <div class="col-6 col-sm-3"><div class="review-kpi"><span>Aplicadas</span><strong class="text-blue-9">{{ counts.applied }}</strong><small>itens projetados no balanço</small></div></div>
+      <div class="col-6 col-sm-3"><div class="review-kpi"><span>Rejeitadas</span><strong class="text-red-9">{{ counts.rejected }}</strong><small>fora da normalização</small></div></div>
+    </div>
+
     <!-- Seção: Execuções (runs) -->
     <q-card flat bordered class="q-mb-md">
       <q-card-section class="row items-center justify-between">
@@ -204,16 +212,18 @@ const loadingRuns = ref(false)
 const loadingRules = ref(false)
 const loadingItems = ref(false)
 const accountOptions = ref([])
-const filters = ref({ fiscalAccount: null, status: 'suggested', ncm: '', search: '' })
+const filters = ref({ fiscalAccount: null, status: null, ncm: '', search: '' })
+const counts = ref({ suggested: 0, approved: 0, applied: 0, rejected: 0 })
 
 const loadingAny = computed(() => loadingRuns.value || loadingRules.value || loadingItems.value)
 
 const statusOptions = [
+  { label: 'Todos', value: null },
   { label: 'Pendentes', value: 'suggested' },
   { label: 'Aprovados', value: 'approved' },
+  { label: 'Aplicados', value: 'applied' },
   { label: 'Rejeitados', value: 'rejected' },
   { label: 'Revisão', value: 'needs_review' },
-  { label: 'Todos', value: null },
 ]
 
 const runColumns = [
@@ -286,7 +296,25 @@ async function loadItems() {
   finally { loadingItems.value = false }
 }
 
-async function reloadAll() { await Promise.all([loadRuns(), loadRules(), loadItems()]) }
+async function loadCounts() {
+  try {
+    const base = { fiscal_account: filters.value.fiscalAccount || undefined }
+    const [pending, approved, applied, rejected] = await Promise.all([
+      FiscalService.getNormalizationItems({ ...base, status: 'suggested', page_size: 1 }),
+      FiscalService.getNormalizationRules({ ...base, status: 'approved', page_size: 1 }),
+      FiscalService.getNormalizationItems({ ...base, status: 'applied', page_size: 1 }),
+      FiscalService.getNormalizationRules({ ...base, status: 'rejected', page_size: 1 }),
+    ])
+    counts.value.suggested = pending.data?.count ?? 0
+    counts.value.approved = approved.data?.count ?? 0
+    counts.value.applied = applied.data?.count ?? 0
+    counts.value.rejected = rejected.data?.count ?? 0
+  } catch (e) { /* contadores são informativos; falha não bloqueia a tela */ }
+}
+
+async function reloadAll() {
+  await Promise.all([loadRuns(), loadRules(), loadItems(), loadCounts()])
+}
 
 async function reviewRule(rule, status) {
   try {
@@ -317,4 +345,8 @@ defineExpose({ reloadAll })
 <style scoped>
 .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 .text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.review-kpi { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.review-kpi span { color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.review-kpi strong { font-size: 22px; line-height: 1.1; color: #0f172a; }
+.review-kpi small { color: #64748b; }
 </style>
