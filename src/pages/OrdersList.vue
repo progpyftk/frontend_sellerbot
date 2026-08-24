@@ -541,18 +541,13 @@
               <div class="cell-produto">
                 <div class="produto-main">
 
-                  <!-- Thumbnail + conta: igual para pack e single; badge +N indica itens extras -->
-                  <div class="thumb-col">
-                    <div class="thumb-wrap">
-                      <img v-if="props.row.items?.[0]?.thumbnail" :src="props.row.items[0].thumbnail" class="thumb-img" />
-                      <div v-else class="thumb-placeholder"><q-icon name="image" size="18px" color="grey-4" /></div>
-                      <div v-if="(props.row.items || []).length > 1" class="thumb-count">
-                        +{{ props.row.items.length - 1 }}
-                      </div>
+                  <!-- Thumbnail: igual para pack e single; badge +N indica itens extras -->
+                  <div class="thumb-wrap">
+                    <img v-if="props.row.items?.[0]?.thumbnail" :src="props.row.items[0].thumbnail" class="thumb-img" />
+                    <div v-else class="thumb-placeholder"><q-icon name="image" size="18px" color="grey-4" /></div>
+                    <div v-if="(props.row.items || []).length > 1" class="thumb-count">
+                      +{{ props.row.items.length - 1 }}
                     </div>
-                    <span class="account-chip" :title="props.row.account?.account_nickname || ''">
-                      <q-icon name="storefront" size="9px" />{{ props.row.account?.account_nickname || '—' }}
-                    </span>
                   </div>
 
                   <div class="produto-info">
@@ -565,8 +560,8 @@
                             <span class="pack-item-title" :title="item.title">{{ item.title }}</span>
                           </div>
                           <div class="pack-item-ids">
-                            <span class="id-chip"><q-icon name="sell" size="9px" />{{ item.item_id_ml || '—' }}</span>
-                            <span v-if="item.seller_sku" class="id-chip sku">SKU {{ item.seller_sku }}</span>
+                            <span class="id-chip"><q-icon name="sell" size="8px" />{{ item.item_id_ml || '—' }}</span>
+                            <span v-if="item.seller_sku" class="id-chip sku">{{ item.seller_sku }}</span>
                           </div>
                         </div>
                       </div>
@@ -576,14 +571,17 @@
                     <template v-else>
                       <div class="produto-title" :title="props.row.items?.[0]?.title || ''">{{ props.row.items?.[0]?.title || '—' }}</div>
                       <div class="produto-ids">
-                        <span class="id-chip"><q-icon name="sell" size="9px" />{{ props.row.items?.[0]?.item_id_ml || '—' }}</span>
-                        <span v-if="props.row.items?.[0]?.seller_sku" class="id-chip sku">SKU {{ props.row.items[0].seller_sku }}</span>
+                        <span class="id-chip"><q-icon name="sell" size="8px" />{{ props.row.items?.[0]?.item_id_ml || '—' }}</span>
+                        <span v-if="props.row.items?.[0]?.seller_sku" class="id-chip sku">{{ props.row.items[0].seller_sku }}</span>
                       </div>
                     </template>
 
                     <div class="produto-meta">
-                      <span v-if="props.row._isPack" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />PACK · {{ (props.row.items||[]).length }} itens</span>
-                      <span v-else-if="props.row.pack_id" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />PACK</span>
+                      <span class="account-chip" :title="props.row.account?.account_nickname || ''">
+                        <q-icon name="storefront" size="8px" />{{ props.row.account?.account_nickname || '—' }}
+                      </span>
+                      <span v-if="props.row._isPack" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />{{ (props.row.items||[]).length }} itens</span>
+                      <span v-else-if="props.row.pack_id" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />Pack</span>
                       <span v-if="props.row.is_catalog" class="ctx-badge catalog-badge"><q-icon name="auto_awesome" size="8px" />Catálogo</span>
                     </div>
                   </div>
@@ -2696,6 +2694,11 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .orders-table  { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
 .orders-table :deep(.q-table__top)    { display: none; }
 .orders-table :deep(.q-table__bottom) { border-top: 1px solid #f0f2f5; font-size: 12px; }
+/* Quasar aplica width:100% + table-layout:auto na <table>, que redistribui o espaço
+   sobrando entre as colunas mesmo com min-width nos elementos internos. Fixamos o layout
+   e damos width real a cada coluna (única fonte de largura, th e td juntos) para acabar
+   com esse espaço vazio. */
+.orders-table :deep(.q-table) { table-layout: fixed; width: auto; max-width: 100%; }
 .orders-thead :deep(th) {
   font-size: 10px; font-weight: 700; color: #9aa0ac;
   text-transform: uppercase; letter-spacing: .7px;
@@ -2707,9 +2710,32 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 }
 .order-row:hover :deep(td) { background: #f8fbff; }
 
+/* Largura de cada coluna: produto, unidades, data, comprador, status, logística,
+   gmv, taxas, frete, líquido, lucro — nessa ordem (bate com o array `columns`). */
+.orders-thead :deep(th:nth-child(1))  { width: 230px; }
+.orders-thead :deep(th:nth-child(2))  { width: 46px; }
+.orders-thead :deep(th:nth-child(3))  { width: 72px; }
+.orders-thead :deep(th:nth-child(4))  { width: 78px; }
+.orders-thead :deep(th:nth-child(5))  { width: 94px; }
+.orders-thead :deep(th:nth-child(6))  { width: 104px; }
+.orders-thead :deep(th:nth-child(7))  { width: 78px; }
+.orders-thead :deep(th:nth-child(8))  { width: 84px; }
+.orders-thead :deep(th:nth-child(9))  { width: 78px; }
+.orders-thead :deep(th:nth-child(10)) { width: 92px; }
+.orders-thead :deep(th:nth-child(11)) { width: 92px; }
+.order-row :deep(td:nth-child(1))  { width: 230px; }
+.order-row :deep(td:nth-child(2))  { width: 46px; }
+.order-row :deep(td:nth-child(3))  { width: 72px; }
+.order-row :deep(td:nth-child(4))  { width: 78px; }
+.order-row :deep(td:nth-child(5))  { width: 94px; }
+.order-row :deep(td:nth-child(6))  { width: 104px; }
+.order-row :deep(td:nth-child(7))  { width: 78px; }
+.order-row :deep(td:nth-child(8))  { width: 84px; }
+.order-row :deep(td:nth-child(9))  { width: 78px; }
+.order-row :deep(td:nth-child(10)) { width: 92px; }
+.order-row :deep(td:nth-child(11)) { width: 92px; }
+
 /* ─── CELL: PRODUTO ──────────────────────────────── */
-/* Única fonte de largura da coluna: alinhada com o max-width de .produto-title/.pack-item-title abaixo. */
-.cell-produto  { min-width: 230px; max-width: 230px; }
 .produto-main  { display: flex; align-items: flex-start; gap: 10px; }
 
 /* PACK items list in produto cell: cada item = título (max 2 linhas) + SKU/MLB abaixo */
@@ -2724,11 +2750,11 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .pack-item-ids    { display: flex; align-items: center; gap: 4px; margin-top: 2px; flex-wrap: wrap; }
 
 /* PACK sub-orders below the main ID */
-.pack-sub-orders  { font-size: 9px; color: #b0b8c4; margin-top: 2px; letter-spacing: 0; }
+/* Números de pedido são dígitos corridos sem espaço — sem overflow-wrap eles forçam
+   a célula (e a coluna, via table-layout:fixed) a crescer para caber sem quebrar. */
+.pack-sub-orders  { font-size: 9px; color: #b0b8c4; margin-top: 2px; letter-spacing: 0; overflow-wrap: anywhere; }
 
-/* Thumbnail + badge da conta empilhados abaixo da imagem */
-.thumb-col     { flex-shrink: 0; width: 44px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.thumb-wrap    { position: relative; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; border: 1px solid #e8eaed; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
+.thumb-wrap    { position: relative; flex-shrink: 0; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; border: 1px solid #e8eaed; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
 .thumb-img     { width: 100%; height: 100%; object-fit: cover; }
 .thumb-count   { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,.55); color: white; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px 0 0 0; }
 .thumb-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
@@ -2738,40 +2764,38 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   white-space: normal; overflow-wrap: break-word;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
-.produto-ids   { display: flex; align-items: center; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
-.id-chip       { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; font-family: 'Roboto Mono', monospace; color: #718096; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 5px; }
+.produto-ids   { display: flex; align-items: center; gap: 3px; margin-top: 3px; flex-wrap: wrap; }
+.id-chip       { display: inline-flex; align-items: center; gap: 1px; font-size: 9px; font-family: 'Roboto Mono', monospace; color: #718096; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0 4px; }
 .id-chip.sku   { color: #4a5568; }
-.produto-meta  { display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-.pedido-sub    { display: flex; align-items: center; gap: 8px; margin-top: 7px; padding-top: 6px; border-top: 1px dashed #f0f2f5; }
-.pedido-id     { font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; color: #00897b; cursor: pointer; }
+.produto-meta  { display: flex; align-items: center; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+.pedido-sub    { display: flex; align-items: flex-start; gap: 6px; margin-top: 7px; padding-top: 6px; border-top: 1px dashed #f0f2f5; flex-wrap: wrap; }
+.pedido-id     { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; color: #00897b; cursor: pointer; overflow-wrap: anywhere; }
 .pedido-id:hover .copy-icon { opacity: 1; }
 .copy-icon     { opacity: 0; transition: opacity .15s; }
 .account-chip  {
-  display: inline-flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 600;
-  color: #00897b; background: #e0f2f1; border-radius: 4px; padding: 1px 4px;
-  max-width: 44px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 1px; font-size: 9px; font-weight: 600;
+  color: #00897b; background: #e0f2f1; border-radius: 4px; padding: 0 4px;
+  max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .account-chip :deep(.q-icon) { flex-shrink: 0; }
-.ctx-badge     { display: inline-flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 700; border-radius: 4px; padding: 1px 5px; }
+.ctx-badge     { display: inline-flex; align-items: center; gap: 1px; font-size: 9px; font-weight: 700; border-radius: 4px; padding: 0 4px; }
 .pack-badge    { background: #ede7f6; color: #6a1b9a; }
 .catalog-badge { background: #e8eaf6; color: #283593; }
 
 /* ─── CELL: DATA ─────────────────────────────────── */
-.cell-data  { min-width: 75px; }
 .data-day   { font-size: 11.5px; font-weight: 600; color: #2d3748; }
 .data-time  { font-size: 11px; color: #718096; margin-top: 1px; }
 .data-ago   { font-size: 10px; color: #b0bec5; margin-top: 3px; }
 
 /* ─── CELL: COMPRADOR ────────────────────────────── */
 /* Nick abreviado (truncateName, max 10 chars) — nome completo no title="" do elemento. */
-.cell-comprador { min-width: 66px; max-width: 80px; }
 .buyer-name { font-size: 11.5px; font-weight: 500; color: #2d3748; white-space: nowrap; }
 .buyer-loc  { font-size: 10px; color: #9aa0ac; margin-top: 3px; display: flex; align-items: flex-start; gap: 2px; line-height: 1.3; }
 .buyer-loc :deep(.q-icon) { flex-shrink: 0; margin-top: 1px; }
 .buyer-loc span { white-space: normal; overflow-wrap: break-word; }
 
 /* ─── CELL: LOGÍSTICA ────────────────────────────── */
-.cell-logistica { min-width: 112px; max-width: 130px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+.cell-logistica { display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
 .cell-logistica:hover .logistic-hint { opacity: 1; }
 .logistic-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 7px; width: fit-content; }
 .log-full    { background: #fff3e0; color: #e65100; }
