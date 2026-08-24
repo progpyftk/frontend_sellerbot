@@ -556,7 +556,7 @@
                       <div class="pack-items-list">
                         <div v-for="item in (props.row.items || [])" :key="item.item_id_ml + (item.variation_id||'')" class="pack-item-line">
                           <span class="pack-item-qty">{{ item.quantity }}×</span>
-                          <span class="pack-item-title">{{ item.title }}</span>
+                          <span class="pack-item-title" :title="item.title">{{ item.title }}</span>
                           <span v-if="item.seller_sku" class="pack-item-sku">{{ item.seller_sku }}</span>
                         </div>
                       </div>
@@ -564,7 +564,7 @@
 
                     <!-- SINGLE: título + ids -->
                     <template v-else>
-                      <div class="produto-title">{{ props.row.items?.[0]?.title || '—' }}</div>
+                      <div class="produto-title" :title="props.row.items?.[0]?.title || ''">{{ props.row.items?.[0]?.title || '—' }}</div>
                       <div class="produto-ids">
                         <span class="id-chip"><q-icon name="sell" size="9px" />{{ props.row.items?.[0]?.item_id_ml || '—' }}</span>
                         <span v-if="props.row.items?.[0]?.seller_sku" class="id-chip sku">SKU {{ props.row.items[0].seller_sku }}</span>
@@ -2693,14 +2693,18 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 
 /* ─── CELL: PRODUTO ──────────────────────────────── */
 /* Única fonte de largura da coluna: alinhada com o max-width de .produto-title/.pack-item-title abaixo. */
-.cell-produto  { min-width: 200px; max-width: 200px; }
+.cell-produto  { min-width: 230px; max-width: 230px; }
 .produto-main  { display: flex; align-items: flex-start; gap: 10px; }
 
 /* PACK items list in produto cell */
 .pack-items-list  { display: flex; flex-direction: column; gap: 3px; }
 .pack-item-line   { display: flex; align-items: flex-start; gap: 4px; font-size: 11px; line-height: 1.3; }
 .pack-item-qty    { color: #6366f1; font-weight: 700; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
-.pack-item-title  { flex: 1; min-width: 0; color: #1a1f36; white-space: normal; overflow-wrap: break-word; }
+.pack-item-title  {
+  flex: 1; min-width: 0; color: #1a1f36;
+  white-space: normal; overflow-wrap: break-word;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
 .pack-item-sku    { color: #9aa0ac; font-size: 9px; flex-shrink: 0; margin-top: 1px; }
 
 /* PACK sub-orders below the main ID */
@@ -2711,7 +2715,11 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .thumb-count   { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,.55); color: white; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px 0 0 0; }
 .thumb-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 .produto-info  { flex: 1; min-width: 0; }
-.produto-title { font-size: 11.5px; font-weight: 600; color: #2d3748; white-space: normal; overflow-wrap: break-word; line-height: 1.35; }
+.produto-title {
+  font-size: 11.5px; font-weight: 600; color: #2d3748; line-height: 1.35;
+  white-space: normal; overflow-wrap: break-word;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
 .produto-ids   { display: flex; align-items: center; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
 .id-chip       { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; font-family: 'Roboto Mono', monospace; color: #718096; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 5px; }
 .id-chip.sku   { color: #4a5568; }
