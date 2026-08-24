@@ -2691,7 +2691,10 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 
 /* ─── TABLE ──────────────────────────────────────── */
 .table-wrapper { padding: 16px 24px; }
-.orders-table  { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.orders-table  {
+  background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  width: fit-content; max-width: 100%; margin: 0 auto;
+}
 .orders-table :deep(.q-table__top)    { display: none; }
 .orders-table :deep(.q-table__bottom) { border-top: 1px solid #f0f2f5; font-size: 12px; }
 /* Quasar aplica width:100% + table-layout:auto na <table>, que redistribui o espaço
