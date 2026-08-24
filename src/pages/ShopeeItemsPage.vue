@@ -887,19 +887,43 @@ const applyItemUpdate = (updatedItem) => {
   if (idx !== -1) items.value[idx] = { ...items.value[idx], ...updatedItem }
 }
 
-const withSave = async (fn, successMsg) => {
+const withSave = async (fn, successMsg, onSuccess) => {
   saving.value = true
   try {
     const result = await fn()
     if (result?.item) applyItemUpdate(result.item)
     editSection.value = null
-    $q.notify({ message: successMsg, color: 'positive', position: 'top', timeout: 2500 })
+    if (onSuccess) {
+      await onSuccess(result)
+    } else {
+      $q.notify({ message: successMsg, color: 'positive', position: 'top', timeout: 2500 })
+    }
   } catch (e) {
     const msg = e?.response?.data?.error || e?.message || 'Erro desconhecido'
     $q.notify({ message: `Erro: ${msg}`, color: 'negative', position: 'top', timeout: 4000 })
   } finally {
     saving.value = false
   }
+}
+
+// Notifica promoções removidas/ignoradas e recarrega o painel após reprecificar.
+const notifyPriceResult = async (result) => {
+  const removed = result?.promotions?.removed?.length || 0
+  const skipped = result?.promotions?.skipped?.length || 0
+  let msg = 'Preço atualizado na Shopee'
+  let color = 'positive'
+  if (removed && skipped) {
+    msg = `Preço atualizado. ${removed} promoção(ões) removida(s) automaticamente; ${skipped} não removível(is) via API.`
+    color = 'warning'
+  } else if (removed) {
+    msg = `Preço atualizado. ${removed} promoção(ões) removida(s) automaticamente.`
+    color = 'positive'
+  } else if (skipped) {
+    msg = `Preço atualizado, mas ${skipped} promoção(ões) não podem ser removidas via API (podem sobrescrever o preço).`
+    color = 'warning'
+  }
+  $q.notify({ message: msg, color, position: 'top', timeout: 5000 })
+  if (selectedItem.value) await loadPromotions(selectedItem.value)
 }
 
 const saveTitle = () => withSave(async () => {
@@ -920,7 +944,7 @@ const savePrice = () => withSave(async () => {
     price: editData.price, original_price: orig,
   })
   return data
-}, 'Preço atualizado na Shopee')
+}, 'Preço atualizado na Shopee', notifyPriceResult)
 
 const saveStock = () => withSave(async () => {
   if (editData.stock < 0) throw new Error('Estoque não pode ser negativo.')
@@ -950,7 +974,7 @@ const saveVariations = () => withSave(async () => {
     }
   }
   return data
-}, 'Variações atualizadas na Shopee')
+}, 'Variações atualizadas na Shopee', notifyPriceResult)
 
 const doToggleStatus = async () => {
   if (saving.value) return
