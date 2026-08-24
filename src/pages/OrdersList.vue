@@ -2102,7 +2102,10 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 <style scoped>
 /* ─── PAGE / HEADER ──────────────────────────────── */
 .orders-page { background: #f0f2f5; min-height: 100vh; }
-.page-header { background: #fff; border-bottom: 1px solid #e8eaed; padding: 14px 24px; }
+/* Cabeçalho, KPIs do dia e filtros usam a mesma largura máxima da tabela (table-layout:fixed,
+   soma das colunas ≈ 1048px) para o conteúdo da página ficar proporcional, não com uma faixa
+   larga em cima e uma tabela fina embaixo. */
+.page-header { background: #fff; border-bottom: 1px solid #e8eaed; padding: 14px 24px; max-width: 1048px; margin: 0 auto; }
 .header-icon {
   width: 36px; height: 36px;
   background: linear-gradient(135deg, #00897b, #00acc1);
@@ -2121,6 +2124,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   background: #f8f9fa;
   border-bottom: 1px solid #e8eaed;
   flex-wrap: wrap;
+  max-width: 1048px;
+  margin: 0 auto;
 }
 .today-bar-label {
   font-size: 10px;
@@ -2183,6 +2188,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 1048px;
+  margin: 0 auto;
 }
 
 /* ── Toolbar ─────────────────────────────────────── */
@@ -3036,7 +3043,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 /* ── KPIs do período filtrado (feedback #8) ── */
 .period-kpis {
   display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-  padding: 10px 20px; margin: 0 20px 4px;
+  padding: 10px 20px; margin: 0 auto 4px; max-width: 1048px;
   background: #fff; border: 1px solid #e8ecf1; border-radius: 10px;
 }
 .pk-item { display: flex; flex-direction: column; }
