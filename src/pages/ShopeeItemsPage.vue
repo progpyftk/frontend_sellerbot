@@ -447,8 +447,11 @@
                         <q-badge v-if="p.promotion_staging === 'upcoming'" color="amber-7" class="q-ml-xs" style="font-size:9px">agendada</q-badge>
                       </div>
                       <div class="promo-sub">
-                        <template v-if="p.promotion_price != null">Preço promocional: <strong>{{ formatCurrency(p.promotion_price) }}</strong></template>
+                        <template v-if="p.promotion_price_min != null">
+                          Preço promocional: <strong>{{ formatCurrency(p.promotion_price_min) }}</strong><template v-if="p.promotion_price_max != null && p.promotion_price_max !== p.promotion_price_min">–{{ formatCurrency(p.promotion_price_max) }}</template>
+                        </template>
                         <template v-else>ID {{ p.promotion_id }}</template>
+                        <q-badge v-if="p.variation_count > 1" color="grey-7" class="q-ml-xs" style="font-size:9px">{{ p.variation_count }} variações</q-badge>
                         <span v-if="p.end_time"> · até {{ formatDateTs(p.end_time) }}</span>
                       </div>
                     </div>
@@ -1143,11 +1146,15 @@ const removePromotion = async (promo, index) => {
   if (!item || promoRemoving.value !== null) return
   promoRemoving.value = index
   try {
-    await api.post(`/shopee/items/${item.id}/promotions/remove/`, {
-      promotion_type: promo.promotion_type,
-      promotion_id: promo.promotion_id,
-      model_id: promo.model_id,
-    })
+    // promoção agrupada: remove cada variação (model_ids)
+    const modelIds = promo.model_ids || []
+    for (const mid of modelIds) {
+      await api.post(`/shopee/items/${item.id}/promotions/remove/`, {
+        promotion_type: promo.promotion_type,
+        promotion_id: promo.promotion_id,
+        model_id: mid,
+      })
+    }
     const itemId = item.item_id
     itemPromotions.value[itemId] = (itemPromotions.value[itemId] || []).filter((_, i) => i !== index)
     item.has_promotion = (itemPromotions.value[itemId] || []).length > 0
