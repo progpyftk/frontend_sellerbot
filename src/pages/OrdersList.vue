@@ -1,5 +1,6 @@
 <template>
   <q-page class="orders-page">
+    <div class="page-content">
 
     <!-- ── HEADER ────────────────────────────────────────── -->
     <div class="page-header">
@@ -801,6 +802,8 @@
 
         <template #loading><q-inner-loading showing color="teal-7" /></template>
       </q-table>
+    </div>
+
     </div>
 
     <!-- ══════════════════════════════════════════════════ -->
@@ -2102,10 +2105,12 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 <style scoped>
 /* ─── PAGE / HEADER ──────────────────────────────── */
 .orders-page { background: #f0f2f5; min-height: 100vh; }
-/* Cabeçalho, KPIs do dia e filtros usam a mesma largura máxima da tabela (table-layout:fixed,
-   soma das colunas ≈ 1048px) para o conteúdo da página ficar proporcional, não com uma faixa
-   larga em cima e uma tabela fina embaixo. */
-.page-header { background: #fff; border-bottom: 1px solid #e8eaed; padding: 14px 24px; max-width: 1048px; margin: 0 auto; }
+/* Container único: cabeçalho, KPIs do dia, filtros, KPIs do período e tabela ficam todos
+   com exatamente a mesma largura (1048px = soma das colunas fixas da tabela), alinhados
+   nas mesmas bordas esquerda/direita — em vez de cada seção centralizar por conta própria
+   com paddings diferentes, o que deixava as larguras visualmente distintas. */
+.page-content { max-width: 1048px; margin: 0 auto; }
+.page-header { background: #fff; border-bottom: 1px solid #e8eaed; padding: 14px 24px; }
 .header-icon {
   width: 36px; height: 36px;
   background: linear-gradient(135deg, #00897b, #00acc1);
@@ -2124,8 +2129,6 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   background: #f8f9fa;
   border-bottom: 1px solid #e8eaed;
   flex-wrap: wrap;
-  max-width: 1048px;
-  margin: 0 auto;
 }
 .today-bar-label {
   font-size: 10px;
@@ -2188,8 +2191,6 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 1048px;
-  margin: 0 auto;
 }
 
 /* ── Toolbar ─────────────────────────────────────── */
@@ -2698,7 +2699,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 }
 
 /* ─── TABLE ──────────────────────────────────────── */
-.table-wrapper { padding: 16px 24px; }
+.table-wrapper { padding: 16px 0; }
 .orders-table  {
   background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07);
   width: fit-content; max-width: 100%; margin: 0 auto;
@@ -3043,7 +3044,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 /* ── KPIs do período filtrado (feedback #8) ── */
 .period-kpis {
   display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-  padding: 10px 20px; margin: 0 auto 4px; max-width: 1048px;
+  padding: 10px 20px; margin: 0 0 4px;
   background: #fff; border: 1px solid #e8ecf1; border-radius: 10px;
 }
 .pk-item { display: flex; flex-direction: column; }
