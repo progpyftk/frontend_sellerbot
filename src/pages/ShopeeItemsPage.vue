@@ -928,6 +928,36 @@ const notifyPriceResult = async (result) => {
   if (selectedItem.value) await loadPromotions(selectedItem.value)
 }
 
+// Confirma antes de salvar o preço quando há promoções ativas — evita remoção
+// "surpresa" e avisa quando a promoção é read_only e pode sobrescrever o preço.
+const confirmPromotionRemoval = (item) => {
+  const promotions = itemPromotions.value[item?.item_id] || []
+  const removable = promotions.filter(p => isRemovable(p.promotion_type))
+  const notRemovable = promotions.filter(p => !isRemovable(p.promotion_type))
+  const unknown = !!item?.has_promotion && promotions.length === 0
+
+  if (!removable.length && !notRemovable.length && !unknown) return Promise.resolve(true)
+
+  const lines = []
+  if (removable.length) lines.push(`${removable.length} promoção(ões) serão <b>removidas automaticamente</b>.`)
+  if (notRemovable.length) lines.push(`${notRemovable.length} promoção(ões) <b>não podem ser removidas</b> via API e podem <b>sobrescrever</b> o novo preço.`)
+  if (unknown) lines.push('Este anúncio está sob uma promoção <b>não identificada</b> via API — o preço pode ser afetado.')
+
+  return new Promise((resolve) => {
+    $q.dialog({
+      title: 'Atenção: promoções ativas',
+      message: lines.join('<br/>'),
+      html: true,
+      cancel: 'Cancelar',
+      ok: {
+        label: 'Continuar e salvar',
+        color: (notRemovable.length || unknown) ? 'orange-8' : 'teal-7',
+        unelevated: true,
+      },
+    }).onOk(() => resolve(true)).onCancel(() => resolve(false))
+  })
+}
+
 const saveTitle = () => withSave(async () => {
   if (!editData.title.trim()) throw new Error('Título não pode estar vazio.')
   const { data } = await api.post(`/shopee/items/${selectedItem.value.id}/update_basic/`, { title: editData.title })
@@ -939,14 +969,18 @@ const saveBasic = () => withSave(async () => {
   return data
 }, 'SKU atualizado na Shopee')
 
-const savePrice = () => withSave(async () => {
-  if (!editData.price || editData.price <= 0) throw new Error('Preço inválido.')
-  const orig = editData.original_price > editData.price ? editData.original_price : editData.price
-  const { data } = await api.post(`/shopee/items/${selectedItem.value.id}/update_price/`, {
-    price: editData.price, original_price: orig,
-  })
-  return data
-}, 'Preço atualizado na Shopee', notifyPriceResult)
+const savePrice = async () => {
+  const item = selectedItem.value
+  if (!(await confirmPromotionRemoval(item))) return
+  await withSave(async () => {
+    if (!editData.price || editData.price <= 0) throw new Error('Preço inválido.')
+    const orig = editData.original_price > editData.price ? editData.original_price : editData.price
+    const { data } = await api.post(`/shopee/items/${item.id}/update_price/`, {
+      price: editData.price, original_price: orig,
+    })
+    return data
+  }, 'Preço atualizado na Shopee', notifyPriceResult)
+}
 
 const saveStock = () => withSave(async () => {
   if (editData.stock < 0) throw new Error('Estoque não pode ser negativo.')
@@ -959,24 +993,28 @@ const saveDescription = () => withSave(async () => {
   return data
 }, 'Descrição atualizada na Shopee')
 
-const saveVariations = () => withSave(async () => {
-  const models = editData.variations.map(v => ({
-    model_id: v.model_id,
-    price: v.price,
-    original_price: v.original_price > v.price ? v.original_price : v.price,
-    stock: v.stock,
-    model_sku: v.model_sku,
-  }))
-  const { data } = await api.post(`/shopee/items/${selectedItem.value.id}/update_variations/`, { models })
-  // Atualiza cache de variações
-  if (data?.item?.variations) {
-    const itemId = selectedItem.value.item_id
-    if (itemDetails.value[itemId]) {
-      itemDetails.value[itemId] = { ...itemDetails.value[itemId], ...data.item }
+const saveVariations = async () => {
+  const item = selectedItem.value
+  if (!(await confirmPromotionRemoval(item))) return
+  await withSave(async () => {
+    const models = editData.variations.map(v => ({
+      model_id: v.model_id,
+      price: v.price,
+      original_price: v.original_price > v.price ? v.original_price : v.price,
+      stock: v.stock,
+      model_sku: v.model_sku,
+    }))
+    const { data } = await api.post(`/shopee/items/${item.id}/update_variations/`, { models })
+    // Atualiza cache de variações
+    if (data?.item?.variations) {
+      const itemId = item.item_id
+      if (itemDetails.value[itemId]) {
+        itemDetails.value[itemId] = { ...itemDetails.value[itemId], ...data.item }
+      }
     }
-  }
-  return data
-}, 'Variações atualizadas na Shopee', notifyPriceResult)
+    return data
+  }, 'Variações atualizadas na Shopee', notifyPriceResult)
+}
 
 const doToggleStatus = async () => {
   if (saving.value) return
