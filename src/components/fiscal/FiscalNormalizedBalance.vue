@@ -27,6 +27,10 @@
           <strong>{{ kpis.items_normalized }}</strong> itens normalizados,
           <strong :class="kpis.items_pending > 0 ? 'text-amber-10' : ''">{{ kpis.items_pending }}</strong>
           pendentes · cobertura <strong>{{ formatPercent(kpis.coverage_ratio) }}</strong>
+          <div class="text-caption text-grey-7 q-mt-xs">
+            Saldo documentado das NF-e da janela capturada (sem estoque inicial): entradas − saídas
+            convertidas para KG/L/UN. Não é inventário físico e não inclui movimentos sem NF-e.
+          </div>
         </template>
       </div>
     </q-banner>
@@ -413,8 +417,10 @@ function formatQtyByUnit(qtyMap, direction) {
   return parts.join(' · ')
 }
 
+let loadSeq = 0
 async function load() {
   if (!props.selectedAccountId) return
+  const seq = ++loadSeq
   loading.value = true
   try {
     const params = {
@@ -426,15 +432,17 @@ async function load() {
     const { data } = granularity.value === 'sku'
       ? await FiscalService.getNormalizedSkuBalance(params)
       : await FiscalService.getNormalizedBalance(params)
+    if (seq !== loadSeq) return // resposta obsoleta: outra busca já assumiu
     kpis.value = data.kpis || {}
     rows.value = data.results || []
     pendingBreakdown.value = data.pending_breakdown || []
   } catch (err) {
+    if (seq !== loadSeq) return
     $q.notify({ type: 'negative', message: err.response?.data?.detail || 'Erro ao carregar balanço métrico.' })
     rows.value = []
     pendingBreakdown.value = []
   } finally {
-    loading.value = false
+    if (seq === loadSeq) loading.value = false
   }
 }
 
@@ -473,7 +481,14 @@ function exportCsv() {
 watch(() => props.selectedAccountId, (v) => { if (v) load() })
 watch(() => props.startDate, () => { if (props.selectedAccountId) load() })
 watch(() => props.endDate, () => { if (props.selectedAccountId) load() })
-watch(() => props.search, (v, old) => { if (v !== old && props.selectedAccountId) load() })
+// A busca textual dispara o endpoint pesado do balanço (~10s): debounce para
+// não empilhar uma requisição por tecla digitada.
+let searchTimer = null
+watch(() => props.search, (v, old) => {
+  if (v === old || !props.selectedAccountId) return
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => load(), 600)
+})
 watch(() => props.refreshToken, (v, old) => { if (v !== old) load() })
 watch(granularity, () => load())
 
