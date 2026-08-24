@@ -908,8 +908,10 @@ const withSave = async (fn, successMsg, onSuccess) => {
 
 // Notifica promoções removidas/ignoradas e recarrega o painel após reprecificar.
 const notifyPriceResult = async (result) => {
-  const removed = result?.promotions?.removed?.length || 0
-  const skipped = result?.promotions?.skipped?.length || 0
+  // update_price → result.updated.promotions; update_variations → result.updated.prices.promotions
+  const promotions = result?.updated?.promotions || result?.updated?.prices?.promotions || {}
+  const removed = promotions.removed?.length || 0
+  const skipped = promotions.skipped?.length || 0
   let msg = 'Preço atualizado na Shopee'
   let color = 'positive'
   if (removed && skipped) {
