@@ -159,6 +159,7 @@
       <div class="sv-chips">
         <button class="sv-chip sv-chip--alert" @click="setViewSemEstoque"><q-icon name="inventory_2" size="13px" />Sem Estoque</button>
         <button class="sv-chip" @click="setViewComDesconto"><q-icon name="local_offer" size="13px" />Com Desconto</button>
+        <button class="sv-chip" @click="setViewSemDesconto"><q-icon name="check_circle" size="13px" />Sem Desconto</button>
         <button class="sv-chip" @click="setViewSemAvaliacoes"><q-icon name="star_border" size="13px" />Sem Avaliações</button>
         <button class="sv-chip" @click="setViewMaisVendidos"><q-icon name="shopping_cart" size="13px" />Mais Vendidos</button>
         <button class="sv-chip" @click="setViewVariacoes"><q-icon name="tune" size="13px" />Variações</button>
@@ -232,6 +233,10 @@
             <div v-if="hasDiscount(props.row)" class="row items-center justify-end q-gutter-x-xs q-mt-xs">
               <span class="text-grey-5" style="text-decoration:line-through;font-size:11px">{{ formatCurrency(props.row.original_price) }}</span>
               <q-badge color="deep-orange" style="font-size:9px;padding:2px 5px;border-radius:8px">-{{ discountPct(props.row) }}%</q-badge>
+            </div>
+            <div class="row items-center justify-end q-mt-xs">
+              <q-badge v-if="props.row.discount_status === 'promotion'" color="purple" style="font-size:9px;padding:2px 6px;border-radius:8px">Em promoção</q-badge>
+              <q-badge v-else-if="props.row.discount_status === 'clean'" color="teal" style="font-size:9px;padding:2px 6px;border-radius:8px">Sem desconto</q-badge>
             </div>
             <div class="q-mt-xs">
               <span :class="['stock-badge', props.row.stock > 0 ? 'stock-badge--ok' : 'stock-badge--zero']">
@@ -759,7 +764,7 @@ const pagination = ref({
 let searchTimeout = null
 
 const filters = reactive({
-  search: '', account: [], status: [], stockStatus: null, hasDiscount: null,
+  search: '', account: [], status: [], stockStatus: null, hasDiscount: null, discountStatus: null,
   stockMin: null, stockMax: null, priceMin: null, priceMax: null,
   salesMin: null, ratingMin: null, _ratingZero: false, _hasModel: false,
 })
@@ -814,7 +819,7 @@ const advancedFilterCount = computed(() => [
 ].filter(Boolean).length)
 const hasActiveFilters = computed(() =>
   !!filters.search || filters.account?.length > 0 || filters.status?.length > 0 ||
-  !!filters.stockStatus || filters.hasDiscount !== null || advancedFilterCount.value > 0
+  !!filters.stockStatus || filters.hasDiscount !== null || !!filters.discountStatus || advancedFilterCount.value > 0
 )
 const allSelected  = computed(() => items.value.length > 0 && selectedItems.value.length === items.value.length)
 const someSelected = computed(() => selectedItems.value.length > 0 && selectedItems.value.length < items.value.length)
@@ -1049,6 +1054,7 @@ const toggleStatusFilter = (val) => {
 // ── Smart Views ───────────────────────────────────────────────────────────────
 const setViewSemEstoque    = () => { clearFilters(false); filters.stockStatus = 'zero'; loadItems() }
 const setViewComDesconto   = () => { clearFilters(false); filters.hasDiscount = true; loadItems() }
+const setViewSemDesconto   = () => { clearFilters(false); filters.discountStatus = 'clean'; loadItems() }
 const setViewSemAvaliacoes = () => { clearFilters(false); filters._ratingZero = true; loadItems() }
 const setViewMaisVendidos  = () => { clearFilters(false); currentSort.value = '-sales'; loadItems() }
 const setViewVariacoes     = () => { clearFilters(false); filters._hasModel = true; loadItems() }
@@ -1069,6 +1075,7 @@ const buildParams = (pg = pagination.value) => {
   if (filters.search)               p.search       = filters.search
   if (filters.stockStatus)          p.stock_status = filters.stockStatus
   if (filters.hasDiscount !== null) p.has_discount = filters.hasDiscount
+  if (filters.discountStatus)        p.discount_status = filters.discountStatus
   if (filters.stockMin != null)     p.stock_min    = filters.stockMin
   if (filters.stockMax != null)     p.stock_max    = filters.stockMax
   if (filters.priceMin != null)     p.price_min    = filters.priceMin
@@ -1159,7 +1166,7 @@ const applySort = (val) => { currentSort.value = val; loadItems() }
 
 const clearFilters = (andReload = true) => {
   Object.assign(filters, {
-    search: '', account: [], status: [], stockStatus: null, hasDiscount: null,
+    search: '', account: [], status: [], stockStatus: null, hasDiscount: null, discountStatus: null,
     stockMin: null, stockMax: null, priceMin: null, priceMax: null,
     salesMin: null, ratingMin: null, _ratingZero: false, _hasModel: false,
   })
