@@ -620,7 +620,6 @@
                         <th v-if="!selectedItemDetail.variation_attrs?.length">Variação</th>
                         <th>SKU</th>
                         <th>Preço (R$)</th>
-                        <th>De (R$)</th>
                         <th>Estoque</th>
                         <th>Status</th>
                       </tr>
@@ -647,16 +646,6 @@
                             <span class="text-weight-bold price-main" style="font-size:12px">{{ formatCurrency(v.price) }}</span>
                           </template>
                         </td>
-                        <!-- Preço original / De -->
-                        <td class="text-right">
-                          <input v-if="editSection === 'variations'" class="var-inline-input var-inline-input--price"
-                            type="number" step="0.01" min="0" v-model.number="editData.variations[idx].original_price"
-                            placeholder="Sem desc." />
-                          <template v-else>
-                            <span v-if="hasDiscountV(v)" class="text-grey-5" style="text-decoration:line-through;font-size:10px">{{ formatCurrency(v.original_price) }}</span>
-                            <span v-else class="text-grey-4 text-caption">—</span>
-                          </template>
-                        </td>
                         <!-- Estoque -->
                         <td class="text-right">
                           <input v-if="editSection === 'variations'" class="var-inline-input var-inline-input--stock"
@@ -673,7 +662,7 @@
                 </div>
                 <div v-if="editSection === 'variations'" class="var-edit-hint">
                   <q-icon name="info" size="12px" color="blue-4" />
-                  Edite preço, preço original e estoque diretamente nas células. Clique em <strong>Salvar tudo</strong> para enviar todas as alterações.
+                  Edite preço e estoque diretamente nas células. Clique em <strong>Salvar tudo</strong> para enviar todas as alterações.
                 </div>
               </div>
 
@@ -1023,7 +1012,7 @@ const saveVariations = async () => {
     const models = editData.variations.map(v => ({
       model_id: v.model_id,
       price: v.price,
-      original_price: v.original_price > v.price ? v.original_price : v.price,
+      original_price: v.price,  // sem desconto base ("De" == "Por")
       stock: v.stock,
       model_sku: v.model_sku,
     }))
