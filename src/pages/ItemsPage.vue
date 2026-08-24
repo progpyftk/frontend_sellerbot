@@ -1306,7 +1306,7 @@ const showBulkReactivateDialog  = ref(false)
 const bulkLoading = ref(false)
 const bulkStockForm = reactive({ quantity: null })
 
-const bulkPriceForm = reactive({ mode: 'adjust', direction: 'increase', type: 'pct', value: null, pausePromotions: false })
+const bulkPriceForm = reactive({ mode: 'adjust', direction: 'increase', type: 'pct', value: null, pausePromotions: true })
 const bulkPromoForm = reactive({ action: 'deactivate', dealPriceType: 'pct', dealPriceValue: null, finishDate: null })
 const bulkListingTypeForm = reactive({ listing_type: 'gold_pro' })
 const bulkWholesaleForm = reactive({
