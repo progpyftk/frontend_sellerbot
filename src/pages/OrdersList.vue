@@ -2700,9 +2700,13 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 
 /* ─── TABLE ──────────────────────────────────────── */
 .table-wrapper { padding: 16px 0; }
+/* width:fit-content SEM max-width: a tabela cresce pro tamanho real do conteúdo (algum
+   badge/pill não quebra linha e pode passar da soma das colunas). Quando isso acontece,
+   .table-wrapper (overflow-x:auto) rola o excesso em vez de cortar — max-width aqui
+   travava a tabela em 1048px e o overflow:hidden abaixo cortava o que não coubesse. */
 .orders-table  {
   background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07);
-  width: fit-content; max-width: 100%; margin: 0 auto;
+  width: fit-content; margin: 0 auto;
 }
 .orders-table :deep(.q-table__top)    { display: none; }
 .orders-table :deep(.q-table__bottom) { border-top: 1px solid #f0f2f5; font-size: 12px; }
@@ -2710,7 +2714,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
    sobrando entre as colunas mesmo com min-width nos elementos internos. Fixamos o layout
    e damos width real a cada coluna (única fonte de largura, th e td juntos) para acabar
    com esse espaço vazio. */
-.orders-table :deep(.q-table) { table-layout: fixed; width: auto; max-width: 100%; }
+.orders-table :deep(.q-table) { table-layout: fixed; width: auto; }
 .orders-thead :deep(th) {
   font-size: 10px; font-weight: 700; color: #9aa0ac;
   text-transform: uppercase; letter-spacing: .7px;
