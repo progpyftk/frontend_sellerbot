@@ -440,29 +440,43 @@
                 </div>
 
                 <div v-else class="promo-list">
-                  <div v-for="(p, i) in itemPromotions[selectedItem?.item_id]" :key="i" class="promo-row">
-                    <div class="promo-main">
-                      <div class="promo-name">
-                        {{ p.type_label || p.promotion_type }}
-                        <q-badge v-if="p.promotion_staging === 'upcoming'" color="amber-7" class="q-ml-xs" style="font-size:9px">agendada</q-badge>
+                  <div v-for="(p, i) in itemPromotions[selectedItem?.item_id]" :key="i" class="promo-group">
+                    <div class="promo-row">
+                      <div class="promo-main">
+                        <div class="promo-name">
+                          <q-icon v-if="p.variation_count > 1" :name="expandedPromos[i] ? 'expand_less' : 'expand_more'"
+                            size="18px" class="cursor-pointer q-mr-xs text-grey-6" @click="togglePromoExpand(i)" />
+                          {{ p.type_label || p.promotion_type }}
+                          <q-badge v-if="p.promotion_staging === 'upcoming'" color="amber-7" class="q-ml-xs" style="font-size:9px">agendada</q-badge>
+                        </div>
+                        <div class="promo-sub">
+                          <template v-if="p.promotion_price_min != null">
+                            Preço promocional: <strong>{{ formatCurrency(p.promotion_price_min) }}</strong><template v-if="p.promotion_price_max != null && p.promotion_price_max !== p.promotion_price_min">–{{ formatCurrency(p.promotion_price_max) }}</template>
+                          </template>
+                          <template v-else>ID {{ p.promotion_id }}</template>
+                          <q-badge v-if="p.variation_count > 1" color="grey-7" class="q-ml-xs" style="font-size:9px">{{ p.variation_count }} variações</q-badge>
+                          <span v-if="p.end_time"> · até {{ formatDateTs(p.end_time) }}</span>
+                        </div>
                       </div>
-                      <div class="promo-sub">
-                        <template v-if="p.promotion_price_min != null">
-                          Preço promocional: <strong>{{ formatCurrency(p.promotion_price_min) }}</strong><template v-if="p.promotion_price_max != null && p.promotion_price_max !== p.promotion_price_min">–{{ formatCurrency(p.promotion_price_max) }}</template>
-                        </template>
-                        <template v-else>ID {{ p.promotion_id }}</template>
-                        <q-badge v-if="p.variation_count > 1" color="grey-7" class="q-ml-xs" style="font-size:9px">{{ p.variation_count }} variações</q-badge>
-                        <span v-if="p.end_time"> · até {{ formatDateTs(p.end_time) }}</span>
+                      <div v-if="isRemovable(p.promotion_type)" class="promo-action">
+                        <q-btn dense flat size="sm" color="negative" icon="delete_outline"
+                          :label="p.variation_count > 1 ? 'Remover todas' : 'Remover'"
+                          :loading="promoRemoving === ('g' + i)" @click="removePromotion(p, i)" />
+                      </div>
+                      <div v-else class="promo-action">
+                        <q-icon name="info" size="16px" color="grey-5">
+                          <q-tooltip anchor="top middle" self="bottom middle">{{ promotionReason(p.promotion_type) }}</q-tooltip>
+                        </q-icon>
                       </div>
                     </div>
-                    <div v-if="isRemovable(p.promotion_type)" class="promo-action">
-                      <q-btn dense flat size="sm" color="negative" icon="delete_outline" label="Remover"
-                        :loading="promoRemoving === i" @click="removePromotion(p, i)" />
-                    </div>
-                    <div v-else class="promo-action">
-                      <q-icon name="info" size="16px" color="grey-5">
-                        <q-tooltip anchor="top middle" self="bottom middle">{{ promotionReason(p.promotion_type) }}</q-tooltip>
-                      </q-icon>
+
+                    <div v-if="expandedPromos[i] && p.models?.length" class="promo-models">
+                      <div v-for="m in p.models" :key="m.model_id" class="promo-model-row">
+                        <span class="promo-model-name">{{ variationName(m.model_id) }}</span>
+                        <span v-if="m.promotion_price != null" class="promo-model-price">{{ formatCurrency(m.promotion_price) }}</span>
+                        <q-btn v-if="isRemovable(p.promotion_type)" dense flat size="xs" color="negative" icon="delete_outline" label="Remover"
+                          :loading="promoRemoving === ('m' + i + ':' + m.model_id)" @click="removePromotionVariation(p, m.model_id, i)" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -749,7 +763,8 @@ const showAllImages  = ref(false)
 const descExpanded   = ref(false)
 const itemPromotions = ref({})   // { item_id: [promoção, ...] }
 const promoLoading   = ref({})   // { item_id: bool }
-const promoRemoving  = ref(null) // índice da promoção em remoção
+const promoRemoving  = ref(null) // chave do item em remoção ('g<idx>' | 'm<idx>:<model_id>')
+const expandedPromos = ref({})   // { promoIndex: true } — variações expandidas
 
 // ── Estado de edição ──────────────────────────────────────────────────────────
 const editSection = ref(null)  // null | 'title' | 'basic' | 'price' | 'stock' | 'description' | 'variations'
@@ -1141,10 +1156,19 @@ const loadPromotions = async (item) => {
   }
 }
 
+const togglePromoExpand = (i) => { expandedPromos.value[i] = !expandedPromos.value[i] }
+
+const variationName = (modelId) => {
+  const detail = itemDetails.value[selectedItem.value?.item_id]
+  const v = (detail?.variations || []).find(x => String(x.model_id) === String(modelId))
+  if (!v) return `ID ${modelId}`
+  return v.model_name || Object.values(v.attribute_values || {}).join(' / ') || `ID ${modelId}`
+}
+
 const removePromotion = async (promo, index) => {
   const item = selectedItem.value
   if (!item || promoRemoving.value !== null) return
-  promoRemoving.value = index
+  promoRemoving.value = 'g' + index
   try {
     // promoção agrupada: remove cada variação (model_ids)
     const modelIds = promo.model_ids || []
@@ -1155,12 +1179,30 @@ const removePromotion = async (promo, index) => {
         model_id: mid,
       })
     }
-    const itemId = item.item_id
-    itemPromotions.value[itemId] = (itemPromotions.value[itemId] || []).filter((_, i) => i !== index)
-    item.has_promotion = (itemPromotions.value[itemId] || []).length > 0
     $q.notify({ message: 'Promoção removida com sucesso.', color: 'positive', position: 'top' })
+    await loadPromotions(item)
   } catch (e) {
     const msg = e?.response?.data?.error || e?.message || 'Erro ao remover promoção.'
+    $q.notify({ message: msg, color: 'negative', position: 'top', timeout: 4000 })
+  } finally {
+    promoRemoving.value = null
+  }
+}
+
+const removePromotionVariation = async (promo, modelId, index) => {
+  const item = selectedItem.value
+  if (!item || promoRemoving.value !== null) return
+  promoRemoving.value = 'm' + index + ':' + modelId
+  try {
+    await api.post(`/shopee/items/${item.id}/promotions/remove/`, {
+      promotion_type: promo.promotion_type,
+      promotion_id: promo.promotion_id,
+      model_id: modelId,
+    })
+    $q.notify({ message: 'Variação removida da promoção.', color: 'positive', position: 'top' })
+    await loadPromotions(item)
+  } catch (e) {
+    const msg = e?.response?.data?.error || e?.message || 'Erro ao remover variação.'
     $q.notify({ message: msg, color: 'negative', position: 'top', timeout: 4000 })
   } finally {
     promoRemoving.value = null
@@ -1430,10 +1472,15 @@ onMounted(loadAccounts)
 /* ── Promoções (detail) ──────────────────────────────────────────────── */
 .dd-empty { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 12px; padding: 10px 0; }
 .promo-list { display: flex; flex-direction: column; gap: 8px; }
-.promo-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.promo-group { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.promo-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; }
 .promo-name { font-size: 12px; font-weight: 600; color: #0f172a; display: flex; align-items: center; }
 .promo-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
 .promo-action { flex-shrink: 0; }
+.promo-models { border-top: 1px solid #e2e8f0; padding: 6px 12px 8px; }
+.promo-model-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.promo-model-name { font-size: 11px; color: #334155; flex: 1; }
+.promo-model-price { font-size: 11px; color: #64748b; white-space: nowrap; }
 
 /* ── Utilities & transitions ──────────────────────────────────────────── */
 .border-grey { border: 1px solid #e2e8f0; }
