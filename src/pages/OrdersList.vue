@@ -541,28 +541,38 @@
               <div class="cell-produto">
                 <div class="produto-main">
 
-                  <!-- Thumbnail: igual para pack e single; badge +N indica itens extras -->
-                  <div class="thumb-wrap">
-                    <img v-if="props.row.items?.[0]?.thumbnail" :src="props.row.items[0].thumbnail" class="thumb-img" />
-                    <div v-else class="thumb-placeholder"><q-icon name="image" size="18px" color="grey-4" /></div>
-                    <div v-if="(props.row.items || []).length > 1" class="thumb-count">
-                      +{{ props.row.items.length - 1 }}
+                  <!-- Thumbnail + conta: igual para pack e single; badge +N indica itens extras -->
+                  <div class="thumb-col">
+                    <div class="thumb-wrap">
+                      <img v-if="props.row.items?.[0]?.thumbnail" :src="props.row.items[0].thumbnail" class="thumb-img" />
+                      <div v-else class="thumb-placeholder"><q-icon name="image" size="18px" color="grey-4" /></div>
+                      <div v-if="(props.row.items || []).length > 1" class="thumb-count">
+                        +{{ props.row.items.length - 1 }}
+                      </div>
                     </div>
+                    <span class="account-chip" :title="props.row.account?.account_nickname || ''">
+                      <q-icon name="storefront" size="9px" />{{ props.row.account?.account_nickname || '—' }}
+                    </span>
                   </div>
 
                   <div class="produto-info">
-                    <!-- PACK: lista resumida de itens -->
+                    <!-- PACK: lista resumida de itens, cada um com título (max 2 linhas) + SKU/MLB abaixo -->
                     <template v-if="props.row._isPack">
                       <div class="pack-items-list">
-                        <div v-for="item in (props.row.items || [])" :key="item.item_id_ml + (item.variation_id||'')" class="pack-item-line">
-                          <span class="pack-item-qty">{{ item.quantity }}×</span>
-                          <span class="pack-item-title" :title="item.title">{{ item.title }}</span>
-                          <span v-if="item.seller_sku" class="pack-item-sku">{{ item.seller_sku }}</span>
+                        <div v-for="item in (props.row.items || [])" :key="item.item_id_ml + (item.variation_id||'')" class="pack-item-block">
+                          <div class="pack-item-line">
+                            <span v-if="item.quantity > 1" class="pack-item-qty">{{ item.quantity }}×</span>
+                            <span class="pack-item-title" :title="item.title">{{ item.title }}</span>
+                          </div>
+                          <div class="pack-item-ids">
+                            <span class="id-chip"><q-icon name="sell" size="9px" />{{ item.item_id_ml || '—' }}</span>
+                            <span v-if="item.seller_sku" class="id-chip sku">SKU {{ item.seller_sku }}</span>
+                          </div>
                         </div>
                       </div>
                     </template>
 
-                    <!-- SINGLE: título + ids -->
+                    <!-- SINGLE: título (max 2 linhas) + SKU/MLB abaixo -->
                     <template v-else>
                       <div class="produto-title" :title="props.row.items?.[0]?.title || ''">{{ props.row.items?.[0]?.title || '—' }}</div>
                       <div class="produto-ids">
@@ -572,7 +582,6 @@
                     </template>
 
                     <div class="produto-meta">
-                      <span class="account-chip"><q-icon name="storefront" size="9px" />{{ props.row.account?.account_nickname || '—' }}</span>
                       <span v-if="props.row._isPack" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />PACK · {{ (props.row.items||[]).length }} itens</span>
                       <span v-else-if="props.row.pack_id" class="ctx-badge pack-badge"><q-icon name="inventory_2" size="8px" />PACK</span>
                       <span v-if="props.row.is_catalog" class="ctx-badge catalog-badge"><q-icon name="auto_awesome" size="8px" />Catálogo</span>
@@ -612,10 +621,10 @@
             <!-- ③ Comprador ──────────────────────────── -->
             <q-td key="comprador" :props="props">
               <div class="cell-comprador">
-                <div class="buyer-name">{{ props.row.buyer_nickname || '—' }}</div>
+                <div class="buyer-name" :title="props.row.buyer_nickname || ''">{{ truncateName(props.row.buyer_nickname) }}</div>
                 <div v-if="props.row.shipment?.destination_city" class="buyer-loc">
                   <q-icon name="place" size="10px" />
-                  {{ props.row.shipment.destination_city }}/{{ props.row.shipment.destination_state }}
+                  <span>{{ props.row.shipment.destination_city }}/{{ props.row.shipment.destination_state }}</span>
                 </div>
               </div>
             </q-td>
@@ -640,10 +649,12 @@
 
                 <!-- FULL: stepper simplificado (seller não gerencia etiqueta) -->
                 <template v-if="props.row.shipment.logistic_type === 'fulfillment'">
-                  <div class="mini-stepper">
-                    <div v-for="(step, i) in STEPS_FULL" :key="i"
-                      :class="['mini-dot', getMiniStepClassFull(props.row.shipment.status, i)]">
-                      <q-tooltip>{{ step.label }}</q-tooltip>
+                  <div class="mini-stepper-wrap">
+                    <div class="mini-stepper">
+                      <div v-for="(step, i) in STEPS_FULL" :key="i"
+                        :class="['mini-dot', getMiniStepClassFull(props.row.shipment.status, i)]">
+                        <q-tooltip>{{ step.label }}</q-tooltip>
+                      </div>
                     </div>
                     <span class="mini-label">{{ getShipmentStatusLabelFull(props.row.shipment.status) }}</span>
                   </div>
@@ -651,10 +662,12 @@
 
                 <!-- SELLER: status + alerta de ação necessária -->
                 <template v-else>
-                  <div class="mini-stepper">
-                    <div v-for="(step, i) in STEPS_SELLER" :key="i"
-                      :class="['mini-dot', getMiniStepClassSeller(getEffectiveShipStatus(props.row.shipment), i)]">
-                      <q-tooltip>{{ step.label }}</q-tooltip>
+                  <div class="mini-stepper-wrap">
+                    <div class="mini-stepper">
+                      <div v-for="(step, i) in STEPS_SELLER" :key="i"
+                        :class="['mini-dot', getMiniStepClassSeller(getEffectiveShipStatus(props.row.shipment), i)]">
+                        <q-tooltip>{{ step.label }}</q-tooltip>
+                      </div>
                     </div>
                     <span class="mini-label">{{ getShipmentStatusLabel(getEffectiveShipStatus(props.row.shipment)) }}</span>
                   </div>
@@ -1809,6 +1822,9 @@ const openLogistics = (row) => {
 const formatCurrency = (val) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val || 0))
 
+const truncateName = (val, max = 10) =>
+  !val ? '—' : (val.length > max ? val.slice(0, max) + '…' : val)
+
 const formatDay  = (val) => val ? date.formatDate(val, 'DD/MM/YYYY') : '—'
 const formatTime = (val) => val ? date.formatDate(val, 'HH:mm')      : ''
 const formatDateFull = (val) => val ? date.formatDate(val, 'DD/MM/YYYY HH:mm') : '—'
@@ -2696,8 +2712,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .cell-produto  { min-width: 230px; max-width: 230px; }
 .produto-main  { display: flex; align-items: flex-start; gap: 10px; }
 
-/* PACK items list in produto cell */
-.pack-items-list  { display: flex; flex-direction: column; gap: 3px; }
+/* PACK items list in produto cell: cada item = título (max 2 linhas) + SKU/MLB abaixo */
+.pack-items-list  { display: flex; flex-direction: column; gap: 6px; }
 .pack-item-line   { display: flex; align-items: flex-start; gap: 4px; font-size: 11px; line-height: 1.3; }
 .pack-item-qty    { color: #6366f1; font-weight: 700; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
 .pack-item-title  {
@@ -2705,12 +2721,14 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   white-space: normal; overflow-wrap: break-word;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
-.pack-item-sku    { color: #9aa0ac; font-size: 9px; flex-shrink: 0; margin-top: 1px; }
+.pack-item-ids    { display: flex; align-items: center; gap: 4px; margin-top: 2px; flex-wrap: wrap; }
 
 /* PACK sub-orders below the main ID */
 .pack-sub-orders  { font-size: 9px; color: #b0b8c4; margin-top: 2px; letter-spacing: 0; }
 
-.thumb-wrap    { position: relative; flex-shrink: 0; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; border: 1px solid #e8eaed; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
+/* Thumbnail + badge da conta empilhados abaixo da imagem */
+.thumb-col     { flex-shrink: 0; width: 44px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.thumb-wrap    { position: relative; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; border: 1px solid #e8eaed; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
 .thumb-img     { width: 100%; height: 100%; object-fit: cover; }
 .thumb-count   { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,.55); color: white; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px 0 0 0; }
 .thumb-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
@@ -2728,7 +2746,12 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .pedido-id     { font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; color: #00897b; cursor: pointer; }
 .pedido-id:hover .copy-icon { opacity: 1; }
 .copy-icon     { opacity: 0; transition: opacity .15s; }
-.account-chip  { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; font-weight: 600; color: #00897b; background: #e0f2f1; border-radius: 4px; padding: 1px 5px; }
+.account-chip  {
+  display: inline-flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 600;
+  color: #00897b; background: #e0f2f1; border-radius: 4px; padding: 1px 4px;
+  max-width: 44px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.account-chip :deep(.q-icon) { flex-shrink: 0; }
 .ctx-badge     { display: inline-flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 700; border-radius: 4px; padding: 1px 5px; }
 .pack-badge    { background: #ede7f6; color: #6a1b9a; }
 .catalog-badge { background: #e8eaf6; color: #283593; }
@@ -2740,12 +2763,15 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .data-ago   { font-size: 10px; color: #b0bec5; margin-top: 3px; }
 
 /* ─── CELL: COMPRADOR ────────────────────────────── */
-.cell-comprador { min-width: 92px; max-width: 110px; }
-.buyer-name { font-size: 11.5px; font-weight: 500; color: #2d3748; overflow-wrap: break-word; }
-.buyer-loc  { font-size: 10px; color: #9aa0ac; margin-top: 3px; display: flex; align-items: center; gap: 2px; }
+/* Nick abreviado (truncateName, max 10 chars) — nome completo no title="" do elemento. */
+.cell-comprador { min-width: 66px; max-width: 80px; }
+.buyer-name { font-size: 11.5px; font-weight: 500; color: #2d3748; white-space: nowrap; }
+.buyer-loc  { font-size: 10px; color: #9aa0ac; margin-top: 3px; display: flex; align-items: flex-start; gap: 2px; line-height: 1.3; }
+.buyer-loc :deep(.q-icon) { flex-shrink: 0; margin-top: 1px; }
+.buyer-loc span { white-space: normal; overflow-wrap: break-word; }
 
 /* ─── CELL: LOGÍSTICA ────────────────────────────── */
-.cell-logistica { min-width: 150px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+.cell-logistica { min-width: 112px; max-width: 130px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
 .cell-logistica:hover .logistic-hint { opacity: 1; }
 .logistic-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 7px; width: fit-content; }
 .log-full    { background: #fff3e0; color: #e65100; }
@@ -2754,14 +2780,15 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .log-flex    { background: #f1f8e9; color: #33691e; }
 .log-default { background: #f5f5f5; color: #546e7a; }
 
-/* Mini stepper */
+/* Mini stepper: bolinhas numa linha, status na linha de baixo (reduz a largura da coluna) */
+.mini-stepper-wrap { display: flex; flex-direction: column; gap: 3px; }
 .mini-stepper   { display: flex; align-items: center; gap: 3px; }
 .mini-dot       { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; cursor: default; }
 .mini-inactive  { background: #e8eaed; }
 .mini-done      { background: #b2dfdb; }
 .mini-active    { background: #00897b; box-shadow: 0 0 0 2px #b2f5ea; }
 .mini-cancelled { background: #ffcdd2; }
-.mini-label     { font-size: 10px; color: #718096; margin-left: 4px; white-space: nowrap; }
+.mini-label     { font-size: 10px; color: #718096; white-space: normal; line-height: 1.25; }
 
 /* Alerta de ação */
 .action-alert {
