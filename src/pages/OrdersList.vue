@@ -1478,18 +1478,20 @@ const fetchTodayStats = async () => {
 }
 
 // Labels conforme docs/glossario_metricas.md (feedback #9)
+// Largura de cada coluna é controlada só via CSS (.cell-*), abaixo — o campo `style`
+// que existia aqui nunca era lido pelo slot #header/#body customizado.
 const columns = [
-  { name: 'produto',      label: 'PRODUTO / PEDIDO',   field: 'order_id',      align: 'left',  sortable: true, style: 'min-width:250px' },
-  { name: 'unidades',     label: 'UN.',                field: 'units',         align: 'center', sortable: true, style: 'min-width:52px' },
-  { name: 'data_venda',   label: 'DATA',               field: 'date_created',  align: 'left',  sortable: true, style: 'min-width:90px' },
-  { name: 'comprador',    label: 'COMPRADOR',          field: 'buyer_nickname',align: 'left',  style: 'min-width:110px' },
-  { name: 'status_venda', label: 'STATUS',             field: 'status',        align: 'left',  style: 'min-width:90px' },
-  { name: 'logistica',    label: 'LOGÍSTICA',          field: 'shipment',      align: 'left',  style: 'min-width:160px' },
-  { name: 'venda',        label: 'GMV',                field: 'total_amount',  align: 'right', sortable: true, style: 'min-width:85px' },
-  { name: 'tarifa',       label: 'TAXAS ML',           field: 'total_fee',     align: 'right', style: 'min-width:90px' },
-  { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right', style: 'min-width:85px' },
-  { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right', style: 'min-width:115px' },
-  { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right', style: 'min-width:115px' },
+  { name: 'produto',      label: 'PRODUTO / PEDIDO',   field: 'order_id',      align: 'left',  sortable: true },
+  { name: 'unidades',     label: 'UN.',                field: 'units',         align: 'center', sortable: true },
+  { name: 'data_venda',   label: 'DATA',               field: 'date_created',  align: 'left',  sortable: true },
+  { name: 'comprador',    label: 'COMPRADOR',          field: 'buyer_nickname',align: 'left' },
+  { name: 'status_venda', label: 'STATUS',             field: 'status',        align: 'left' },
+  { name: 'logistica',    label: 'LOGÍSTICA',          field: 'shipment',      align: 'left' },
+  { name: 'venda',        label: 'GMV',                field: 'total_amount',  align: 'right', sortable: true },
+  { name: 'tarifa',       label: 'TAXAS ML',           field: 'total_fee',     align: 'right' },
+  { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right' },
+  { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right' },
+  { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right' },
 ]
 
 // Soma de unidades do pedido (pack soma todos os sub-orders)
@@ -2681,24 +2683,25 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .orders-thead :deep(th) {
   font-size: 10px; font-weight: 700; color: #9aa0ac;
   text-transform: uppercase; letter-spacing: .7px;
-  background: #f8f9fa; border-bottom: 2px solid #e8eaed; padding: 10px 14px;
+  background: #f8f9fa; border-bottom: 2px solid #e8eaed; padding: 8px 10px;
 }
 .order-row :deep(td) {
-  padding: 12px 14px; vertical-align: top;
+  padding: 8px 10px; vertical-align: top;
   border-bottom: 1px solid #f5f6fa; cursor: pointer; transition: background .12s;
 }
 .order-row:hover :deep(td) { background: #f8fbff; }
 
 /* ─── CELL: PRODUTO ──────────────────────────────── */
-.cell-produto  { min-width: 230px; }
+/* Única fonte de largura da coluna: alinhada com o max-width de .produto-title/.pack-item-title abaixo. */
+.cell-produto  { min-width: 200px; max-width: 200px; }
 .produto-main  { display: flex; align-items: flex-start; gap: 10px; }
 
 /* PACK items list in produto cell */
 .pack-items-list  { display: flex; flex-direction: column; gap: 3px; }
-.pack-item-line   { display: flex; align-items: center; gap: 4px; font-size: 11px; line-height: 1.3; }
-.pack-item-qty    { color: #6366f1; font-weight: 700; font-size: 10px; flex-shrink: 0; }
-.pack-item-title  { color: #1a1f36; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
-.pack-item-sku    { color: #9aa0ac; font-size: 9px; flex-shrink: 0; }
+.pack-item-line   { display: flex; align-items: flex-start; gap: 4px; font-size: 11px; line-height: 1.3; }
+.pack-item-qty    { color: #6366f1; font-weight: 700; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+.pack-item-title  { flex: 1; min-width: 0; color: #1a1f36; white-space: normal; overflow-wrap: break-word; }
+.pack-item-sku    { color: #9aa0ac; font-size: 9px; flex-shrink: 0; margin-top: 1px; }
 
 /* PACK sub-orders below the main ID */
 .pack-sub-orders  { font-size: 9px; color: #b0b8c4; margin-top: 2px; letter-spacing: 0; }
@@ -2708,7 +2711,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .thumb-count   { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,.55); color: white; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px 0 0 0; }
 .thumb-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 .produto-info  { flex: 1; min-width: 0; }
-.produto-title { font-size: 12px; font-weight: 600; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.produto-title { font-size: 11.5px; font-weight: 600; color: #2d3748; white-space: normal; overflow-wrap: break-word; line-height: 1.35; }
 .produto-ids   { display: flex; align-items: center; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
 .id-chip       { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; font-family: 'Roboto Mono', monospace; color: #718096; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 5px; }
 .id-chip.sku   { color: #4a5568; }
@@ -2724,13 +2727,13 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 
 /* ─── CELL: DATA ─────────────────────────────────── */
 .cell-data  { min-width: 75px; }
-.data-day   { font-size: 12px; font-weight: 600; color: #2d3748; }
+.data-day   { font-size: 11.5px; font-weight: 600; color: #2d3748; }
 .data-time  { font-size: 11px; color: #718096; margin-top: 1px; }
 .data-ago   { font-size: 10px; color: #b0bec5; margin-top: 3px; }
 
 /* ─── CELL: COMPRADOR ────────────────────────────── */
-.cell-comprador { min-width: 100px; }
-.buyer-name { font-size: 12px; font-weight: 500; color: #2d3748; }
+.cell-comprador { min-width: 92px; max-width: 110px; }
+.buyer-name { font-size: 11.5px; font-weight: 500; color: #2d3748; overflow-wrap: break-word; }
 .buyer-loc  { font-size: 10px; color: #9aa0ac; margin-top: 3px; display: flex; align-items: center; gap: 2px; }
 
 /* ─── CELL: LOGÍSTICA ────────────────────────────── */
@@ -2765,13 +2768,13 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 
 /* ─── CELLS: FINANCEIRO ──────────────────────────── */
 .cell-amount  { text-align: right; }
-.amount-main  { font-size: 14px; font-weight: 700; color: #1a1f36; }
+.amount-main  { font-size: 13px; font-weight: 700; color: #1a1f36; }
 .amount-sub   { font-size: 10px; color: #9aa0ac; margin-top: 2px; }
 .coupon-chip  { display: inline-flex; align-items: center; gap: 2px; margin-top: 3px; font-size: 9px; font-weight: 600; color: #c05621; background: #fffaf0; border-radius: 4px; padding: 1px 5px; }
 .flex-credit-hint { font-size: 9px; color: #0d9488; margin-top: 2px; display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
 
 .cell-fee     { text-align: right; }
-.fee-main     { font-size: 13px; font-weight: 700; color: #e53e3e; }
+.fee-main     { font-size: 12.5px; font-weight: 700; color: #e53e3e; }
 .fee-pct      { font-size: 10px; color: #9aa0ac; margin-top: 2px; }
 .fee-type     { font-size: 10px; color: #c0c6cf; }
 .fee-breakdown-row { display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-top: 3px; padding-top: 3px; border-top: 1px dashed #f0e8e0; }
@@ -2781,18 +2784,18 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .taxa-val { color: #e65100; font-weight: 700; }
 
 .cell-frete    { text-align: right; }
-.frete-main    { font-size: 13px; font-weight: 700; color: #c05621; }
+.frete-main    { font-size: 12.5px; font-weight: 700; color: #c05621; }
 .frete-sub     { font-size: 10px; color: #9aa0ac; margin-top: 1px; display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
 .frete-type    { display: inline-flex; align-items: center; gap: 2px; font-size: 9px; border-radius: 3px; padding: 1px 4px; }
 .free-flag     { background: #e0f2f1; color: #00695c; }
 .partial-flag  { background: #fff3e0; color: #e65100; }
 .frete-audit   { font-size: 9px; color: #b0bec5; margin-top: 2px; }
-.frete-gratis  { font-size: 12px; font-weight: 700; color: #38a169; display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
+.frete-gratis  { font-size: 11.5px; font-weight: 700; color: #38a169; display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
 .flex-badge    { color: #0d9488; font-weight: 700; }
 .flex-repasse-hint { font-size: 9px; color: #0d9488; margin-top: 2px; font-weight: 600; }
 
 .cell-liquido  { text-align: right; }
-.liquido-main  { font-size: 15px; font-weight: 700; }
+.liquido-main  { font-size: 13.5px; font-weight: 700; }
 .liquido-main.pos { color: #276749; }
 .liquido-main.neg { color: #c53030; }
 .liquido-hint  { font-size: 9px; color: #c5ccd6; margin-top: 1px; }
