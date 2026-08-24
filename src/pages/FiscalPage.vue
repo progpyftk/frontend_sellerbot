@@ -130,6 +130,28 @@
             </div>
           </SbCard>
 
+          <!-- Seletor de visão do balanço -->
+          <div class="row items-center justify-between q-mb-md">
+            <q-btn-toggle
+              v-model="balanceView"
+              dense
+              no-caps
+              unelevated
+              toggle-color="teal-8"
+              color="grey-3"
+              text-color="grey-8"
+              :options="[
+                { label: 'Saldo Métrico (KG/L/UN)', value: 'metric' },
+                { label: 'Saldo na Unidade da NF-e', value: 'original' },
+              ]"
+            />
+            <div class="text-caption text-grey-6 q-mt-xs q-mt-sm-none">
+              O saldo métrico converte as unidades da NF-e (SC, UN, TO…) para KG/L/UN comparáveis.
+            </div>
+          </div>
+
+          <!-- ══ VISÃO ORIGINAL: unidade da NF-e + financeiro ══ -->
+          <template v-if="balanceView === 'original'">
           <!-- Banner de Alerta para Unidades Mistas -->
           <transition name="q-transition--fade">
             <div
@@ -356,12 +378,10 @@
               </template>
             </q-table>
           </SbCard>
+          </template>
 
-          <!-- Balanço métrico normalizado (FB-38 Fase 3) -->
-          <div class="q-mt-lg">
-            <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-sm">
-              <q-icon name="straighten" class="q-mr-xs" /> Balanço Métrico (normalizado)
-            </div>
+          <!-- ══ VISÃO MÉTRICA: unidade normalizada (KG/L/UN) — padrão ══ -->
+          <template v-else>
             <FiscalNormalizedBalance
               ref="normalizedBalanceRef"
               :selected-account-id="balanceFilters.cnpj"
@@ -370,7 +390,7 @@
               :search="balanceFilters.search"
               :refresh-token="runsRefreshToken"
             />
-          </div>
+          </template>
 
         </q-tab-panel>
 
@@ -1032,6 +1052,7 @@ const $q = useQuasar();
 
 const activeTab = ref("balance");
 const loading = ref(false);
+const balanceView = ref("metric"); // 'metric' (KG/L/UN, padrão) | 'original' (unidade da NF-e)
 const normalizationRefreshToken = ref(0);
 const runsRefreshToken = ref(0);
 const normalizedBalanceRef = ref(null);

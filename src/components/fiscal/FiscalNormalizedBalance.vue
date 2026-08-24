@@ -107,6 +107,16 @@
           <template v-else>Saldo métrico por SKU (KG / L / UN + R$)</template>
         </div>
         <div class="row items-center q-gutter-sm">
+          <q-btn
+            flat
+            dense
+            no-caps
+            icon="download"
+            label="Exportar CSV"
+            color="grey-7"
+            :disable="rows.length === 0"
+            @click="exportCsv"
+          />
           <q-btn-toggle
             v-model="granularity"
             dense
@@ -133,6 +143,13 @@
         </div>
       </div>
 
+      <!-- Tooltips explicativos das colunas métricas -->
+      <div class="q-pb-sm text-caption text-grey-6">
+        Quantidades normalizadas para <strong>KG</strong> (massa), <strong>L</strong> (volume) ou
+        <strong>UN</strong> (contagem) com base na unidade da NF-e e na evidência do XML/descrição.
+        <q-tooltip>Saldo = Entradas − Saídas na unidade normalizada. Itens sem regra aprovada ficam pendentes.</q-tooltip>
+      </div>
+
       <q-table
         :rows="rows"
         :columns="columns"
@@ -142,6 +159,42 @@
         :pagination="{ rowsPerPage: 25 }"
         class="normalized-table"
       >
+        <!-- Tooltips nos cabeçalhos -->
+        <template #header-cell-qty_in="props">
+          <q-th :props="props">Entradas
+            <q-tooltip>Quantidade total de entrada na unidade normalizada (KG/L/UN).</q-tooltip>
+          </q-th>
+        </template>
+        <template #header-cell-qty_out="props">
+          <q-th :props="props">Saídas
+            <q-tooltip>Quantidade total de saída na unidade normalizada (KG/L/UN).</q-tooltip>
+          </q-th>
+        </template>
+        <template #header-cell-balance_qty="props">
+          <q-th :props="props">Saldo Métrico
+            <q-tooltip>Saldo fiscal documentado = Entradas − Saídas. Negativo indica mais saídas que entradas documentadas.</q-tooltip>
+          </q-th>
+        </template>
+        <template v-if="granularity === 'sku'" #header-cell-value_in="props">
+          <q-th :props="props">Entradas (R$)
+            <q-tooltip>Valor financeiro das notas de entrada (product_value do item).</q-tooltip>
+          </q-th>
+        </template>
+        <template v-if="granularity === 'sku'" #header-cell-value_out="props">
+          <q-th :props="props">Saídas (R$)
+            <q-tooltip>Valor financeiro das notas de saída (product_value do item).</q-tooltip>
+          </q-th>
+        </template>
+        <template v-if="granularity === 'sku'" #header-cell-balance_value="props">
+          <q-th :props="props">Saldo Financeiro
+            <q-tooltip>Saldo financeiro = Entradas (R$) − Saídas (R$). Não é valor de estoque (sem método CMP/FIFO).</q-tooltip>
+          </q-th>
+        </template>
+        <template #header-cell-movements_count="props">
+          <q-th :props="props">Movs
+            <q-tooltip>Número de movimentos (notas) agregados nesta linha.</q-tooltip>
+          </q-th>
+        </template>
         <template #body-cell-ncm="props">
           <q-td :props="props">
             <template v-if="granularity === 'sku'">
@@ -383,6 +436,38 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+function exportCsv() {
+  if (!rows.value.length) return
+  const isSku = granularity.value === 'sku'
+  const headers = isSku
+    ? ['SKU', 'NCM', 'Descricao', 'Dimensao', 'Unidade', 'Qtd_Entrada', 'Qtd_Saida', 'Saldo_Metrico', 'R$_Entrada', 'R$_Saida', 'R$_Saldo', 'Movs']
+    : ['NCM', 'Descricao', 'Dimensao', 'Unidade', 'Qtd_Entrada', 'Qtd_Saida', 'Saldo_Metrico', 'Movs']
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const lines = rows.value.map((r) => {
+    const base = isSku ? [r.sku, r.ncm] : [r.ncm]
+    return [
+      ...base.map(esc),
+      esc(r.description || ''),
+      esc(r.dimension),
+      esc(r.unit),
+      r.qty_in,
+      r.qty_out,
+      r.balance_qty,
+      ...(isSku ? [r.value_in, r.value_out, r.balance_value] : []),
+      r.movements_count,
+    ].join(',')
+  })
+  const csv = '\uFEFF' + [headers.join(','), ...lines].join('\n')
+  const link = document.createElement('a')
+  link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+  link.download = isSku
+    ? `balanco_metrico_sku_${new Date().toISOString().slice(0, 10)}.csv`
+    : `balanco_metrico_ncm_${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 watch(() => props.selectedAccountId, (v) => { if (v) load() })
