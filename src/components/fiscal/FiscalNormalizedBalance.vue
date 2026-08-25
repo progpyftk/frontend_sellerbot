@@ -478,7 +478,7 @@ function exportCsv() {
   document.body.removeChild(link)
 }
 
-watch(() => props.selectedAccountId, (v) => { if (v) load() })
+watch(() => props.selectedAccountId, (v) => { if (v) load() }, { immediate: true })
 watch(() => props.startDate, () => { if (props.selectedAccountId) load() })
 watch(() => props.endDate, () => { if (props.selectedAccountId) load() })
 // A busca textual dispara o endpoint pesado do balanço (~10s): debounce para
