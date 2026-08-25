@@ -130,27 +130,6 @@
             </div>
           </SbCard>
 
-          <!-- Seletor de visão do balanço -->
-          <div class="q-mb-md">
-            <q-tabs
-              v-model="balanceView"
-              dense
-              no-caps
-              align="left"
-              active-color="teal-8"
-              indicator-color="teal-8"
-              class="balance-view-tabs"
-            >
-              <q-tab name="original" label="Balanço original (unidades + financeiro)" />
-              <q-tab name="metric" label="Saldo métrico por NCM (KG / L / UN)" />
-            </q-tabs>
-            <div class="text-caption text-grey-6 q-mt-xs">
-              O saldo métrico converte as unidades da NF-e (SC, UN, TO…) para KG/L/UN comparáveis.
-            </div>
-          </div>
-
-          <!-- ══ VISÃO ORIGINAL: unidade da NF-e + financeiro ══ -->
-          <template v-if="balanceView === 'original'">
           <!-- Banner de Alerta para Unidades Mistas -->
           <transition name="q-transition--fade">
             <div
@@ -377,10 +356,15 @@
               </template>
             </q-table>
           </SbCard>
-          </template>
 
-          <!-- ══ VISÃO MÉTRICA: unidade normalizada (KG/L/UN) — padrão ══ -->
-          <template v-else>
+        </q-tab-panel>
+
+        <!-- ────────────────────────────────────────── ABA 2: NORMALIZAÇÃO MÉTRICA -->
+        <q-tab-panel name="normalization" class="q-pa-none">
+          <div class="q-mb-lg">
+            <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-sm">
+              Saldo métrico por NCM / SKU
+            </div>
             <FiscalNormalizedBalance
               ref="normalizedBalanceRef"
               :selected-account-id="balanceFilters.cnpj"
@@ -389,12 +373,8 @@
               :search="balanceFilters.search"
               :refresh-token="runsRefreshToken"
             />
-          </template>
+          </div>
 
-        </q-tab-panel>
-
-        <!-- ────────────────────────────────────────── ABA 2: NORMALIZAÇÃO MÉTRICA -->
-        <q-tab-panel name="normalization" class="q-pa-none">
           <FiscalNormalizationReview :refresh-token="normalizationRefreshToken" />
 
           <!-- Fila de revisão de runs/regras/itens (FB-38 Fase 1+3) -->
@@ -1051,7 +1031,6 @@ const $q = useQuasar();
 
 const activeTab = ref("balance");
 const loading = ref(false);
-const balanceView = ref("metric"); // 'metric' (KG/L/UN, padrão) | 'original' (unidade da NF-e)
 const normalizationRefreshToken = ref(0);
 const runsRefreshToken = ref(0);
 const normalizedBalanceRef = ref(null);
@@ -1562,10 +1541,10 @@ function refreshActiveTab() {
   loadCnpjs();
   if (activeTab.value === "balance") {
     loadBalance();
-    normalizedBalanceRef.value?.load();
   } else if (activeTab.value === "normalization") {
     normalizationRefreshToken.value += 1;
     runsRefreshToken.value += 1;
+    normalizedBalanceRef.value?.load();
   } else if (activeTab.value === "documents") loadDocuments(1);
   else if (activeTab.value === "imports") loadImportBatches();
 }
