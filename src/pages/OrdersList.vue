@@ -1,6 +1,5 @@
 <template>
   <q-page class="orders-page">
-    <div class="page-content">
 
     <!-- ── HEADER ────────────────────────────────────────── -->
     <div class="page-header">
@@ -802,8 +801,6 @@
 
         <template #loading><q-inner-loading showing color="teal-7" /></template>
       </q-table>
-    </div>
-
     </div>
 
     <!-- ══════════════════════════════════════════════════ -->
@@ -2105,11 +2102,6 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 <style scoped>
 /* ─── PAGE / HEADER ──────────────────────────────── */
 .orders-page { background: #f0f2f5; min-height: 100vh; }
-/* Container único: cabeçalho, KPIs do dia, filtros, KPIs do período e tabela ficam todos
-   com exatamente a mesma largura (1048px = soma das colunas fixas da tabela), alinhados
-   nas mesmas bordas esquerda/direita — em vez de cada seção centralizar por conta própria
-   com paddings diferentes, o que deixava as larguras visualmente distintas. */
-.page-content { max-width: 1048px; margin: 0 auto; }
 .page-header { background: #fff; border-bottom: 1px solid #e8eaed; padding: 14px 24px; }
 .header-icon {
   width: 36px; height: 36px;
@@ -2699,22 +2691,15 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 }
 
 /* ─── TABLE ──────────────────────────────────────── */
-.table-wrapper { padding: 16px 0; }
-/* width:fit-content SEM max-width: a tabela cresce pro tamanho real do conteúdo (algum
-   badge/pill não quebra linha e pode passar da soma das colunas). Quando isso acontece,
-   .table-wrapper (overflow-x:auto) rola o excesso em vez de cortar — max-width aqui
-   travava a tabela em 1048px e o overflow:hidden abaixo cortava o que não coubesse. */
-.orders-table  {
-  background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07);
-  width: fit-content; margin: 0 auto;
-}
+/* Largura fixa por coluna (table-layout:fixed) cortava badges/pills que não quebram
+   linha quando o conteúdo passava da largura definida. Volta pro layout adaptável do
+   Quasar (table-layout:auto, width:100%): a tabela ocupa o container e se ajusta à tela;
+   os min-width abaixo (produto/data/comprador/logística) só dão uma dica de tamanho
+   mínimo, sem travar nem cortar nada. */
+.table-wrapper { padding: 16px 24px; }
+.orders-table  { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
 .orders-table :deep(.q-table__top)    { display: none; }
 .orders-table :deep(.q-table__bottom) { border-top: 1px solid #f0f2f5; font-size: 12px; }
-/* Quasar aplica width:100% + table-layout:auto na <table>, que redistribui o espaço
-   sobrando entre as colunas mesmo com min-width nos elementos internos. Fixamos o layout
-   e damos width real a cada coluna (única fonte de largura, th e td juntos) para acabar
-   com esse espaço vazio. */
-.orders-table :deep(.q-table) { table-layout: fixed; width: auto; }
 .orders-thead :deep(th) {
   font-size: 10px; font-weight: 700; color: #9aa0ac;
   text-transform: uppercase; letter-spacing: .7px;
@@ -2726,32 +2711,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 }
 .order-row:hover :deep(td) { background: #f8fbff; }
 
-/* Largura de cada coluna: produto, unidades, data, comprador, status, logística,
-   gmv, taxas, frete, líquido, lucro — nessa ordem (bate com o array `columns`). */
-.orders-thead :deep(th:nth-child(1))  { width: 230px; }
-.orders-thead :deep(th:nth-child(2))  { width: 46px; }
-.orders-thead :deep(th:nth-child(3))  { width: 72px; }
-.orders-thead :deep(th:nth-child(4))  { width: 78px; }
-.orders-thead :deep(th:nth-child(5))  { width: 94px; }
-.orders-thead :deep(th:nth-child(6))  { width: 104px; }
-.orders-thead :deep(th:nth-child(7))  { width: 78px; }
-.orders-thead :deep(th:nth-child(8))  { width: 84px; }
-.orders-thead :deep(th:nth-child(9))  { width: 78px; }
-.orders-thead :deep(th:nth-child(10)) { width: 92px; }
-.orders-thead :deep(th:nth-child(11)) { width: 92px; }
-.order-row :deep(td:nth-child(1))  { width: 230px; }
-.order-row :deep(td:nth-child(2))  { width: 46px; }
-.order-row :deep(td:nth-child(3))  { width: 72px; }
-.order-row :deep(td:nth-child(4))  { width: 78px; }
-.order-row :deep(td:nth-child(5))  { width: 94px; }
-.order-row :deep(td:nth-child(6))  { width: 104px; }
-.order-row :deep(td:nth-child(7))  { width: 78px; }
-.order-row :deep(td:nth-child(8))  { width: 84px; }
-.order-row :deep(td:nth-child(9))  { width: 78px; }
-.order-row :deep(td:nth-child(10)) { width: 92px; }
-.order-row :deep(td:nth-child(11)) { width: 92px; }
-
 /* ─── CELL: PRODUTO ──────────────────────────────── */
+.cell-produto  { min-width: 230px; }
 .produto-main  { display: flex; align-items: flex-start; gap: 10px; }
 
 /* PACK items list in produto cell: cada item = título (max 2 linhas) + SKU/MLB abaixo */
@@ -2799,19 +2760,21 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .catalog-badge { background: #e8eaf6; color: #283593; }
 
 /* ─── CELL: DATA ─────────────────────────────────── */
+.cell-data  { min-width: 75px; }
 .data-day   { font-size: 11.5px; font-weight: 600; color: #2d3748; }
 .data-time  { font-size: 11px; color: #718096; margin-top: 1px; }
 .data-ago   { font-size: 10px; color: #b0bec5; margin-top: 3px; }
 
 /* ─── CELL: COMPRADOR ────────────────────────────── */
 /* Nick abreviado (truncateName, max 10 chars) — nome completo no title="" do elemento. */
+.cell-comprador { min-width: 66px; }
 .buyer-name { font-size: 11.5px; font-weight: 500; color: #2d3748; white-space: nowrap; }
 .buyer-loc  { font-size: 10px; color: #9aa0ac; margin-top: 3px; display: flex; align-items: flex-start; gap: 2px; line-height: 1.3; }
 .buyer-loc :deep(.q-icon) { flex-shrink: 0; margin-top: 1px; }
 .buyer-loc span { white-space: normal; overflow-wrap: break-word; }
 
 /* ─── CELL: LOGÍSTICA ────────────────────────────── */
-.cell-logistica { display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+.cell-logistica { min-width: 112px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
 .cell-logistica:hover .logistic-hint { opacity: 1; }
 .logistic-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 7px; width: fit-content; }
 .log-full    { background: #fff3e0; color: #e65100; }
@@ -3048,7 +3011,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 /* ── KPIs do período filtrado (feedback #8) ── */
 .period-kpis {
   display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-  padding: 10px 20px; margin: 0 0 4px;
+  padding: 10px 20px; margin: 0 20px 4px;
   background: #fff; border: 1px solid #e8ecf1; border-radius: 10px;
 }
 .pk-item { display: flex; flex-direction: column; }
