@@ -47,6 +47,7 @@
                   <q-icon name="search" />
                 </template>
               </q-input>
+              <div class="sales-table-wrap">
               <q-table :rows="filteredSales" :columns="salesColumns" row-key="sale_id" flat bordered
                 :pagination="{ rowsPerPage: 10 }" :loading="loading">
                 <template v-slot:header="props">
@@ -132,6 +133,7 @@
                   </q-tr>
                 </template>
               </q-table>
+              </div>
             </div>
 
             <div v-else-if="salesFetched" class="text-center q-pa-xl">
@@ -470,6 +472,10 @@ getAccounts();
 </script>
 
 <style scoped>
+.sales-table-wrap {
+  overflow-x: auto;
+}
+
 .text-wrap {
   white-space: pre-wrap;
   word-wrap: break-word;

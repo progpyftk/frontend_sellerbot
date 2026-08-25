@@ -426,7 +426,7 @@ onMounted(loadMlAccounts)
 
 .table-wrap {
   background: #fff; border-radius: 10px;
-  border: 1.5px solid #e8edf3; overflow: hidden;
+  border: 1.5px solid #e8edf3; overflow-x: auto;
 }
 .products-table { background: transparent; }
 .th-cell {
