@@ -131,21 +131,20 @@
           </SbCard>
 
           <!-- Seletor de visão do balanço -->
-          <div class="row items-center justify-between q-mb-md">
-            <q-btn-toggle
+          <div class="q-mb-md">
+            <q-tabs
               v-model="balanceView"
               dense
               no-caps
-              unelevated
-              toggle-color="teal-8"
-              color="grey-3"
-              text-color="grey-8"
-              :options="[
-                { label: 'Saldo Métrico (KG/L/UN)', value: 'metric' },
-                { label: 'Saldo na Unidade da NF-e', value: 'original' },
-              ]"
-            />
-            <div class="text-caption text-grey-6 q-mt-xs q-mt-sm-none">
+              align="left"
+              active-color="teal-8"
+              indicator-color="teal-8"
+              class="balance-view-tabs"
+            >
+              <q-tab name="original" label="Balanço original (unidades + financeiro)" />
+              <q-tab name="metric" label="Saldo métrico por NCM (KG / L / UN)" />
+            </q-tabs>
+            <div class="text-caption text-grey-6 q-mt-xs">
               O saldo métrico converte as unidades da NF-e (SC, UN, TO…) para KG/L/UN comparáveis.
             </div>
           </div>
