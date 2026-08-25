@@ -639,6 +639,7 @@
             <!-- ⑤ Logística ──────────────────────────── -->
             <q-td key="logistica" :props="props" @click.stop="openLogistics(props.row)">
               <div class="cell-logistica" v-if="props.row.shipment">
+                <q-tooltip anchor="top middle" self="bottom middle" :delay="400">Ver detalhes</q-tooltip>
 
                 <!-- Badge tipo logístico -->
                 <div :class="['logistic-badge', getLogisticClass(props.row.shipment.logistic_type)]">
@@ -677,11 +678,6 @@
                     {{ getSellerActionLabel(getEffectiveShipStatus(props.row.shipment)) }}
                   </div>
                 </template>
-
-                <!-- Hint de clique -->
-                <div class="logistic-hint">
-                  <q-icon name="open_in_new" size="9px" /> Ver detalhes
-                </div>
 
               </div>
               <span v-else class="text-caption text-grey-5">S/ envio</span>
@@ -2774,9 +2770,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .buyer-loc span { white-space: normal; overflow-wrap: break-word; }
 
 /* ─── CELL: LOGÍSTICA ────────────────────────────── */
-.cell-logistica { min-width: 112px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
-.cell-logistica:hover .logistic-hint { opacity: 1; }
-.logistic-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 7px; width: fit-content; }
+.cell-logistica { min-width: 112px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; }
+.logistic-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; border-radius: 6px; padding: 2px 6px; width: fit-content; }
 .log-full    { background: #fff3e0; color: #e65100; }
 .log-coleta  { background: #e3f2fd; color: #1565c0; }
 .log-agencia { background: #f3e5f5; color: #6a1b9a; }
@@ -2785,8 +2780,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 
 /* Mini stepper: bolinhas numa linha, status na linha de baixo (reduz a largura da coluna) */
 .mini-stepper-wrap { display: flex; flex-direction: column; gap: 3px; }
-.mini-stepper   { display: flex; align-items: center; gap: 3px; }
-.mini-dot       { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; cursor: default; }
+.mini-stepper   { display: flex; align-items: center; gap: 2px; }
+.mini-dot       { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; cursor: default; }
 .mini-inactive  { background: #e8eaed; }
 .mini-done      { background: #b2dfdb; }
 .mini-active    { background: #00897b; box-shadow: 0 0 0 2px #b2f5ea; }
@@ -2797,12 +2792,10 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .action-alert {
   display: inline-flex; align-items: center; gap: 3px;
   font-size: 9px; font-weight: 700; color: #c05621;
-  background: #fff3e0; border-radius: 4px; padding: 2px 6px;
+  background: #fff3e0; border-radius: 4px; padding: 2px 5px;
   animation: pulse 2s infinite;
 }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .7; } }
-
-.logistic-hint { font-size: 9px; color: #b0bec5; opacity: 0; transition: opacity .15s; display: flex; align-items: center; gap: 2px; }
 
 /* ─── CELLS: FINANCEIRO ──────────────────────────── */
 .cell-amount  { text-align: right; }
