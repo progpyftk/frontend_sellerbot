@@ -1086,8 +1086,6 @@ const balanceColumns = [
     field: "balance_value",
     align: "right",
     sortable: true,
-    classes: "balance-financial-column",
-    headerClasses: "balance-financial-column",
   },
 ];
 
@@ -1710,20 +1708,6 @@ onUnmounted(() => {
 .balance-table {
   :deep(.q-table__middle) {
     overflow-x: auto;
-  }
-
-  :deep(.balance-financial-column) {
-    position: sticky;
-    right: 0;
-    z-index: 2;
-    min-width: 150px;
-    background: #ffffff;
-    box-shadow: -5px 0 10px rgba(15, 23, 42, 0.08);
-  }
-
-  :deep(thead .balance-financial-column) {
-    z-index: 3;
-    background: #f8fafc;
   }
 }
 </style>
