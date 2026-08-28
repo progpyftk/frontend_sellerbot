@@ -37,6 +37,16 @@ const routes = [
         component: () => import("pages/AccountsPage.vue"),
       },
       {
+        path: "delivery-carriers",
+        name: "delivery-carriers",
+        component: () => import("pages/DeliveryCarriersPage.vue"),
+      },
+      {
+        path: "delivery-audit",
+        name: "delivery-audit",
+        component: () => import("pages/DeliveryAuditPage.vue"),
+      },
+      {
         path: "items",
         name: "items",
         component: () => import("pages/ItemsPage.vue"),

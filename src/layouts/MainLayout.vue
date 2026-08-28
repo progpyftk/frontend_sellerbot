@@ -218,6 +218,14 @@ const menuSections = [
     ],
   },
   {
+    title: "Logística",
+    sectionIcon: "local_shipping",
+    items: [
+      { label: "Transportadoras", icon: "local_shipping", route: "delivery-carriers" },
+      { label: "Auditoria de Entregas", icon: "fact_check", route: "delivery-audit" },
+    ],
+  },
+  {
     title: "Sistema",
     sectionIcon: "settings",
     items: [
