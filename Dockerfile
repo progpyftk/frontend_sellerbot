@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Copiar apenas os arquivos necessários para instalar dependências
 COPY package*.json ./
-RUN npm ci
+RUN npm install --legacy-peer-deps --include=optional --ignore-scripts=false
 
 # Copiar o restante dos arquivos do projeto
 COPY . .
