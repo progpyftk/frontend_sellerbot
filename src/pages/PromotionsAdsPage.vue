@@ -3,7 +3,7 @@
     <div class="row items-center justify-between q-mb-md">
       <div>
         <div class="text-h5">Promoções → Por anúncios</div>
-        <div class="text-caption text-grey-7">Visão read-only. Nenhuma ativação é enviada nesta etapa.</div>
+        <div class="text-caption text-grey-7">Consulta de promoções por anúncio. Ativação assistida disponível após confirmação.</div>
       </div>
       <q-btn flat icon="refresh" label="Atualizar" :loading="loading" @click="load" />
     </div>
@@ -14,6 +14,10 @@
       <q-select v-model="filters.promotion_type" outlined dense clearable label="Tipo" :options="promotionTypes" class="col-12 col-md-2" @update:model-value="load" />
     </div>
     <q-banner v-if="error" rounded class="bg-red-1 text-red-9 q-mb-md">{{ error }}</q-banner>
+    <q-banner v-if="skipped.length" rounded class="bg-orange-1 text-orange-10 q-mb-md">
+      {{ skipped.length }} anúncio(s) não puderam ser consultado(s) no Mercado Livre. Os demais resultados continuam disponíveis.
+      <div v-for="item in skipped" :key="item.item_id" class="text-caption">{{ item.item_id }}: {{ item.reason }}</div>
+    </q-banner>
     <q-inner-loading :showing="loading" />
     <q-card v-if="!loading && !rows.length" flat bordered class="q-pa-lg text-grey-7">Nenhum anúncio com promoção encontrado.</q-card>
     <q-card v-for="row in rows" :key="`${row.item_id}:${row.variation_id || ''}`" flat bordered class="q-mb-md">
@@ -68,6 +72,7 @@ const activating = ref(false)
 const confirmOpen = ref(false)
 const selected = ref([])
 const error = ref('')
+const skipped = ref([])
 const nextCursor = ref(null)
 const statuses = ['candidate', 'started', 'pending']
 const promotionTypes = ['DEAL', 'SMART', 'LIGHTNING', 'PRICE_DISCOUNT', 'DOD', 'SELLER_CAMPAIGN']
@@ -78,9 +83,11 @@ async function load () {
   loading.value = true
   error.value = ''
   nextCursor.value = null
+  skipped.value = []
   try {
     const { data } = await api.get('/mercadolivre/promotions-ads/', { params: params() })
     rows.value = data.results || []
+    skipped.value = data.skipped || []
     nextCursor.value = data.next_cursor || null
   } catch (err) {
     error.value = err.response?.data?.error || 'Não foi possível consultar as promoções.'
@@ -94,6 +101,7 @@ async function loadMore () {
   try {
     const { data } = await api.get('/mercadolivre/promotions-ads/', { params: { ...params(), cursor: nextCursor.value } })
     rows.value.push(...(data.results || []))
+    skipped.value.push(...(data.skipped || []))
     nextCursor.value = data.next_cursor || null
   } catch (err) {
     error.value = err.response?.data?.error || 'Não foi possível carregar a próxima página.'
