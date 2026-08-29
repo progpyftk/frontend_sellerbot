@@ -17,7 +17,7 @@
     <q-inner-loading :showing="loading" />
     <q-card v-if="!loading && !rows.length" flat bordered class="q-pa-lg text-grey-7">Nenhum anúncio com promoção encontrado.</q-card>
     <q-card v-for="row in rows" :key="`${row.item_id}:${row.variation_id || ''}`" flat bordered class="q-mb-md">
-      <q-card-section class="q-pb-none"><q-checkbox v-model="selected" :val="row" label="Selecionar para ativação" /></q-card-section>
+      <q-card-section class="q-pb-none"><q-checkbox v-model="selected" :val="row" :disable="!row.promotions.some(promo => promo.financials?.estimable)" label="Selecionar para ativação" /></q-card-section>
       <q-card-section>
         <div class="row items-start justify-between">
           <div>
@@ -50,7 +50,7 @@
     <q-btn v-if="nextCursor" outline label="Carregar mais" :loading="loadingMore" class="q-mt-md" @click="loadMore" />
     <q-dialog v-model="confirmOpen">
       <q-card style="min-width: 360px">
-        <q-card-section><div class="text-h6">Confirmar ativação</div><div class="q-mt-sm">A ação será enviada ao Mercado Livre e não poderá ser desfeita automaticamente.</div></q-card-section>
+        <q-card-section><div class="text-h6">Confirmar ativação</div><div class="q-mt-sm">A ação será enviada ao Mercado Livre e não poderá ser desfeita automaticamente.</div><div class="q-mt-sm text-caption">Somente propostas com margem calculável são enviadas. Itens bloqueados retornam com o motivo.</div></q-card-section>
         <q-card-actions align="right"><q-btn flat label="Cancelar" v-close-popup /><q-btn color="primary" label="Confirmar" :loading="activating" @click="activate" /></q-card-actions>
       </q-card>
     </q-dialog>
@@ -105,7 +105,7 @@ async function activate () {
   activating.value = true
   error.value = ''
   try {
-    await api.post('/mercadolivre/promotions-ads/activate/', {
+    const { data } = await api.post('/mercadolivre/promotions-ads/activate/', {
       confirmed: true,
       max_discount_pct: 15,
       candidates: selected.value.flatMap(row => row.promotions.map(promo => ({
@@ -113,10 +113,14 @@ async function activate () {
         item_id: row.item_id,
         promotion_id: promo.promotion_id,
         promotion_type: promo.promotion_type,
+        financials: promo.financials,
       }))),
     })
     selected.value = []
     confirmOpen.value = false
+    if (data.blocked?.length) {
+      error.value = `${data.blocked.length} item(ns) bloqueado(s): ${data.blocked.map(item => item.reason).join('; ')}`
+    }
     await load()
   } catch (err) { error.value = err.response?.data?.message || err.response?.data?.error || 'Não foi possível ativar os anúncios.' }
   finally { activating.value = false }
