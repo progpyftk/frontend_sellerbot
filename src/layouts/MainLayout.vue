@@ -177,6 +177,7 @@ const menuSections = [
       { label: "Publicidade · Ads",  icon: "mdi-bullhorn",                  route: "ads" },
       { label: "Meus Anúncios",      icon: "mdi-package-variant-closed",   route: "items" },
       { label: "Promoções Ativas",   icon: "local_offer",                   route: "promotions" },
+      { label: "Promoções · Por anúncios", icon: "local_offer",              route: "promotions-ads" },
        { label: "Detalhe do Anúncio", icon: "mdi-chart-bar",                 route: "item-details" },
        { label: "Gestão Full",        icon: "warehouse",                    route: "fulfillment-management" },
     ],
