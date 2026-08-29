@@ -17,6 +17,7 @@
     <q-inner-loading :showing="loading" />
     <q-card v-if="!loading && !rows.length" flat bordered class="q-pa-lg text-grey-7">Nenhum anúncio com promoção encontrado.</q-card>
     <q-card v-for="row in rows" :key="`${row.item_id}:${row.variation_id || ''}`" flat bordered class="q-mb-md">
+      <q-card-section class="q-pb-none"><q-checkbox v-model="selected" :val="row" label="Selecionar para ativação" /></q-card-section>
       <q-card-section>
         <div class="row items-start justify-between">
           <div>
@@ -42,7 +43,17 @@
         </q-item>
       </q-list>
     </q-card>
+    <div v-if="selected.length" class="fixed-bottom q-pa-md bg-white shadow-4 row items-center justify-between">
+      <span>{{ selected.length }} anúncio(s) selecionado(s)</span>
+      <q-btn color="primary" label="Revisar e ativar" @click="confirmOpen = true" />
+    </div>
     <q-btn v-if="nextCursor" outline label="Carregar mais" :loading="loadingMore" class="q-mt-md" @click="loadMore" />
+    <q-dialog v-model="confirmOpen">
+      <q-card style="min-width: 360px">
+        <q-card-section><div class="text-h6">Confirmar ativação</div><div class="q-mt-sm">A ação será enviada ao Mercado Livre e não poderá ser desfeita automaticamente.</div></q-card-section>
+        <q-card-actions align="right"><q-btn flat label="Cancelar" v-close-popup /><q-btn color="primary" label="Confirmar" :loading="activating" @click="activate" /></q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -53,6 +64,9 @@ import { api } from 'src/boot/axios'
 const rows = ref([])
 const loading = ref(false)
 const loadingMore = ref(false)
+const activating = ref(false)
+const confirmOpen = ref(false)
+const selected = ref([])
 const error = ref('')
 const nextCursor = ref(null)
 const statuses = ['candidate', 'started', 'pending']
@@ -86,6 +100,26 @@ async function loadMore () {
   } finally {
     loadingMore.value = false
   }
+}
+async function activate () {
+  activating.value = true
+  error.value = ''
+  try {
+    await api.post('/mercadolivre/promotions-ads/activate/', {
+      confirmed: true,
+      max_discount_pct: 15,
+      candidates: selected.value.flatMap(row => row.promotions.map(promo => ({
+        account_id: row.account_id,
+        item_id: row.item_id,
+        promotion_id: promo.promotion_id,
+        promotion_type: promo.promotion_type,
+      }))),
+    })
+    selected.value = []
+    confirmOpen.value = false
+    await load()
+  } catch (err) { error.value = err.response?.data?.message || err.response?.data?.error || 'Não foi possível ativar os anúncios.' }
+  finally { activating.value = false }
 }
 const money = value => value == null ? '—' : Number(value).toFixed(2).replace('.', ',')
 onMounted(load)
