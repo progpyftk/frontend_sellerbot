@@ -155,12 +155,13 @@
 <script setup>
 import { ref, computed } from "vue"
 import { useStore } from "src/stores/store"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { useQuasar } from "quasar"
 import FeedbackFAB from "src/components/common/FeedbackFAB.vue"
 
 const store = useStore()
 const router = useRouter()
+const route = useRoute()
 const $q = useQuasar()
 const drawer = ref($q.screen.gt.sm)
 const currentUser = computed(() => store.currentUser)
@@ -219,10 +220,10 @@ const menuSections = [
   },
   {
     title: "Logística",
-    sectionIcon: "local_shipping",
+    sectionIcon: "mdi-truck-fast",
     items: [
-      { label: "Transportadoras", icon: "local_shipping", route: "delivery-carriers" },
-      { label: "Auditoria de Entregas", icon: "fact_check", route: "delivery-audit" },
+      { label: "Transportadoras", icon: "mdi-truck-fast", route: "delivery-carriers" },
+      { label: "Auditoria de Entregas", icon: "mdi-clipboard-check-outline", route: "delivery-audit" },
     ],
   },
   {
@@ -237,7 +238,11 @@ const menuSections = [
   },
 ]
 
-const expandedSections = ref([0, 1])
+// A seção da rota ativa já abre expandida, para a função em uso não ficar escondida.
+const activeSectionIndex = menuSections.findIndex((section) =>
+  section.items.some((item) => item.route === route.name),
+)
+const expandedSections = ref([...new Set([0, 1, activeSectionIndex].filter((index) => index >= 0))])
 const toggleSection = (i) => {
   const idx = expandedSections.value.indexOf(i)
   if (idx >= 0) expandedSections.value.splice(idx, 1)
