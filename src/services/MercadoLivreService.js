@@ -100,6 +100,22 @@ export default {
   },
 
   // ==========================================
+  // PROMOÇÕES → POR ANÚNCIOS (visão nova — PROMO-11/PROMO-12)
+  // ==========================================
+  // Namespace próprio e isolado: não compartilha rota, payload nem estado
+  // com o fluxo legado de `/mercadolivre/promotions/` acima. Somente estes
+  // dois endpoints são consumidos pela tela redesenhada.
+  getPromotionsAds(params = {}) {
+    return api.get('/mercadolivre/promotions-ads/', { params })
+  },
+
+  // payload: { confirmed: true, max_discount_pct, fixed_discount_pct?, candidates: [...] }
+  // resposta: { success, enqueued, blocked, enqueued_count }
+  activatePromotionsAds(payload) {
+    return api.post('/mercadolivre/promotions-ads/activate/', payload)
+  },
+
+  // ==========================================
   // VENDAS (ORDERS)
   // ==========================================
   listOrders(params) {
