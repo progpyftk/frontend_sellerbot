@@ -100,15 +100,46 @@ bloqueios de capacidade aparecem no retorno de `activate` (`blocked[]`) e são n
 `candidate_count` em cada `promotions[]` da listagem, para a revisão mostrar o bloqueio
 **antes** do envio (a UX pede "o usuário sabe exatamente o que será ativado").
 
-### 2.5 `financials` frequentemente `estimable: false` — **esperado, tratado**
+### 2.5 Simulação vazia (`estimable: false`) e **ativação por markup** — bloqueio real, plano em PROMO-12A
 
-`service.py::financials` depende de `sale_fee` / `seller_shipping_cost` virem na proposta
-normalizada do ML; o enriquecimento canônico de tarifa/frete está pendente (§5 "Limitações").
-Na prática muitas linhas chegam com `missing_inputs: ["fee"|"shipping"|"cmv"]`.
-**Tratamento:** cada motivo é traduzido ("tarifa ausente", "frete ausente", "CMV ausente"),
-a proposta aparece como **não calculável** e fica fora da aprovação (nunca entra no payload).
-**Pedido ao backend:** concluir o enriquecimento de tarifa/frete (fonte canônica
-`_update_order_financials` por unidade) previsto para PROMO-12A.
+**Objetivo do produto:** ativar cada promoção comparando seu resultado a um **markup-alvo**. Isso
+não funciona hoje: `estimated_sale_fee` e `estimated_shipping_cost` chegam `null` para quase todos
+os anúncios (o normalizador da promoção do ML não os fornece; `financials()` só tem fallback de Flex
+para `logistic_type == "self_service"`), então `estimable=false` e net/lucro/margem/markup ficam
+vazios. `cmv_unit` já é resolvido via `ProductCost`.
+
+**Fórmula canônica** (mesma de `_update_order_financials`), por unidade, ao preço promocional `P`:
+
+```
+net_unit   = P − sale_fee(P) − seller_shipping − cupom_unit + credito_flex_unit
+lucro_unit = net_unit − cmv_unit
+margem_%   = lucro_unit / P × 100                                  (denominador = preço bruto)
+markup_%   = ( P / (cmv_unit + sale_fee(P) + seller_shipping) − 1 ) × 100
+```
+
+`markup` ≠ `margem` — a UI (filtro/resumo/revisão) deve deixar claro qual piso está sendo travado.
+
+**Origem dos insumos que faltam** (implementação = PROMO-12A no backend, dentro de
+`services/promotions_ads/`, sem tocar `_update_order_financials` nem o legado):
+
+| Insumo | Como obter para um preço promocional arbitrário |
+|---|---|
+| `cmv_unit` | ✅ pronto — `ProductCost.avg_cost_price ?? cost_price` por SKU normalizado. |
+| `sale_fee(P)` | **Não é linear** (percentual + custo fixo de baixo valor). (A) `GET /sites/MLB/listing_prices?price=P&listing_type_id=…&category_id=…` → `sale_fee_amount`/`sale_fee_details`; requer `category_id` no anúncio (hoje só em `OrderItem` — adicionar coluna + preencher no sync). (B) fallback: derivar de `OrderItem.sale_fee`/`unit_price` dos pedidos reais do próprio anúncio. |
+| `seller_shipping` | Por `logistic_type`: Flex → snapshot da conta (✅); FULL/ME2 grátis → média de `OrderShipment.net_cost / unidade` dos pedidos recentes do anúncio (não escala com `P`); comprador paga → ≈ 0. |
+| `cupom` / `credito_flex` | 0 na simulação; só quando determináveis. |
+
+**Ativação por markup (PROMO-12C):** usuário define `markup_alvo`; cada proposta vira apta/bloqueada
+pelo `markup_%`/`margem_%` calculado. Útil computar o **menor preço promocional que ainda bate o
+alvo** (`P_min` iterativo, porque `sale_fee` depende de `P`) para mostrar folga/inviabilidade. O
+`activate()` do backend deve revalidar o markup no servidor, não confiar no booleano do navegador.
+
+**Tratamento atual do frontend (mantém até PROMO-12A entregar):** cada `missing_input` é traduzido
+("tarifa ausente", "frete ausente", "CMV ausente"), a proposta aparece como **não calculável** e
+fica fora da aprovação (nunca entra no payload).
+
+> Detalhamento canônico: `backend_sellerbot/docs/plans/2026-08-29-promo-11-promocoes-por-anuncios.md`
+> §7.5 (e ponteiro em §4.3).
 
 ### 2.6 `variation_id` não é usado na ativação — **enviado, mas ignorado hoje**
 
