@@ -46,7 +46,11 @@
             <template v-else-if="item.visible">
               <tr
                 class="pa-ad"
-                :class="{ 'pa-ad--open': expandedAds.has(item.ad._key), 'pa-ad--picked': item.chosenKey }"
+                :class="{
+                  'pa-ad--open': expandedAds.has(item.ad._key),
+                  'pa-ad--picked': actionMode === 'activate' && item.chosenKey,
+                  'pa-ad--removing': actionMode === 'remove' && item.removalCount,
+                }"
                 role="button"
                 tabindex="0"
                 :aria-expanded="expandedAds.has(item.ad._key)"
@@ -67,7 +71,10 @@
                   {{ item.bestMarkup === null ? '—' : pct(item.bestMarkup) }}
                 </td>
                 <td class="pa-ad__state">
-                  <template v-if="item.chosenPromo">
+                  <SbBadge v-if="actionMode === 'remove' && item.removalCount" variant="red">
+                    {{ item.removalCount }} p/ remover
+                  </SbBadge>
+                  <template v-else-if="actionMode === 'activate' && item.chosenPromo">
                     <SbBadge variant="teal">
                       {{ item.chosenPromo.typeLabel || item.chosenPromo.promotion_type }}
                       · {{ brl(item.chosenPromo.financials.proposed_price) }}
@@ -107,11 +114,24 @@
                           v-for="promo in item.ad.promotions"
                           :key="promo._key"
                           class="pa-prow"
-                          :class="{ 'is-chosen': item.chosenKey === promo._key }"
-                          @click="$emit('choose', { row: item.ad, promo })"
+                          :class="{
+                            'is-chosen': actionMode === 'activate' && item.chosenKey === promo._key,
+                            'is-removing': actionMode === 'remove' && isRemovalSelected(removal, item.ad, promo),
+                            'is-disabled': actionMode === 'remove' && !isRemovable(promo),
+                          }"
+                          @click="onProwClick(item.ad, promo)"
                         >
                           <td class="pa-col-pick" @click.stop>
+                            <q-checkbox
+                              v-if="actionMode === 'remove'"
+                              :model-value="isRemovalSelected(removal, item.ad, promo)"
+                              :disable="!isRemovable(promo)"
+                              dense size="sm" color="negative"
+                              :aria-label="`Remover ${promo.typeLabel || promo.promotion_type} de ${item.ad.title}`"
+                              @update:model-value="isRemovable(promo) && $emit('toggle-removal', { row: item.ad, promo })"
+                            />
                             <q-radio
+                              v-else
                               :model-value="item.chosenKey"
                               :val="promo._key"
                               dense
@@ -151,7 +171,7 @@
                             </template>
                           </td>
                         </tr>
-                        <tr class="pa-none">
+                        <tr v-if="actionMode === 'activate'" class="pa-none">
                           <td class="pa-col-pick" @click.stop>
                             <q-radio
                               :model-value="item.chosenKey"
@@ -185,6 +205,8 @@ import {
   blockingReasons,
   formatBRL,
   formatPct,
+  isRemovable,
+  isRemovalSelected,
   rowState,
   selectedPromotionKey,
   statusLabel,
@@ -193,14 +215,24 @@ import {
 const props = defineProps({
   group: { type: Object, required: true },
   mode: { type: String, default: 'ads' }, // 'ads' | 'sku'
+  actionMode: { type: String, default: 'activate' }, // 'activate' | 'remove'
   selection: { type: Object, default: () => ({}) },
+  removal: { type: Object, default: () => ({}) },
   thresholds: { type: Object, default: () => ({}) },
   // Sinais de "expandir tudo" / "recolher tudo" vindos da página.
   expandTick: { type: Number, default: 0 },
   collapseTick: { type: Number, default: 0 },
 })
 
-defineEmits(['choose', 'clear'])
+const emit = defineEmits(['choose', 'clear', 'toggle-removal'])
+
+function onProwClick (ad, promo) {
+  if (props.actionMode === 'remove') {
+    if (isRemovable(promo)) emit('toggle-removal', { row: ad, promo })
+  } else {
+    emit('choose', { row: ad, promo })
+  }
+}
 
 const accountOpen = ref(true)
 const skuOpen = ref(new Set()) // SKUs começam recolhidos
@@ -232,6 +264,7 @@ const displayRows = computed(() => {
       state: rowState(ad, props.thresholds),
       chosenKey,
       chosenPromo: chosenKey ? ad.promotions.find((p) => p._key === chosenKey) || null : null,
+      removalCount: ad.promotions.filter((p) => isRemovalSelected(props.removal, ad, p)).length,
     }
   }
 
@@ -368,6 +401,7 @@ function moneyClass (value) {
   .pa-ad:hover > td { background: #f8fafc; }
   .pa-ad--open > td { background: #f0fdf9; }
   .pa-ad--picked > td:first-child { box-shadow: inset 3px 0 0 #0d9488; }
+  .pa-ad--removing > td:first-child { box-shadow: inset 3px 0 0 #dc2626; }
   .pa-col-chev { color: #64748b; }
   .pa-ad__title {
     display: flex;
@@ -420,6 +454,9 @@ function moneyClass (value) {
   .pa-prow { cursor: pointer; }
   .pa-prow:hover td { background: #f8fafc; }
   tbody tr.is-chosen td { background: #ecfdf5; }
+  tbody tr.is-removing td { background: #fef2f2; }
+  tbody tr.is-disabled { opacity: 0.45; }
+  tbody tr.is-disabled.pa-prow { cursor: default; }
   .pa-reason { margin: 0 3px 3px 0; }
   .pa-none td { color: #94a3b8; }
   .pa-none:hover td { background: transparent; }

@@ -115,6 +115,12 @@ export default {
     return api.post('/mercadolivre/promotions-ads/activate/', payload)
   },
 
+  // payload: { confirmed: true, candidates: [{account_id, item_id, promotion_id, promotion_type}] }
+  // resposta: { success, queued, blocked, queued_count } — remoção assíncrona (~min)
+  removePromotionsAds(payload) {
+    return api.post('/mercadolivre/promotions-ads/remove/', payload)
+  },
+
   // ==========================================
   // VENDAS (ORDERS)
   // ==========================================

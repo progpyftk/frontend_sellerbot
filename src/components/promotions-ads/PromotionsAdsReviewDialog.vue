@@ -4,9 +4,11 @@
       <q-card-section class="review-dialog__head">
         <div>
           <div class="sb-eyebrow">Promoções por anúncios</div>
-          <div class="review-dialog__title">Revisar ativação</div>
+          <div class="review-dialog__title">{{ mode === 'remove' ? 'Revisar remoção' : 'Revisar ativação' }}</div>
           <div class="review-dialog__subtitle">
-            Confira cada proposta antes de confirmar. Só as aptas são enviadas ao Mercado Livre.
+            {{ mode === 'remove'
+              ? 'Estas promoções ativas entram na fila de remoção. O Mercado Livre confirma em alguns minutos.'
+              : 'Confira cada proposta antes de confirmar. Só as aptas são enviadas ao Mercado Livre.' }}
           </div>
         </div>
         <q-btn flat round dense icon="close" @click="$emit('update:modelValue', false)" />
@@ -14,7 +16,44 @@
 
       <q-separator />
 
-      <q-card-section class="review-dialog__lock">
+      <!-- corpo: remoção -->
+      <q-card-section v-if="mode === 'remove'" class="review-dialog__body">
+        <div class="review-dialog__section-title">
+          <SbBadge variant="red">Serão removidas</SbBadge>
+          <span>{{ removalSummary.total }} promoção(ões) · {{ removalSummary.ads }} anúncios · {{ removalSummary.accounts }} contas</span>
+        </div>
+        <div v-if="sortedRemoval.length" class="review-dialog__table-wrap">
+          <table class="review-dialog__table">
+            <thead>
+              <tr>
+                <th>Conta</th><th>SKU</th><th>Anúncio</th><th>Variação</th>
+                <th>Promoção</th><th>Status</th><th class="num">Desconto</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="e in sortedRemoval" :key="e.key">
+                <td>{{ e.account_nickname }}</td>
+                <td>{{ e.sku || '—' }}</td>
+                <td class="review-dialog__ad">
+                  <span>{{ e.title }}</span><span class="review-dialog__muted">{{ e.item_id }}</span>
+                </td>
+                <td>{{ e.variation_name || '—' }}</td>
+                <td>{{ e.promotion_name }} <span class="review-dialog__muted">{{ e.promotion_type }}</span></td>
+                <td>{{ e.status }}</td>
+                <td class="num">{{ e.discount_pct == null ? '—' : pct(e.discount_pct) }}</td>
+                <td class="num">
+                  <q-btn flat dense round size="sm" icon="close"
+                    :aria-label="`Tirar ${e.title} da remoção`"
+                    @click="$emit('remove-removal', e.key)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else class="review-dialog__empty">Nenhuma promoção selecionada.</p>
+      </q-card-section>
+
+      <q-card-section v-if="mode !== 'remove'" class="review-dialog__lock">
         <q-input
           :model-value="maxDiscountPct"
           type="number"
@@ -36,7 +75,7 @@
 
       <q-separator />
 
-      <q-card-section class="review-dialog__body">
+      <q-card-section v-if="mode !== 'remove'" class="review-dialog__body">
         <!-- Serão enviados -->
         <div class="review-dialog__section-title">
           <SbBadge variant="green">Serão enviados</SbBadge>
@@ -145,8 +184,16 @@
         <q-space />
         <q-btn flat no-caps label="Cancelar" @click="$emit('update:modelValue', false)" />
         <q-btn
-          no-caps
-          color="primary"
+          v-if="mode === 'remove'"
+          no-caps color="negative"
+          :disable="!removalSummary.total || activating"
+          :loading="activating"
+          :label="`Confirmar remoção de ${removalSummary.total} promoções`"
+          @click="$emit('confirm')"
+        />
+        <q-btn
+          v-else
+          no-caps color="primary"
           :disable="!summary.eligibleCount || activating"
           :loading="activating"
           :label="`Confirmar ativação de ${summary.eligibleCount} propostas`"
@@ -164,18 +211,22 @@ import { formatBRL, formatPct } from 'src/utils/promotionsAdsView'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  mode: { type: String, default: 'activate' },
   summary: { type: Object, required: true },
+  removalSummary: { type: Object, default: () => ({ total: 0, ads: 0, accounts: 0, entries: [] }) },
   maxDiscountPct: { type: [Number, String], default: 15 },
   activating: { type: Boolean, default: false },
 })
 
-defineEmits(['update:modelValue', 'update:maxDiscountPct', 'confirm', 'remove'])
+defineEmits(['update:modelValue', 'update:maxDiscountPct', 'confirm', 'remove', 'remove-removal'])
 
 // Ordena por conta → SKU → anúncio para agrupar visualmente a hierarquia.
 const byHierarchy = (a, b) =>
   String(a.account_nickname).localeCompare(String(b.account_nickname), 'pt-BR')
   || String(a.sku || '').localeCompare(String(b.sku || ''), 'pt-BR')
   || String(a.title).localeCompare(String(b.title), 'pt-BR')
+
+const sortedRemoval = computed(() => [...props.removalSummary.entries].sort(byHierarchy))
 
 const sortedEligible = computed(() => [...props.summary.eligible].sort(byHierarchy))
 const sortedBlocked = computed(() => [...props.summary.blocked].sort(byHierarchy))

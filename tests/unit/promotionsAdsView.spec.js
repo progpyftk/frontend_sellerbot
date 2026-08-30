@@ -302,3 +302,49 @@ describe('headerMetrics', () => {
     expect(headerMetrics(rows)).toEqual({ ads: 2, skus: 1, promotions: 3, estimable: 2, blocked: 1 })
   })
 })
+
+// --- remoção de promoções --------------------------------------------------
+
+import {
+  buildRemovePayload,
+  isRemovable,
+  summarizeRemoval,
+  toggleRemoval,
+} from 'src/utils/promotionsAdsView'
+
+describe('seleção de remoção (N por anúncio)', () => {
+  const row = normalizeRow(rawRow({ promotions: [
+    { promotion_id: 'P-ON1', promotion_type: 'DEAL', status: 'started', name: 'Ativa 1', financials: fin() },
+    { promotion_id: 'P-ON2', promotion_type: 'SMART', status: 'started', name: 'Ativa 2', financials: fin() },
+    { promotion_id: 'P-CAND', promotion_type: 'DOD', status: 'candidate', name: 'Candidata', financials: fin() },
+  ] }), ACCOUNT_NAMES)
+
+  it('isRemovable só para status vivo', () => {
+    expect(isRemovable(row.promotions[0])).toBe(true)   // started
+    expect(isRemovable(row.promotions[2])).toBe(false)  // candidate
+  })
+
+  it('toggleRemoval acumula e alterna várias promoções do mesmo anúncio', () => {
+    let rem = {}
+    rem = toggleRemoval(rem, row, row.promotions[0])
+    rem = toggleRemoval(rem, row, row.promotions[1])
+    expect(Object.keys(rem)).toHaveLength(2)
+    rem = toggleRemoval(rem, row, row.promotions[0]) // desmarca
+    expect(Object.keys(rem)).toHaveLength(1)
+    expect(Object.values(rem)[0].promotion_id).toBe('P-ON2')
+  })
+
+  it('summarizeRemoval e buildRemovePayload', () => {
+    let rem = toggleRemoval({}, row, row.promotions[0])
+    rem = toggleRemoval(rem, row, row.promotions[1])
+    const s = summarizeRemoval(Object.values(rem))
+    expect(s).toMatchObject({ total: 2, ads: 1, accounts: 1, byType: { DEAL: 1, SMART: 1 } })
+    expect(buildRemovePayload(Object.values(rem))).toEqual({
+      confirmed: true,
+      candidates: [
+        { account_id: 'ACC-1', item_id: 'MLB123', promotion_id: 'P-ON1', promotion_type: 'DEAL' },
+        { account_id: 'ACC-1', item_id: 'MLB123', promotion_id: 'P-ON2', promotion_type: 'SMART' },
+      ],
+    })
+  })
+})

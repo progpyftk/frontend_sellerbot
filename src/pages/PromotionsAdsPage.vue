@@ -124,7 +124,7 @@
         </div>
 
         <div class="promo-ads__filters-group">
-          <span class="promo-ads__filters-legend">Financeiro (aplicado às linhas carregadas)</span>
+          <span class="promo-ads__filters-legend">Financeiro e ordenação (varre o catálogo no servidor)</span>
           <div class="promo-ads__filters-row">
             <q-input
               v-model.number="filters.minMarkup"
@@ -132,9 +132,11 @@
               outlined
               dense
               clearable
+              debounce="500"
               label="Markup alvo (%)"
-              hint="Trava a ativação"
+              hint="Filtra e trava a ativação"
               class="promo-ads__filter promo-ads__filter--sm"
+              @update:model-value="reload"
             />
             <q-input
               v-model.number="filters.minMargin"
@@ -142,8 +144,10 @@
               outlined
               dense
               clearable
+              debounce="500"
               label="Margem mínima (%)"
               class="promo-ads__filter promo-ads__filter--sm"
+              @update:model-value="reload"
             />
             <q-input
               v-model.number="filters.minProfit"
@@ -151,33 +155,68 @@
               outlined
               dense
               clearable
+              debounce="500"
               label="Lucro mínimo (R$)"
               class="promo-ads__filter promo-ads__filter--sm"
+              @update:model-value="reload"
             />
-            <q-toggle v-model="filters.onlyEstimable" label="Somente promoções calculáveis" dense />
+            <q-select
+              v-model="filters.sort"
+              :options="SORT_OPTIONS"
+              emit-value
+              map-options
+              outlined
+              dense
+              label="Ordenar por"
+              class="promo-ads__filter"
+              @update:model-value="reload"
+            />
+            <q-toggle
+              v-model="filters.onlyEstimable"
+              label="Somente calculáveis"
+              dense
+              @update:model-value="reload"
+            />
           </div>
         </div>
       </div>
     </SbCard>
 
-    <!-- Barra fixa: visualização + controles de árvore -->
+    <q-banner
+      v-if="scanInfo && scanInfo.exhausted"
+      rounded
+      class="promo-ads__banner promo-ads__banner--info q-mb-md"
+    >
+      Varredura financeira: {{ scanInfo.matched }} proposta(s) em
+      {{ scanInfo.scanned }} de {{ scanInfo.scan_total }} anúncios.
+      Filtre por <strong>conta</strong> ou <strong>busca</strong> para varrer o restante.
+    </q-banner>
+
+    <!-- Barra fixa: ação + visualização + controles de árvore -->
     <div class="promo-ads__viewbar">
       <q-btn-toggle
+        v-model="actionMode"
+        :options="[
+          { label: 'Ativar propostas', value: 'activate', icon: 'bolt' },
+          { label: 'Remover ativas', value: 'remove', icon: 'delete_outline' },
+        ]"
+        no-caps unelevated toggle-color="primary" color="grey-2" text-color="grey-8"
+      />
+      <q-separator vertical inset />
+      <q-btn-toggle
+        v-if="!sortedFlat"
         v-model="view"
         :options="[
           { label: 'Por anúncios', value: 'ads' },
           { label: 'Por SKU', value: 'sku' },
         ]"
-        no-caps
-        unelevated
-        toggle-color="primary"
-        color="grey-2"
-        text-color="grey-8"
+        no-caps unelevated toggle-color="primary" color="grey-2" text-color="grey-8"
       />
       <span class="promo-ads__viewbar-hint">
-        {{ view === 'ads'
-          ? 'Conta → anúncio/variação → promoções disponíveis.'
-          : 'Conta → SKU → anúncios/variações → promoções.' }}
+        {{ actionMode === 'remove'
+          ? 'Marque as promoções ATIVAS a remover (várias por anúncio).'
+          : (sortedFlat ? 'Lista ordenada — escolha uma proposta por anúncio.'
+            : (view === 'ads' ? 'Conta → anúncio/variação → promoções.' : 'Conta → SKU → anúncios → promoções.')) }}
       </span>
       <q-space />
       <span class="promo-ads__viewbar-count">{{ visibleAdCount }} linha(s)</span>
@@ -227,13 +266,16 @@
         v-for="group in visibleGroups"
         :key="group.key"
         :group="group"
-        :mode="view"
+        :mode="sortedFlat ? 'ads' : view"
+        :action-mode="actionMode"
         :selection="selection"
+        :removal="removalSelection"
         :thresholds="thresholds"
         :expand-tick="expandTick"
         :collapse-tick="collapseTick"
         @choose="onChoose"
         @clear="onClear"
+        @toggle-removal="onToggleRemoval"
       />
 
       <div v-if="nextCursor" class="promo-ads__more">
@@ -241,9 +283,9 @@
       </div>
     </template>
 
-    <!-- Resumo da seleção -->
+    <!-- Resumo da seleção (ativar) -->
     <transition name="promo-ads-fade">
-      <div v-if="summary.total" class="promo-ads__summary">
+      <div v-if="actionMode === 'activate' && summary.total" class="promo-ads__summary">
         <div class="promo-ads__summary-main">
           <div class="promo-ads__summary-headline">
             <strong>{{ summary.total }}</strong> proposta(s) selecionada(s)
@@ -277,20 +319,44 @@
       </div>
     </transition>
 
+    <!-- Resumo da seleção (remover) -->
+    <transition name="promo-ads-fade">
+      <div v-if="actionMode === 'remove' && removalSummary.total" class="promo-ads__summary promo-ads__summary--danger">
+        <div class="promo-ads__summary-main">
+          <div class="promo-ads__summary-headline">
+            <strong>{{ removalSummary.total }}</strong> promoção(ões) ativa(s) a remover
+          </div>
+          <div class="promo-ads__summary-scope">
+            {{ removalSummary.ads }} anúncios · {{ removalSummary.accounts }} contas
+          </div>
+        </div>
+        <div class="promo-ads__summary-stats">
+          <span v-for="(n, t) in removalSummary.byType" :key="t">{{ t }}: <strong>{{ n }}</strong></span>
+        </div>
+        <div class="promo-ads__summary-actions">
+          <q-btn flat no-caps label="Limpar seleção" @click="clearRemovalSelection" />
+          <q-btn color="negative" no-caps label="Revisar remoção" @click="reviewOpen = true" />
+        </div>
+      </div>
+    </transition>
+
     <PromotionsAdsReviewDialog
       v-model="reviewOpen"
+      :mode="actionMode"
       :summary="summary"
+      :removal-summary="removalSummary"
       :max-discount-pct="maxDiscountPct"
       :activating="activating"
       @update:max-discount-pct="maxDiscountPct = $event"
       @remove="removeFromSelection"
-      @confirm="activate"
+      @remove-removal="removeFromRemoval"
+      @confirm="actionMode === 'remove' ? removePromotions() : activate()"
     />
   </q-page>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
@@ -303,9 +369,10 @@ import PromotionsAdsGroup from 'src/components/promotions-ads/PromotionsAdsGroup
 import PromotionsAdsReviewDialog from 'src/components/promotions-ads/PromotionsAdsReviewDialog.vue'
 import {
   PROMOTION_TYPE_OPTIONS,
+  SORT_OPTIONS,
   STATUS_OPTIONS,
-  applyClientFilters,
   buildActivatePayload,
+  buildRemovePayload,
   choosePromotion,
   clearRow,
   formatBRL,
@@ -314,7 +381,9 @@ import {
   groupByAccountSku,
   headerMetrics,
   normalizeRow,
+  summarizeRemoval,
   summarizeSelection,
+  toggleRemoval,
 } from 'src/utils/promotionsAdsView'
 
 const $q = useQuasar()
@@ -334,12 +403,15 @@ const accountNames = ref({})
 const accountsLoading = ref(false)
 
 const view = ref('ads')
+const actionMode = ref('activate') // 'activate' | 'remove'
 const selection = ref({})
+const removalSelection = ref({})
 const reviewOpen = ref(false)
 const maxDiscountPct = ref(15)
 const filtersOpen = ref(true)
 const expandTick = ref(0)
 const collapseTick = ref(0)
+const scanInfo = ref(null)
 
 const filters = reactive({
   account_id: null,
@@ -351,6 +423,7 @@ const filters = reactive({
   minMargin: null,
   minProfit: null,
   onlyEstimable: false,
+  sort: null,
 })
 
 const brl = formatBRL
@@ -366,24 +439,23 @@ const thresholds = computed(() => ({
 
 const metrics = computed(() => headerMetrics(rows.value))
 
-const filteredRows = computed(() =>
-  applyClientFilters(rows.value, {
-    onlyEstimable: filters.onlyEstimable,
-    minMarkupPct: thresholds.value.minMarkupPct,
-    minMarginPct: thresholds.value.minMarginPct,
-    minProfit: thresholds.value.minProfit,
-  }),
-)
+// Com ordenação ativa a árvore agrupada quebraria a ordem — mostra lista plana.
+const sortedFlat = computed(() => Boolean(filters.sort))
 
-const visibleGroups = computed(() =>
-  view.value === 'sku'
-    ? groupByAccountSku(filteredRows.value)
-    : groupByAccount(filteredRows.value),
-)
-const visibleAdCount = computed(() => filteredRows.value.length)
+const visibleGroups = computed(() => {
+  if (sortedFlat.value) {
+    return [{ key: '__sorted__', account_id: '__sorted__', account_nickname: 'Resultado ordenado', ads: rows.value, adCount: rows.value.length }]
+  }
+  return view.value === 'sku'
+    ? groupByAccountSku(rows.value)
+    : groupByAccount(rows.value)
+})
+const visibleAdCount = computed(() => rows.value.length)
 
 const selectionList = computed(() => Object.values(selection.value))
 const summary = computed(() => summarizeSelection(selectionList.value, thresholds.value))
+const removalList = computed(() => Object.values(removalSelection.value))
+const removalSummary = computed(() => summarizeRemoval(removalList.value))
 
 const accountLabel = (id) => accountOptions.value.find((o) => o.value === id)?.label || id
 const typeLabel = (v) => PROMOTION_TYPE_OPTIONS.find((o) => o.value === v)?.label || v
@@ -396,12 +468,14 @@ const activeFilterChips = computed(() => {
   if (filters.sku) chips.push({ key: 'sku', label: `SKU: ${filters.sku}`, clear: () => { filters.sku = ''; reload() } })
   if (filters.status) chips.push({ key: 'status', label: `Status: ${statusOptLabel(filters.status)}`, clear: () => { filters.status = null; reload() } })
   if (filters.promotion_type) chips.push({ key: 'type', label: `Tipo: ${typeLabel(filters.promotion_type)}`, clear: () => { filters.promotion_type = null; reload() } })
-  if (finiteOrNull(filters.minMarkup) !== null) chips.push({ key: 'markup', label: `Markup alvo ${filters.minMarkup}%`, clear: () => { filters.minMarkup = null } })
-  if (finiteOrNull(filters.minMargin) !== null) chips.push({ key: 'margin', label: `Margem ≥ ${filters.minMargin}%`, clear: () => { filters.minMargin = null } })
-  if (finiteOrNull(filters.minProfit) !== null) chips.push({ key: 'profit', label: `Lucro ≥ ${brl(filters.minProfit)}`, clear: () => { filters.minProfit = null } })
-  if (filters.onlyEstimable) chips.push({ key: 'estimable', label: 'Somente calculáveis', clear: () => { filters.onlyEstimable = false } })
+  if (finiteOrNull(filters.minMarkup) !== null) chips.push({ key: 'markup', label: `Markup alvo ${filters.minMarkup}%`, clear: () => { filters.minMarkup = null; reload() } })
+  if (finiteOrNull(filters.minMargin) !== null) chips.push({ key: 'margin', label: `Margem ≥ ${filters.minMargin}%`, clear: () => { filters.minMargin = null; reload() } })
+  if (finiteOrNull(filters.minProfit) !== null) chips.push({ key: 'profit', label: `Lucro ≥ ${brl(filters.minProfit)}`, clear: () => { filters.minProfit = null; reload() } })
+  if (filters.onlyEstimable) chips.push({ key: 'estimable', label: 'Somente calculáveis', clear: () => { filters.onlyEstimable = false; reload() } })
+  if (filters.sort) chips.push({ key: 'sort', label: `Ordem: ${sortLabel(filters.sort)}`, clear: () => { filters.sort = null; reload() } })
   return chips
 })
+const sortLabel = (v) => SORT_OPTIONS.find((o) => o.value === v)?.label || v
 
 function serverParams () {
   const raw = {
@@ -410,6 +484,11 @@ function serverParams () {
     sku: filters.sku,
     status: filters.status,
     promotion_type: filters.promotion_type,
+    min_markup_pct: finiteOrNull(filters.minMarkup),
+    min_margin_pct: finiteOrNull(filters.minMargin),
+    min_profit: finiteOrNull(filters.minProfit),
+    only_estimable: filters.onlyEstimable ? 'true' : null,
+    sort: filters.sort,
     page_size: PAGE_SIZE,
   }
   return Object.fromEntries(
@@ -449,6 +528,7 @@ async function reload () {
     rows.value = (data.results || []).map((r) => normalizeRow(r, accountNames.value))
     nextCursor.value = data.next_cursor || null
     skipped.value = data.skipped || []
+    scanInfo.value = data.scan || null
   } catch (err) {
     error.value = err.response?.data?.error
       || err.response?.data?.message
@@ -488,6 +568,7 @@ function clearFilters () {
   filters.minMargin = null
   filters.minProfit = null
   filters.onlyEstimable = false
+  filters.sort = null
   reload()
 }
 
@@ -504,6 +585,51 @@ function removeFromSelection (key) {
   const next = { ...selection.value }
   delete next[key]
   selection.value = next
+}
+
+// --- Modo remoção ---
+function onToggleRemoval ({ row, promo }) {
+  removalSelection.value = toggleRemoval(removalSelection.value, row, promo)
+}
+function clearRemovalSelection () {
+  removalSelection.value = {}
+}
+function removeFromRemoval (key) {
+  const next = { ...removalSelection.value }
+  delete next[key]
+  removalSelection.value = next
+}
+
+async function removePromotions () {
+  const entries = removalList.value
+  if (!entries.length) return
+  activating.value = true
+  try {
+    const { data } = await MercadoLivreService.removePromotionsAds(buildRemovePayload(entries))
+    const n = data.queued_count ?? data.queued?.length ?? 0
+    $q.notify({
+      color: 'positive', timeout: 8000, multiLine: true,
+      message: `${n} anúncio(s) na fila de remoção. O Mercado Livre confirma em alguns minutos.`,
+    })
+    if (data.blocked?.length) {
+      $q.notify({
+        color: 'warning', timeout: 9000, multiLine: true,
+        message: `${data.blocked.length} não removida(s): `
+          + data.blocked.map((b) => b.reason).filter(Boolean).join('; '),
+      })
+    }
+    removalSelection.value = {}
+    reviewOpen.value = false
+    await reload()
+  } catch (err) {
+    $q.notify({
+      color: 'negative',
+      message: err.response?.data?.message || err.response?.data?.error
+        || 'Não foi possível enfileirar a remoção.',
+    })
+  } finally {
+    activating.value = false
+  }
 }
 
 async function activate () {
@@ -550,6 +676,20 @@ async function activate () {
     activating.value = false
   }
 }
+
+// Ao entrar no modo remoção, foca nas promoções ativas (só elas removem).
+let statusAutoSet = false
+watch(actionMode, (mode) => {
+  if (mode === 'remove' && !filters.status) {
+    filters.status = 'started'
+    statusAutoSet = true
+    reload()
+  } else if (mode === 'activate' && statusAutoSet && filters.status === 'started') {
+    filters.status = null
+    statusAutoSet = false
+    reload()
+  }
+})
 
 onMounted(reload)
 </script>

@@ -28,6 +28,19 @@ export const PROMOTION_TYPE_OPTIONS = [
   { label: 'Campanha do seller (SELLER_CAMPAIGN)', value: 'SELLER_CAMPAIGN' },
 ]
 
+export const SORT_OPTIONS = [
+  { label: 'Ordem padrão (anúncio)', value: null },
+  { label: 'Maior markup', value: '-markup' },
+  { label: 'Menor markup', value: 'markup' },
+  { label: 'Maior margem', value: '-margin' },
+  { label: 'Maior desconto', value: '-discount' },
+  { label: 'Maior preço', value: '-price' },
+  { label: 'Menor preço', value: 'price' },
+]
+
+// Status que podem ser removidos (promoção viva, não candidata)
+export const LIVE_STATUSES = ['started', 'pending', 'sync_requested']
+
 const MISSING_INPUT_LABELS = {
   fee: 'tarifa ausente',
   shipping: 'frete ausente',
@@ -416,6 +429,72 @@ export function buildActivatePayload (eligibleEntries, { maxDiscountPct, fixedDi
   const markup = numberOrNull(markupTarget)
   if (markup !== null) payload.markup_target = markup
   return payload
+}
+
+// --- Remoção de promoções ativas (múltiplas por anúncio) ---------------------
+
+export function isRemovable (promo) {
+  return LIVE_STATUSES.includes(promo.status)
+}
+
+export function removalKey (row, promo) {
+  return `${row._key}##${promo._key}`
+}
+
+// Alterna uma promoção viva na seleção de remoção (N por anúncio).
+export function toggleRemoval (removal, row, promo) {
+  const key = removalKey(row, promo)
+  const next = { ...removal }
+  if (next[key]) {
+    delete next[key]
+  } else {
+    next[key] = {
+      key,
+      row_key: row._key,
+      account_id: row.account_id,
+      account_nickname: row.account_nickname,
+      sku: row.sku,
+      item_id: row.item_id,
+      title: row.title,
+      variation_name: row.variation_name,
+      promotion_id: promo.promotion_id ?? null,
+      promotion_type: promo.promotion_type,
+      promotion_name: promo.name,
+      promotion_key: promo._key,
+      status: promo.status,
+      discount_pct: promo.financials?.discount_pct ?? promo.discount_pct ?? null,
+    }
+  }
+  return next
+}
+
+export function isRemovalSelected (removal, row, promo) {
+  return Boolean(removal[removalKey(row, promo)])
+}
+
+export function summarizeRemoval (entries) {
+  return {
+    total: entries.length,
+    ads: new Set(entries.map((e) => e.row_key)).size,
+    accounts: new Set(entries.map((e) => e.account_id)).size,
+    byType: entries.reduce((acc, e) => {
+      acc[e.promotion_type] = (acc[e.promotion_type] || 0) + 1
+      return acc
+    }, {}),
+    entries,
+  }
+}
+
+export function buildRemovePayload (entries) {
+  return {
+    confirmed: true,
+    candidates: entries.map((e) => ({
+      account_id: e.account_id,
+      item_id: e.item_id,
+      promotion_id: e.promotion_id,
+      promotion_type: e.promotion_type,
+    })),
+  }
 }
 
 // Contadores do cabeçalho — sobre as linhas efetivamente carregadas.
