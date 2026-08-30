@@ -108,31 +108,37 @@ os anúncios (o normalizador da promoção do ML não os fornece; `financials()`
 para `logistic_type == "self_service"`), então `estimable=false` e net/lucro/margem/markup ficam
 vazios. `cmv_unit` já é resolvido via `ProductCost`.
 
-**Fórmula canônica** (mesma de `_update_order_financials`), por unidade, ao preço promocional `P`:
+**Decisões do dono (2026-08-30):** markup sobre **custo total** (CMV + tarifa + frete); **sem**
+dedução de imposto (consistente com `_update_order_financials`).
+
+**Fórmula** (por unidade, ao preço promocional efetivo `P`):
 
 ```
-net_unit   = P − sale_fee(P) − seller_shipping − cupom_unit + credito_flex_unit
-lucro_unit = net_unit − cmv_unit
-margem_%   = lucro_unit / P × 100                                  (denominador = preço bruto)
-markup_%   = ( P / (cmv_unit + sale_fee(P) + seller_shipping) − 1 ) × 100
+receita_unit = seller_revenue(promo, P)       # cofinanciados (SMART…) recebem MAIS que P
+custo_total  = cmv_unit + sale_fee(P) + seller_shipping
+markup_%     = (receita_unit / custo_total − 1) × 100        # trava a ativação
+margem_%     = (receita_unit − sale_fee(P) − seller_shipping − cmv_unit − cupom_unit) / receita_unit × 100
 ```
 
 `markup` ≠ `margem` — a UI (filtro/resumo/revisão) deve deixar claro qual piso está sendo travado.
 
-**Origem dos insumos que faltam** (implementação = PROMO-12A no backend, dentro de
-`services/promotions_ads/`, sem tocar `_update_order_financials` nem o legado):
+**Pontas fechadas na revisão de 2026-08-30 (verificado contra produção):**
 
-| Insumo | Como obter para um preço promocional arbitrário |
+| Ponto | Situação / regra |
 |---|---|
-| `cmv_unit` | ✅ pronto — `ProductCost.avg_cost_price ?? cost_price` por SKU normalizado. |
-| `sale_fee(P)` | **Não é linear** (percentual + custo fixo de baixo valor). (A) `GET /sites/MLB/listing_prices?price=P&listing_type_id=…&category_id=…` → `sale_fee_amount`/`sale_fee_details`; requer `category_id` no anúncio (hoje só em `OrderItem` — adicionar coluna + preencher no sync). (B) fallback: derivar de `OrderItem.sale_fee`/`unit_price` dos pedidos reais do próprio anúncio. |
-| `seller_shipping` | Por `logistic_type`: Flex → snapshot da conta (✅); FULL/ME2 grátis → média de `OrderShipment.net_cost / unidade` dos pedidos recentes do anúncio (não escala com `P`); comprador paga → ≈ 0. |
-| `cupom` / `credito_flex` | 0 na simulação; só quando determináveis. |
+| `P` (preço proposto) | **falta em 117/294 promoções.** Fallback por tipo: `PRICE_DISCOUNT` → `suggested_discounted_price` (UI pode escolher em `[min,max]`); `SELLER_COUPON_CAMPAIGN`/`UNHEALTHY_STOCK` → `original_price × (1 − discount_pct|seller_percentage/100)`; senão `missing_inputs += ["price"]`. |
+| `receita_unit` | `= P` para DEAL/SELLER_CAMPAIGN/LIGHTNING/DOD/PRICE_DISCOUNT. **SMART/PRICE_MATCHING/boosted são cofinanciados** (69/294 — o maior tipo): `original_price × (1 − seller_percentage/100)` > `P`. Cupom: `original_price − cupom_unit`, mas a **tarifa incide sobre `original_price`**. |
+| `sale_fee(P)` | ✅ `GET /sites/MLB/listing_prices?price=P&listing_type_id&category_id` testado ao vivo (30–90) → `sale_fee_details {percentage_fee, fixed_fee, gross_amount}`. **Requer `category_id` no `MercadoLivreItem`** (hoje só em `OrderItem`) → coluna + sync. Rack rate ≠ realizado (16,5% vs 14,3% em pedidos antigos) — usar rack rate para decisão prospectiva. |
+| `seller_shipping` | Flex → `account.flex_delivery_cost or 12,50` (hoje `financials()` não aplica o default). FULL/ME2 grátis → média de `OrderShipment.net_cost / unidade` dos últimos 90 dias (**51/60** anúncios têm histórico); 9 sem histórico → `GET /items/{id}/shipping_options` ou `missing`. |
+| `cmv_unit` | ✅ 100% na amostra. Fechar: quando `None` por SKU ambíguo, marcar `sku_ambiguous=true` (hoje sempre `false`). |
+| Variações | `P` por variação = `variation.price × (1 − discount_pct/100)`; `sale_fee`/`category_id` seguem de nível de item. |
 
 **Ativação por markup (PROMO-12C):** usuário define `markup_alvo`; cada proposta vira apta/bloqueada
-pelo `markup_%`/`margem_%` calculado. Útil computar o **menor preço promocional que ainda bate o
-alvo** (`P_min` iterativo, porque `sale_fee` depende de `P`) para mostrar folga/inviabilidade. O
-`activate()` do backend deve revalidar o markup no servidor, não confiar no booleano do navegador.
+pelo `markup_%` calculado. Computar o **menor preço que ainda bate o alvo**
+(`P_min = (cmv + frete) / (1/(1+alvo) − pct_fee/100)` quando `fixed_fee=0`; bissecção com custo fixo);
+se nem o preço atual bate → **inviável**. O payload passa a levar `markup_alvo` (+ `P` escolhido para
+`PRICE_DISCOUNT`); o `activate()` do backend **re-deriva** fee/frete/receita e trava por markup, sem
+confiar no navegador.
 
 **Tratamento atual do frontend (mantém até PROMO-12A entregar):** cada `missing_input` é traduzido
 ("tarifa ausente", "frete ausente", "CMV ausente"), a proposta aparece como **não calculável** e
