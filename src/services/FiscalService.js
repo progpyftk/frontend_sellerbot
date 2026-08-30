@@ -14,6 +14,11 @@ export default {
    * Listagem paginada de NF-e com filtros
    * @param {Object} params { page, page_size, access_key, stock_effect, document_status, ncm, fiscal_account }
    */
+  /** Exporta o balanço de NCMs filtrado por CNPJ e período em XLSX. */
+  exportNcmBalanceExcel(params = {}) {
+    return api.get("/api/fiscal/balance/export.xlsx", { params, responseType: "blob" });
+  },
+
   getDocuments(params = {}) {
     return api.get("/api/fiscal/documents/", { params });
   },

@@ -192,10 +192,10 @@
                 dense
                 no-caps
                 icon="download"
-                label="Exportar CSV"
+                label="Exportar Excel"
                 color="grey-7"
                 :disable="balanceRows.length === 0"
-                @click="exportBalanceCSV"
+                @click="exportBalanceExcel"
               />
             </div>
 
@@ -1545,6 +1545,29 @@ function refreshActiveTab() {
     normalizedBalanceRef.value?.load();
   } else if (activeTab.value === "documents") loadDocuments(1);
   else if (activeTab.value === "imports") loadImportBatches();
+}
+
+async function exportBalanceExcel() {
+  if (!balanceRows.value.length || !balanceFilters.value.cnpj) return;
+  try {
+    const params = {
+      fiscal_account_id: balanceFilters.value.cnpj,
+      start_date: balanceFilters.value.startDate || undefined,
+      end_date: balanceFilters.value.endDate || undefined,
+      ncm: balanceFilters.value.search || undefined,
+    };
+    const response = await FiscalService.exportNcmBalanceExcel(params);
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `balanco_ncms_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+    $q.notify({ type: 'positive', message: 'Excel exportado.' });
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.detail || 'Não foi possível exportar o Excel.' });
+  }
 }
 
 function exportBalanceCSV() {
