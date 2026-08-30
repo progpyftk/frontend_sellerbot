@@ -127,6 +127,16 @@
           <span class="promo-ads__filters-legend">Financeiro (aplicado às linhas carregadas)</span>
           <div class="promo-ads__filters-row">
             <q-input
+              v-model.number="filters.minMarkup"
+              type="number"
+              outlined
+              dense
+              clearable
+              label="Markup alvo (%)"
+              hint="Trava a ativação"
+              class="promo-ads__filter promo-ads__filter--sm"
+            />
+            <q-input
               v-model.number="filters.minMargin"
               type="number"
               outlined
@@ -247,6 +257,7 @@
           <span>Preço médio: <strong>{{ brl(summary.avgPrice) }}</strong></span>
           <span>Desconto médio: <strong>{{ pct(summary.avgDiscountPct) }}</strong></span>
           <span>Lucro estimado médio: <strong>{{ brl(summary.avgProfit) }}</strong></span>
+          <span>Markup médio: <strong>{{ pct(summary.avgMarkupPct) }}</strong></span>
           <span>Margem estimada média: <strong>{{ pct(summary.avgMarginPct) }}</strong></span>
         </div>
 
@@ -254,6 +265,9 @@
           <SbBadge variant="green">{{ summary.eligibleCount }} aptas para ativação</SbBadge>
           <SbBadge variant="amber">{{ summary.blockedCount }} bloqueadas</SbBadge>
           <span class="promo-ads__summary-lock">Trava: {{ maxDiscountPct }}%</span>
+          <span v-if="thresholds.minMarkupPct != null" class="promo-ads__summary-lock">
+            Markup alvo: {{ thresholds.minMarkupPct }}%
+          </span>
         </div>
 
         <div class="promo-ads__summary-actions">
@@ -333,6 +347,7 @@ const filters = reactive({
   sku: '',
   status: null,
   promotion_type: null,
+  minMarkup: null,
   minMargin: null,
   minProfit: null,
   onlyEstimable: false,
@@ -344,6 +359,7 @@ const pct = (v) => formatPct(v)
 const finiteOrNull = (v) => (Number.isFinite(Number(v)) && v !== '' && v !== null ? Number(v) : null)
 
 const thresholds = computed(() => ({
+  minMarkupPct: finiteOrNull(filters.minMarkup),
   minMarginPct: finiteOrNull(filters.minMargin),
   minProfit: finiteOrNull(filters.minProfit),
 }))
@@ -353,6 +369,7 @@ const metrics = computed(() => headerMetrics(rows.value))
 const filteredRows = computed(() =>
   applyClientFilters(rows.value, {
     onlyEstimable: filters.onlyEstimable,
+    minMarkupPct: thresholds.value.minMarkupPct,
     minMarginPct: thresholds.value.minMarginPct,
     minProfit: thresholds.value.minProfit,
   }),
@@ -379,6 +396,7 @@ const activeFilterChips = computed(() => {
   if (filters.sku) chips.push({ key: 'sku', label: `SKU: ${filters.sku}`, clear: () => { filters.sku = ''; reload() } })
   if (filters.status) chips.push({ key: 'status', label: `Status: ${statusOptLabel(filters.status)}`, clear: () => { filters.status = null; reload() } })
   if (filters.promotion_type) chips.push({ key: 'type', label: `Tipo: ${typeLabel(filters.promotion_type)}`, clear: () => { filters.promotion_type = null; reload() } })
+  if (finiteOrNull(filters.minMarkup) !== null) chips.push({ key: 'markup', label: `Markup alvo ${filters.minMarkup}%`, clear: () => { filters.minMarkup = null } })
   if (finiteOrNull(filters.minMargin) !== null) chips.push({ key: 'margin', label: `Margem ≥ ${filters.minMargin}%`, clear: () => { filters.minMargin = null } })
   if (finiteOrNull(filters.minProfit) !== null) chips.push({ key: 'profit', label: `Lucro ≥ ${brl(filters.minProfit)}`, clear: () => { filters.minProfit = null } })
   if (filters.onlyEstimable) chips.push({ key: 'estimable', label: 'Somente calculáveis', clear: () => { filters.onlyEstimable = false } })
@@ -466,6 +484,7 @@ function clearFilters () {
   filters.sku = ''
   filters.status = null
   filters.promotion_type = null
+  filters.minMarkup = null
   filters.minMargin = null
   filters.minProfit = null
   filters.onlyEstimable = false
@@ -497,7 +516,10 @@ async function activate () {
   }
   activating.value = true
   try {
-    const payload = buildActivatePayload(eligible, { maxDiscountPct: lock })
+    const payload = buildActivatePayload(eligible, {
+      maxDiscountPct: lock,
+      markupTarget: thresholds.value.minMarkupPct,
+    })
     const { data } = await MercadoLivreService.activatePromotionsAds(payload)
     const enqueued = data.enqueued_count ?? data.enqueued?.length ?? 0
     $q.notify({ color: 'positive', message: `${enqueued} proposta(s) enviada(s) para ativação.` })
