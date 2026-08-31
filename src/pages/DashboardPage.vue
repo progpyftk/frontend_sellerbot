@@ -790,24 +790,16 @@
               </div>
               <div class="wf-value">{{ fmt(op?.lucro_liquido) }} <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% do GMV)</span></div>
             </div>
-            <template v-if="op?.affiliate_cost > 0">
-              <div class="wf-arrow">▼</div>
-              <div class="wf-step wf-step--deduct">
-                <div class="wf-label" title="Comissão paga a afiliados do programa Shopee (AMS)">− Afiliados (Shopee)</div>
-                <div class="wf-bar-wrap"><div class="wf-bar wf-bar--ads" :style="{ width: wfPct(op?.affiliate_cost, op?.gmv) + '%' }"></div></div>
-                <div class="wf-value wf-value--warn">−{{ fmt(op?.affiliate_cost) }} <span class="wf-pct">({{ wfPct(op?.affiliate_cost, op?.gmv).toFixed(1) }}%)</span></div>
-              </div>
-            </template>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--final" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-step--pos' : 'wf-step--neg'">
-              <div class="wf-label" title="O que sobra das vendas para cobrir custos fixos e gerar lucro, antes de impostos. Não desconta despesas fixas.">= Margem de Contribuição Final Sem Impostos</div>
+              <div class="wf-label" title="O que sobra das vendas para cobrir custos fixos e gerar lucro, antes de impostos. Não desconta despesas fixas. Afiliados (AMS) já estão descontados na margem antes de Ads.">= Margem de Contribuição Final Sem Impostos</div>
               <div class="wf-bar-wrap">
                 <div class="wf-bar" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-bar--ll' : 'wf-bar--neg'"
-                  :style="{ width: Math.abs(wfPct((op?.lucro_liquido || 0) - (op?.affiliate_cost || 0), op?.gmv)) + '%' }"></div>
+                  :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
               </div>
               <div class="wf-value wf-value--highlight">
-                {{ fmt((op?.lucro_liquido || 0) - (op?.affiliate_cost || 0)) }}
-                <span class="wf-pct">({{ wfPct((op?.lucro_liquido || 0) - (op?.affiliate_cost || 0), op?.gmv).toFixed(1) }}% do GMV)</span>
+                {{ fmt(op?.lucro_liquido) }}
+                <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% do GMV)</span>
               </div>
             </div>
           </div>
