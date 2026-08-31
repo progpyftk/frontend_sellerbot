@@ -521,6 +521,9 @@
                 <div :class="['lucro-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
                   {{ formatCurrency(props.row.lucro_apos_cmp) }}
                 </div>
+                <div :class="['margin-pill', props.row.lucro_apos_cmp >= 0 ? 'margin-pos' : 'margin-neg']">
+                  {{ calcLucroPct(props.row) }}% margem
+                </div>
                 <div class="lucro-hint">
                   Custo: {{ formatCurrency(props.row.custo_medio_produto) }}
                 </div>
@@ -1021,7 +1024,7 @@ const columns = [
   { name: 'bruto',     label: 'VENDA',                field: 'total_amount',   sortable: true,  align: 'right',  style: 'min-width:90px'  },
   { name: 'frete',     label: 'TAXAS SHOPEE',         field: 'commission_fee', sortable: false, align: 'right',  style: 'min-width:90px' },
   { name: 'liquido',   label: 'REPASSE (S/ CUSTO)',   field: 'escrow_amount',  sortable: false, align: 'right',  style: 'min-width:120px' },
-  { name: 'lucro',     label: 'LUCRO APÓS CUSTO',     field: 'lucro_apos_cmp', sortable: false, align: 'right',  style: 'min-width:115px' },
+  { name: 'lucro',     label: 'MARGEM APÓS CMV',      field: 'lucro_apos_cmp', sortable: false, align: 'right',  style: 'min-width:115px' },
 ]
 
 // ── Opções ─────────────────────────────────────────────────────────────────
@@ -1156,6 +1159,13 @@ function getTaxasShopee(row) {
 
 function getLiquido(row) {
   return orderRevenue(row)
+}
+
+// Margem de contribuição após CMV sobre o GMV (total_amount), como no Mercado Livre.
+function calcLucroPct(row) {
+  const t = Number(row.total_amount || 0)
+  if (t === 0 || row.lucro_apos_cmp == null) return 0
+  return Math.round((Number(row.lucro_apos_cmp) / t) * 100)
 }
 
 // Soma de unit_price × qty — preço real de venda dos produtos (sem frete)
@@ -1689,6 +1699,9 @@ onMounted(() => {
 .lucro-main.pos { color: #16a34a; }
 .lucro-main.neg { color: #dc2626; }
 .lucro-hint  { font-size: 10px; color: #94a3b8; }
+.margin-pill { font-size: 10px; font-weight: 700; border-radius: 20px; padding: 2px 7px; display: inline-block; margin-top: 3px; }
+.margin-pos  { background: #f0fff4; color: #276749; }
+.margin-neg  { background: #fff5f5; color: #c53030; }
 
 /* ── Order status pills ────────────────────────────────────── */
 .order-status-pill {
