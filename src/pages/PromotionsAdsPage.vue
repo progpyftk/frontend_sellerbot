@@ -13,11 +13,11 @@
 
     <!-- Indicadores resumidos -->
     <SbKpiGrid :columns="5" class="q-mb-xs">
-      <SbKpiCard label="Anúncios encontrados" :value="metrics.ads" variant="slate" />
-      <SbKpiCard label="SKUs encontrados" :value="metrics.skus" variant="slate" />
-      <SbKpiCard label="Promoções disponíveis" :value="metrics.promotions" variant="teal" />
-      <SbKpiCard label="Promoções calculáveis" :value="metrics.estimable" variant="green" />
-      <SbKpiCard label="Promoções bloqueadas" :value="metrics.blocked" variant="amber" />
+      <SbKpiCard label="Anúncios" :value="metrics.ads" variant="slate" />
+      <SbKpiCard label="Promoções ativas" :value="metrics.active" variant="teal" />
+      <SbKpiCard label="Faltam ativar" :value="metrics.available" variant="sky" />
+      <SbKpiCard label="Calculáveis" :value="metrics.estimable" variant="green" />
+      <SbKpiCard label="Bloqueadas" :value="metrics.blocked" variant="amber" />
     </SbKpiGrid>
     <p class="promo-ads__note">
       Contadores sobre as linhas já carregadas. O total consolidado ainda depende de ajuste no
@@ -187,9 +187,19 @@
       rounded
       class="promo-ads__banner promo-ads__banner--info q-mb-md"
     >
-      Varredura financeira: {{ scanInfo.matched }} proposta(s) em
+      Varredura financeira ao vivo: {{ scanInfo.matched }} proposta(s) em
       {{ scanInfo.scanned }} de {{ scanInfo.scan_total }} anúncios.
       Filtre por <strong>conta</strong> ou <strong>busca</strong> para varrer o restante.
+    </q-banner>
+    <q-banner
+      v-else-if="snapshotInfo && snapshotInfo.computed_at"
+      rounded
+      class="promo-ads__banner promo-ads__banner--info q-mb-md"
+    >
+      Filtro/ordenação sobre o catálogo inteiro — dados de
+      <strong>{{ new Date(snapshotInfo.computed_at).toLocaleString('pt-BR') }}</strong>.
+      <span v-if="snapshotInfo.stale">Atualizando em segundo plano.</span>
+      Ativação e remoção sempre consultam o Mercado Livre na hora.
     </q-banner>
 
     <!-- Barra fixa: ação + visualização + controles de árvore -->
@@ -412,6 +422,7 @@ const filtersOpen = ref(true)
 const expandTick = ref(0)
 const collapseTick = ref(0)
 const scanInfo = ref(null)
+const snapshotInfo = ref(null)
 
 const filters = reactive({
   account_id: null,
@@ -529,6 +540,7 @@ async function reload () {
     nextCursor.value = data.next_cursor || null
     skipped.value = data.skipped || []
     scanInfo.value = data.scan || null
+    snapshotInfo.value = data.snapshot || null
   } catch (err) {
     error.value = err.response?.data?.error
       || err.response?.data?.message

@@ -299,7 +299,7 @@ describe('headerMetrics', () => {
         { promotion_id: 'Z', promotion_type: 'DEAL', financials: fin({ estimable: false, missing_inputs: ['cmv'] }) },
       ] }), ACCOUNT_NAMES),
     ]
-    expect(headerMetrics(rows)).toEqual({ ads: 2, skus: 1, promotions: 3, estimable: 2, blocked: 1 })
+    expect(headerMetrics(rows)).toMatchObject({ ads: 2, skus: 1, promotions: 3, estimable: 2, blocked: 1 })
   })
 })
 
@@ -346,5 +346,37 @@ describe('seleção de remoção (N por anúncio)', () => {
         { account_id: 'ACC-1', item_id: 'MLB123', promotion_id: 'P-ON2', promotion_type: 'SMART' },
       ],
     })
+  })
+})
+
+// --- ativas × a ativar ----------------------------------------------------
+
+import { promotionActivity, splitPromotions } from 'src/utils/promotionsAdsView'
+
+describe('separação ativas / disponíveis', () => {
+  const row = normalizeRow(rawRow({ promotions: [
+    { promotion_id: 'ON', promotion_type: 'DEAL', status: 'started', financials: fin() },
+    { promotion_id: 'AV1', promotion_type: 'SMART', status: 'candidate', financials: fin() },
+    { promotion_id: 'AV2', promotion_type: 'LIGHTNING', status: 'candidate', financials: fin() },
+    { promotion_id: 'PR', promotion_type: 'DOD', status: 'pending', financials: fin() },
+  ] }), ACCOUNT_NAMES)
+
+  it('promotionActivity classifica por status', () => {
+    expect(promotionActivity(row.promotions[0])).toBe('active')
+    expect(promotionActivity(row.promotions[1])).toBe('available')
+    expect(promotionActivity(row.promotions[3])).toBe('processing')
+  })
+
+  it('splitPromotions separa os três grupos', () => {
+    const s = splitPromotions(row.promotions)
+    expect(s.active.map((p) => p.promotion_id)).toEqual(['ON'])
+    expect(s.available.map((p) => p.promotion_id)).toEqual(['AV1', 'AV2'])
+    expect(s.processing.map((p) => p.promotion_id)).toEqual(['PR'])
+  })
+
+  it('headerMetrics conta ativas e a ativar', () => {
+    const m = headerMetrics([row])
+    expect(m.active).toBe(1)
+    expect(m.available).toBe(2)
   })
 })

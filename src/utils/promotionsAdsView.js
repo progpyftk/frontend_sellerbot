@@ -49,10 +49,34 @@ const MISSING_INPUT_LABELS = {
 }
 
 const STATUS_LABELS = {
-  candidate: 'Candidata',
-  started: 'Em campanha',
-  pending: 'Pendente',
+  candidate: 'Disponível',
+  started: 'Ativa',
   active: 'Ativa',
+  pending: 'Processando',
+  sync_requested: 'Processando',
+}
+
+const ACTIVE_STATUSES = ['started', 'active']
+const PROCESSING_STATUSES = ['pending', 'sync_requested']
+
+export function promotionActivity (promo) {
+  if (ACTIVE_STATUSES.includes(promo.status)) return 'active'
+  if (PROCESSING_STATUSES.includes(promo.status)) return 'processing'
+  return 'available'
+}
+
+// Separa as promoções de um anúncio: já ativas × disponíveis para ativar.
+export function splitPromotions (promotions = []) {
+  const active = []
+  const available = []
+  const processing = []
+  for (const p of promotions) {
+    const a = promotionActivity(p)
+    if (a === 'active') active.push(p)
+    else if (a === 'processing') processing.push(p)
+    else available.push(p)
+  }
+  return { active, available, processing }
 }
 
 // --- Helpers numéricos --------------------------------------------------------
@@ -501,16 +525,23 @@ export function buildRemovePayload (entries) {
 export function headerMetrics (rows) {
   let promotions = 0
   let estimable = 0
+  let active = 0
+  let available = 0
   for (const row of rows) {
     for (const promo of row.promotions) {
       promotions += 1
       if (promo.financials.estimable) estimable += 1
+      const a = promotionActivity(promo)
+      if (a === 'active') active += 1
+      else if (a === 'available') available += 1
     }
   }
   return {
     ads: rows.length,
     skus: new Set(rows.map((r) => r.sku).filter(Boolean)).size,
     promotions,
+    active,
+    available,
     estimable,
     blocked: promotions - estimable,
   }

@@ -66,7 +66,12 @@
                   <span class="is-muted">{{ item.ad.item_id }}</span>
                 </td>
                 <td>{{ item.ad.variation_name || '—' }}</td>
-                <td class="num">{{ item.ad.promotions.length }}</td>
+                <td class="pa-ad__promocount">
+                  <SbBadge v-if="item.split.active.length" variant="teal">{{ item.split.active.length }} ativa(s)</SbBadge>
+                  <SbBadge v-if="item.split.available.length" variant="sky">{{ item.split.available.length }} a ativar</SbBadge>
+                  <SbBadge v-if="item.split.processing.length" variant="amber">{{ item.split.processing.length }} proc.</SbBadge>
+                  <span v-if="!item.ad.promotions.length" class="is-muted">—</span>
+                </td>
                 <td class="num" :class="markupClass(item.bestMarkup)">
                   {{ item.bestMarkup === null ? '—' : pct(item.bestMarkup) }}
                 </td>
@@ -110,8 +115,15 @@
                         </tr>
                       </thead>
                       <tbody>
+                       <template v-for="sec in item.sections" :key="sec.key">
+                        <tr class="pa-secrow">
+                          <td :colspan="99">
+                            <SbBadge :variant="sec.variant">{{ sec.label }}</SbBadge>
+                            <span class="is-muted">{{ sec.promos.length }}</span>
+                          </td>
+                        </tr>
                         <tr
-                          v-for="promo in item.ad.promotions"
+                          v-for="promo in sec.promos"
                           :key="promo._key"
                           class="pa-prow"
                           :class="{
@@ -171,6 +183,7 @@
                             </template>
                           </td>
                         </tr>
+                       </template>
                         <tr v-if="actionMode === 'activate'" class="pa-none">
                           <td class="pa-col-pick" @click.stop>
                             <q-radio
@@ -209,6 +222,7 @@ import {
   isRemovalSelected,
   rowState,
   selectedPromotionKey,
+  splitPromotions,
   statusLabel,
 } from 'src/utils/promotionsAdsView'
 
@@ -255,11 +269,19 @@ const chosenInGroup = computed(
 const displayRows = computed(() => {
   const decorate = (ad, visible) => {
     const chosenKey = selectedPromotionKey(props.selection, ad)
+    const split = splitPromotions(ad.promotions)
+    const sections = [
+      { key: 'active', label: 'Ativas agora', variant: 'teal', promos: split.active },
+      { key: 'available', label: 'Disponíveis para ativar', variant: 'sky', promos: split.available },
+      { key: 'processing', label: 'Processando no ML', variant: 'amber', promos: split.processing },
+    ].filter((s) => s.promos.length)
     return {
       kind: 'ad',
       key: `ad:${ad._key}`,
       ad,
       visible,
+      split,
+      sections,
       bestMarkup: bestMarkupPct(ad),
       state: rowState(ad, props.thresholds),
       chosenKey,
@@ -415,6 +437,8 @@ function moneyClass (value) {
 }
 
 .is-muted { color: #94a3b8; }
+.pa-ad__promocount { white-space: nowrap; }
+.pa-ad__promocount .sb-badge { margin-right: 4px; }
 .is-pos { color: #16a34a; font-weight: 600; }
 .is-neg { color: #dc2626; font-weight: 600; }
 .is-warn { color: #d97706; font-weight: 600; }
@@ -458,6 +482,12 @@ function moneyClass (value) {
   tbody tr.is-disabled { opacity: 0.45; }
   tbody tr.is-disabled.pa-prow { cursor: default; }
   .pa-reason { margin: 0 3px 3px 0; }
+  .pa-secrow td {
+    padding: 8px 10px 4px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .pa-secrow td .is-muted { margin-left: 6px; font-size: 11px; }
   .pa-none td { color: #94a3b8; }
   .pa-none:hover td { background: transparent; }
 }
