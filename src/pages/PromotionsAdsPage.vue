@@ -220,7 +220,7 @@
         {{ actionMode === 'remove'
           ? 'Marque as promoções ATIVAS a remover (várias por anúncio).'
           : (sortedFlat ? 'Lista ordenada — escolha uma proposta por anúncio.'
-            : (view === 'ads' ? 'Conta → anúncio/variação → promoções.' : 'Conta → SKU → anúncios → promoções.')) }}
+            : (view === 'ads' ? 'Ordenado por título do anúncio.' : 'Ordenado por SKU — anúncios do mesmo SKU ficam juntos.')) }}
       </span>
       <q-space />
       <span class="promo-ads__viewbar-count">

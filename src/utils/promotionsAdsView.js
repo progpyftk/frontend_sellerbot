@@ -252,15 +252,21 @@ export function rowState (row, thresholds = {}) {
 const byNickname = (a, b) =>
   String(a.account_nickname).localeCompare(String(b.account_nickname), 'pt-BR')
 
-function sortAds (ads) {
-  return [...ads].sort((a, b) => {
-    const t = String(a.title).localeCompare(String(b.title), 'pt-BR')
-    return t !== 0 ? t : String(a.variation_name || '').localeCompare(String(b.variation_name || ''), 'pt-BR')
-  })
+const byTitle = (a, b) => {
+  const t = String(a.title).localeCompare(String(b.title), 'pt-BR')
+  return t !== 0 ? t : String(a.variation_name || '').localeCompare(String(b.variation_name || ''), 'pt-BR')
 }
 
-// Visão "Por anúncios": conta → anúncio/variação → promoções
-export function groupByAccount (rows) {
+// "Por SKU": ordena por SKU primeiro (anúncios do mesmo SKU ficam adjacentes),
+// depois por título. SKU vazio vai para o fim.
+const bySku = (a, b) => {
+  const sa = a.sku || '￿'
+  const sb = b.sku || '￿'
+  const s = sa.localeCompare(sb, 'pt-BR')
+  return s !== 0 ? s : byTitle(a, b)
+}
+
+function groupBy (rows, sorter) {
   const map = new Map()
   for (const row of rows) {
     if (!map.has(row.account_id)) {
@@ -274,39 +280,19 @@ export function groupByAccount (rows) {
     map.get(row.account_id).ads.push(row)
   }
   return [...map.values()]
-    .map((g) => ({ ...g, ads: sortAds(g.ads), adCount: g.ads.length }))
+    .map((g) => ({ ...g, ads: [...g.ads].sort(sorter), adCount: g.ads.length }))
     .sort(byNickname)
 }
 
-// Visão "Por SKU": conta → SKU → anúncios/variações → promoções
+// Visão "Por anúncios": conta → anúncio/variação (ordenado por título).
+export function groupByAccount (rows) {
+  return groupBy(rows, byTitle)
+}
+
+// Visão "Por SKU": mesma estrutura, mas os anúncios são ordenados por SKU —
+// o SKU é uma COLUNA, não um cabeçalho que agrupa/colapsa.
 export function groupByAccountSku (rows) {
-  const accounts = new Map()
-  for (const row of rows) {
-    if (!accounts.has(row.account_id)) accounts.set(row.account_id, new Map())
-    const skuMap = accounts.get(row.account_id)
-    const skuKey = row.sku || '__none__'
-    if (!skuMap.has(skuKey)) skuMap.set(skuKey, [])
-    skuMap.get(skuKey).push(row)
-  }
-  return [...accounts.entries()]
-    .map(([accountId, skuMap]) => {
-      const firstAd = skuMap.values().next().value[0]
-      return {
-        key: accountId,
-        account_id: accountId,
-        account_nickname: firstAd.account_nickname,
-        skus: [...skuMap.entries()]
-          .map(([skuKey, ads]) => ({
-            key: `${accountId}::${skuKey}`,
-            sku: skuKey === '__none__' ? null : skuKey,
-            skuLabel: skuKey === '__none__' ? 'SKU não mapeado' : skuKey,
-            ads: sortAds(ads),
-            adCount: ads.length,
-          }))
-          .sort((a, b) => a.skuLabel.localeCompare(b.skuLabel, 'pt-BR')),
-      }
-    })
-    .sort(byNickname)
+  return groupBy(rows, bySku)
 }
 
 // --- Filtros financeiros client-side (sobre linhas já carregadas) --------------

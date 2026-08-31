@@ -29,19 +29,22 @@ Verificação: `vitest run` → 104/104 (82 pré-existentes + 22 novos). `quasar
 ### Modelo mental implementado
 
 ```
-Conta Mercado Livre
-└── SKU                       (sub-cabeçalho, só na visão "Por SKU")
-    └── Anúncio / variação    (linha-resumo: SKU, título+MLB, variação, nº promoções, melhor margem, estado)
-        └── Promoções          (sub-tabela expandida: rádio | tipo | status | preço atual |
-                                proposto | desconto | frete | CMV | lucro | margem | situação)
+Conta Mercado Livre                (card: nome + storefront + N ativas / M a ativar / K proc.)
+└── Anúncio / variação             (linha-resumo: SKU (coluna) | thumb+título+MLB+variação |
+    │                               tags de contagem por estado | chip de melhor margem | estado)
+    └── Promoções (sub-tabela)     bandas coloridas por estado (Ativas agora / Disponíveis para
+                                    ativar / Processando no ML), cada linha: ativar/remover |
+                                    promoção | preço atual | proposto | desconto | receita |
+                                    tarifa | frete | CMV | lucro | chip de margem | situação
 ```
 
 - **Seleção no nível da proposta.** Cada anúncio/variação admite **no máximo uma** proposta
   (`choosePromotion` substitui, nunca acumula; `rowKey = account_id::item_id::variation_id`).
   Existe um rádio "Não ativar nenhuma proposta" para limpar a linha. Nada de
   `selectedRows.flatMap(row => row.promotions)`.
-- As duas visões (`Por anúncios` / `Por SKU`) usam **o mesmo `selection`** e os mesmos dados;
-  só muda o agrupamento (`groupByAccount` vs `groupByAccountSku`).
+- As duas visões usam **o mesmo `selection`** e os mesmos dados; só muda a **ordenação** dos
+  anúncios: `groupByAccount` (por título) vs `groupByAccountSku` (por SKU — anúncios do mesmo SKU
+  ficam adjacentes, com divisória; o SKU é **coluna**, não mais um cabeçalho que colapsa).
 - Estado de seleção guarda `{ account_id, item_id, variation_id, promotion_id, promotion_type,
   promotion_name, status, sku, title, variation_name, financials, rawFinancials }`.
 - Payload de ativação = **contrato PROMO-11D intocado**

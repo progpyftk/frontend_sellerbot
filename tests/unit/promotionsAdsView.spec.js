@@ -124,7 +124,8 @@ describe('bestMarginPct / rowState', () => {
 
 describe('groupByAccount / groupByAccountSku', () => {
   const rows = [
-    normalizeRow(rawRow(), ACCOUNT_NAMES),
+    normalizeRow(rawRow({ item_id: 'MLB100', title: 'Zinco', sku: 'ZN-1' }), ACCOUNT_NAMES),
+    normalizeRow(rawRow(), ACCOUNT_NAMES), // title 'Ureia 25kg', sku 'UREIA-25'
     normalizeRow(rawRow({ item_id: 'MLB456', title: 'Ureia Combo', sku: 'UREIA-25' }), ACCOUNT_NAMES),
     normalizeRow(rawRow({ account_id: 'ACC-2', item_id: 'MLB999', title: 'Cal', sku: 'CAL-10' }), ACCOUNT_NAMES),
   ]
@@ -132,21 +133,24 @@ describe('groupByAccount / groupByAccountSku', () => {
   it('agrupa por conta', () => {
     const groups = groupByAccount(rows)
     expect(groups.map((g) => g.account_nickname)).toEqual(['DOSEVERDE', 'MOGIVITTA'])
-    expect(groups.find((g) => g.account_id === 'ACC-1').adCount).toBe(2)
+    expect(groups.find((g) => g.account_id === 'ACC-1').adCount).toBe(3)
   })
 
-  it('agrupa por conta e SKU', () => {
+  it('mesma estrutura da visão por anúncios, ordenada por SKU', () => {
     const groups = groupByAccountSku(rows)
     const mogi = groups.find((g) => g.account_id === 'ACC-1')
-    expect(mogi.skus).toHaveLength(1)
-    expect(mogi.skus[0].sku).toBe('UREIA-25')
-    expect(mogi.skus[0].adCount).toBe(2)
+    expect(mogi.skus).toBeUndefined()
+    expect(mogi.adCount).toBe(3)
+    // SKU UREIA-25 (2 anúncios) vem antes de ZN-1
+    expect(mogi.ads.map((a) => a.sku)).toEqual(['UREIA-25', 'UREIA-25', 'ZN-1'])
   })
 
-  it('rotula SKU ausente', () => {
-    const groups = groupByAccountSku([normalizeRow(rawRow({ sku: null }), ACCOUNT_NAMES)])
-    expect(groups[0].skus[0].skuLabel).toBe('SKU não mapeado')
-    expect(groups[0].skus[0].sku).toBeNull()
+  it('anúncio sem SKU vai para o fim', () => {
+    const groups = groupByAccountSku([
+      normalizeRow(rawRow({ item_id: 'MLB-A', sku: null }), ACCOUNT_NAMES),
+      normalizeRow(rawRow({ item_id: 'MLB-B', sku: 'AAA-1' }), ACCOUNT_NAMES),
+    ])
+    expect(groups[0].ads.map((a) => a.sku)).toEqual(['AAA-1', null])
   })
 })
 
