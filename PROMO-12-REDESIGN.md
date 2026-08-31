@@ -67,14 +67,17 @@ injeta em `normalizeRow`. Cai para `account_id` quando a conta não está no map
 **Pedido ao backend:** incluir `account_nickname` em cada linha de `results[]` (fonte já disponível
 em `item.account`), evitando a segunda chamada e o risco de conta não mapeada.
 
-### 2.2 Sem agregados globais — só contagem da página — **contornado / sinalizado**
+### 2.2 Agregados globais — **resolvido para "anúncios", parcial para o resto (PROMO-12E)**
 
-`total_estimate` é `len(results)` da página; não há total real nem somatórios por conta/SKU/estado.
-**Contorno:** os 5 indicadores do cabeçalho (anúncios, SKUs, promoções, calculáveis, bloqueadas)
-são calculados sobre **as linhas já carregadas** (`headerMetrics`), com nota explícita na tela.
-**Pedido ao backend:** um bloco `summary` na resposta com totais reais do filtro atual
-(`ads_total`, `skus_total`, `promotions_total`, `estimable_total`, `blocked_total`) e um
-`total` de linhas confiável para paginação.
+Com o snapshot pré-calculado servindo a listagem (inclusive sem filtro/ordenação), `total_estimate`
+= `snapshot.matched` é o **total real** de linhas (anúncio×variação) com promoção do filtro atual.
+A tela usa isso no KPI **"Anúncios com promoção"** e no contador da barra ("N de M linha(s)").
+Os outros 4 indicadores (ativas, faltam ativar, calculáveis, bloqueadas) seguem sobre **as linhas
+já carregadas** (`headerMetrics`), com nota condicional na tela.
+**Fallback:** conta recém-conectada (sem snapshot) ou `?live=1` → `total_estimate` volta a ser
+`len(results)` e o KPI mostra só o carregado.
+**Pendente (menor):** somatórios reais de ativas/calculáveis/bloqueadas exigiriam agregação extra
+no `snapshots.query()`.
 
 ### 2.3 Filtros financeiros não existem server-side — **contornado / sinalizado**
 

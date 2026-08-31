@@ -13,15 +13,20 @@
 
     <!-- Indicadores resumidos -->
     <SbKpiGrid :columns="5" class="q-mb-xs">
-      <SbKpiCard label="Anúncios" :value="metrics.ads" variant="slate" />
+      <SbKpiCard label="Anúncios com promoção" :value="adsTotal" variant="slate" />
       <SbKpiCard label="Promoções ativas" :value="metrics.active" variant="teal" />
       <SbKpiCard label="Faltam ativar" :value="metrics.available" variant="sky" />
       <SbKpiCard label="Calculáveis" :value="metrics.estimable" variant="green" />
       <SbKpiCard label="Bloqueadas" :value="metrics.blocked" variant="amber" />
     </SbKpiGrid>
     <p class="promo-ads__note">
-      Contadores sobre as linhas já carregadas. O total consolidado ainda depende de ajuste no
-      backend (ver <code>PROMO-12-REDESIGN.md</code>).
+      <template v-if="snapshotInfo">
+        “Anúncios com promoção” é o total do catálogo; os demais contadores são sobre as
+        {{ visibleAdCount }} linha(s) já carregadas — use “Carregar mais” ou os filtros.
+      </template>
+      <template v-else>
+        Contadores sobre as {{ visibleAdCount }} linha(s) já carregadas.
+      </template>
     </p>
 
     <!-- Filtros -->
@@ -218,7 +223,9 @@
             : (view === 'ads' ? 'Conta → anúncio/variação → promoções.' : 'Conta → SKU → anúncios → promoções.')) }}
       </span>
       <q-space />
-      <span class="promo-ads__viewbar-count">{{ visibleAdCount }} linha(s)</span>
+      <span class="promo-ads__viewbar-count">
+        {{ visibleAdCount }}<template v-if="adsTotal > visibleAdCount"> de {{ adsTotal }}</template> linha(s)
+      </span>
       <q-btn flat dense no-caps size="sm" label="Expandir tudo" @click="expandTick++" />
       <q-btn flat dense no-caps size="sm" label="Recolher tudo" @click="collapseTick++" />
     </div>
@@ -449,6 +456,15 @@ const visibleGroups = computed(() => {
 })
 const visibleAdCount = computed(() => rows.value.length)
 
+// Total real do catálogo: quando a resposta vem do snapshot pré-calculado,
+// `snapshot.matched` é o total de linhas com promoção (não só a página).
+// Sem snapshot (fan-out ao vivo), só dá para contar as linhas já carregadas.
+const adsTotal = computed(() =>
+  snapshotInfo.value && Number.isFinite(snapshotInfo.value.matched)
+    ? snapshotInfo.value.matched
+    : metrics.value.ads,
+)
+
 const selectionList = computed(() => Object.values(selection.value))
 const summary = computed(() => summarizeSelection(selectionList.value, thresholds.value))
 const removalList = computed(() => Object.values(removalSelection.value))
@@ -545,6 +561,8 @@ async function loadMore () {
     rows.value.push(...(data.results || []).map((r) => normalizeRow(r, accountNames.value)))
     skipped.value.push(...(data.skipped || []))
     nextCursor.value = data.next_cursor || null
+    if (data.snapshot) snapshotInfo.value = data.snapshot
+    if (data.scan) scanInfo.value = data.scan
   } catch (err) {
     error.value = err.response?.data?.error
       || err.response?.data?.message
