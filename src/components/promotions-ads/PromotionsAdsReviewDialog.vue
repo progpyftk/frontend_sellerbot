@@ -88,7 +88,7 @@
                 <th>Conta</th><th>SKU</th><th>Anúncio</th><th>Variação</th><th>Promoção</th>
                 <th class="num">Atual</th><th class="num">Proposto</th><th class="num">Receita</th><th class="num">Desc.</th>
                 <th class="num">Tarifa</th><th class="num">Frete</th><th class="num">CMV</th>
-                <th class="num">Lucro</th><th class="num">Margem</th><th class="num">Markup</th>
+                <th class="num">Lucro</th><th class="num">Margem</th>
                 <th></th>
               </tr>
             </thead>
@@ -115,9 +115,6 @@
                 <td class="num" :class="marginClass(entry.financials.estimated_margin_pct)">
                   {{ pct(entry.financials.estimated_margin_pct) }}
                 </td>
-                <td class="num" :class="marginClass(entry.financials.markup_pct)">
-                  {{ pct(entry.financials.markup_pct) }}
-                </td>
                 <td class="num">
                   <q-btn
                     flat dense round size="sm" icon="close"
@@ -141,7 +138,7 @@
             <thead>
               <tr>
                 <th>Conta</th><th>SKU</th><th>Anúncio</th><th>Variação</th><th>Promoção</th>
-                <th class="num">Proposto</th><th class="num">Markup</th><th>Motivo(s)</th><th></th>
+                <th class="num">Proposto</th><th class="num">Margem</th><th>Motivo(s)</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -155,7 +152,7 @@
                 <td>{{ entry.variation_name || '—' }}</td>
                 <td>{{ entry.promotion_name }} <span class="review-dialog__muted">{{ entry.promotion_type }}</span></td>
                 <td class="num">{{ brl(entry.financials.proposed_price) }}</td>
-                <td class="num">{{ pct(entry.financials.markup_pct) }}</td>
+                <td class="num">{{ pct(entry.financials.estimated_margin_pct) }}</td>
                 <td>
                   <SbBadge v-for="reason in entry.reasons" :key="reason" variant="amber" class="review-dialog__reason">
                     {{ reason }}

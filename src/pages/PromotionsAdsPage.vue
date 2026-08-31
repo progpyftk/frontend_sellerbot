@@ -127,25 +127,14 @@
           <span class="promo-ads__filters-legend">Financeiro e ordenação (varre o catálogo no servidor)</span>
           <div class="promo-ads__filters-row">
             <q-input
-              v-model.number="filters.minMarkup"
-              type="number"
-              outlined
-              dense
-              clearable
-              debounce="500"
-              label="Markup alvo (%)"
-              hint="Filtra e trava a ativação"
-              class="promo-ads__filter promo-ads__filter--sm"
-              @update:model-value="reload"
-            />
-            <q-input
               v-model.number="filters.minMargin"
               type="number"
               outlined
               dense
               clearable
               debounce="500"
-              label="Margem mínima (%)"
+              label="Margem de contribuição alvo (%)"
+              hint="Filtra e trava a ativação"
               class="promo-ads__filter promo-ads__filter--sm"
               @update:model-value="reload"
             />
@@ -309,16 +298,15 @@
           <span>Preço médio: <strong>{{ brl(summary.avgPrice) }}</strong></span>
           <span>Desconto médio: <strong>{{ pct(summary.avgDiscountPct) }}</strong></span>
           <span>Lucro estimado médio: <strong>{{ brl(summary.avgProfit) }}</strong></span>
-          <span>Markup médio: <strong>{{ pct(summary.avgMarkupPct) }}</strong></span>
-          <span>Margem estimada média: <strong>{{ pct(summary.avgMarginPct) }}</strong></span>
+          <span>Margem de contribuição média: <strong>{{ pct(summary.avgMarginPct) }}</strong></span>
         </div>
 
         <div class="promo-ads__summary-flags">
           <SbBadge variant="green">{{ summary.eligibleCount }} aptas para ativação</SbBadge>
           <SbBadge variant="amber">{{ summary.blockedCount }} bloqueadas</SbBadge>
           <span class="promo-ads__summary-lock">Trava: {{ maxDiscountPct }}%</span>
-          <span v-if="thresholds.minMarkupPct != null" class="promo-ads__summary-lock">
-            Markup alvo: {{ thresholds.minMarkupPct }}%
+          <span v-if="thresholds.minMarginPct != null" class="promo-ads__summary-lock">
+            Margem alvo: {{ thresholds.minMarginPct }}%
           </span>
         </div>
 
@@ -430,7 +418,6 @@ const filters = reactive({
   sku: '',
   status: null,
   promotion_type: null,
-  minMarkup: null,
   minMargin: null,
   minProfit: null,
   onlyEstimable: false,
@@ -443,7 +430,6 @@ const pct = (v) => formatPct(v)
 const finiteOrNull = (v) => (Number.isFinite(Number(v)) && v !== '' && v !== null ? Number(v) : null)
 
 const thresholds = computed(() => ({
-  minMarkupPct: finiteOrNull(filters.minMarkup),
   minMarginPct: finiteOrNull(filters.minMargin),
   minProfit: finiteOrNull(filters.minProfit),
 }))
@@ -479,8 +465,7 @@ const activeFilterChips = computed(() => {
   if (filters.sku) chips.push({ key: 'sku', label: `SKU: ${filters.sku}`, clear: () => { filters.sku = ''; reload() } })
   if (filters.status) chips.push({ key: 'status', label: `Status: ${statusOptLabel(filters.status)}`, clear: () => { filters.status = null; reload() } })
   if (filters.promotion_type) chips.push({ key: 'type', label: `Tipo: ${typeLabel(filters.promotion_type)}`, clear: () => { filters.promotion_type = null; reload() } })
-  if (finiteOrNull(filters.minMarkup) !== null) chips.push({ key: 'markup', label: `Markup alvo ${filters.minMarkup}%`, clear: () => { filters.minMarkup = null; reload() } })
-  if (finiteOrNull(filters.minMargin) !== null) chips.push({ key: 'margin', label: `Margem ≥ ${filters.minMargin}%`, clear: () => { filters.minMargin = null; reload() } })
+  if (finiteOrNull(filters.minMargin) !== null) chips.push({ key: 'margin', label: `Margem alvo ${filters.minMargin}%`, clear: () => { filters.minMargin = null; reload() } })
   if (finiteOrNull(filters.minProfit) !== null) chips.push({ key: 'profit', label: `Lucro ≥ ${brl(filters.minProfit)}`, clear: () => { filters.minProfit = null; reload() } })
   if (filters.onlyEstimable) chips.push({ key: 'estimable', label: 'Somente calculáveis', clear: () => { filters.onlyEstimable = false; reload() } })
   if (filters.sort) chips.push({ key: 'sort', label: `Ordem: ${sortLabel(filters.sort)}`, clear: () => { filters.sort = null; reload() } })
@@ -495,7 +480,6 @@ function serverParams () {
     sku: filters.sku,
     status: filters.status,
     promotion_type: filters.promotion_type,
-    min_markup_pct: finiteOrNull(filters.minMarkup),
     min_margin_pct: finiteOrNull(filters.minMargin),
     min_profit: finiteOrNull(filters.minProfit),
     only_estimable: filters.onlyEstimable ? 'true' : null,
@@ -576,7 +560,6 @@ function clearFilters () {
   filters.sku = ''
   filters.status = null
   filters.promotion_type = null
-  filters.minMarkup = null
   filters.minMargin = null
   filters.minProfit = null
   filters.onlyEstimable = false
@@ -656,7 +639,7 @@ async function activate () {
   try {
     const payload = buildActivatePayload(eligible, {
       maxDiscountPct: lock,
-      markupTarget: thresholds.value.minMarkupPct,
+      marginTarget: thresholds.value.minMarginPct,
     })
     const { data } = await MercadoLivreService.activatePromotionsAds(payload)
     const enqueued = data.enqueued_count ?? data.enqueued?.length ?? 0

@@ -30,9 +30,8 @@ export const PROMOTION_TYPE_OPTIONS = [
 
 export const SORT_OPTIONS = [
   { label: 'Ordem padrão (anúncio)', value: null },
-  { label: 'Maior markup', value: '-markup' },
-  { label: 'Menor markup', value: 'markup' },
   { label: 'Maior margem', value: '-margin' },
+  { label: 'Menor margem', value: 'margin' },
   { label: 'Maior desconto', value: '-discount' },
   { label: 'Maior preço', value: '-price' },
   { label: 'Menor preço', value: 'price' },
@@ -161,7 +160,6 @@ function normalizePromotion (raw) {
       estimated_net_unit: numberOrNull(fin.estimated_net_unit),
       estimated_profit_unit: numberOrNull(fin.estimated_profit_unit),
       estimated_margin_pct: numberOrNull(fin.estimated_margin_pct),
-      markup_pct: numberOrNull(fin.markup_pct),
       price_range: fin.price_range || null,
     },
     // objeto financeiro cru, enviado verbatim no payload de ativação — o
@@ -197,7 +195,7 @@ export function normalizeRow (row, accountNames = {}) {
 // (serve tanto para uma promoção normalizada quanto para uma entrada de seleção)
 export function blockingReasons (subject, thresholds = {}) {
   const fin = subject.financials || {}
-  const { minMarginPct = null, minProfit = null, minMarkupPct = null } = thresholds
+  const { minMarginPct = null, minProfit = null } = thresholds
   const reasons = []
   const has = (v) => v !== null && v !== undefined && v !== ''
 
@@ -210,9 +208,6 @@ export function blockingReasons (subject, thresholds = {}) {
       reasons.push('proposta sem dados suficientes para cálculo')
     }
   } else {
-    if (has(minMarkupPct) && isNum(fin.markup_pct) && fin.markup_pct < Number(minMarkupPct)) {
-      reasons.push('markup abaixo do alvo')
-    }
     if (has(minMarginPct) && isNum(fin.estimated_margin_pct) && fin.estimated_margin_pct < Number(minMarginPct)) {
       reasons.push('margem abaixo do mínimo')
     }
@@ -240,15 +235,6 @@ export function bestMarginPct (row) {
     .map((p) => p.financials.estimated_margin_pct)
     .filter(isNum)
   return margins.length ? Math.max(...margins) : null
-}
-
-// Melhor markup estimável de um anúncio. null se nenhuma proposta calculável.
-export function bestMarkupPct (row) {
-  const markups = row.promotions
-    .filter((p) => p.financials.estimable)
-    .map((p) => p.financials.markup_pct)
-    .filter(isNum)
-  return markups.length ? Math.max(...markups) : null
 }
 
 export function rowState (row, thresholds = {}) {
@@ -327,22 +313,14 @@ export function groupByAccountSku (rows) {
 // Mantém propostas NÃO calculáveis visíveis (sinalizadas) — só o toggle
 // "somente calculáveis" as remove. minMargin/minProfit descartam apenas
 // propostas calculáveis que ficam abaixo do piso.
-export function applyClientFilters (rows, { onlyEstimable = false, minMarginPct = null, minProfit = null, minMarkupPct = null } = {}) {
+export function applyClientFilters (rows, { onlyEstimable = false, minMarginPct = null, minProfit = null } = {}) {
   const hasMargin = minMarginPct !== null && minMarginPct !== ''
   const hasProfit = minProfit !== null && minProfit !== ''
-  const hasMarkup = minMarkupPct !== null && minMarkupPct !== ''
   return rows
     .map((row) => {
       let promotions = row.promotions
       if (onlyEstimable) {
         promotions = promotions.filter((p) => p.financials.estimable)
-      }
-      if (hasMarkup) {
-        promotions = promotions.filter(
-          (p) => !p.financials.estimable ||
-            (isNum(p.financials.markup_pct) &&
-              p.financials.markup_pct >= Number(minMarkupPct)),
-        )
       }
       if (hasMargin) {
         promotions = promotions.filter(
@@ -424,7 +402,6 @@ export function summarizeSelection (entries, thresholds = {}) {
     avgDiscountPct: avg(pick(eligible, 'discount_pct')),
     avgProfit: avg(pick(eligible, 'estimated_profit_unit')),
     avgMarginPct: avg(pick(eligible, 'estimated_margin_pct')),
-    avgMarkupPct: avg(pick(eligible, 'markup_pct')),
     eligibleCount: eligible.length,
     blockedCount: blocked.length,
     eligible,
@@ -435,7 +412,7 @@ export function summarizeSelection (entries, thresholds = {}) {
 
 // --- Payload de ativação (contrato PROMO-11D, intocado) ----------------------
 
-export function buildActivatePayload (eligibleEntries, { maxDiscountPct, fixedDiscountPct = null, markupTarget = null } = {}) {
+export function buildActivatePayload (eligibleEntries, { maxDiscountPct, fixedDiscountPct = null, marginTarget = null } = {}) {
   const payload = {
     confirmed: true,
     max_discount_pct: numberOrNull(maxDiscountPct),
@@ -450,8 +427,8 @@ export function buildActivatePayload (eligibleEntries, { maxDiscountPct, fixedDi
   }
   const fixed = numberOrNull(fixedDiscountPct)
   if (fixed !== null) payload.fixed_discount_pct = fixed
-  const markup = numberOrNull(markupTarget)
-  if (markup !== null) payload.markup_target = markup
+  const margin = numberOrNull(marginTarget)
+  if (margin !== null) payload.margin_target = margin
   return payload
 }
 

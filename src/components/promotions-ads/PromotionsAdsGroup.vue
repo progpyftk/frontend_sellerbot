@@ -19,7 +19,7 @@
             <th>Anúncio</th>
             <th>Variação</th>
             <th class="num">Promoções</th>
-            <th class="num">Melhor markup</th>
+            <th class="num">Melhor margem</th>
             <th>Estado / escolha</th>
           </tr>
         </thead>
@@ -72,8 +72,8 @@
                   <SbBadge v-if="item.split.processing.length" variant="amber">{{ item.split.processing.length }} proc.</SbBadge>
                   <span v-if="!item.ad.promotions.length" class="is-muted">—</span>
                 </td>
-                <td class="num" :class="markupClass(item.bestMarkup)">
-                  {{ item.bestMarkup === null ? '—' : pct(item.bestMarkup) }}
+                <td class="num" :class="marginClass(item.bestMargin)">
+                  {{ item.bestMargin === null ? '—' : pct(item.bestMargin) }}
                 </td>
                 <td class="pa-ad__state">
                   <SbBadge v-if="actionMode === 'remove' && item.removalCount" variant="red">
@@ -83,8 +83,8 @@
                     <SbBadge variant="teal">
                       {{ item.chosenPromo.typeLabel || item.chosenPromo.promotion_type }}
                       · {{ brl(item.chosenPromo.financials.proposed_price) }}
-                      · markup {{ item.chosenPromo.financials.markup_pct === null
-                        ? 'n/d' : pct(item.chosenPromo.financials.markup_pct) }}
+                      · margem {{ item.chosenPromo.financials.estimated_margin_pct === null
+                        ? 'n/d' : pct(item.chosenPromo.financials.estimated_margin_pct) }}
                     </SbBadge>
                   </template>
                   <SbBadge v-else :variant="item.state.variant">{{ item.state.label }}</SbBadge>
@@ -110,7 +110,6 @@
                           <th class="num pa-hide-md">CMV</th>
                           <th class="num">Lucro</th>
                           <th class="num">Margem</th>
-                          <th class="num">Markup</th>
                           <th>Situação</th>
                         </tr>
                       </thead>
@@ -168,9 +167,6 @@
                           <td class="num" :class="marginClass(promo.financials.estimated_margin_pct)">
                             {{ promo.financials.estimated_margin_pct === null ? '—' : pct(promo.financials.estimated_margin_pct) }}
                           </td>
-                          <td class="num" :class="markupClass(promo.financials.markup_pct)">
-                            {{ promo.financials.markup_pct === null ? '—' : pct(promo.financials.markup_pct) }}
-                          </td>
                           <td>
                             <SbBadge v-if="reasonsFor(promo).length === 0" variant="green">Apta</SbBadge>
                             <template v-else>
@@ -214,7 +210,7 @@
 import { computed, ref, watch } from 'vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import {
-  bestMarkupPct,
+  bestMarginPct,
   blockingReasons,
   formatBRL,
   formatPct,
@@ -282,7 +278,7 @@ const displayRows = computed(() => {
       visible,
       split,
       sections,
-      bestMarkup: bestMarkupPct(ad),
+      bestMargin: bestMarginPct(ad),
       state: rowState(ad, props.thresholds),
       chosenKey,
       chosenPromo: chosenKey ? ad.promotions.find((p) => p._key === chosenKey) || null : null,
@@ -339,14 +335,9 @@ const pct = (v) => formatPct(v)
 function marginClass (value) {
   if (value === null || value === undefined) return 'is-muted'
   if (value < 0) return 'is-neg'
+  const target = props.thresholds?.minMarginPct
+  if (target != null && target !== '') return value < Number(target) ? 'is-warn' : 'is-pos'
   if (value < 8) return 'is-warn'
-  return 'is-pos'
-}
-function markupClass (value) {
-  if (value === null || value === undefined) return 'is-muted'
-  if (value < 0) return 'is-neg'
-  const target = props.thresholds?.minMarkupPct
-  if (target != null && target !== '' && value < Number(target)) return 'is-warn'
   return 'is-pos'
 }
 function moneyClass (value) {

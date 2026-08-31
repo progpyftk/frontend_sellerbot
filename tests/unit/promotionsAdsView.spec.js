@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   applyClientFilters,
   bestMarginPct,
-  bestMarkupPct,
   blockingReasons,
   buildActivatePayload,
   choosePromotion,
@@ -30,7 +29,6 @@ function fin (over = {}) {
     estimated_net_unit: 65,
     estimated_profit_unit: 25,
     estimated_margin_pct: 29.4,
-    markup_pct: 41.7,
     estimable: true,
     missing_inputs: [],
     ...over,
@@ -96,12 +94,12 @@ describe('blockingReasons', () => {
     expect(blockingReasons(promo, { minMarginPct: 20, minProfit: 10 })).toEqual([])
   })
 
-  it('aplica o markup alvo', () => {
+  it('aplica a margem alvo', () => {
     const promo = normalizeRow(rawRow({ promotions: [
-      { promotion_id: 'X', promotion_type: 'DEAL', financials: fin({ markup_pct: 18 }) },
+      { promotion_id: 'X', promotion_type: 'DEAL', financials: fin({ estimated_margin_pct: 18 }) },
     ] }), ACCOUNT_NAMES).promotions[0]
-    expect(blockingReasons(promo, { minMarkupPct: 30 })).toContain('markup abaixo do alvo')
-    expect(blockingReasons(promo, { minMarkupPct: 15 })).toEqual([])
+    expect(blockingReasons(promo, { minMarginPct: 30 })).toContain('margem abaixo do mínimo')
+    expect(blockingReasons(promo, { minMarginPct: 15 })).toEqual([])
   })
 
   it('bloqueia quando o backend marca can_manual_activate=false', () => {
@@ -266,26 +264,26 @@ describe('buildActivatePayload', () => {
     expect(buildActivatePayload([], { maxDiscountPct: 20, fixedDiscountPct: 10 }).fixed_discount_pct).toBe(10)
   })
 
-  it('inclui markup_target só quando informado', () => {
-    expect(buildActivatePayload([], { maxDiscountPct: 20 })).not.toHaveProperty('markup_target')
-    expect(buildActivatePayload([], { maxDiscountPct: 20, markupTarget: 30 }).markup_target).toBe(30)
+  it('inclui margin_target só quando informado', () => {
+    expect(buildActivatePayload([], { maxDiscountPct: 20 })).not.toHaveProperty('margin_target')
+    expect(buildActivatePayload([], { maxDiscountPct: 20, marginTarget: 30 }).margin_target).toBe(30)
   })
 })
 
-describe('markup no lote', () => {
-  it('bestMarkupPct pega o maior markup estimável', () => {
+describe('margem no lote', () => {
+  it('bestMarginPct pega a maior margem estimável', () => {
     const row = normalizeRow(rawRow({ promotions: [
-      { promotion_id: 'A', promotion_type: 'DEAL', financials: fin({ markup_pct: 22 }) },
-      { promotion_id: 'B', promotion_type: 'SMART', financials: fin({ markup_pct: 51 }) },
+      { promotion_id: 'A', promotion_type: 'DEAL', financials: fin({ estimated_margin_pct: 22 }) },
+      { promotion_id: 'B', promotion_type: 'SMART', financials: fin({ estimated_margin_pct: 51 }) },
       { promotion_id: 'C', promotion_type: 'DOD', financials: fin({ estimable: false, missing_inputs: ['fee'] }) },
     ] }), ACCOUNT_NAMES)
-    expect(bestMarkupPct(row)).toBe(51)
+    expect(bestMarginPct(row)).toBe(51)
   })
 
-  it('summarizeSelection calcula avgMarkupPct sobre os elegíveis', () => {
+  it('summarizeSelection calcula avgMarginPct sobre os elegíveis', () => {
     const row = normalizeRow(rawRow(), ACCOUNT_NAMES)
-    const sel = choosePromotion({}, row, row.promotions[0]) // markup 41.7 (fixture)
-    expect(summarizeSelection(Object.values(sel)).avgMarkupPct).toBeCloseTo(41.7)
+    const sel = choosePromotion({}, row, row.promotions[0]) // margem 29.4 (fixture)
+    expect(summarizeSelection(Object.values(sel)).avgMarginPct).toBeCloseTo(29.4)
   })
 })
 

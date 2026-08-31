@@ -100,27 +100,26 @@ bloqueios de capacidade aparecem no retorno de `activate` (`blocked[]`) e são n
 `candidate_count` em cada `promotions[]` da listagem, para a revisão mostrar o bloqueio
 **antes** do envio (a UX pede "o usuário sabe exatamente o que será ativado").
 
-### 2.5 Simulação vazia (`estimable: false`) e **ativação por markup** — bloqueio real, plano em PROMO-12A
+### 2.5 Simulação vazia (`estimable: false`) e **ativação por margem de contribuição** — bloqueio real, plano em PROMO-12A
 
-**Objetivo do produto:** ativar cada promoção comparando seu resultado a um **markup-alvo**. Isso
-não funciona hoje: `estimated_sale_fee` e `estimated_shipping_cost` chegam `null` para quase todos
-os anúncios (o normalizador da promoção do ML não os fornece; `financials()` só tem fallback de Flex
-para `logistic_type == "self_service"`), então `estimable=false` e net/lucro/margem/markup ficam
-vazios. `cmv_unit` já é resolvido via `ProductCost`.
+**Objetivo do produto:** ativar cada promoção comparando seu resultado a uma **margem de
+contribuição alvo** (tipicamente 20–40%). Isso não funciona hoje: `estimated_sale_fee` e
+`estimated_shipping_cost` chegam `null` para quase todos os anúncios (o normalizador da promoção do
+ML não os fornece; `financials()` só tem fallback de Flex para `logistic_type == "self_service"`),
+então `estimable=false` e net/lucro/margem ficam vazios. `cmv_unit` já é resolvido via `ProductCost`.
 
-**Decisões do dono (2026-08-30):** markup sobre **custo total** (CMV + tarifa + frete); **sem**
-dedução de imposto (consistente com `_update_order_financials`).
+**Decisões do dono (2026-08-30 / revisto 2026-08-31):** custo considerado = **custo total**
+(CMV + tarifa + frete); **sem** dedução de imposto (consistente com `_update_order_financials`).
+**O markup foi removido** — só a **margem de contribuição %** é exibida e é a única trava de
+ativação. Não há mais coluna, filtro nem ordenação de markup.
 
 **Fórmula** (por unidade, ao preço promocional efetivo `P`):
 
 ```
 receita_unit = seller_revenue(promo, P)       # cofinanciados (SMART…) recebem MAIS que P
-custo_total  = cmv_unit + sale_fee(P) + seller_shipping
-markup_%     = (receita_unit / custo_total − 1) × 100        # trava a ativação
 margem_%     = (receita_unit − sale_fee(P) − seller_shipping − cmv_unit − cupom_unit) / receita_unit × 100
+             = lucro_unit / receita_unit × 100                # exibida e trava a ativação
 ```
-
-`markup` ≠ `margem` — a UI (filtro/resumo/revisão) deve deixar claro qual piso está sendo travado.
 
 **Pontas fechadas na revisão de 2026-08-30 (verificado contra produção):**
 
@@ -133,12 +132,12 @@ margem_%     = (receita_unit − sale_fee(P) − seller_shipping − cmv_unit �
 | `cmv_unit` | ✅ 100% na amostra. Fechar: quando `None` por SKU ambíguo, marcar `sku_ambiguous=true` (hoje sempre `false`). |
 | Variações | `P` por variação = `variation.price × (1 − discount_pct/100)`; `sale_fee`/`category_id` seguem de nível de item. |
 
-**Ativação por markup (PROMO-12C):** usuário define `markup_alvo`; cada proposta vira apta/bloqueada
-pelo `markup_%` calculado. Computar o **menor preço que ainda bate o alvo**
-(`P_min = (cmv + frete) / (1/(1+alvo) − pct_fee/100)` quando `fixed_fee=0`; bissecção com custo fixo);
-se nem o preço atual bate → **inviável**. O payload passa a levar `markup_alvo` (+ `P` escolhido para
-`PRICE_DISCOUNT`); o `activate()` do backend **re-deriva** fee/frete/receita e trava por markup, sem
-confiar no navegador.
+**Ativação por margem (PROMO-12C):** usuário define `margin_target`; cada proposta vira
+apta/bloqueada pela `estimated_margin_pct` calculada. Computar o **menor preço que ainda bate o
+alvo** (`P_min = (cmv + frete) / (1 − alvo/100 − pct_fee/100)` quando `fixed_fee=0`; bissecção com
+custo fixo); se nem o preço atual bate → **inviável**. O payload leva `margin_target` (+ `P`
+escolhido para `PRICE_DISCOUNT`); o `activate()` do backend **re-deriva** fee/frete/receita e trava
+por margem, sem confiar no navegador.
 
 **Tratamento atual do frontend (mantém até PROMO-12A entregar):** cada `missing_input` é traduzido
 ("tarifa ausente", "frete ausente", "CMV ausente"), a proposta aparece como **não calculável** e
