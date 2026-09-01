@@ -3,7 +3,7 @@
     <SbPageHeader
       eyebrow="Mercado Livre"
       title="Promoções por anúncios"
-      subtitle="Cada anúncio lista suas promoções por estado. Marque as que quer ativar, ajuste o % de cada uma e ative em lote. Remova as ativas pelo botão vermelho."
+      subtitle="Cada anúncio lista suas promoções por estado. Marque as que quer ativar, ajuste o % e ative em lote — ou remova as ativas pelo botão vermelho."
       icon="local_offer"
     >
       <template #actions>
@@ -11,223 +11,201 @@
       </template>
     </SbPageHeader>
 
-    <!-- como funciona -->
-    <div class="promo-ads__legend">
-      <span><span class="promo-ads__dot promo-ads__dot--active" /> <strong>Ativas agora</strong> — já no ML</span>
-      <span><span class="promo-ads__dot promo-ads__dot--avail" /> <strong>Disponíveis para ativar</strong> — candidatas; marque e ative</span>
-      <span><span class="promo-ads__dot promo-ads__dot--proc" /> <strong>Processando</strong> — o ML está aplicando</span>
-      <span class="promo-ads__legend-sep">|</span>
-      <span>Margem: <span class="promo-ads__mchip promo-ads__mchip--pos">≥ alvo</span> <span class="promo-ads__mchip promo-ads__mchip--warn">baixa</span> <span class="promo-ads__mchip promo-ads__mchip--neg">negativa</span></span>
+    <!--
+      Faixa de métricas. Antes eram 4 KPI cards + um parágrafo explicando que
+      o primeiro card media o catálogo e os outros três mediam a página. Agora
+      todos medem as linhas carregadas e o total do catálogo aparece uma vez,
+      no canto direito — sem nota de rodapé.
+    -->
+    <div class="pa-stats">
+      <div class="pa-stat" title="Anúncios carregados que têm ao menos uma promoção (ativa ou candidata)">
+        <span class="pa-stat__v">{{ metrics.ads }}</span>
+        <span class="pa-stat__l">Anúncios</span>
+      </div>
+      <div class="pa-stat" title="Promoções já rodando no Mercado Livre">
+        <span class="pa-stat__v">{{ metrics.active }}</span>
+        <span class="pa-stat__l">Ativas</span>
+      </div>
+      <div class="pa-stat" title="Promoções candidatas que você ainda não ativou">
+        <span class="pa-stat__v">{{ metrics.available }}</span>
+        <span class="pa-stat__l">Faltam ativar</span>
+      </div>
+      <div class="pa-stat" title="Sem CMV, tarifa ou preço para calcular a margem">
+        <span class="pa-stat__v">{{ metrics.blocked }}</span>
+        <span class="pa-stat__l">Bloqueadas</span>
+      </div>
+      <span class="pa-stats__scope">
+        desta página<template v-if="adsTotal > visibleAdCount"> · {{ adsTotal }} no catálogo</template>
+      </span>
     </div>
 
-    <!-- Indicadores resumidos -->
-    <SbKpiGrid :columns="4" class="q-mb-md">
-      <SbKpiCard label="Anúncios com promoção" :value="adsTotal" variant="slate" title="Quantos anúncios têm ao menos uma promoção (ativa ou candidata) no catálogo" />
-      <SbKpiCard label="Promoções ativas" :value="metrics.active" variant="teal" title="Promoções já rodando no ML (linhas carregadas)" />
-      <SbKpiCard label="Faltam ativar" :value="metrics.available" variant="sky" title="Promoções candidatas que você ainda não ativou (linhas carregadas)" />
-      <SbKpiCard label="Bloqueadas (sem CMV/tarifa)" :value="metrics.blocked" variant="amber" title="Sem dados para calcular a margem (falta CMV, tarifa ou preço). As demais são calculáveis." />
-    </SbKpiGrid>
-    <p class="promo-ads__note">
-      <template v-if="snapshotInfo">
-        “Anúncios com promoção” é o total do catálogo; os demais contadores são sobre as
-        {{ visibleAdCount }} linha(s) já carregadas — use “Carregar mais” ou os filtros.
-      </template>
-      <template v-else>
-        Contadores sobre as {{ visibleAdCount }} linha(s) já carregadas.
-      </template>
+    <!-- Barra fixa: modo, agrupamento, filtros e controles de árvore -->
+    <div class="pa-bar">
+      <div class="pa-bar__in">
+        <q-btn-toggle
+          v-model="actionMode"
+          :options="[
+            { label: 'Ativar propostas', value: 'activate', icon: 'bolt' },
+            { label: 'Remover ativas', value: 'remove', icon: 'delete_outline' },
+          ]"
+          no-caps unelevated toggle-color="primary" color="grey-2" text-color="grey-8"
+        />
+        <q-btn-toggle
+          v-if="!sortedFlat"
+          v-model="view"
+          :options="[
+            { label: 'Por anúncios', value: 'ads' },
+            { label: 'Por SKU', value: 'sku' },
+          ]"
+          no-caps unelevated toggle-color="primary" color="grey-2" text-color="grey-8"
+        />
+        <span class="pa-bar__hint">{{ barHint }}</span>
+        <q-space />
+        <span class="pa-bar__count">
+          {{ visibleAdCount }}<template v-if="adsTotal > visibleAdCount">/{{ adsTotal }}</template> anúncios
+        </span>
+        <q-btn
+          flat dense no-caps size="sm" icon="tune" label="Filtros"
+          :color="filtersOpen ? 'primary' : 'grey-7'"
+          @click="filtersOpen = !filtersOpen"
+        >
+          <q-badge v-if="activeFilterChips.length" color="teal" floating>{{ activeFilterChips.length }}</q-badge>
+        </q-btn>
+        <q-btn flat dense no-caps size="sm" label="Expandir" @click="expandTick++" />
+        <q-btn flat dense no-caps size="sm" label="Recolher" @click="collapseTick++" />
+      </div>
+    </div>
+
+    <!-- Filtros: recolhidos por padrão, logo abaixo da barra -->
+    <div v-show="filtersOpen" class="pf">
+      <section class="pf__section">
+        <header class="pf__head">
+          <q-icon name="search" size="15px" />
+          <span>Buscar anúncios</span>
+        </header>
+        <div class="pf__grid">
+          <q-select
+            v-model="filters.account_id"
+            :options="accountOptions"
+            emit-value map-options clearable outlined dense
+            label="Conta Mercado Livre"
+            :loading="accountsLoading"
+            class="pf__field pf__field--lg"
+            @update:model-value="reload"
+          />
+          <q-input
+            v-model="filters.q"
+            outlined dense clearable
+            label="Título, SKU ou MLB"
+            class="pf__field pf__field--lg"
+            @keyup.enter="reload"
+            @clear="reload"
+          >
+            <template #prepend><q-icon name="search" size="18px" /></template>
+          </q-input>
+          <q-input
+            v-model="filters.sku"
+            outlined dense clearable
+            label="SKU exato"
+            class="pf__field"
+            @keyup.enter="reload"
+            @clear="reload"
+          />
+          <q-select
+            v-model="filters.status"
+            :options="STATUS_OPTIONS"
+            emit-value map-options clearable outlined dense
+            label="Status da promoção"
+            class="pf__field"
+            @update:model-value="reload"
+          />
+          <q-select
+            v-model="filters.promotion_type"
+            :options="PROMOTION_TYPE_OPTIONS"
+            emit-value map-options clearable outlined dense
+            label="Tipo da promoção"
+            class="pf__field"
+            @update:model-value="reload"
+          />
+        </div>
+      </section>
+
+      <section class="pf__section">
+        <header class="pf__head">
+          <q-icon name="tune" size="15px" />
+          <span>Margem, lucro e ordenação</span>
+          <span class="pf__head-hint">varre o catálogo inteiro no servidor</span>
+        </header>
+        <div class="pf__grid">
+          <q-input
+            v-model.number="filters.minMargin"
+            type="number" outlined dense clearable debounce="500"
+            label="Margem alvo (%)"
+            hint="Filtra e trava a ativação"
+            class="pf__field pf__field--sm"
+            @update:model-value="reload"
+          />
+          <q-input
+            v-model.number="filters.minProfit"
+            type="number" outlined dense clearable debounce="500"
+            label="Lucro mínimo (R$)"
+            class="pf__field pf__field--sm"
+            @update:model-value="reload"
+          />
+          <q-select
+            v-model="filters.sort"
+            :options="SORT_OPTIONS"
+            emit-value map-options clearable outlined dense
+            label="Ordenar por"
+            class="pf__field"
+            @update:model-value="reload"
+          />
+          <label class="pf__toggle">
+            <q-toggle v-model="filters.onlyEstimable" dense color="primary" @update:model-value="reload" />
+            <span>Somente calculáveis</span>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <!-- Filtros ativos: continuam visíveis com o painel recolhido -->
+    <div v-if="activeFilterChips.length" class="pf-active">
+      <q-chip
+        v-for="chip in activeFilterChips"
+        :key="chip.key"
+        dense removable color="teal-1" text-color="teal-9"
+        @remove="chip.clear()"
+      >
+        {{ chip.label }}
+      </q-chip>
+      <q-btn flat dense no-caps size="sm" color="grey-7" label="Limpar todos" @click="clearFilters" />
+    </div>
+
+    <!-- Avisos de origem dos dados: uma linha, não um banner colorido -->
+    <p v-if="scanInfo && scanInfo.exhausted" class="pa-note">
+      <q-icon name="travel_explore" size="14px" />
+      Varredura ao vivo: {{ scanInfo.matched }} proposta(s) em {{ scanInfo.scanned }} de
+      {{ scanInfo.scan_total }} anúncios. Filtre por <strong>conta</strong> ou <strong>busca</strong>
+      para varrer o restante.
+    </p>
+    <p v-else-if="snapshotInfo && snapshotInfo.computed_at" class="pa-note">
+      <q-icon name="cloud_done" size="14px" />
+      Filtro e ordenação sobre o catálogo inteiro — dados de
+      <strong>{{ new Date(snapshotInfo.computed_at).toLocaleString('pt-BR') }}</strong>.
+      <template v-if="snapshotInfo.stale">Atualizando em segundo plano.</template>
+      Ativação e remoção consultam o Mercado Livre na hora.
     </p>
 
-    <!-- Filtros -->
-    <SbCard :padded="false" class="pf-card q-mb-md">
-      <template #header>
-        <button class="pf-toggle" type="button" @click="filtersOpen = !filtersOpen">
-          <q-icon :name="filtersOpen ? 'expand_more' : 'chevron_right'" size="18px" />
-          <span>Filtros</span>
-          <SbBadge v-if="activeFilterChips.length" variant="teal">{{ activeFilterChips.length }}</SbBadge>
-          <span v-else class="pf-toggle__hint">nenhum ativo</span>
-        </button>
-      </template>
-
-      <!-- Filtros ativos: visíveis mesmo com o painel recolhido -->
-      <div v-if="activeFilterChips.length" class="pf-active">
-        <q-chip
-          v-for="chip in activeFilterChips"
-          :key="chip.key"
-          dense
-          removable
-          color="teal-1"
-          text-color="teal-9"
-          @remove="chip.clear()"
-        >
-          {{ chip.label }}
-        </q-chip>
-        <q-btn flat dense no-caps size="sm" color="grey-7" label="Limpar todos" @click="clearFilters" />
-      </div>
-
-      <div v-show="filtersOpen" class="pf">
-        <section class="pf__section">
-          <header class="pf__head">
-            <q-icon name="search" size="15px" />
-            <span>Buscar anúncios</span>
-          </header>
-          <div class="pf__grid">
-            <q-select
-              v-model="filters.account_id"
-              :options="accountOptions"
-              emit-value map-options clearable outlined dense
-              label="Conta Mercado Livre"
-              :loading="accountsLoading"
-              class="pf__field pf__field--lg"
-              @update:model-value="reload"
-            />
-            <q-input
-              v-model="filters.q"
-              outlined dense clearable
-              label="Título, SKU ou MLB"
-              class="pf__field pf__field--lg"
-              @keyup.enter="reload"
-              @clear="reload"
-            >
-              <template #prepend><q-icon name="search" size="18px" /></template>
-            </q-input>
-            <q-input
-              v-model="filters.sku"
-              outlined dense clearable
-              label="SKU exato"
-              class="pf__field"
-              @keyup.enter="reload"
-              @clear="reload"
-            />
-            <q-select
-              v-model="filters.status"
-              :options="STATUS_OPTIONS"
-              emit-value map-options clearable outlined dense
-              label="Status da promoção"
-              class="pf__field"
-              @update:model-value="reload"
-            />
-            <q-select
-              v-model="filters.promotion_type"
-              :options="PROMOTION_TYPE_OPTIONS"
-              emit-value map-options clearable outlined dense
-              label="Tipo da promoção"
-              class="pf__field"
-              @update:model-value="reload"
-            />
-          </div>
-        </section>
-
-        <q-separator class="pf__divider" />
-
-        <section class="pf__section">
-          <header class="pf__head">
-            <q-icon name="tune" size="15px" />
-            <span>Margem, lucro e ordenação</span>
-            <span class="pf__head-hint">varre o catálogo inteiro no servidor</span>
-          </header>
-          <div class="pf__grid">
-            <q-input
-              v-model.number="filters.minMargin"
-              type="number" outlined dense clearable debounce="500"
-              label="Margem alvo (%)"
-              hint="Filtra e trava a ativação"
-              class="pf__field pf__field--sm"
-              @update:model-value="reload"
-            />
-            <q-input
-              v-model.number="filters.minProfit"
-              type="number" outlined dense clearable debounce="500"
-              label="Lucro mínimo (R$)"
-              class="pf__field pf__field--sm"
-              @update:model-value="reload"
-            />
-            <q-select
-              v-model="filters.sort"
-              :options="SORT_OPTIONS"
-              emit-value map-options outlined dense
-              label="Ordenar por"
-              class="pf__field"
-              @update:model-value="reload"
-            />
-            <label class="pf__toggle">
-              <q-toggle v-model="filters.onlyEstimable" dense color="primary" @update:model-value="reload" />
-              <span>Somente calculáveis</span>
-            </label>
-          </div>
-        </section>
-
-        <footer class="pf__footer">
-          <span class="pf__footer-hint">Filtros de conta/status/tipo aplicam na hora; nos campos de texto, tecle Enter.</span>
-          <q-btn unelevated no-caps color="primary" icon="search" label="Buscar" :loading="loading" @click="reload" />
-        </footer>
-      </div>
-    </SbCard>
-
-    <q-banner
-      v-if="scanInfo && scanInfo.exhausted"
-      rounded
-      class="promo-ads__banner promo-ads__banner--info q-mb-md"
-    >
-      Varredura financeira ao vivo: {{ scanInfo.matched }} proposta(s) em
-      {{ scanInfo.scanned }} de {{ scanInfo.scan_total }} anúncios.
-      Filtre por <strong>conta</strong> ou <strong>busca</strong> para varrer o restante.
-    </q-banner>
-    <q-banner
-      v-else-if="snapshotInfo && snapshotInfo.computed_at"
-      rounded
-      class="promo-ads__banner promo-ads__banner--info q-mb-md"
-    >
-      Filtro/ordenação sobre o catálogo inteiro — dados de
-      <strong>{{ new Date(snapshotInfo.computed_at).toLocaleString('pt-BR') }}</strong>.
-      <span v-if="snapshotInfo.stale">Atualizando em segundo plano.</span>
-      Ativação e remoção sempre consultam o Mercado Livre na hora.
-    </q-banner>
-
-    <!-- Barra fixa: ação + visualização + controles de árvore -->
-    <div class="promo-ads__viewbar">
-      <q-btn-toggle
-        v-model="actionMode"
-        :options="[
-          { label: 'Ativar propostas', value: 'activate', icon: 'bolt' },
-          { label: 'Remover ativas', value: 'remove', icon: 'delete_outline' },
-        ]"
-        no-caps unelevated toggle-color="primary" color="grey-2" text-color="grey-8"
-      />
-      <q-separator vertical inset />
-      <q-btn-toggle
-        v-if="!sortedFlat"
-        v-model="view"
-        :options="[
-          { label: 'Por anúncios', value: 'ads' },
-          { label: 'Por SKU', value: 'sku' },
-        ]"
-        no-caps unelevated toggle-color="primary" color="grey-2" text-color="grey-8"
-      />
-      <span class="promo-ads__viewbar-hint">
-        {{ actionMode === 'remove'
-          ? 'Marque as promoções ATIVAS a remover (várias por anúncio).'
-          : (sortedFlat ? 'Lista ordenada — escolha uma proposta por anúncio.'
-            : (view === 'ads' ? 'Ordenado por título do anúncio.' : 'Ordenado por SKU — anúncios do mesmo SKU ficam juntos.')) }}
-      </span>
-      <q-space />
-      <span class="promo-ads__viewbar-count">
-        {{ visibleAdCount }}<template v-if="adsTotal > visibleAdCount"> de {{ adsTotal }}</template> linha(s)
-      </span>
-      <q-btn flat dense no-caps size="sm" label="Expandir tudo" @click="expandTick++" />
-      <q-btn flat dense no-caps size="sm" label="Recolher tudo" @click="collapseTick++" />
-    </div>
-
     <!-- Erros -->
-    <q-banner v-if="error" rounded class="promo-ads__banner promo-ads__banner--error q-mb-md">
+    <p v-if="error" class="pa-note pa-note--error">
+      <q-icon name="error_outline" size="14px" />
       {{ error }}
-    </q-banner>
-    <q-banner v-if="skipped.length" rounded class="promo-ads__banner promo-ads__banner--warn q-mb-md">
+    </p>
+    <p v-if="skipped.length" class="pa-note pa-note--warn">
+      <q-icon name="warning_amber" size="14px" />
       {{ skipped.length }} anúncio(s) não puderam ser consultados no Mercado Livre. Os demais
       resultados seguem disponíveis.
-      <ul class="promo-ads__skipped">
-        <li v-for="s in skipped" :key="s.item_id">{{ s.item_id }}: {{ s.reason }}</li>
-      </ul>
-    </q-banner>
+    </p>
 
     <!-- Estados -->
     <SbEmptyState
@@ -253,71 +231,94 @@
       message="Ajuste os filtros, troque a conta ou reduza os pisos de margem/lucro."
     />
 
-    <!-- Árvore agrupada -->
-    <template v-else>
-      <PromotionsAdsGroup
-        v-for="group in visibleGroups"
-        :key="group.key"
-        :group="group"
-        :mode="sortedFlat ? 'ads' : view"
-        :action-mode="actionMode"
-        :selection="selection"
-        :removal="removalSelection"
-        :thresholds="thresholds"
-        :expand-tick="expandTick"
-        :collapse-tick="collapseTick"
-        :editing-busy-key="editingBusyKey"
-        @toggle="onToggle"
-        @set-discount="onSetDiscount"
-        @select-many="onSelectMany"
-        @clear-ad="onClearAd"
-        @toggle-removal="onToggleRemoval"
-        @remove-one="onRemoveOne"
-        @edit-active="onEditActive"
-      />
+    <!--
+      Lista: UMA tabela para a página inteira. O <thead> é único e fica fixo
+      no scroll; PromotionsAdsGroup devolve <tbody> (conta + anúncios). Antes
+      cada anúncio era um card com borda, sombra e seu próprio <thead> de
+      10 colunas repetido.
+    -->
+    <div v-else class="pa-tablewrap">
+      <table class="pa-table">
+        <thead class="pa-thead">
+          <tr>
+            <th class="c-pick"></th>
+            <th class="c-type" title="Tipo de campanha do Mercado Livre">Promoção</th>
+            <th class="c-disc" title="% de desconto sobre o preço atual do anúncio. 'ML min' = o menor desconto que essa campanha aceita. Digite outro valor para simular.">Desconto</th>
+            <th class="c-price num" title="Preço que o comprador vê depois do desconto">Preço final</th>
+            <th class="c-fee num" title="Comissão do Mercado Livre sobre o preço final">Tarifa ML</th>
+            <th class="c-ship num" title="Frete pago pelo vendedor (estimado do histórico de envios)">Frete</th>
+            <th class="c-cmv num" title="Custo da mercadoria vendida (vem do ERP)">CMV</th>
+            <th class="c-profit num" title="Preço final − tarifa − frete − CMV, por unidade">Lucro/un</th>
+            <th class="c-margin num" title="Lucro ÷ preço final. Passe o mouse para comparar com o alvo.">Margem</th>
+            <th class="c-sit" title="Apta = passa nos pisos de margem/lucro. Ativa/Processando = estado atual no ML.">Situação</th>
+          </tr>
+        </thead>
 
-      <div v-if="nextCursor" class="promo-ads__more">
-        <q-btn outline no-caps label="Carregar mais" :loading="loadingMore" @click="loadMore" />
-      </div>
-    </template>
+        <PromotionsAdsGroup
+          v-for="group in visibleGroups"
+          :key="group.key"
+          :group="group"
+          :mode="sortedFlat ? 'ads' : view"
+          :action-mode="actionMode"
+          :selection="selection"
+          :removal="removalSelection"
+          :thresholds="thresholds"
+          :expand-tick="expandTick"
+          :collapse-tick="collapseTick"
+          :editing-busy-key="editingBusyKey"
+          @toggle="onToggle"
+          @set-discount="onSetDiscount"
+          @select-many="onSelectMany"
+          @clear-ad="onClearAd"
+          @toggle-removal="onToggleRemoval"
+          @remove-one="onRemoveOne"
+          @edit-active="onEditActive"
+        />
+      </table>
+    </div>
+
+    <div v-if="nextCursor" class="promo-ads__more">
+      <q-btn outline no-caps label="Carregar mais" :loading="loadingMore" @click="loadMore" />
+    </div>
 
     <!-- Resumo da seleção (ativar) -->
     <transition name="promo-ads-fade">
       <div v-if="actionMode === 'activate' && summary.total" class="promo-ads__summary">
-        <div class="promo-ads__summary-main">
-          <div class="promo-ads__summary-headline">
-            <strong>{{ summary.total }}</strong> promoção(ões) selecionada(s)
+        <div class="promo-ads__summary-row">
+          <div class="promo-ads__summary-main">
+            <div class="promo-ads__summary-headline">
+              <strong>{{ summary.total }}</strong> promoção(ões) selecionada(s)
+            </div>
+            <div class="promo-ads__summary-scope">
+              {{ summary.ads }} anúncios · {{ summary.skus }} SKUs · {{ summary.accounts }} contas
+            </div>
           </div>
-          <div class="promo-ads__summary-scope">
-            {{ summary.ads }} anúncios · {{ summary.skus }} SKUs · {{ summary.accounts }} contas
+          <div class="promo-ads__summary-flags">
+            <SbBadge variant="green">{{ summary.eligibleCount }} aptas</SbBadge>
+            <SbBadge variant="amber">{{ summary.blockedCount }} bloqueadas</SbBadge>
+            <span v-if="thresholds.minMarginPct != null" class="promo-ads__summary-lock">
+              Margem alvo: {{ thresholds.minMarginPct }}%
+            </span>
           </div>
         </div>
 
-        <div class="promo-ads__summary-stats">
-          <span>Preço médio: <strong>{{ brl(summary.avgPrice) }}</strong></span>
-          <span>Desconto médio: <strong>{{ pct(summary.avgDiscountPct) }}</strong></span>
-          <span>Lucro médio: <strong>{{ brl(summary.avgProfit) }}</strong></span>
-          <span>Margem média: <strong>{{ pct(summary.avgMarginPct) }}</strong></span>
-        </div>
-
-        <div v-if="editableSelectedKeys.length" class="promo-ads__summary-bulk">
-          <span>Aplicar</span>
-          <input v-model.number="bulkDiscount" type="number" min="1" max="99" step="0.5" class="promo-ads__bulk-input" />
-          <span>% a {{ editableSelectedKeys.length }} editável(is)</span>
-          <q-btn dense flat no-caps color="primary" label="Aplicar" @click="applyBulkDiscount" />
-        </div>
-
-        <div class="promo-ads__summary-flags">
-          <SbBadge variant="green">{{ summary.eligibleCount }} aptas</SbBadge>
-          <SbBadge variant="amber">{{ summary.blockedCount }} bloqueadas</SbBadge>
-          <span v-if="thresholds.minMarginPct != null" class="promo-ads__summary-lock">
-            Margem alvo: {{ thresholds.minMarginPct }}%
-          </span>
-        </div>
-
-        <div class="promo-ads__summary-actions">
-          <q-btn flat no-caps label="Limpar" @click="clearSelection" />
-          <q-btn color="primary" no-caps :label="`Revisar ${summary.eligibleCount} ativações`" @click="reviewOpen = true" />
+        <div class="promo-ads__summary-row">
+          <div class="promo-ads__summary-stats">
+            <span>Preço médio <strong>{{ brl(summary.avgPrice) }}</strong></span>
+            <span>Desconto médio <strong>{{ pct(summary.avgDiscountPct) }}</strong></span>
+            <span>Lucro médio <strong>{{ brl(summary.avgProfit) }}</strong></span>
+            <span>Margem média <strong>{{ pct(summary.avgMarginPct) }}</strong></span>
+          </div>
+          <div v-if="editableSelectedKeys.length" class="promo-ads__summary-bulk">
+            <span>Aplicar</span>
+            <input v-model.number="bulkDiscount" type="number" min="1" max="99" step="0.5" class="promo-ads__bulk-input" />
+            <span>% a {{ editableSelectedKeys.length }} editável(is)</span>
+            <q-btn dense flat no-caps color="primary" label="Aplicar" @click="applyBulkDiscount" />
+          </div>
+          <div class="promo-ads__summary-actions">
+            <q-btn flat no-caps label="Limpar" @click="clearSelection" />
+            <q-btn color="primary" no-caps :label="`Revisar ${summary.eligibleCount} ativações`" @click="reviewOpen = true" />
+          </div>
         </div>
       </div>
     </transition>
@@ -325,20 +326,26 @@
     <!-- Resumo da seleção (remover) -->
     <transition name="promo-ads-fade">
       <div v-if="actionMode === 'remove' && removalSummary.total" class="promo-ads__summary promo-ads__summary--danger">
-        <div class="promo-ads__summary-main">
-          <div class="promo-ads__summary-headline">
-            <strong>{{ removalSummary.total }}</strong> promoção(ões) ativa(s) a remover
+        <div class="promo-ads__summary-row">
+          <div class="promo-ads__summary-main">
+            <div class="promo-ads__summary-headline">
+              <strong>{{ removalSummary.total }}</strong> promoção(ões) ativa(s) a remover
+            </div>
+            <div class="promo-ads__summary-scope">
+              {{ removalSummary.ads }} anúncios · {{ removalSummary.accounts }} contas
+            </div>
           </div>
-          <div class="promo-ads__summary-scope">
-            {{ removalSummary.ads }} anúncios · {{ removalSummary.accounts }} contas
+          <div class="promo-ads__summary-flags">
+            <span v-for="(n, t) in removalSummary.byType" :key="t" class="promo-ads__summary-lock">
+              {{ typeLabel(t) }}: <strong>{{ n }}</strong>
+            </span>
           </div>
         </div>
-        <div class="promo-ads__summary-stats">
-          <span v-for="(n, t) in removalSummary.byType" :key="t">{{ t }}: <strong>{{ n }}</strong></span>
-        </div>
-        <div class="promo-ads__summary-actions">
-          <q-btn flat no-caps label="Limpar seleção" @click="clearRemovalSelection" />
-          <q-btn color="negative" no-caps label="Revisar remoção" @click="reviewOpen = true" />
+        <div class="promo-ads__summary-row">
+          <div class="promo-ads__summary-actions">
+            <q-btn flat no-caps label="Limpar seleção" @click="clearRemovalSelection" />
+            <q-btn color="negative" no-caps label="Revisar remoção" @click="reviewOpen = true" />
+          </div>
         </div>
       </div>
     </transition>
@@ -361,10 +368,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
-import SbCard from 'src/components/common/SbCard.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
-import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
-import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import PromotionsAdsGroup from 'src/components/promotions-ads/PromotionsAdsGroup.vue'
 import PromotionsAdsReviewDialog from 'src/components/promotions-ads/PromotionsAdsReviewDialog.vue'
@@ -412,7 +416,7 @@ const selection = ref({})
 const removalSelection = ref({})
 const editingBusyKey = ref(null) // promotionKey da linha em "editar %" (bloqueia ações nela)
 const reviewOpen = ref(false)
-const filtersOpen = ref(true)
+const filtersOpen = ref(false)
 const expandTick = ref(0)
 const collapseTick = ref(0)
 const scanInfo = ref(null)
@@ -472,6 +476,13 @@ const removalSummary = computed(() => summarizeRemoval(removalList.value))
 const accountLabel = (id) => accountOptions.value.find((o) => o.value === id)?.label || id
 const typeLabel = (v) => PROMOTION_TYPE_OPTIONS.find((o) => o.value === v)?.label || v
 const statusOptLabel = (v) => STATUS_OPTIONS.find((o) => o.value === v)?.label || v
+const sortLabel = (v) => SORT_OPTIONS.find((o) => o.value === v)?.label || v
+
+const barHint = computed(() => {
+  if (actionMode.value === 'remove') return 'Marque as ativas que quer remover'
+  if (sortedFlat.value) return 'Lista ordenada — uma proposta por anúncio'
+  return view.value === 'sku' ? 'Agrupado por SKU' : 'Agrupado por conta'
+})
 
 const activeFilterChips = computed(() => {
   const chips = []
@@ -486,7 +497,6 @@ const activeFilterChips = computed(() => {
   if (filters.sort) chips.push({ key: 'sort', label: `Ordem: ${sortLabel(filters.sort)}`, clear: () => { filters.sort = null; reload() } })
   return chips
 })
-const sortLabel = (v) => SORT_OPTIONS.find((o) => o.value === v)?.label || v
 
 function serverParams () {
   const raw = {
@@ -803,75 +813,65 @@ onMounted(reload)
 <style lang="scss" scoped>
 @import 'src/css/tokens';
 
-/* largura de leitura: sem isto a página ocupa o monitor inteiro e as linhas
-   ficam esticadas demais / a tabela "joga pra esquerda". Tudo (KPIs, filtros,
-   barra e a árvore) compartilha a mesma coluna centralizada. */
+/* Alturas fixas: o cabeçalho da tabela e a linha da conta são sticky e
+   precisam saber exatamente onde a barra termina. Daí as CSS vars. */
 .promo-ads {
+  --pa-bar-h: 52px;
+  --pa-head-h: 34px;
   max-width: 1400px;
   margin-inline: auto;
 }
 
-/* no meio-termo (900-1199px) o grid de 4 cai pra 3 colunas e sobra 1 card
-   órfão esticado - 2x2 fica alinhado. Acima disso, 4 numa linha. */
-@media (min-width: 900px) and (max-width: 1199px) {
-  .promo-ads :deep(.kpi-grid--cols-4) { grid-template-columns: repeat(2, 1fr); }
-}
-
-.promo-ads__note {
-  font-size: $text-xs-size;
-  color: $text-muted;
-  margin: $space-3 2px $space-5;
-  code { background: $surface-2; padding: 1px 5px; border-radius: $radius-sm; font-size: $text-xs-size; }
-}
-
-.promo-ads__legend {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
-  font-size: $text-small-size; color: $text-muted;
-  padding: $space-3 $space-4; margin: $space-4 0;
-  background: $surface-2; border: 1px solid $border; border-radius: $radius-md;
-  strong { color: $text-body; font-weight: $font-bold; }
-}
-.promo-ads__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: 0; }
-.promo-ads__dot--active { background: $primary; }
-.promo-ads__dot--avail  { background: $info; }
-.promo-ads__dot--proc   { background: $warning; }
-.promo-ads__legend-sep { color: $border-strong; }
-.promo-ads__mchip {
-  display: inline-block; font-size: $text-xs-size; font-weight: $font-bold;
-  padding: 1px 6px; border-radius: 5px; margin-left: 2px;
-}
-.promo-ads__mchip--pos  { background: $tint-green-bg; color: $tint-green-text; }
-.promo-ads__mchip--warn { background: $tint-amber-bg; color: $tint-amber-text; }
-.promo-ads__mchip--neg  { background: $tint-red-bg; color: $tint-red-text; }
-
-/* ---------- Filtros ---------- */
-.pf-toggle {
-  display: flex; align-items: center; gap: 8px;
-  background: none; border: none; cursor: pointer; padding: 0;
-  font-size: $text-h3-size; font-weight: $font-semibold; color: $text-primary;
-}
-.pf-toggle__hint { font-size: $text-xs-size; font-weight: $font-regular; color: $text-muted; }
-
-.pf-active {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+/* ---------- faixa de métricas ---------- */
+.pa-stats {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: $space-3 $space-6;
   padding: $space-3 $space-5;
+  margin: $space-4 0 $space-3;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+}
+.pa-stat { display: flex; align-items: baseline; gap: 7px; }
+.pa-stat__v { font-size: $text-h2-size; font-weight: $font-bold; color: $text-primary; font-variant-numeric: tabular-nums; }
+.pa-stat__l { font-size: $text-xs-size; color: $text-muted; }
+.pa-stats__scope { margin-left: auto; font-size: $text-xs-size; color: $text-disabled; }
+
+/* ---------- barra fixa ---------- */
+/* Sem sangria: todo o conteúdo da página já vive dentro do padding do
+   q-page, então a barra na largura exata da coluna cobre tudo o que rola
+   por baixo dela — e fica alinhada com a tabela. */
+.pa-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: var(--pa-bar-h);
+  background: $surface;
+  border-top: 1px solid $border;
+  border-bottom: 1px solid $border;
+}
+.pa-bar__in {
+  height: 100%;
+  display: flex; align-items: center; gap: $space-3;
+  overflow-x: auto;
+  .q-btn-toggle { border: 1px solid $border; border-radius: $radius-md; flex: none; }
+}
+.pa-bar__hint { font-size: $text-xs-size; color: $text-muted; white-space: nowrap; }
+.pa-bar__count { font-size: $text-xs-size; color: $text-muted; white-space: nowrap; flex: none; }
+
+/* ---------- filtros ---------- */
+.pf {
+  padding: $space-2 $space-4 $space-3;
   background: $surface-2;
   border-bottom: 1px solid $border;
 }
-
-.pf { padding: $space-1 $space-5 0; }
-
-.pf__section { padding: $space-4 0; }
+.pf__section { padding: $space-4 0 0; }
 .pf__head {
   display: flex; align-items: baseline; gap: 7px;
-  margin-bottom: $space-4;
+  margin-bottom: $space-3;
   font-size: $text-small-size; font-weight: $font-bold; color: $text-body;
   .q-icon { color: $primary; align-self: center; }
 }
 .pf__head-hint { font-size: $text-xs-size; font-weight: $font-regular; color: $text-muted; }
-
-.pf__divider { margin: 0 -$space-5; }
-
 .pf__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -883,7 +883,6 @@ onMounted(reload)
   .pf__field--lg { grid-column: span 2; }
 }
 .pf__field--sm :deep(.q-field__native) { text-align: right; }
-
 .pf__toggle {
   display: flex; align-items: center; gap: 8px;
   align-self: center;
@@ -891,36 +890,103 @@ onMounted(reload)
   white-space: nowrap;
 }
 
-.pf__footer {
-  display: flex; align-items: center; gap: $space-4; flex-wrap: wrap;
-  padding: $space-4 0 $space-5;
-  border-top: 1px solid $border;
+.pf-active {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: $space-3 $space-4;
+  background: $surface;
+  border: 1px solid $border;
+  border-top: none;
 }
-.pf__footer-hint { flex: 1; min-width: 200px; font-size: $text-xs-size; color: $text-muted; }
 
-.promo-ads__viewbar {
+/* ---------- avisos (uma linha, sem caixa colorida) ---------- */
+.pa-note {
+  display: flex; align-items: flex-start; gap: 7px;
+  margin: $space-3 0 0;
+  font-size: $text-xs-size; color: $text-muted; line-height: 1.5;
+  strong { color: $text-body; }
+  .q-icon { flex: none; margin-top: 2px; }
+}
+.pa-note--error { color: $tint-red-text; strong { color: $tint-red-text; } }
+.pa-note--warn { color: $tint-amber-text; strong { color: $tint-amber-text; } }
+
+/* ---------- tabela única ---------- */
+.pa-tablewrap { margin-top: $space-3; }
+.pa-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: $text-small-size;
+  color: $text-body;
+}
+.pa-table :deep(.num) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Larguras em % para o <thead> e as <tbody> (componente filho) alinharem
+   exatamente. Precisam somar 100% — com table-layout:fixed o que sobrar
+   seria redistribuído e as colunas desalinhariam. */
+.pa-table :deep(.c-pick)   { width: 4%; }
+.pa-table :deep(.c-type)   { width: 16.5%; }
+.pa-table :deep(.c-disc)   { width: 13%; }
+.pa-table :deep(.c-price)  { width: 9%; }
+.pa-table :deep(.c-fee)    { width: 8%; }
+.pa-table :deep(.c-ship)   { width: 7%; }
+.pa-table :deep(.c-cmv)    { width: 7%; }
+.pa-table :deep(.c-profit) { width: 9%; }
+.pa-table :deep(.c-margin) { width: 8.5%; }
+.pa-table :deep(.c-sit)    { width: 18%; }
+
+/* separadores entre os grupos de colunas (entrada / preço / custos / resultado) */
+.pa-table :deep(.c-price),
+.pa-table :deep(.c-profit),
+.pa-table :deep(.c-sit) { border-left: 1px solid $border; }
+
+.pa-thead th {
   position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: $space-3;
-  margin: 0 -$space-6 $space-4;
-  padding: $space-3 $space-6;
+  top: var(--pa-bar-h);
+  z-index: 3;
+  height: var(--pa-head-h);
+  padding: 0 $space-2;
+  text-align: left;
+  font-size: $text-xs-size; font-weight: $font-bold;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  color: $text-muted;
   background: $surface-2;
-  border-bottom: 1px solid $border;
-  .q-btn-toggle { border: 1px solid $border; border-radius: $radius-md; }
+  border-top: 1px solid $border-strong;
+  border-bottom: 1px solid $border-strong;
+  white-space: nowrap; cursor: help;
 }
-.promo-ads__viewbar-hint { font-size: $text-xs-size; color: $text-muted; }
-.promo-ads__viewbar-count { font-size: $text-xs-size; color: $text-muted; }
+.pa-thead th.num { text-align: right; }
 
-.promo-ads__banner { font-size: $text-small-size; }
-.promo-ads__banner--error { background: $tint-red-bg; color: $tint-red-text; }
-.promo-ads__banner--warn { background: $tint-amber-bg; color: $tint-amber-text; }
-.promo-ads__skipped { margin: 6px 0 0; padding-left: 18px; font-size: $text-xs-size; }
+/* Abaixo de 1100px as três colunas de custo saem; as larguras precisam
+   ser recalculadas (somando 100%) ou as colunas restantes ficam tortas. */
+@media (max-width: 1100px) {
+  .pa-table :deep(.c-fee),
+  .pa-table :deep(.c-ship),
+  .pa-table :deep(.c-cmv) { display: none; }
 
-.promo-ads__more { text-align: center; margin: $space-4 0 96px; }
+  .pa-table :deep(.c-pick)   { width: 5%; }
+  .pa-table :deep(.c-type)   { width: 22%; }
+  .pa-table :deep(.c-disc)   { width: 17%; }
+  .pa-table :deep(.c-price)  { width: 12%; }
+  .pa-table :deep(.c-profit) { width: 12%; }
+  .pa-table :deep(.c-margin) { width: 11%; }
+  .pa-table :deep(.c-sit)    { width: 21%; }
+}
 
+/* Telas estreitas: sticky atrapalha mais do que ajuda, e a tabela passa a
+   rolar na horizontal. overflow-x cria um container de scroll, então o
+   stickyPrecisa ser desligado junto. */
+@media (max-width: 900px) {
+  .pa-bar { position: static; }
+  .pa-thead th { position: static; }
+  .pa-table :deep(.pa-acctrow td) { position: static; }
+  .pa-tablewrap { overflow-x: auto; }
+  .pa-table { min-width: 880px; }
+}
+
+.promo-ads__more { text-align: center; margin: $space-5 0 120px; }
+
+/* ---------- dock de resumo ---------- */
 .promo-ads__summary {
   --sb-x: -50%;
   position: fixed;
@@ -934,8 +1000,8 @@ onMounted(reload)
   box-shadow: $shadow-lg;
   padding: $space-3 $space-5;
   display: flex;
-  align-items: center;
-  gap: $space-5;
+  flex-direction: column;
+  gap: $space-3;
   z-index: 3000;
 }
 @media (min-width: 769px) {
@@ -944,28 +1010,31 @@ onMounted(reload)
     width: min(1320px, calc(100vw - 248px - 48px));
   }
 }
-.promo-ads__summary-main { flex-shrink: 0; }
+.promo-ads__summary-row {
+  display: flex; align-items: center; gap: $space-5; flex-wrap: wrap;
+}
+.promo-ads__summary-main { flex: 1; min-width: 220px; }
 .promo-ads__summary-headline { font-size: $text-body-size; color: $text-body; strong { color: $text-primary; font-size: $text-h3-size; } }
 .promo-ads__summary-scope { font-size: $text-xs-size; color: $text-muted; }
+.promo-ads__summary-flags { display: flex; align-items: center; gap: $space-2; flex-wrap: wrap; }
+.promo-ads__summary-lock { font-size: $text-xs-size; color: $text-muted; strong { color: $text-body; } }
+
 .promo-ads__summary-stats {
   display: flex; flex-wrap: wrap; gap: 4px $space-5;
   font-size: $text-xs-size; color: $text-muted;
   strong { color: $text-primary; }
 }
-.promo-ads__summary-flags {
-  display: flex; align-items: center; gap: $space-2; flex-shrink: 0;
-}
-.promo-ads__summary-lock { font-size: $text-xs-size; color: $text-muted; }
 .promo-ads__summary-bulk {
   display: flex; align-items: center; gap: $space-2;
-  font-size: $text-xs-size; color: $text-muted; flex-shrink: 0;
+  font-size: $text-xs-size; color: $text-muted;
   padding: $space-1 $space-3; background: $surface-2; border-radius: $radius-md;
 }
 .promo-ads__bulk-input {
   width: 58px; padding: $space-1 $space-2; border: 1px solid $border-strong; border-radius: $radius-sm;
   font-size: $text-xs-size; font-weight: $font-bold; text-align: right; color: $text-primary;
 }
-.promo-ads__summary-actions { display: flex; gap: $space-2; flex-shrink: 0; margin-left: auto; }
+.promo-ads__summary-actions { display: flex; gap: $space-2; margin-left: auto; }
+
 /* variante perigo (modo remover): borda vermelha + fundo levemente tintado */
 .promo-ads__summary--danger {
   border-color: $negative;
@@ -977,14 +1046,4 @@ onMounted(reload)
 .promo-ads-fade-leave-active { transition: opacity $transition-base, transform $transition-base; }
 .promo-ads-fade-enter-from,
 .promo-ads-fade-leave-to { opacity: 0; transform: translate(var(--sb-x), 12px); }
-
-@media (max-width: 1024px) {
-  .promo-ads__summary {
-    flex-direction: column;
-    align-items: stretch;
-    gap: $space-3;
-  }
-  .promo-ads__summary-actions { margin-left: 0; }
-}
 </style>
-
