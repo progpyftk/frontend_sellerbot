@@ -1,6 +1,6 @@
 # PROMO-13 — Especificação de Design (Fundação Visual) — `/app/promotions/ads`
 
-**Status:** `wip` · **Iniciado:** 2026-09-01 · **Branch:** `feat/PROMO-13-design-ads`
+**Status:** `done` · **Iniciado/Fechado:** 2026-09-01 · **Commit integrado:** frontend `79bc20c`
 **Escopo:** Fundação visual do módulo de Promoções/Ads — paleta de cores, escala tipográfica,
 contraste WCAG AA, alinhamento de layout e tokens. **Não** altera regras de negócio.
 
@@ -16,8 +16,8 @@ Este texto nasceu de uma **análise somente-leitura** da página `/app/promotion
 2. **O dev que vai mexer de novo no futuro** — a Seção 9 (Armadilhas) é obrigatória antes de
    qualquer edição nestes três arquivos.
 
-A implementação está **concluída e validada** (`quasar build` ok, 39 testes Vitest ok). O que falta
-é só o fechamento de sprint (Seção 10).
+A implementação está **concluída, validada e integrada** ao `main` (`quasar build` ok,
+39 testes Vitest ok, sprint fechada).
 
 ---
 
@@ -107,26 +107,30 @@ Nunca mais usar valores intermediários (9.5, 10.5, 11.5, 12.5, 15). Pegue da es
 A barra `.promo-ads__summary` era `position: fixed` centralizada em `100vw`, então ficava
 deslocada ~124px para a direita quando o drawer estava aberto em telas ≥ 769px.
 
-**Solução:** variável CSS `--sb-x` que desloca a barra para a esquerda exatamente na metade da
-largura do drawer (248 / 2 = 124px), e estreita a barra para compensar a coluna de conteúdo:
+**Solução:** variável CSS `--sb-x` aplicada no `transform: translateX(var(--sb-x))`.
+O `left: 50%` posiciona a borda esquerda no centro do viewport; o translate `-50%`
+recentraliza a barra. Com o drawer aberto (≥ 769px), soma-se `+124px` (metade de 248px)
+para deslocar a barra **para a direita**, acompanhando o conteúdo que o drawer empurrou.
+A largura também é reduzida para `calc(100vw - 248px - 48px)` (caps em `1320px`):
 
 ```scss
 .promo-ads__summary {
-  // antes: left: 50%; transform: translateX(-50%); width: calc(100vw - 48px);
-  left: 50%;
-  width: calc(100vw - 248px - 48px);   // conteúdo = viewport - drawer - gutters
-  transform: translateX(var(--sb-x));
   --sb-x: -50%;                         // default (drawer fechado / mobile)
+  position: fixed;
+  left: 50%;
+  transform: translateX(var(--sb-x));
+  width: min(1320px, calc(100vw - 48px));
 }
-
 @media (min-width: 769px) {
   .promo-ads__summary {
-    --sb-x: calc(-50% + 124px);        // empurra 124px p/ esquerda p/ alinhar ao drawer
+    --sb-x: calc(-50% + 124px);        // +124px p/ a direita = alinha ao conteúdo empurrado
+    width: min(1320px, calc(100vw - 248px - 48px));
   }
 }
 ```
 
-A transição usa `var(--sb-x)` para animar suave entre os dois estados.
+A transição de fade usa `translate(var(--sb-x), 12px)` — o eixo X fica fixo em `--sb-x`
+(sem jitter horizontal), só o Y anima.
 
 **Outro ajuste de layout (P6):** `.pa-ad { max-width: 1040px }` → `max-width: 1320px` para casar
 com a coluna de conteúdo (`max-width: 1400px` centralizada). E `.promo-ads__more` margin-bottom
@@ -172,7 +176,8 @@ Mantenha `outline-offset: -2px` (interno) para não quebrar o grid de tabela.
 - `.promo-ads__note`, `__legend`, `__mchip`, `__viewbar-*`, `__summary-scope`, `__summary-stats`,
   `__bulk-input`: passaram a usar `$text-muted` / `$text-xs-size` / `$surface-2` / `$border` / `$tint-*`.
 - Normalização de fontes 9.5/10.5/11/11.5/12.5/15 → tokens.
-- `.promo-ads__summary`: sistema `--sb-x` (Seção 5).
+- `.promo-ads__summary`: sistema `--sb-x` (Seção 5) + variante `--danger` (borda vermelha,
+  fundo `$tint-red-bg`) para o modo remover.
 - `.promo-ads__more`: margin-bottom 120px → 96px.
 
 ### `src/components/promotions-ads/PromotionsAdsGroup.vue`
@@ -225,6 +230,12 @@ Mantenha `outline-offset: -2px` (interno) para não quebrar o grid de tabela.
 6. **O offset do drawer (124px / 248px) é frágil.** Se alguém mudar a largura do drawer no
    `MainLayout` (`breakpoint` ou width), este cálculo precisa ser re-ajustado na mão. Deixe um
    comentário no CSS apontando para cá.
+7. **`.promo-ads__summary--danger`** (modo remover) tem estilo próprio (borda `$negative` + fundo
+   `$tint-red-bg` + headline vermelha). Se criar outra variante de summary, siga o mesmo padrão.
+8. **Estilos inline em JS ($q.dialog).** As linhas 631 e 661 de `PromotionsAdsPage.vue` usam
+   `style="font-size:12px;color:#64748b"` em strings HTML de diálogo — não dá para usar variáveis
+   SCSS ali. Os valores (12px = `$text-xs-size`; `#64748b` = `$text-muted`) são consistentes com a
+   escala; se re-temar, atualize manualmente.
 
 ---
 
@@ -234,10 +245,9 @@ Mantenha `outline-offset: -2px` (interno) para não quebrar o grid de tabela.
 - [x] Vitest → **39 passed** (view + group)
 - [x] Grep pós-edição: zero `#94a3b8` / `#7c8797` / `#0d9488` / `#99f6e4` restantes nos 3 arquivos
 - [x] Zero fonte fora de escala; zero `$c-*` local restante
-- [ ] Commit do worktree `feat/PROMO-13-design-ads` + spec
-- [ ] Integrate → `origin/main` via `fetch` + `rebase` + `push` (sem `--force`)
-- [ ] Mover PROMO-13 para `## Fechados` no `sprint.md` com o commit integrado
-- [ ] Remover worktree/branch conforme PLAYBOOK
+- [x] Commit + spec integrados ao `origin/main` (frontend `79bc20c`)
+- [x] PROMO-13 movido para `## Fechados` no `sprint.md` com o commit
+- [x] Worktree/branch removidas conforme PLAYBOOK
 
 ---
 

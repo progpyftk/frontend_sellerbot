@@ -966,6 +966,12 @@ onMounted(reload)
   font-size: $text-xs-size; font-weight: $font-bold; text-align: right; color: $text-primary;
 }
 .promo-ads__summary-actions { display: flex; gap: $space-2; flex-shrink: 0; margin-left: auto; }
+/* variante perigo (modo remover): borda vermelha + fundo levemente tintado */
+.promo-ads__summary--danger {
+  border-color: $negative;
+  background: $tint-red-bg;
+  .promo-ads__summary-headline { color: $negative; }
+}
 
 .promo-ads-fade-enter-active,
 .promo-ads-fade-leave-active { transition: opacity $transition-base, transform $transition-base; }
