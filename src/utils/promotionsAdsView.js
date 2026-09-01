@@ -429,8 +429,11 @@ function makeEntry (row, promo) {
     minDiscountPct: minPct,
     bounds: discountBounds(promo),
     chosenDiscountPct: minPct ?? null,
+    _touched: false,
     _base: base,
-    financials: editable && isNum(minPct) ? financialsAtDiscount(base, minPct) : { ...base },
+    // ao marcar o checkbox NÃO recalcula nada — mostra os números que o backend
+    // já devolveu. Só muda se o usuário digitar um % diferente do ofertado.
+    financials: { ...base },
     rawFinancials: promo._rawFinancials,
   }
 }
@@ -450,9 +453,17 @@ export function setSelectionDiscount (selection, key, pct) {
   const e = selection[key]
   if (!e || !e.discountEditable) return selection
   const p = numberOrNull(pct)
+  // no % ofertado pelo ML → volta aos números originais do backend (linha estática);
+  // qualquer outro % → simula no cliente (aproximação, sinalizada como "simulado").
+  const atOffer = p == null || (isNum(e.minDiscountPct) && Math.abs(p - e.minDiscountPct) < 0.05)
   return {
     ...selection,
-    [key]: { ...e, chosenDiscountPct: p, financials: isNum(p) ? financialsAtDiscount(e._base, p) : { ...e._base } },
+    [key]: {
+      ...e,
+      chosenDiscountPct: p,
+      _touched: !atOffer,
+      financials: atOffer ? { ...e._base } : financialsAtDiscount(e._base, p),
+    },
   }
 }
 

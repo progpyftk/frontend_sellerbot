@@ -49,6 +49,26 @@
 
         <!-- promoções, agrupadas por estado, sempre visíveis -->
         <table class="pa-promos">
+          <colgroup>
+            <col style="width:42px" /><col /><col style="width:132px" />
+            <col style="width:96px" /><col style="width:86px" />
+            <col style="width:76px" /><col style="width:76px" />
+            <col style="width:92px" /><col style="width:82px" /><col style="width:172px" />
+          </colgroup>
+          <thead>
+            <tr class="pa-hrow">
+              <th></th>
+              <th title="Tipo de campanha do Mercado Livre">Promoção</th>
+              <th title="% de desconto sobre o preço atual do anúncio. 'ML min' = o menor desconto que essa campanha aceita. Digite outro valor para simular.">Desconto</th>
+              <th class="num" title="Preço que o comprador vê depois do desconto">Preço final</th>
+              <th class="num pa-hide-md" title="Comissão do Mercado Livre sobre o preço final">Tarifa ML</th>
+              <th class="num pa-hide-md" title="Frete pago pelo vendedor (estimado do histórico de envios)">Frete</th>
+              <th class="num pa-hide-md" title="Custo da mercadoria vendida (vem do ERP)">CMV</th>
+              <th class="num" title="Preço final − tarifa − frete − CMV, por unidade">Lucro/un</th>
+              <th class="num" title="Lucro ÷ preço final. Alvo típico: 20–40%">Margem</th>
+              <th title="Apta = passa nos pisos de margem/lucro. Ativa/Processando = estado atual no ML.">Situação</th>
+            </tr>
+          </thead>
           <tbody>
             <template v-for="sec in ad.sections" :key="sec.key">
               <tr class="pa-band" :class="`pa-band--${sec.key}`">
@@ -57,6 +77,7 @@
                   <span class="pa-band__label">{{ sec.label }}</span>
                   <span class="pa-band__count">{{ sec.promos.length }}</span>
                   <span v-if="actionMode === 'remove' && sec.key === 'active'" class="pa-band__hint">marque para remover</span>
+                  <span v-else-if="actionMode === 'activate' && sec.key === 'active'" class="pa-band__hint pa-band__hint--muted">use o botão vermelho para remover</span>
                   <span v-else-if="actionMode === 'activate' && sec.key === 'available'" class="pa-band__hint pa-band__hint--muted">marque e ajuste o % de cada uma</span>
                 </td>
               </tr>
@@ -67,7 +88,7 @@
                 :class="[`pa-prow--${sec.key}`, {
                   'is-chosen': actionMode === 'activate' && isSelected(selection, ad.row, p),
                   'is-removing': actionMode === 'remove' && isRemovalSelected(removal, ad.row, p),
-                  'is-disabled': (actionMode === 'remove' && !isRemovable(p)) || (actionMode === 'activate' && sec.key !== 'available'),
+                  'is-disabled': (actionMode === 'remove' && !isRemovable(p)) || (actionMode === 'activate' && sec.key === 'processing'),
                 }]"
               >
                 <td class="pa-c-pick">
@@ -79,24 +100,27 @@
                     @update:model-value="isRemovable(p) && emit('toggle-removal', { row: ad.row, promo: p })"
                   />
                   <q-checkbox
-                    v-else
+                    v-else-if="sec.key === 'available'"
                     :model-value="isSelected(selection, ad.row, p)"
-                    :disable="sec.key !== 'available'"
                     dense size="sm" color="primary"
-                    @update:model-value="sec.key === 'available' && emit('toggle', { row: ad.row, promo: p })"
+                    @update:model-value="emit('toggle', { row: ad.row, promo: p })"
                   />
                 </td>
-                <td class="pa-c-type">{{ p.typeLabel || p.promotion_type }}</td>
+                <td class="pa-c-type">
+                  {{ p.typeLabel || p.promotion_type }}
+                  <span v-if="entry(ad.row, p) && entry(ad.row, p)._touched" class="pa-sim" title="Valores simulados no navegador com o % que você digitou. O servidor revalida na ativação.">simulado</span>
+                </td>
                 <td class="pa-c-disc">
                   <template v-if="actionMode === 'activate' && sec.key === 'available'">
-                    <span class="pa-min">ML min {{ minPctLabel(p) }}</span>
+                    <span class="pa-min" title="Menor desconto que o Mercado Livre aceita nessa promoção">ML min {{ minPctLabel(p) }}</span>
                     <template v-if="isSelected(selection, ad.row, p)">
-                      <span v-if="!entry(ad.row, p).discountEditable" class="pa-fixed">ML fixa {{ minPctLabel(p) }}</span>
+                      <span v-if="!entry(ad.row, p).discountEditable" class="pa-fixed" title="Esse tipo de promoção não deixa negociar o preço — o desconto é fixado pelo ML">ML fixa {{ minPctLabel(p) }}</span>
                       <input
                         v-else
                         class="pa-discinput"
                         type="number" min="1" max="99" step="0.5"
                         :value="entry(ad.row, p).chosenDiscountPct"
+                        title="% de desconto que você quer aplicar. Digite o mínimo do ML ou mais."
                         @click.stop
                         @change="onDisc(ad.row, p, $event.target.value)"
                       />
@@ -122,7 +146,15 @@
                       class="pa-pill pa-pill--warn pa-reason"
                     >{{ r }}</span>
                   </template>
-                  <span v-else class="pa-pill" :class="`pa-pill--${sec.key === 'active' ? 'active' : sec.key === 'processing' ? 'amber' : 'slate'}`">
+                  <template v-else-if="actionMode === 'activate' && sec.key === 'active'">
+                    <span class="pa-pill pa-pill--active">Ativa</span>
+                    <q-btn
+                      dense flat no-caps size="sm" color="negative" icon="delete_outline" label="Remover"
+                      class="pa-removebtn"
+                      @click="emit('remove-one', { row: ad.row, promo: p })"
+                    />
+                  </template>
+                  <span v-else class="pa-pill" :class="`pa-pill--${sec.key === 'processing' ? 'amber' : 'slate'}`">
                     {{ statusLabel(p.status) }}
                   </span>
                 </td>
@@ -162,7 +194,7 @@ const props = defineProps({
   collapseTick: { type: Number, default: 0 },
 })
 
-const emit = defineEmits(['toggle', 'set-discount', 'select-many', 'clear-ad', 'toggle-removal'])
+const emit = defineEmits(['toggle', 'set-discount', 'select-many', 'clear-ad', 'toggle-removal', 'remove-one'])
 
 const accountOpen = ref(true)
 watch(() => props.expandTick, () => { accountOpen.value = true })
@@ -347,10 +379,21 @@ $c-danger: #dc2626;
 .pa-ad__sku-amb { color: #b45309; text-decoration: underline dotted; }
 .pa-ad__counts { display: flex; gap: 4px; flex: none; }
 
-.pa-promos { width: 100%; border-collapse: collapse; font-size: 13px; color: #334155; }
+.pa-promos { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; color: #334155; }
 .pa-promos .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.pa-promos tbody td { padding: 7px 10px; border-bottom: 1px solid #f4f6f8; vertical-align: middle; }
+.pa-promos tbody td { padding: 7px 10px; border-bottom: 1px solid #f4f6f8; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
 .pa-promos tbody tr:last-child td { border-bottom: none; }
+.pa-hrow th {
+  padding: 6px 10px; text-align: left; font-size: 9.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em; color: #94a3b8;
+  background: #fff; border-bottom: 1px solid #eef2f6; cursor: help; white-space: nowrap;
+}
+.pa-hrow th.num { text-align: right; }
+.pa-sim {
+  margin-left: 6px; font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+  color: #b45309; background: #fef3c7; padding: 1px 5px; border-radius: 4px;
+}
+.pa-removebtn { margin-left: 6px; }
 
 .pa-band td {
   padding: 6px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;

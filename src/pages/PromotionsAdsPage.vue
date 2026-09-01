@@ -3,7 +3,7 @@
     <SbPageHeader
       eyebrow="Mercado Livre"
       title="Promoções por anúncios"
-      subtitle="Analise as propostas disponíveis por conta, SKU e anúncio. Escolha uma proposta específica por anúncio antes de ativar."
+      subtitle="Cada anúncio lista suas promoções por estado. Marque as que quer ativar, ajuste o % de cada uma e ative em lote. Remova as ativas pelo botão vermelho."
       icon="local_offer"
     >
       <template #actions>
@@ -11,13 +11,22 @@
       </template>
     </SbPageHeader>
 
+    <!-- como funciona -->
+    <div class="promo-ads__legend">
+      <span><span class="promo-ads__dot promo-ads__dot--active" /> <strong>Ativas agora</strong> — já no ML</span>
+      <span><span class="promo-ads__dot promo-ads__dot--avail" /> <strong>Disponíveis para ativar</strong> — candidatas; marque e ative</span>
+      <span><span class="promo-ads__dot promo-ads__dot--proc" /> <strong>Processando</strong> — o ML está aplicando</span>
+      <span class="promo-ads__legend-sep">|</span>
+      <span>Margem: <span class="promo-ads__mchip promo-ads__mchip--pos">≥ alvo</span> <span class="promo-ads__mchip promo-ads__mchip--warn">baixa</span> <span class="promo-ads__mchip promo-ads__mchip--neg">negativa</span></span>
+    </div>
+
     <!-- Indicadores resumidos -->
     <SbKpiGrid :columns="5" class="q-mb-xs">
-      <SbKpiCard label="Anúncios com promoção" :value="adsTotal" variant="slate" />
-      <SbKpiCard label="Promoções ativas" :value="metrics.active" variant="teal" />
-      <SbKpiCard label="Faltam ativar" :value="metrics.available" variant="sky" />
-      <SbKpiCard label="Calculáveis" :value="metrics.estimable" variant="green" />
-      <SbKpiCard label="Bloqueadas" :value="metrics.blocked" variant="amber" />
+      <SbKpiCard label="Anúncios com promoção" :value="adsTotal" variant="slate" title="Quantos anúncios têm ao menos uma promoção (ativa ou candidata) no catálogo" />
+      <SbKpiCard label="Promoções ativas" :value="metrics.active" variant="teal" title="Promoções já rodando no ML (linhas carregadas)" />
+      <SbKpiCard label="Faltam ativar" :value="metrics.available" variant="sky" title="Promoções candidatas que você ainda não ativou (linhas carregadas)" />
+      <SbKpiCard label="Calculáveis" :value="metrics.estimable" variant="green" title="Promoções com tarifa, frete e CMV suficientes para estimar a margem" />
+      <SbKpiCard label="Bloqueadas" :value="metrics.blocked" variant="amber" title="Sem dados para calcular a margem (falta CMV, tarifa ou preço)" />
     </SbKpiGrid>
     <p class="promo-ads__note">
       <template v-if="snapshotInfo">
@@ -284,6 +293,7 @@
         @select-many="onSelectMany"
         @clear-ad="onClearAd"
         @toggle-removal="onToggleRemoval"
+        @remove-one="onRemoveOne"
       />
 
       <div v-if="nextCursor" class="promo-ads__more">
@@ -631,7 +641,35 @@ function applyBulkDiscount () {
   selection.value = bulkSetDiscount(selection.value, editableSelectedKeys.value, p)
 }
 
-// --- Modo remoção ---
+// --- Remoção inline de UMA promoção ativa (botão vermelho na visão de ativar) ---
+function onRemoveOne ({ row, promo }) {
+  $q.dialog({
+    title: 'Remover promoção',
+    message: `Remover <b>${promo.typeLabel || promo.promotion_type}</b> de <b>${row.title}</b>?`
+      + '<br><span style="font-size:12px;color:#64748b">O Mercado Livre confirma em alguns minutos.</span>',
+    html: true, cancel: 'Cancelar', ok: { label: 'Remover', color: 'negative', noCaps: true },
+  }).onOk(async () => {
+    try {
+      const payload = buildRemovePayload([{
+        account_id: row.account_id, item_id: row.item_id,
+        promotion_id: promo.promotion_id, promotion_type: promo.promotion_type,
+      }])
+      const { data } = await MercadoLivreService.removePromotionsAds(payload)
+      const n = data.queued_count ?? data.queued?.length ?? 0
+      if (n > 0) {
+        $q.notify({ color: 'positive', message: 'Remoção na fila. O ML confirma em alguns minutos.' })
+      } else {
+        $q.notify({ color: 'warning', multiLine: true,
+          message: (data.blocked || []).map((b) => b.reason).filter(Boolean).join('; ') || 'Não foi possível remover.' })
+      }
+      await reload()
+    } catch (err) {
+      $q.notify({ color: 'negative', message: err.response?.data?.message || err.response?.data?.error || 'Falha ao remover.' })
+    }
+  })
+}
+
+// --- Modo remoção (em lote) ---
 function onToggleRemoval ({ row, promo }) {
   removalSelection.value = toggleRemoval(removalSelection.value, row, promo)
 }
@@ -739,6 +777,26 @@ onMounted(reload)
   margin: 6px 0 16px;
   code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 10.5px; }
 }
+
+.promo-ads__legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+  font-size: 11.5px; color: #64748b;
+  padding: 8px 12px; margin: 10px 0 4px;
+  background: #f8fafc; border: 1px solid #eef2f6; border-radius: 8px;
+  strong { color: #334155; font-weight: 700; }
+}
+.promo-ads__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: 0; }
+.promo-ads__dot--active { background: #0d9488; }
+.promo-ads__dot--avail  { background: #0284c7; }
+.promo-ads__dot--proc   { background: #d97706; }
+.promo-ads__legend-sep { color: #cbd5e1; }
+.promo-ads__mchip {
+  display: inline-block; font-size: 10.5px; font-weight: 700;
+  padding: 1px 6px; border-radius: 5px; margin-left: 2px;
+}
+.promo-ads__mchip--pos  { background: #dcfce7; color: #15803d; }
+.promo-ads__mchip--warn { background: #fef3c7; color: #b45309; }
+.promo-ads__mchip--neg  { background: #fee2e2; color: #b91c1c; }
 
 .promo-ads__filters-toggle {
   display: flex;

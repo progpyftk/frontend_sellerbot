@@ -213,14 +213,24 @@ describe('seleção múltipla por anúncio', () => {
     expect(Object.values(sel)[0].item_id).toBe('MLB999')
   })
 
-  it('desconto do DEAL é editável e default = mínimo do ML; SMART é fixo', () => {
-    let sel = toggleSelection({}, row, row.promotions[1]) // DEAL
+  it('marcar não mexe nos números; só digitar um % diferente simula', () => {
+    let sel = toggleSelection({}, row, row.promotions[1]) // DEAL, oferta 20%
     const deal = Object.values(sel)[0]
     expect(deal.discountEditable).toBe(true)
     expect(deal.chosenDiscountPct).toBe(20)
+    // ao marcar: financials == base do backend, sem _touched
+    expect(deal._touched).toBe(false)
+    expect(deal.financials).toEqual(deal._base)
+
+    // digitar 10% → simula no cliente
     sel = setSelectionDiscount(sel, deal.key, 10)
-    expect(Object.values(sel)[0].chosenDiscountPct).toBe(10)
+    expect(Object.values(sel)[0]._touched).toBe(true)
     expect(Object.values(sel)[0].financials.proposed_price).toBe(90) // 100 × (1 − 0,10)
+
+    // voltar ao % ofertado → volta aos números do backend
+    sel = setSelectionDiscount(sel, deal.key, 20)
+    expect(Object.values(sel)[0]._touched).toBe(false)
+    expect(Object.values(sel)[0].financials).toEqual(deal._base)
 
     const smartSel = toggleSelection({}, row, row.promotions[0]) // SMART
     expect(Object.values(smartSel)[0].discountEditable).toBe(false)
