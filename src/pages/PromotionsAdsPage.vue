@@ -724,7 +724,12 @@ async function activate () {
     })
     const { data } = await MercadoLivreService.activatePromotionsAds(payload)
     const enqueued = data.enqueued_count ?? data.enqueued?.length ?? 0
-    $q.notify({ color: 'positive', message: `${enqueued} proposta(s) enviada(s) para ativação.` })
+    const directN = (data.enqueued || []).filter((e) => e.direct).length
+    $q.notify({
+      color: 'positive', multiLine: directN > 0,
+      message: `${enqueued} proposta(s) enviada(s) para ativação.`
+        + (directN > 0 ? ` ${directN} desconto(s) individual(is) ativados agora — o ML limita a 14 dias.` : ''),
+    })
     if (data.blocked?.length) {
       $q.notify({
         color: 'warning',

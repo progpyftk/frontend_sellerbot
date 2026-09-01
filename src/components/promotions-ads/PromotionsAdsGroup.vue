@@ -131,6 +131,7 @@
                         @click.stop
                         @change="onDisc(ad.row, p, $event.target.value)"
                       />
+                      <span v-if="p.promotion_type === 'PRICE_DISCOUNT'" class="pa-min" title="O Mercado Livre limita o desconto individual a 14 dias. Depois disso ele volta a ficar disponível para reativar.">· 14 dias</span>
                     </template>
                   </template>
                   <span v-else class="pa-dim">{{ p.financials.discount_pct === null ? '—' : pct(p.financials.discount_pct) }}</span>
