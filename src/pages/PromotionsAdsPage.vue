@@ -779,15 +779,15 @@ onMounted(reload)
 .promo-ads__note {
   font-size: 11px;
   color: #94a3b8;
-  margin: 6px 0 16px;
+  margin: 4px 2px 14px;
   code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 10.5px; }
 }
 
 .promo-ads__legend {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
   font-size: 11.5px; color: #64748b;
-  padding: 8px 12px; margin: 10px 0 4px;
-  background: #f8fafc; border: 1px solid #eef2f6; border-radius: 8px;
+  padding: 9px 14px; margin: 12px 0 6px;
+  background: #f8fafc; border: 1px solid #eef1f5; border-radius: 10px;
   strong { color: #334155; font-weight: 700; }
 }
 .promo-ads__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: 0; }
@@ -796,8 +796,8 @@ onMounted(reload)
 .promo-ads__dot--proc   { background: #d97706; }
 .promo-ads__legend-sep { color: #cbd5e1; }
 .promo-ads__mchip {
-  display: inline-block; font-size: 10.5px; font-weight: 700;
-  padding: 1px 6px; border-radius: 5px; margin-left: 2px;
+  display: inline-block; font-size: 10.5px; font-weight: 800;
+  padding: 1px 7px; border-radius: 5px; margin-left: 3px;
 }
 .promo-ads__mchip--pos  { background: #dcfce7; color: #15803d; }
 .promo-ads__mchip--warn { background: #fef3c7; color: #b45309; }
@@ -856,12 +856,14 @@ onMounted(reload)
   gap: 12px;
   margin: 0 -24px 16px;
   padding: 10px 24px;
-  background: #f8fafc;
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(6px);
   border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
   .q-btn-toggle { border: 1px solid #e2e8f0; border-radius: 8px; }
 }
 .promo-ads__viewbar-hint { font-size: 12px; color: #64748b; }
-.promo-ads__viewbar-count { font-size: 12px; color: #64748b; }
+.promo-ads__viewbar-count { font-size: 12px; font-weight: 600; color: #475569; }
 
 .promo-ads__banner { font-size: 13px; }
 .promo-ads__banner--error { background: #fee2e2; color: #991b1b; }
@@ -873,29 +875,29 @@ onMounted(reload)
 .promo-ads__summary {
   position: fixed;
   left: 50%;
-  bottom: 16px;
+  bottom: 18px;
   transform: translateX(-50%);
-  width: min(1160px, calc(100vw - 48px));
+  width: min(1180px, calc(100vw - 48px));
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
-  padding: 12px 18px;
+  border-radius: 18px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.16);
+  padding: 12px 20px;
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 20px;
   z-index: 3000;
 }
 .promo-ads__summary-main { flex-shrink: 0; }
-.promo-ads__summary-headline { font-size: 14px; color: #334155; strong { color: #0f172a; font-size: 16px; } }
-.promo-ads__summary-scope { font-size: 11.5px; color: #94a3b8; }
+.promo-ads__summary-headline { font-size: 13px; color: #334155; strong { color: #0f172a; font-size: 17px; margin-right: 2px; } }
+.promo-ads__summary-scope { font-size: 11px; color: #94a3b8; }
 .promo-ads__summary-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 20px;
-  font-size: 12px;
+  gap: 3px 18px;
+  font-size: 11.5px;
   color: #64748b;
-  strong { color: #0f172a; }
+  strong { color: #0f172a; font-weight: 700; }
 }
 .promo-ads__summary-flags {
   display: flex;
@@ -903,14 +905,14 @@ onMounted(reload)
   gap: 8px;
   flex-shrink: 0;
 }
-.promo-ads__summary-lock { font-size: 11.5px; color: #64748b; }
+.promo-ads__summary-lock { font-size: 11px; font-weight: 600; color: #475569; }
 .promo-ads__summary-bulk {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: #475569; flex-shrink: 0;
-  padding: 4px 10px; background: #f1f5f9; border-radius: 8px;
+  font-size: 11.5px; color: #475569; flex-shrink: 0;
+  padding: 5px 12px; background: #f1f5f9; border-radius: 999px;
 }
 .promo-ads__bulk-input {
-  width: 58px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 6px;
+  width: 56px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 6px;
   font-size: 12.5px; font-weight: 700; text-align: right;
 }
 .promo-ads__summary-actions { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }

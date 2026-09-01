@@ -60,13 +60,13 @@
               <th></th>
               <th title="Tipo de campanha do Mercado Livre">Promoção</th>
               <th title="% de desconto sobre o preço atual do anúncio. 'ML min' = o menor desconto que essa campanha aceita. Digite outro valor para simular.">Desconto</th>
-              <th class="num" title="Preço que o comprador vê depois do desconto">Preço final</th>
-              <th class="num pa-hide-md" title="Comissão do Mercado Livre sobre o preço final">Tarifa ML</th>
-              <th class="num pa-hide-md" title="Frete pago pelo vendedor (estimado do histórico de envios)">Frete</th>
-              <th class="num pa-hide-md" title="Custo da mercadoria vendida (vem do ERP)">CMV</th>
-              <th class="num" title="Preço final − tarifa − frete − CMV, por unidade">Lucro/un</th>
-              <th class="num" title="Lucro ÷ preço final. Alvo típico: 20–40%">Margem</th>
-              <th title="Apta = passa nos pisos de margem/lucro. Ativa/Processando = estado atual no ML.">Situação</th>
+              <th class="num pa-z-price" title="Preço que o comprador vê depois do desconto">Preço final</th>
+              <th class="num pa-hide-md pa-z-cost" title="Comissão do Mercado Livre sobre o preço final">Tarifa ML</th>
+              <th class="num pa-hide-md pa-z-cost" title="Frete pago pelo vendedor (estimado do histórico de envios)">Frete</th>
+              <th class="num pa-hide-md pa-z-cost" title="Custo da mercadoria vendida (vem do ERP)">CMV</th>
+              <th class="num pa-z-result" title="Preço final − tarifa − frete − CMV, por unidade">Lucro/un</th>
+              <th class="num pa-z-result" title="Lucro ÷ preço final. Alvo típico: 20–40%">Margem</th>
+              <th class="pa-z-sit" title="Apta = passa nos pisos de margem/lucro. Ativa/Processando = estado atual no ML.">Situação</th>
             </tr>
           </thead>
           <tbody>
@@ -136,17 +136,17 @@
                   </template>
                   <span v-else class="pa-dim">{{ p.financials.discount_pct === null ? '—' : pct(p.financials.discount_pct) }}</span>
                 </td>
-                <td class="num pa-strong">{{ brl(view(ad.row, p).proposed_price) }}</td>
-                <td class="num pa-hide-md pa-dim">{{ brl(view(ad.row, p).estimated_sale_fee) }}</td>
-                <td class="num pa-hide-md pa-dim">{{ brl(view(ad.row, p).estimated_shipping_cost) }}</td>
-                <td class="num pa-hide-md pa-dim">{{ brl(view(ad.row, p).cmv_unit) }}</td>
-                <td class="num" :class="moneyClass(view(ad.row, p).estimated_profit_unit)">{{ brl(view(ad.row, p).estimated_profit_unit) }}</td>
-                <td class="num">
+                <td class="num pa-strong pa-z-price">{{ brl(view(ad.row, p).proposed_price) }}</td>
+                <td class="num pa-hide-md pa-dim pa-z-cost">{{ brl(view(ad.row, p).estimated_sale_fee) }}</td>
+                <td class="num pa-hide-md pa-dim pa-z-cost">{{ brl(view(ad.row, p).estimated_shipping_cost) }}</td>
+                <td class="num pa-hide-md pa-dim pa-z-cost">{{ brl(view(ad.row, p).cmv_unit) }}</td>
+                <td class="num pa-z-result" :class="moneyClass(view(ad.row, p).estimated_profit_unit)">{{ brl(view(ad.row, p).estimated_profit_unit) }}</td>
+                <td class="num pa-z-result">
                   <span class="pa-chip" :class="marginChipClass(view(ad.row, p).estimated_margin_pct)">
                     {{ view(ad.row, p).estimated_margin_pct === null ? '—' : pct(view(ad.row, p).estimated_margin_pct) }}
                   </span>
                 </td>
-                <td class="pa-c-sit">
+                <td class="pa-c-sit pa-z-sit">
                   <template v-if="actionMode === 'activate' && sec.key === 'available'">
                     <span
                       v-if="p.can_manual_activate === false"
@@ -310,152 +310,181 @@ $c-active: #0d9488;
 $c-available: #0284c7;
 $c-processing: #d97706;
 $c-danger: #dc2626;
+$ink: #0f172a;
+$muted: #64748b;
+$faint: #94a3b8;
+$hair: #eef1f5;
 
 .pa-group {
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   background: #fff;
   overflow: hidden;
-  margin-bottom: 14px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
+/* ---------- cabeçalho da conta ---------- */
 .pa-group__account {
   width: 100%;
   display: flex; align-items: center; gap: 10px;
-  padding: 12px 16px;
-  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  padding: 13px 16px;
+  background: #f8fafc;
   border: none; border-bottom: 1px solid #e2e8f0;
   cursor: pointer; text-align: left;
-  &:hover { background: #eef2f7; }
+  transition: background 120ms ease;
+  &:hover { background: #f1f5f9; }
 }
-.pa-group__chev { color: #64748b; }
-.pa-group__store { color: #0d9488; }
-.pa-group__name { font-size: 14px; font-weight: 700; color: #0f172a; }
-.pa-group__meta { font-size: 12px; color: #64748b; }
-.pa-group__stats { display: flex; gap: 6px; margin-left: 8px; flex-wrap: wrap; }
+.pa-group__chev { color: $faint; }
+.pa-group__store { color: $c-active; }
+.pa-group__name { font-size: 15px; font-weight: 700; color: $ink; letter-spacing: -0.2px; }
+.pa-group__meta { font-size: 12px; color: $faint; }
+.pa-group__stats { display: flex; gap: 6px; margin-left: 10px; flex-wrap: wrap; }
 
+/* ---------- tags de contagem por estado ---------- */
 .pa-tag {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 700; padding: 2px 9px;
-  border-radius: 999px; white-space: nowrap;
+  font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 999px; white-space: nowrap; line-height: 1;
 }
 .pa-tag .pa-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 .pa-tag--active     { background: #ccfbf1; color: #0f766e; }
 .pa-tag--available  { background: #e0f2fe; color: #075985; }
 .pa-tag--processing { background: #fef3c7; color: #92400e; }
-.pa-tag--pick       { background: #0d9488; color: #fff; margin-left: auto; }
+.pa-tag--pick       { background: $c-active; color: #fff; margin-left: auto; }
 
+/* ---------- pills de situação ---------- */
 .pa-pill {
   display: inline-flex; align-items: center;
   font-size: 11px; font-weight: 700; padding: 3px 9px;
-  border-radius: 6px; line-height: 1.4; white-space: nowrap;
+  border-radius: 6px; line-height: 1.35; white-space: nowrap;
 }
 .pa-pill--active   { background: $c-active; color: #fff; }
-.pa-pill--available{ background: #e0f2fe; color: #075985; }
+.pa-pill--available{ background: #dcfce7; color: #15803d; }
 .pa-pill--amber    { background: #fef3c7; color: #92400e; }
 .pa-pill--warn     { background: #fef3c7; color: #92400e; }
 .pa-pill--slate    { background: #f1f5f9; color: #475569; }
 .pa-reason { margin: 0 3px 3px 0; }
 
+/* ---------- chip de valor (margem) ---------- */
 .pa-chip {
-  display: inline-block; font-size: 12.5px; font-weight: 700;
-  padding: 2px 8px; border-radius: 6px;
-  font-variant-numeric: tabular-nums; min-width: 54px; text-align: center;
+  display: inline-block; font-size: 12.5px; font-weight: 800;
+  padding: 3px 9px; border-radius: 7px;
+  font-variant-numeric: tabular-nums; min-width: 58px; text-align: center;
 }
 .pa-chip--pos   { background: #dcfce7; color: #15803d; }
 .pa-chip--warn  { background: #fef3c7; color: #b45309; }
 .pa-chip--neg   { background: #fee2e2; color: #b91c1c; }
-.pa-chip--muted { background: #f1f5f9; color: #94a3b8; }
+.pa-chip--muted { background: #f1f5f9; color: $faint; }
 
-/* ---------- lista de anúncios (sempre expandida) ---------- */
-.pa-list { padding: 6px; }
+/* ---------- lista de anúncios (rows, não cards) ---------- */
+.pa-list { padding: 0; }
 .pa-ad {
-  border: 1px solid #eef2f6;
-  border-radius: 10px;
-  margin: 6px;
-  overflow: hidden;
-  border-left: 3px solid #e2e8f0;
+  border-left: 4px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  &:last-child { border-bottom: none; }
 }
 .pa-ad[data-accent="active"]     { border-left-color: $c-active; }
 .pa-ad[data-accent="available"]  { border-left-color: $c-available; }
 .pa-ad[data-accent="processing"] { border-left-color: $c-processing; }
-.pa-ad--skubreak { margin-top: 16px; }
+.pa-ad[data-accent="none"]       { border-left-color: #e2e8f0; }
+.pa-ad--skubreak { border-top: 3px solid #cbd5e1; }
 
 .pa-ad__head {
   display: flex; align-items: center; gap: 12px;
-  padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid #eef2f6;
+  padding: 10px 14px; background: #fff;
+  border-bottom: 1px solid #e2e8f0;
 }
 .pa-ad__thumb {
-  width: 36px; height: 36px; border-radius: 7px; object-fit: cover;
+  width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
   border: 1px solid #e2e8f0; background: #fff; flex: none;
 }
-.pa-ad__id { min-width: 0; flex: 1; display: flex; flex-direction: column; }
-.pa-ad__title { font-weight: 600; color: #0f172a; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pa-ad__sub { font-size: 11px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; strong { color: #475569; } }
+.pa-ad__id { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.pa-ad__title { font-weight: 600; color: $ink; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pa-ad__sub { font-size: 11.5px; color: $faint; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; strong { color: #475569; } }
 .pa-ad__sku-amb { color: #b45309; text-decoration: underline dotted; }
 .pa-ad__counts { display: flex; gap: 4px; flex: none; }
 
+/* ---------- tabela de promoções, em zonas ---------- */
 .pa-promos { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; color: #334155; }
 .pa-promos .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.pa-promos tbody td { padding: 7px 10px; border-bottom: 1px solid #f4f6f8; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
+.pa-promos tbody td {
+  padding: 8px 10px; border-bottom: 1px solid $hair; vertical-align: middle;
+  overflow: hidden; text-overflow: ellipsis;
+}
 .pa-promos tbody tr:last-child td { border-bottom: none; }
+
+/* zonas: preço | custos (esmaecido) | resultado (destaque) | situação */
+.pa-z-price  { border-left: 1px solid $hair; }
+.pa-z-cost   { background: #fafbfc; color: $faint; font-size: 12px; border-left: 1px solid $hair; }
+.pa-z-result { background: #f5faf7; border-left: 1px solid #d7e9df; }
+.pa-z-result + .pa-z-result { border-left-color: #e3efe9; }
+.pa-z-sit    { border-left: 1px solid $hair; white-space: normal; }
+
 .pa-hrow th {
-  padding: 6px 10px; text-align: left; font-size: 9.5px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.04em; color: #94a3b8;
-  background: #fff; border-bottom: 1px solid #eef2f6; cursor: help; white-space: nowrap;
+  padding: 7px 10px; text-align: left; font-size: 9.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em; color: $muted;
+  background: #f4f6f9; border-bottom: 2px solid #e2e8f0; white-space: nowrap;
 }
 .pa-hrow th.num { text-align: right; }
+.pa-hrow th.pa-z-cost   { background: #eef1f4; color: #97a2b0; }
+.pa-hrow th.pa-z-result { background: #e8f3ec; color: #3f7a58; }
+
 .pa-sim {
-  margin-left: 6px; font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+  margin-left: 6px; font-size: 9.5px; font-weight: 800; text-transform: uppercase;
   color: #b45309; background: #fef3c7; padding: 1px 5px; border-radius: 4px;
+  vertical-align: 1px;
 }
 .pa-removebtn { margin-left: 6px; }
 
+/* ---------- bandas de seção ---------- */
 .pa-band td {
-  padding: 6px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+  padding: 7px 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
   font-weight: 700; color: #334155;
 }
 .pa-band .q-icon { vertical-align: -2px; margin-right: 6px; }
-.pa-band__label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.pa-band__label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
 .pa-band__count {
-  display: inline-block; margin-left: 8px; padding: 0 7px;
-  border-radius: 999px; font-size: 11px; background: rgba(15, 23, 42, 0.08);
+  display: inline-block; margin-left: 8px; padding: 1px 7px; min-width: 18px; text-align: center;
+  border-radius: 999px; font-size: 10.5px; font-weight: 800; background: rgba(15, 23, 42, 0.1);
 }
-.pa-band__hint { margin-left: 10px; font-size: 11px; font-weight: 600; color: #b91c1c; text-transform: none; letter-spacing: 0; }
-.pa-band__hint--muted { color: #94a3b8; }
-.pa-band--active     td { background: #ecfdf5; border-left: 4px solid $c-active; color: #0f766e; }
-.pa-band--available  td { background: #eff6ff; border-left: 4px solid $c-available; color: #075985; }
-.pa-band--processing td { background: #fffbeb; border-left: 4px solid $c-processing; color: #92400e; }
+.pa-band__hint { margin-left: 12px; font-size: 11px; font-weight: 600; color: #b91c1c; text-transform: none; letter-spacing: 0; }
+.pa-band__hint--muted { color: $faint; }
+.pa-band--active     td { background: #ecfdf5; box-shadow: inset 4px 0 0 $c-active; color: #0f766e; }
+.pa-band--available  td { background: #eff6ff; box-shadow: inset 4px 0 0 $c-available; color: #075985; }
+.pa-band--processing td { background: #fffbeb; box-shadow: inset 4px 0 0 $c-processing; color: #92400e; }
 
-.pa-prow > td:first-child { border-left: 3px solid transparent; }
-.pa-prow--active     > td:first-child { border-left-color: $c-active; }
-.pa-prow--available  > td:first-child { border-left-color: $c-available; }
-.pa-prow--processing > td:first-child { border-left-color: $c-processing; }
-.pa-prow:hover td { background: #f8fafc; }
+/* ---------- linhas de promoção ---------- */
+.pa-prow > td:first-child { box-shadow: inset 3px 0 0 transparent; }
+.pa-prow--active     > td:first-child { box-shadow: inset 3px 0 0 $c-active; }
+.pa-prow--available  > td:first-child { box-shadow: inset 3px 0 0 $c-available; }
+.pa-prow--processing > td:first-child { box-shadow: inset 3px 0 0 $c-processing; }
+.pa-prow:hover td { background: #f6f8fa; }
+.pa-prow:hover .pa-z-cost { background: #f2f4f6; }
+.pa-prow:hover .pa-z-result { background: #eef6f1; }
 .pa-prow.is-chosen td { background: #ecfdf5 !important; }
-.pa-prow.is-chosen > td:first-child { border-left-color: $c-active; border-left-width: 4px; }
+.pa-prow.is-chosen > td:first-child { box-shadow: inset 4px 0 0 $c-active; }
 .pa-prow.is-removing td { background: #fef2f2 !important; }
-.pa-prow.is-removing > td:first-child { border-left-color: $c-danger; border-left-width: 4px; }
-.pa-prow.is-disabled { opacity: 0.6; }
+.pa-prow.is-removing > td:first-child { box-shadow: inset 4px 0 0 $c-danger; }
+.pa-prow.is-disabled { opacity: 0.55; }
 
 .pa-c-pick { width: 44px; text-align: center; }
-.pa-c-type { font-weight: 600; color: #0f172a; white-space: nowrap; }
+.pa-c-type { font-weight: 700; color: $ink; white-space: nowrap; }
 .pa-c-disc { white-space: nowrap; }
 .pa-c-sit { white-space: normal; }
-.pa-min { font-size: 11px; color: #94a3b8; margin-right: 6px; }
-.pa-fixed { font-size: 11px; font-weight: 700; color: #075985; }
+.pa-min { font-size: 10.5px; color: $faint; margin-right: 6px; }
+.pa-fixed { font-size: 10.5px; font-weight: 700; color: #075985; }
 .pa-discinput {
-  width: 62px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 6px;
-  font-size: 12.5px; font-weight: 700; text-align: right; color: #0f172a;
+  width: 62px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 7px;
+  font-size: 12.5px; font-weight: 700; text-align: right; color: $ink;
   font-variant-numeric: tabular-nums;
 }
 .pa-discinput:focus { outline: 2px solid #99f6e4; border-color: $c-active; }
-.pa-strong { font-weight: 600; color: #0f172a; }
-.pa-dim { color: #94a3b8; font-size: 12px; }
-.is-muted { color: #94a3b8; }
-.is-pos { color: #15803d; font-weight: 700; }
-.is-neg { color: #b91c1c; font-weight: 700; }
+.pa-strong { font-weight: 700; color: $ink; }
+.pa-dim { color: $faint; font-size: 12px; }
+.is-muted { color: $faint; }
+.is-pos { color: #15803d; font-weight: 800; }
+.is-neg { color: #b91c1c; font-weight: 800; }
 
 @media (max-width: 1100px) {
   .pa-hide-md { display: none; }
