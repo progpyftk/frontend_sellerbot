@@ -4,6 +4,7 @@ import {
   bestMarginPct,
   blockingReasons,
   buildActivatePayload,
+  canEditActiveDiscount,
   clearSelectionForRow,
   discountEditable,
   groupByAccount,
@@ -245,6 +246,14 @@ describe('seleção múltipla por anúncio', () => {
     expect(discountEditable(lgh)).toBe(false)
     // DEAL com faixa continua editável
     expect(discountEditable(row.promotions[1])).toBe(true)
+  })
+
+  it('só PRICE_DISCOUNT/DOD podem ter o desconto de uma instância ativa editado', () => {
+    expect(canEditActiveDiscount({ promotion_type: 'PRICE_DISCOUNT' })).toBe(true)
+    expect(canEditActiveDiscount({ promotion_type: 'DOD' })).toBe(true)
+    expect(canEditActiveDiscount({ promotion_type: 'SMART' })).toBe(false)
+    expect(canEditActiveDiscount({ promotion_type: 'LIGHTNING' })).toBe(false)
+    expect(canEditActiveDiscount({ promotion_type: 'DEAL' })).toBe(false)
   })
 })
 

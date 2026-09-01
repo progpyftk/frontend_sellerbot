@@ -121,6 +121,14 @@ export default {
     return api.post('/mercadolivre/promotions-ads/remove/', payload)
   },
 
+  // payload: { confirmed: true, account_id, item_id, promotion_type, discount_pct }
+  // resposta: { success, deal_price, old_price, ... } — só PRICE_DISCOUNT/DOD.
+  // Síncrona e demorada (~10-20s): o ML não tem "update", o backend remove a
+  // promoção ativa e reativa com o novo % — pode levar alguns retries.
+  editActivePromotionAdDiscount(payload) {
+    return api.post('/mercadolivre/promotions-ads/edit-active/', payload)
+  },
+
   // ==========================================
   // VENDAS (ORDERS)
   // ==========================================

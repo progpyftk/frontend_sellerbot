@@ -164,8 +164,22 @@
                   <template v-else-if="actionMode === 'activate' && sec.key === 'active'">
                     <span class="pa-pill pa-pill--active">Ativa</span>
                     <q-btn
+                      v-if="canEditActiveDiscount(p)"
+                      dense flat no-caps size="sm" color="primary" icon="edit" label="Editar %"
+                      class="pa-removebtn"
+                      :loading="editingBusyKey === selectionKey(ad.row, p)"
+                      :disable="!!editingBusyKey && editingBusyKey !== selectionKey(ad.row, p)"
+                      title="Aumentar ou reduzir o desconto desta promoção já ativa"
+                      @click="emit('edit-active', { row: ad.row, promo: p })"
+                    />
+                    <q-icon
+                      v-else name="info_outline" size="14px" color="grey-5" class="pa-removebtn"
+                      title="Este tipo de promoção não pode ser editado — o Mercado Livre dita o preço ou só aceita/recusa a oferta. Remova e aguarde uma nova oferta."
+                    />
+                    <q-btn
                       dense flat no-caps size="sm" color="negative" icon="delete_outline" label="Remover"
                       class="pa-removebtn"
+                      :disable="!!editingBusyKey && editingBusyKey === selectionKey(ad.row, p)"
                       @click="emit('remove-one', { row: ad.row, promo: p })"
                     />
                   </template>
@@ -187,6 +201,7 @@ import { computed, ref, watch } from 'vue'
 import {
   bestMarginPct,
   blockingReasons,
+  canEditActiveDiscount,
   formatBRL,
   formatPct,
   isRemovable,
@@ -207,9 +222,10 @@ const props = defineProps({
   thresholds: { type: Object, default: () => ({}) },
   expandTick: { type: Number, default: 0 },
   collapseTick: { type: Number, default: 0 },
+  editingBusyKey: { type: String, default: null }, // promotionKey da linha em edição (desabilita ações nela)
 })
 
-const emit = defineEmits(['toggle', 'set-discount', 'select-many', 'clear-ad', 'toggle-removal', 'remove-one'])
+const emit = defineEmits(['toggle', 'set-discount', 'select-many', 'clear-ad', 'toggle-removal', 'remove-one', 'edit-active'])
 
 const accountOpen = ref(true)
 watch(() => props.expandTick, () => { accountOpen.value = true })

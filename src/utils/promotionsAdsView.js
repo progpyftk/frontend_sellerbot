@@ -350,6 +350,17 @@ export function discountEditable (promo) {
   return NEGOTIABLE_TYPES.has(promo.promotion_type) || !!(promo.financials && promo.financials.price_range)
 }
 
+// Tipos cujo desconto de uma instância JÁ ATIVA pode ser editado (aumentado ou
+// reduzido) — espelha `EDITABLE_ACTIVE_TYPES` no backend. O ML não tem "update":
+// o backend remove a instância atual e reativa com o novo %, então só os tipos
+// que o próprio SellerBot ativa diretamente (preço sob nosso controle) entram
+// aqui. LIGHTNING fica de fora mesmo sendo ativação direta — o ML dita o preço.
+const EDITABLE_ACTIVE_TYPES = new Set(['PRICE_DISCOUNT', 'DOD'])
+
+export function canEditActiveDiscount (promo) {
+  return EDITABLE_ACTIVE_TYPES.has(promo.promotion_type)
+}
+
 const round1 = (n) => Math.round(n * 10) / 10
 const round2 = (n) => Math.round(n * 100) / 100
 

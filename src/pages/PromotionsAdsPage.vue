@@ -288,12 +288,14 @@
         :thresholds="thresholds"
         :expand-tick="expandTick"
         :collapse-tick="collapseTick"
+        :editing-busy-key="editingBusyKey"
         @toggle="onToggle"
         @set-discount="onSetDiscount"
         @select-many="onSelectMany"
         @clear-ad="onClearAd"
         @toggle-removal="onToggleRemoval"
         @remove-one="onRemoveOne"
+        @edit-active="onEditActive"
       />
 
       <div v-if="nextCursor" class="promo-ads__more">
@@ -402,6 +404,7 @@ import {
   groupByAccountSku,
   headerMetrics,
   normalizeRow,
+  selectionKey,
   setSelectionDiscount,
   summarizeRemoval,
   summarizeSelection,
@@ -429,6 +432,7 @@ const view = ref('ads')
 const actionMode = ref('activate') // 'activate' | 'remove'
 const selection = ref({})
 const removalSelection = ref({})
+const editingBusyKey = ref(null) // promotionKey da linha em "editar %" (bloqueia ações nela)
 const reviewOpen = ref(false)
 const filtersOpen = ref(true)
 const expandTick = ref(0)
@@ -665,6 +669,49 @@ function onRemoveOne ({ row, promo }) {
       await reload()
     } catch (err) {
       $q.notify({ color: 'negative', message: err.response?.data?.message || err.response?.data?.error || 'Falha ao remover.' })
+    }
+  })
+}
+
+// --- Editar % de UMA promoção já ativa (PRICE_DISCOUNT/DOD) ---
+function onEditActive ({ row, promo }) {
+  const key = selectionKey(row, promo)
+  const currentPct = promo.financials?.discount_pct ?? null
+  $q.dialog({
+    title: 'Editar desconto ativo',
+    message: `Novo % de desconto para <b>${promo.typeLabel || promo.promotion_type}</b> em <b>${row.title}</b>.`
+      + '<br><span style="font-size:12px;color:#64748b">O Mercado Livre não edita direto: o SellerBot remove o desconto '
+      + 'atual e reativa com o novo % na sequência. Leva ~15-20s.</span>',
+    html: true, cancel: 'Cancelar',
+    prompt: {
+      model: currentPct !== null ? String(currentPct) : '', type: 'number',
+      isValid: (v) => Number.isFinite(Number(v)) && Number(v) > 0 && Number(v) < 100,
+    },
+    ok: { label: 'Atualizar', color: 'primary', noCaps: true },
+  }).onOk(async (val) => {
+    const pct = Number(val)
+    editingBusyKey.value = key
+    try {
+      const { data } = await MercadoLivreService.editActivePromotionAdDiscount({
+        confirmed: true, account_id: row.account_id, item_id: row.item_id,
+        promotion_type: promo.promotion_type, discount_pct: pct,
+      })
+      if (data.success) {
+        $q.notify({
+          color: 'positive', timeout: 7000,
+          message: `Desconto atualizado: ${formatBRL(data.old_price)} → ${formatBRL(data.deal_price)} (${pct}%).`,
+        })
+      } else {
+        $q.notify({ color: 'negative', multiLine: true, timeout: 9000, message: data.message || 'Não foi possível atualizar o desconto.' })
+      }
+      await reload()
+    } catch (err) {
+      $q.notify({
+        color: 'negative', multiLine: true, timeout: 9000,
+        message: err.response?.data?.message || err.response?.data?.error || 'Falha ao editar o desconto.',
+      })
+    } finally {
+      editingBusyKey.value = null
     }
   })
 }
