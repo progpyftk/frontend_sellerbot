@@ -88,7 +88,9 @@
                 :class="[`pa-prow--${sec.key}`, {
                   'is-chosen': actionMode === 'activate' && isSelected(selection, ad.row, p),
                   'is-removing': actionMode === 'remove' && isRemovalSelected(removal, ad.row, p),
-                  'is-disabled': (actionMode === 'remove' && !isRemovable(p)) || (actionMode === 'activate' && sec.key === 'processing'),
+                  'is-disabled': (actionMode === 'remove' && !isRemovable(p))
+                    || (actionMode === 'activate' && sec.key === 'processing')
+                    || (actionMode === 'activate' && sec.key === 'available' && p.can_manual_activate === false),
                 }]"
               >
                 <td class="pa-c-pick">
@@ -100,10 +102,15 @@
                     @update:model-value="isRemovable(p) && emit('toggle-removal', { row: ad.row, promo: p })"
                   />
                   <q-checkbox
-                    v-else-if="sec.key === 'available'"
+                    v-else-if="sec.key === 'available' && p.can_manual_activate !== false"
                     :model-value="isSelected(selection, ad.row, p)"
                     dense size="sm" color="primary"
                     @update:model-value="emit('toggle', { row: ad.row, promo: p })"
+                  />
+                  <q-icon
+                    v-else-if="sec.key === 'available'"
+                    name="lock" size="15px" color="grey-5"
+                    :title="p.activation_block_reason || 'Este tipo de promoção não é ativável por aqui'"
                   />
                 </td>
                 <td class="pa-c-type">
@@ -140,11 +147,18 @@
                 </td>
                 <td class="pa-c-sit">
                   <template v-if="actionMode === 'activate' && sec.key === 'available'">
-                    <span v-if="reasonsFor(ad.row, p).length === 0" class="pa-pill pa-pill--available">Apta</span>
                     <span
-                      v-for="r in reasonsFor(ad.row, p)" :key="r"
-                      class="pa-pill pa-pill--warn pa-reason"
-                    >{{ r }}</span>
+                      v-if="p.can_manual_activate === false"
+                      class="pa-pill pa-pill--slate"
+                      :title="p.activation_block_reason || ''"
+                    >Somente leitura</span>
+                    <template v-else>
+                      <span v-if="reasonsFor(ad.row, p).length === 0" class="pa-pill pa-pill--available">Apta</span>
+                      <span
+                        v-for="r in reasonsFor(ad.row, p)" :key="r"
+                        class="pa-pill pa-pill--warn pa-reason"
+                      >{{ r }}</span>
+                    </template>
                   </template>
                   <template v-else-if="actionMode === 'activate' && sec.key === 'active'">
                     <span class="pa-pill pa-pill--active">Ativa</span>
@@ -235,9 +249,10 @@ const decoratedAds = computed(() => {
         : split.processing.length ? 'processing' : 'none'
     const skuBreak = props.mode === 'sku' && prevSku !== undefined && (row.sku || null) !== prevSku
     prevSku = row.sku || null
-    const selectableCount = split.available.length
-    const selectedCount = split.available.filter((p) => isSelected(props.selection, row, p)).length
-    return { row, split, sections, dominant, skuBreak, selectableCount, selectedCount, bestMargin: bestMarginPct(row) }
+    const selectable = split.available.filter((p) => p.can_manual_activate !== false)
+    const selectableCount = selectable.length
+    const selectedCount = selectable.filter((p) => isSelected(props.selection, row, p)).length
+    return { row, split, sections, dominant, skuBreak, selectable, selectableCount, selectedCount, bestMargin: bestMarginPct(row) }
   })
 })
 
@@ -265,7 +280,8 @@ function onDisc (row, p, val) {
   emit('set-discount', { key: selectionKey(row, p), pct: val })
 }
 function selectAllAvailable (row) {
-  emit('select-many', { row, promos: splitPromotions(row.promotions).available })
+  const promos = splitPromotions(row.promotions).available.filter((p) => p.can_manual_activate !== false)
+  emit('select-many', { row, promos })
 }
 function clearAd (row) {
   emit('clear-ad', { row })
