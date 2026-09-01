@@ -38,19 +38,26 @@ Conta Mercado Livre                (card: nome + storefront + N ativas / M a ati
                                     tarifa | frete | CMV | lucro | chip de margem | situação
 ```
 
-- **Seleção no nível da proposta.** Cada anúncio/variação admite **no máximo uma** proposta
-  (`choosePromotion` substitui, nunca acumula; `rowKey = account_id::item_id::variation_id`).
-  Existe um rádio "Não ativar nenhuma proposta" para limpar a linha. Nada de
-  `selectedRows.flatMap(row => row.promotions)`.
+- **Seleção MÚLTIPLA por anúncio (revisto pelo dono).** Cada promoção candidata é um checkbox
+  independente — `selection` acumula, keyed por `account_id::item_id::variation_id##promotion_key`
+  (`toggleSelection` / `isSelected` / `clearSelectionForRow`). O botão "Marcar N" seleciona todas
+  as candidatas do anúncio de uma vez. Nada de `selectedRows.flatMap(...)` — cada entrada é
+  explícita.
+- **% de desconto por promoção.** Tipos negociáveis (`DEAL`, `SELLER_CAMPAIGN`, `PRICE_DISCOUNT`,
+  `DOD`, ou qualquer um com `price_range`) têm um input de %, pré-preenchido com o **mínimo que o
+  ML pede** (`promotionMinDiscountPct`); `financialsAtDiscount` recalcula preço/tarifa/lucro/margem
+  ao vivo no cliente. Tipos de aceite (SMART/LIGHTNING/cupom/PRICE_MATCHING) mostram "ML fixa X%",
+  sem input. Ação em massa no rodapé: "aplicar __% a N editáveis" (`bulkSetDiscount`).
 - As duas visões usam **o mesmo `selection`** e os mesmos dados; só muda a **ordenação** dos
   anúncios: `groupByAccount` (por título) vs `groupByAccountSku` (por SKU — anúncios do mesmo SKU
   ficam adjacentes, com divisória; o SKU é **coluna**, não mais um cabeçalho que colapsa).
-- Estado de seleção guarda `{ account_id, item_id, variation_id, promotion_id, promotion_type,
-  promotion_name, status, sku, title, variation_name, financials, rawFinancials }`.
-- Payload de ativação = **contrato PROMO-11D intocado**
-  (`POST /mercadolivre/promotions-ads/activate/` com `confirmed: true`, `max_discount_pct`,
-  `candidates[]` só com os **explicitamente selecionados e aptos**; `financials` cru é enviado
-  verbatim para o servidor revalidar a aritmética).
+- **Sem expandir.** As promoções de cada anúncio ficam **sempre visíveis** (bandas Ativas/
+  Disponíveis/Processando inline); só o cabeçalho da conta colapsa. Trabalhar com centenas de
+  anúncios não exige mais abrir um por um.
+- Payload de ativação: `POST /mercadolivre/promotions-ads/activate/` com `confirmed: true`,
+  `candidates[]` (cada um com `discount_pct` e o `financials` cru), `margin_target?` e um
+  `max_discount_pct` = maior desconto pedido (compat). O servidor revalida a margem **no preço
+  escolhido** e usa `discount_pct` como teto + desconto fixo do candidato.
 - Cores só para estado: margem ≥ 8% verde, 0–8% laranja, < 0 vermelho, ausente neutro.
   Estados de loading / vazio / erro / **erro parcial** (`skipped[]`) via `SbEmptyState` / banners.
 

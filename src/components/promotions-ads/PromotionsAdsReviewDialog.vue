@@ -8,7 +8,7 @@
           <div class="review-dialog__subtitle">
             {{ mode === 'remove'
               ? 'Estas promoções ativas entram na fila de remoção. O Mercado Livre confirma em alguns minutos.'
-              : 'Confira cada proposta antes de confirmar. Só as aptas são enviadas ao Mercado Livre.' }}
+              : 'Cada promoção vai com o % que você definiu. Só as aptas são enviadas ao Mercado Livre; o servidor revalida a margem.' }}
           </div>
         </div>
         <q-btn flat round dense icon="close" @click="$emit('update:modelValue', false)" />
@@ -52,28 +52,6 @@
         </div>
         <p v-else class="review-dialog__empty">Nenhuma promoção selecionada.</p>
       </q-card-section>
-
-      <q-card-section v-if="mode !== 'remove'" class="review-dialog__lock">
-        <q-input
-          :model-value="maxDiscountPct"
-          type="number"
-          outlined
-          dense
-          min="1"
-          max="99"
-          label="Trava de desconto máximo (%)"
-          class="review-dialog__lock-input"
-          :rules="[(v) => (v >= 1 && v <= 99) || 'Informe um valor entre 1 e 99%']"
-          hide-bottom-space
-          @update:model-value="$emit('update:maxDiscountPct', Number($event))"
-        />
-        <p class="review-dialog__lock-hint">
-          Teto de desconto aceito por proposta. O motor parte do desconto sugerido pelo ML e tenta
-          preços menos agressivos dentro dessa faixa. Enviado em <code>max_discount_pct</code>.
-        </p>
-      </q-card-section>
-
-      <q-separator />
 
       <q-card-section v-if="mode !== 'remove'" class="review-dialog__body">
         <!-- Serão enviados -->
@@ -211,11 +189,10 @@ const props = defineProps({
   mode: { type: String, default: 'activate' },
   summary: { type: Object, required: true },
   removalSummary: { type: Object, default: () => ({ total: 0, ads: 0, accounts: 0, entries: [] }) },
-  maxDiscountPct: { type: [Number, String], default: 15 },
   activating: { type: Boolean, default: false },
 })
 
-defineEmits(['update:modelValue', 'update:maxDiscountPct', 'confirm', 'remove', 'remove-removal'])
+defineEmits(['update:modelValue', 'confirm', 'remove', 'remove-removal'])
 
 // Ordena por conta → SKU → anúncio para agrupar visualmente a hierarquia.
 const byHierarchy = (a, b) =>

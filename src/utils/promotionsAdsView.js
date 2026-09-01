@@ -153,6 +153,7 @@ function normalizePromotion (raw) {
       coupon_unit: numberOrNull(fin.coupon_unit),
       estimated_sale_fee: numberOrNull(fin.estimated_sale_fee),
       sale_fee_pct: numberOrNull(fin.sale_fee_pct),
+      sale_fee_fixed: numberOrNull(fin.sale_fee_fixed),
       estimated_shipping_cost: numberOrNull(fin.estimated_shipping_cost),
       cmv_unit: numberOrNull(fin.cmv_unit),
       cmv_ambiguous: Boolean(fin.cmv_ambiguous),
@@ -327,11 +328,89 @@ export function applyClientFilters (rows, { onlyEstimable = false, minMarginPct 
     .filter((row) => row.promotions.length > 0)
 }
 
-// --- Seleção (uma proposta por anúncio/variação) -----------------------------
+// --- Seleção (VÁRIAS promoções por anúncio, cada uma com seu desconto) --------
 
-export function buildSelectionEntry (row, promo) {
+// Tipos cujo desconto é NEGOCIÁVEL pelo vendedor (têm faixa de preço). Nos demais
+// (SMART, LIGHTNING, cupom, PRICE_MATCHING…) o ML fixa o preço — o % é read-only.
+const NEGOTIABLE_TYPES = new Set(['DEAL', 'SELLER_CAMPAIGN', 'PRICE_DISCOUNT', 'DOD'])
+
+export function discountEditable (promo) {
+  return NEGOTIABLE_TYPES.has(promo.promotion_type) || !!(promo.financials && promo.financials.price_range)
+}
+
+const round1 = (n) => Math.round(n * 10) / 10
+const round2 = (n) => Math.round(n * 100) / 100
+
+// % de desconto MÍNIMO que o ML pede para entrar nessa promoção.
+export function promotionMinDiscountPct (promo) {
+  const fin = promo.financials || {}
+  const ref = fin.reference_price
+  const range = fin.price_range
+  if (range && isNum(range.max) && isNum(ref) && ref > 0) {
+    return Math.max(0, round1((1 - range.max / ref) * 100)) // maior preço permitido = menor desconto
+  }
+  return numberOrNull(promo.discount_pct ?? fin.discount_pct)
+}
+
+// Faixa de desconto que o ML aceita para a promoção (só faz sentido nos editáveis).
+export function discountBounds (promo) {
+  const fin = promo.financials || {}
+  const ref = fin.reference_price
+  const range = fin.price_range
+  const min = promotionMinDiscountPct(promo)
+  let max = 90
+  if (range && isNum(range.min) && isNum(ref) && ref > 0) {
+    max = round1((1 - range.min / ref) * 100)
+  }
+  return { min: isNum(min) ? Math.max(1, min) : 1, max: Math.min(99, Math.max(max, isNum(min) ? min : 1)) }
+}
+
+// Recalcula o financeiro a um desconto arbitrário (preview no cliente; o backend
+// revalida na ativação). Co-financiados: aproxima receita = preço.
+export function financialsAtDiscount (base, pct) {
+  const f = base || {}
+  const ref = f.reference_price
+  if (!isNum(ref) || !isNum(pct)) return { ...f }
+  const price = round2(ref * (1 - pct / 100))
+  let fee = null
+  if (isNum(f.sale_fee_pct)) {
+    fee = round2(price * f.sale_fee_pct / 100 + (isNum(f.sale_fee_fixed) ? f.sale_fee_fixed : 0))
+  } else if (isNum(f.estimated_sale_fee) && isNum(f.proposed_price) && f.proposed_price > 0) {
+    fee = round2(f.estimated_sale_fee * price / f.proposed_price)
+  }
+  const shipping = f.estimated_shipping_cost
+  const cmv = f.cmv_unit
+  const out = { ...f, proposed_price: price, seller_revenue: price, discount_pct: round1(pct) }
+  if ([fee, shipping, cmv].every(isNum) && price > 0) {
+    const net = round2(price - fee - shipping)
+    const profit = round2(net - cmv)
+    out.estimated_sale_fee = fee
+    out.estimated_net_unit = net
+    out.estimated_profit_unit = profit
+    out.estimated_margin_pct = round1(profit / price * 100)
+    out.total_cost_unit = round2(cmv + fee + shipping)
+  }
+  return out
+}
+
+export function selectionKey (row, promo) {
+  return `${row._key}##${promo._key}`
+}
+export function isSelected (selection, row, promo) {
+  return Boolean(selection[selectionKey(row, promo)])
+}
+export function selectedCountForRow (selection, row) {
+  const prefix = `${row._key}##`
+  return Object.keys(selection).filter((k) => k.startsWith(prefix)).length
+}
+
+function makeEntry (row, promo) {
+  const editable = discountEditable(promo)
+  const minPct = promotionMinDiscountPct(promo)
+  const base = promo.financials
   return {
-    key: row._key,
+    key: selectionKey(row, promo),
+    row_key: row._key,
     account_id: row.account_id,
     account_nickname: row.account_nickname,
     sku: row.sku,
@@ -346,25 +425,49 @@ export function buildSelectionEntry (row, promo) {
     status: promo.status,
     can_manual_activate: promo.can_manual_activate ?? null,
     activation_block_reason: promo.activation_block_reason ?? null,
-    financials: promo.financials,
-    // objeto cru para o payload (verbatim do backend)
+    discountEditable: editable,
+    minDiscountPct: minPct,
+    bounds: discountBounds(promo),
+    chosenDiscountPct: minPct ?? null,
+    _base: base,
+    financials: editable && isNum(minPct) ? financialsAtDiscount(base, minPct) : { ...base },
     rawFinancials: promo._rawFinancials,
   }
 }
 
-// Substitui (nunca acumula) a proposta escolhida para a mesma linha.
-export function choosePromotion (selection, row, promo) {
-  return { ...selection, [row._key]: buildSelectionEntry(row, promo) }
-}
+// compat: usado por testes antigos e por seleção single em outros pontos.
+export const buildSelectionEntry = makeEntry
 
-export function clearRow (selection, row) {
+export function toggleSelection (selection, row, promo) {
+  const key = selectionKey(row, promo)
   const next = { ...selection }
-  delete next[row._key]
+  if (next[key]) delete next[key]
+  else next[key] = makeEntry(row, promo)
   return next
 }
 
-export function selectedPromotionKey (selection, row) {
-  return selection[row._key]?.promotion_key ?? null
+export function setSelectionDiscount (selection, key, pct) {
+  const e = selection[key]
+  if (!e || !e.discountEditable) return selection
+  const p = numberOrNull(pct)
+  return {
+    ...selection,
+    [key]: { ...e, chosenDiscountPct: p, financials: isNum(p) ? financialsAtDiscount(e._base, p) : { ...e._base } },
+  }
+}
+
+// Aplica um % a todas as entradas editáveis informadas (ação em massa).
+export function bulkSetDiscount (selection, keys, pct) {
+  let next = selection
+  for (const k of keys) next = setSelectionDiscount(next, k, pct)
+  return next
+}
+
+export function clearSelectionForRow (selection, row) {
+  const prefix = `${row._key}##`
+  const next = {}
+  for (const [k, v] of Object.entries(selection)) if (!k.startsWith(prefix)) next[k] = v
+  return next
 }
 
 // --- Resumo do lote -----------------------------------------------------------
@@ -372,6 +475,7 @@ export function selectedPromotionKey (selection, row) {
 export function summarizeSelection (entries, thresholds = {}) {
   const withEligibility = entries.map((entry) => {
     const reasons = blockingReasons(entry, thresholds)
+    if (entry.discountEligible === false) reasons.unshift('desconto abaixo do mínimo do ML')
     return { ...entry, eligible: reasons.length === 0, reasons }
   })
   const eligible = withEligibility.filter((e) => e.eligible)
@@ -381,7 +485,8 @@ export function summarizeSelection (entries, thresholds = {}) {
 
   return {
     total: withEligibility.length,
-    ads: new Set(withEligibility.map((e) => e.key)).size,
+    promotions: withEligibility.length,
+    ads: new Set(withEligibility.map((e) => e.row_key)).size,
     skus: new Set(withEligibility.map((e) => e.sku).filter(Boolean)).size,
     accounts: new Set(withEligibility.map((e) => e.account_id)).size,
     avgPrice: avg(pick(eligible, 'proposed_price')),
@@ -396,23 +501,26 @@ export function summarizeSelection (entries, thresholds = {}) {
   }
 }
 
-// --- Payload de ativação (contrato PROMO-11D, intocado) ----------------------
+// --- Payload de ativação (POST /promotions-ads/activate/) --------------------
 
-export function buildActivatePayload (eligibleEntries, { maxDiscountPct, fixedDiscountPct = null, marginTarget = null } = {}) {
-  const payload = {
-    confirmed: true,
-    max_discount_pct: numberOrNull(maxDiscountPct),
-    candidates: eligibleEntries.map((entry) => ({
+export function buildActivatePayload (eligibleEntries, { marginTarget = null } = {}) {
+  const candidates = eligibleEntries.map((entry) => {
+    const c = {
       account_id: entry.account_id,
       item_id: entry.item_id,
       variation_id: entry.variation_id ?? null,
       promotion_id: entry.promotion_id,
       promotion_type: entry.promotion_type,
       financials: entry.rawFinancials ?? entry.financials,
-    })),
-  }
-  const fixed = numberOrNull(fixedDiscountPct)
-  if (fixed !== null) payload.fixed_discount_pct = fixed
+    }
+    const d = numberOrNull(entry.chosenDiscountPct)
+    if (d !== null) c.discount_pct = d
+    return c
+  })
+  const payload = { confirmed: true, candidates }
+  // trava geral = maior desconto pedido (compat com a validação do backend)
+  const maxD = Math.max(0, ...candidates.map((c) => c.discount_pct || 0))
+  if (maxD > 0) payload.max_discount_pct = round1(maxD)
   const margin = numberOrNull(marginTarget)
   if (margin !== null) payload.margin_target = margin
   return payload

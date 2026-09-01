@@ -4,14 +4,15 @@ import {
   bestMarginPct,
   blockingReasons,
   buildActivatePayload,
-  choosePromotion,
-  clearRow,
+  clearSelectionForRow,
   groupByAccount,
   groupByAccountSku,
   headerMetrics,
   normalizeRow,
   rowState,
+  setSelectionDiscount,
   summarizeSelection,
+  toggleSelection,
 } from 'src/utils/promotionsAdsView'
 
 // --- Fixtures -----------------------------------------------------------------
@@ -185,29 +186,44 @@ describe('applyClientFilters', () => {
 
 // --- seleção ----------------------------------------------------------------
 
-describe('seleção exclusiva por anúncio', () => {
+describe('seleção múltipla por anúncio', () => {
   const row = normalizeRow(rawRow(), ACCOUNT_NAMES)
 
-  it('escolher outra proposta da mesma linha substitui, não acumula', () => {
+  it('acumula várias promoções do mesmo anúncio', () => {
     let sel = {}
-    sel = choosePromotion(sel, row, row.promotions[0])
-    sel = choosePromotion(sel, row, row.promotions[1])
-    expect(Object.keys(sel)).toHaveLength(1)
-    expect(sel[row._key].promotion_id).toBe('P-DEAL')
-  })
-
-  it('clearRow remove a seleção da linha', () => {
-    let sel = choosePromotion({}, row, row.promotions[0])
-    sel = clearRow(sel, row)
-    expect(sel[row._key]).toBeUndefined()
-  })
-
-  it('variações do mesmo item_id são linhas independentes', () => {
-    const v1 = normalizeRow(rawRow({ variation_id: 'V1', variation_name: 'Azul' }), ACCOUNT_NAMES)
-    const v2 = normalizeRow(rawRow({ variation_id: 'V2', variation_name: 'Verde' }), ACCOUNT_NAMES)
-    let sel = choosePromotion({}, v1, v1.promotions[0])
-    sel = choosePromotion(sel, v2, v2.promotions[1])
+    sel = toggleSelection(sel, row, row.promotions[0])
+    sel = toggleSelection(sel, row, row.promotions[1])
     expect(Object.keys(sel)).toHaveLength(2)
+    const ids = Object.values(sel).map((e) => e.promotion_id).sort()
+    expect(ids).toEqual(['P-DEAL', 'P-SMART'])
+  })
+
+  it('toggle na mesma promoção desmarca', () => {
+    let sel = toggleSelection({}, row, row.promotions[0])
+    sel = toggleSelection(sel, row, row.promotions[0])
+    expect(Object.keys(sel)).toHaveLength(0)
+  })
+
+  it('clearSelectionForRow tira só as promoções daquele anúncio', () => {
+    const rowB = normalizeRow(rawRow({ item_id: 'MLB999' }), ACCOUNT_NAMES)
+    let sel = toggleSelection({}, row, row.promotions[0])
+    sel = toggleSelection(sel, rowB, rowB.promotions[0])
+    sel = clearSelectionForRow(sel, row)
+    expect(Object.keys(sel)).toHaveLength(1)
+    expect(Object.values(sel)[0].item_id).toBe('MLB999')
+  })
+
+  it('desconto do DEAL é editável e default = mínimo do ML; SMART é fixo', () => {
+    let sel = toggleSelection({}, row, row.promotions[1]) // DEAL
+    const deal = Object.values(sel)[0]
+    expect(deal.discountEditable).toBe(true)
+    expect(deal.chosenDiscountPct).toBe(20)
+    sel = setSelectionDiscount(sel, deal.key, 10)
+    expect(Object.values(sel)[0].chosenDiscountPct).toBe(10)
+    expect(Object.values(sel)[0].financials.proposed_price).toBe(90) // 100 × (1 − 0,10)
+
+    const smartSel = toggleSelection({}, row, row.promotions[0]) // SMART
+    expect(Object.values(smartSel)[0].discountEditable).toBe(false)
   })
 })
 
@@ -217,10 +233,10 @@ describe('summarizeSelection', () => {
   it('separa elegíveis de bloqueados e calcula médias sobre os elegíveis', () => {
     const row = normalizeRow(rawRow(), ACCOUNT_NAMES)
     const rowB = normalizeRow(rawRow({ account_id: 'ACC-2', item_id: 'MLB999', sku: 'CAL-10', promotions: [
-      { promotion_id: 'P-X', promotion_type: 'DEAL', financials: fin({ estimable: false, missing_inputs: ['cmv'] }) },
+      { promotion_id: 'P-X', promotion_type: 'SMART', financials: fin({ estimable: false, missing_inputs: ['cmv'] }) },
     ] }), ACCOUNT_NAMES)
-    let sel = choosePromotion({}, row, row.promotions[0])
-    sel = choosePromotion(sel, rowB, rowB.promotions[0])
+    let sel = toggleSelection({}, row, row.promotions[0]) // SMART, margem 29.4
+    sel = toggleSelection(sel, rowB, rowB.promotions[0])
 
     const summary = summarizeSelection(Object.values(sel))
     expect(summary.total).toBe(2)
@@ -234,7 +250,7 @@ describe('summarizeSelection', () => {
 
   it('reavalia elegibilidade quando o piso de margem muda', () => {
     const row = normalizeRow(rawRow(), ACCOUNT_NAMES)
-    const sel = choosePromotion({}, row, row.promotions[1]) // margem 25
+    const sel = toggleSelection({}, row, row.promotions[1]) // DEAL, margem 25
     expect(summarizeSelection(Object.values(sel), { minMarginPct: 30 }).eligibleCount).toBe(0)
     expect(summarizeSelection(Object.values(sel), { minMarginPct: 20 }).eligibleCount).toBe(1)
   })
@@ -243,34 +259,24 @@ describe('summarizeSelection', () => {
 // --- payload de ativação -------------------------------------------------------
 
 describe('buildActivatePayload', () => {
-  it('monta o contrato PROMO-11D só com os elegíveis e envia financials cru', () => {
+  it('um candidato por promoção selecionada, com discount_pct e financials cru', () => {
     const row = normalizeRow(rawRow({ variation_id: 'V1', variation_name: 'Azul' }), ACCOUNT_NAMES)
-    const sel = choosePromotion({}, row, row.promotions[0])
+    let sel = toggleSelection({}, row, row.promotions[1]) // DEAL, editável, 20%
     const summary = summarizeSelection(Object.values(sel))
-    const payload = buildActivatePayload(summary.eligible, { maxDiscountPct: 15 })
+    const payload = buildActivatePayload(summary.eligible)
 
-    expect(payload).toEqual({
-      confirmed: true,
-      max_discount_pct: 15,
-      candidates: [{
-        account_id: 'ACC-1',
-        item_id: 'MLB123',
-        variation_id: 'V1',
-        promotion_id: 'P-SMART',
-        promotion_type: 'SMART',
-        financials: fin(),
-      }],
+    expect(payload.confirmed).toBe(true)
+    expect(payload.max_discount_pct).toBe(20) // trava geral = maior desconto pedido
+    expect(payload.candidates).toHaveLength(1)
+    expect(payload.candidates[0]).toMatchObject({
+      account_id: 'ACC-1', item_id: 'MLB123', variation_id: 'V1',
+      promotion_id: 'P-DEAL', promotion_type: 'DEAL', discount_pct: 20,
     })
   })
 
-  it('inclui fixed_discount_pct só quando informado', () => {
-    expect(buildActivatePayload([], { maxDiscountPct: 20 })).not.toHaveProperty('fixed_discount_pct')
-    expect(buildActivatePayload([], { maxDiscountPct: 20, fixedDiscountPct: 10 }).fixed_discount_pct).toBe(10)
-  })
-
   it('inclui margin_target só quando informado', () => {
-    expect(buildActivatePayload([], { maxDiscountPct: 20 })).not.toHaveProperty('margin_target')
-    expect(buildActivatePayload([], { maxDiscountPct: 20, marginTarget: 30 }).margin_target).toBe(30)
+    expect(buildActivatePayload([])).not.toHaveProperty('margin_target')
+    expect(buildActivatePayload([], { marginTarget: 30 }).margin_target).toBe(30)
   })
 })
 
@@ -286,7 +292,7 @@ describe('margem no lote', () => {
 
   it('summarizeSelection calcula avgMarginPct sobre os elegíveis', () => {
     const row = normalizeRow(rawRow(), ACCOUNT_NAMES)
-    const sel = choosePromotion({}, row, row.promotions[0]) // margem 29.4 (fixture)
+    const sel = toggleSelection({}, row, row.promotions[0]) // SMART, margem 29.4 (fixture)
     expect(summarizeSelection(Object.values(sel)).avgMarginPct).toBeCloseTo(29.4)
   })
 })

@@ -279,8 +279,10 @@
         :thresholds="thresholds"
         :expand-tick="expandTick"
         :collapse-tick="collapseTick"
-        @choose="onChoose"
-        @clear="onClear"
+        @toggle="onToggle"
+        @set-discount="onSetDiscount"
+        @select-many="onSelectMany"
+        @clear-ad="onClearAd"
         @toggle-removal="onToggleRemoval"
       />
 
@@ -294,7 +296,7 @@
       <div v-if="actionMode === 'activate' && summary.total" class="promo-ads__summary">
         <div class="promo-ads__summary-main">
           <div class="promo-ads__summary-headline">
-            <strong>{{ summary.total }}</strong> proposta(s) selecionada(s)
+            <strong>{{ summary.total }}</strong> promoção(ões) selecionada(s)
           </div>
           <div class="promo-ads__summary-scope">
             {{ summary.ads }} anúncios · {{ summary.skus }} SKUs · {{ summary.accounts }} contas
@@ -304,22 +306,28 @@
         <div class="promo-ads__summary-stats">
           <span>Preço médio: <strong>{{ brl(summary.avgPrice) }}</strong></span>
           <span>Desconto médio: <strong>{{ pct(summary.avgDiscountPct) }}</strong></span>
-          <span>Lucro estimado médio: <strong>{{ brl(summary.avgProfit) }}</strong></span>
-          <span>Margem de contribuição média: <strong>{{ pct(summary.avgMarginPct) }}</strong></span>
+          <span>Lucro médio: <strong>{{ brl(summary.avgProfit) }}</strong></span>
+          <span>Margem média: <strong>{{ pct(summary.avgMarginPct) }}</strong></span>
+        </div>
+
+        <div v-if="editableSelectedKeys.length" class="promo-ads__summary-bulk">
+          <span>Aplicar</span>
+          <input v-model.number="bulkDiscount" type="number" min="1" max="99" step="0.5" class="promo-ads__bulk-input" />
+          <span>% a {{ editableSelectedKeys.length }} editável(is)</span>
+          <q-btn dense flat no-caps color="primary" label="Aplicar" @click="applyBulkDiscount" />
         </div>
 
         <div class="promo-ads__summary-flags">
-          <SbBadge variant="green">{{ summary.eligibleCount }} aptas para ativação</SbBadge>
+          <SbBadge variant="green">{{ summary.eligibleCount }} aptas</SbBadge>
           <SbBadge variant="amber">{{ summary.blockedCount }} bloqueadas</SbBadge>
-          <span class="promo-ads__summary-lock">Trava: {{ maxDiscountPct }}%</span>
           <span v-if="thresholds.minMarginPct != null" class="promo-ads__summary-lock">
             Margem alvo: {{ thresholds.minMarginPct }}%
           </span>
         </div>
 
         <div class="promo-ads__summary-actions">
-          <q-btn flat no-caps label="Limpar seleção" @click="clearSelection" />
-          <q-btn color="primary" no-caps label="Revisar ativação" @click="reviewOpen = true" />
+          <q-btn flat no-caps label="Limpar" @click="clearSelection" />
+          <q-btn color="primary" no-caps :label="`Revisar ${summary.eligibleCount} ativações`" @click="reviewOpen = true" />
         </div>
       </div>
     </transition>
@@ -350,9 +358,7 @@
       :mode="actionMode"
       :summary="summary"
       :removal-summary="removalSummary"
-      :max-discount-pct="maxDiscountPct"
       :activating="activating"
-      @update:max-discount-pct="maxDiscountPct = $event"
       @remove="removeFromSelection"
       @remove-removal="removeFromRemoval"
       @confirm="actionMode === 'remove' ? removePromotions() : activate()"
@@ -378,17 +384,19 @@ import {
   STATUS_OPTIONS,
   buildActivatePayload,
   buildRemovePayload,
-  choosePromotion,
-  clearRow,
+  bulkSetDiscount,
+  clearSelectionForRow,
   formatBRL,
   formatPct,
   groupByAccount,
   groupByAccountSku,
   headerMetrics,
   normalizeRow,
+  setSelectionDiscount,
   summarizeRemoval,
   summarizeSelection,
   toggleRemoval,
+  toggleSelection,
 } from 'src/utils/promotionsAdsView'
 
 const $q = useQuasar()
@@ -412,7 +420,6 @@ const actionMode = ref('activate') // 'activate' | 'remove'
 const selection = ref({})
 const removalSelection = ref({})
 const reviewOpen = ref(false)
-const maxDiscountPct = ref(15)
 const filtersOpen = ref(true)
 const expandTick = ref(0)
 const collapseTick = ref(0)
@@ -585,11 +592,21 @@ function clearFilters () {
   reload()
 }
 
-function onChoose ({ row, promo }) {
-  selection.value = choosePromotion(selection.value, row, promo)
+function onToggle ({ row, promo }) {
+  selection.value = toggleSelection(selection.value, row, promo)
 }
-function onClear ({ row }) {
-  selection.value = clearRow(selection.value, row)
+function onSetDiscount ({ key, pct: p }) {
+  selection.value = setSelectionDiscount(selection.value, key, p)
+}
+function onSelectMany ({ row, promos }) {
+  let next = selection.value
+  for (const promo of promos) {
+    if (!next[`${row._key}##${promo._key}`]) next = toggleSelection(next, row, promo)
+  }
+  selection.value = next
+}
+function onClearAd ({ row }) {
+  selection.value = clearSelectionForRow(selection.value, row)
 }
 function clearSelection () {
   selection.value = {}
@@ -598,6 +615,20 @@ function removeFromSelection (key) {
   const next = { ...selection.value }
   delete next[key]
   selection.value = next
+}
+
+// --- Ação em massa: aplicar um % a todas as promoções editáveis selecionadas ---
+const bulkDiscount = ref(null)
+const editableSelectedKeys = computed(() =>
+  selectionList.value.filter((e) => e.discountEditable).map((e) => e.key),
+)
+function applyBulkDiscount () {
+  const p = Number(bulkDiscount.value)
+  if (!(p >= 1 && p <= 99)) {
+    $q.notify({ color: 'negative', message: 'Informe um % entre 1 e 99.' })
+    return
+  }
+  selection.value = bulkSetDiscount(selection.value, editableSelectedKeys.value, p)
 }
 
 // --- Modo remoção ---
@@ -648,15 +679,9 @@ async function removePromotions () {
 async function activate () {
   const eligible = summary.value.eligible
   if (!eligible.length) return
-  const lock = Number(maxDiscountPct.value)
-  if (!(lock >= 1 && lock <= 99)) {
-    $q.notify({ color: 'negative', message: 'Informe uma trava de desconto entre 1 e 99%.' })
-    return
-  }
   activating.value = true
   try {
     const payload = buildActivatePayload(eligible, {
-      maxDiscountPct: lock,
       marginTarget: thresholds.value.minMarginPct,
     })
     const { data } = await MercadoLivreService.activatePromotionsAds(payload)
@@ -816,6 +841,15 @@ onMounted(reload)
   flex-shrink: 0;
 }
 .promo-ads__summary-lock { font-size: 11.5px; color: #64748b; }
+.promo-ads__summary-bulk {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: #475569; flex-shrink: 0;
+  padding: 4px 10px; background: #f1f5f9; border-radius: 8px;
+}
+.promo-ads__bulk-input {
+  width: 58px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 6px;
+  font-size: 12.5px; font-weight: 700; text-align: right;
+}
 .promo-ads__summary-actions { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
 
 .promo-ads-fade-enter-active,
