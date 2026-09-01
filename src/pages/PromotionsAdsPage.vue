@@ -38,26 +38,18 @@
     </p>
 
     <!-- Filtros -->
-    <SbCard :padded="false" class="q-mb-md">
+    <SbCard :padded="false" class="pf-card q-mb-md">
       <template #header>
-        <button class="promo-ads__filters-toggle" type="button" @click="filtersOpen = !filtersOpen">
+        <button class="pf-toggle" type="button" @click="filtersOpen = !filtersOpen">
           <q-icon :name="filtersOpen ? 'expand_more' : 'chevron_right'" size="18px" />
           <span>Filtros</span>
-          <SbBadge v-if="activeFilterChips.length" variant="teal">{{ activeFilterChips.length }} ativo(s)</SbBadge>
+          <SbBadge v-if="activeFilterChips.length" variant="teal">{{ activeFilterChips.length }}</SbBadge>
+          <span v-else class="pf-toggle__hint">nenhum ativo</span>
         </button>
       </template>
-      <template #actions>
-        <q-btn
-          v-if="activeFilterChips.length"
-          flat
-          dense
-          no-caps
-          label="Limpar filtros"
-          @click="clearFilters"
-        />
-      </template>
 
-      <div v-if="activeFilterChips.length" class="promo-ads__chips">
+      <!-- Filtros ativos: visíveis mesmo com o painel recolhido -->
+      <div v-if="activeFilterChips.length" class="pf-active">
         <q-chip
           v-for="chip in activeFilterChips"
           :key="chip.key"
@@ -69,118 +61,105 @@
         >
           {{ chip.label }}
         </q-chip>
+        <q-btn flat dense no-caps size="sm" color="grey-7" label="Limpar todos" @click="clearFilters" />
       </div>
 
-      <div v-show="filtersOpen" class="promo-ads__filters">
-        <div class="promo-ads__filters-group">
-          <span class="promo-ads__filters-legend">Consulta (backend)</span>
-          <div class="promo-ads__filters-row">
+      <div v-show="filtersOpen" class="pf">
+        <section class="pf__section">
+          <header class="pf__head">
+            <q-icon name="search" size="15px" />
+            <span>Buscar anúncios</span>
+          </header>
+          <div class="pf__grid">
             <q-select
               v-model="filters.account_id"
               :options="accountOptions"
-              emit-value
-              map-options
-              clearable
-              outlined
-              dense
+              emit-value map-options clearable outlined dense
               label="Conta Mercado Livre"
               :loading="accountsLoading"
-              class="promo-ads__filter promo-ads__filter--wide"
+              class="pf__field pf__field--lg"
               @update:model-value="reload"
             />
             <q-input
               v-model="filters.q"
-              outlined
-              dense
-              clearable
-              label="Busca livre (título / SKU / MLB)"
-              class="promo-ads__filter promo-ads__filter--wide"
+              outlined dense clearable
+              label="Título, SKU ou MLB"
+              class="pf__field pf__field--lg"
               @keyup.enter="reload"
               @clear="reload"
-            />
+            >
+              <template #prepend><q-icon name="search" size="18px" /></template>
+            </q-input>
             <q-input
               v-model="filters.sku"
-              outlined
-              dense
-              clearable
-              label="SKU"
-              class="promo-ads__filter"
+              outlined dense clearable
+              label="SKU exato"
+              class="pf__field"
               @keyup.enter="reload"
               @clear="reload"
             />
             <q-select
               v-model="filters.status"
               :options="STATUS_OPTIONS"
-              emit-value
-              map-options
-              clearable
-              outlined
-              dense
+              emit-value map-options clearable outlined dense
               label="Status da promoção"
-              class="promo-ads__filter"
+              class="pf__field"
               @update:model-value="reload"
             />
             <q-select
               v-model="filters.promotion_type"
               :options="PROMOTION_TYPE_OPTIONS"
-              emit-value
-              map-options
-              clearable
-              outlined
-              dense
+              emit-value map-options clearable outlined dense
               label="Tipo da promoção"
-              class="promo-ads__filter"
+              class="pf__field"
               @update:model-value="reload"
             />
-            <q-btn no-caps color="primary" label="Buscar" :loading="loading" @click="reload" />
           </div>
-        </div>
+        </section>
 
-        <div class="promo-ads__filters-group">
-          <span class="promo-ads__filters-legend">Financeiro e ordenação (varre o catálogo no servidor)</span>
-          <div class="promo-ads__filters-row">
+        <q-separator class="pf__divider" />
+
+        <section class="pf__section">
+          <header class="pf__head">
+            <q-icon name="tune" size="15px" />
+            <span>Margem, lucro e ordenação</span>
+            <span class="pf__head-hint">varre o catálogo inteiro no servidor</span>
+          </header>
+          <div class="pf__grid">
             <q-input
               v-model.number="filters.minMargin"
-              type="number"
-              outlined
-              dense
-              clearable
-              debounce="500"
-              label="Margem de contribuição alvo (%)"
+              type="number" outlined dense clearable debounce="500"
+              label="Margem alvo (%)"
               hint="Filtra e trava a ativação"
-              class="promo-ads__filter promo-ads__filter--sm"
+              class="pf__field pf__field--sm"
               @update:model-value="reload"
             />
             <q-input
               v-model.number="filters.minProfit"
-              type="number"
-              outlined
-              dense
-              clearable
-              debounce="500"
+              type="number" outlined dense clearable debounce="500"
               label="Lucro mínimo (R$)"
-              class="promo-ads__filter promo-ads__filter--sm"
+              class="pf__field pf__field--sm"
               @update:model-value="reload"
             />
             <q-select
               v-model="filters.sort"
               :options="SORT_OPTIONS"
-              emit-value
-              map-options
-              outlined
-              dense
+              emit-value map-options outlined dense
               label="Ordenar por"
-              class="promo-ads__filter"
+              class="pf__field"
               @update:model-value="reload"
             />
-            <q-toggle
-              v-model="filters.onlyEstimable"
-              label="Somente calculáveis"
-              dense
-              @update:model-value="reload"
-            />
+            <label class="pf__toggle">
+              <q-toggle v-model="filters.onlyEstimable" dense color="primary" @update:model-value="reload" />
+              <span>Somente calculáveis</span>
+            </label>
           </div>
-        </div>
+        </section>
+
+        <footer class="pf__footer">
+          <span class="pf__footer-hint">Filtros de conta/status/tipo aplicam na hora; nos campos de texto, tecle Enter.</span>
+          <q-btn unelevated no-caps color="primary" icon="search" label="Buscar" :loading="loading" @click="reload" />
+        </footer>
       </div>
     </SbCard>
 
@@ -863,49 +842,59 @@ onMounted(reload)
 .promo-ads__mchip--warn { background: #fef3c7; color: #b45309; }
 .promo-ads__mchip--neg  { background: #fee2e2; color: #b91c1c; }
 
-.promo-ads__filters-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  color: #0f172a;
-  padding: 0;
+/* ---------- Filtros ---------- */
+.pf-toggle {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: none; cursor: pointer; padding: 0;
+  font-size: 15px; font-weight: 600; color: #0f172a;
+}
+.pf-toggle__hint { font-size: 12px; font-weight: 500; color: #94a3b8; }
+
+.pf-active {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 10px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #eef2f6;
 }
 
-.promo-ads__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 12px 20px 0;
+.pf { padding: 4px 20px 0; }
+
+.pf__section { padding: 16px 0; }
+.pf__head {
+  display: flex; align-items: baseline; gap: 7px;
+  margin-bottom: 14px;
+  font-size: 12.5px; font-weight: 700; color: #334155;
+  .q-icon { color: #0d9488; align-self: center; }
+}
+.pf__head-hint { font-size: 11px; font-weight: 500; color: #94a3b8; }
+
+.pf__divider { margin: 0 -20px; }
+
+.pf__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px 16px;
+  align-items: start;
+}
+.pf__field { min-width: 0; }
+@media (min-width: 760px) {
+  .pf__field--lg { grid-column: span 2; }
+}
+.pf__field--sm :deep(.q-field__native) { text-align: right; }
+
+.pf__toggle {
+  display: flex; align-items: center; gap: 8px;
+  align-self: center;
+  font-size: 13px; color: #475569; cursor: pointer;
+  white-space: nowrap;
 }
 
-.promo-ads__filters {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 16px 20px 20px;
+.pf__footer {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 14px 0 18px;
+  border-top: 1px solid #eef2f6;
 }
-.promo-ads__filters-group { display: flex; flex-direction: column; gap: 8px; }
-.promo-ads__filters-legend {
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #0d9488;
-}
-.promo-ads__filters-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
-.promo-ads__filter { width: 200px; }
-.promo-ads__filter--wide { width: 264px; }
-.promo-ads__filter--sm { width: 150px; }
+.pf__footer-hint { flex: 1; min-width: 200px; font-size: 11.5px; color: #94a3b8; }
 
 .promo-ads__viewbar {
   position: sticky;
@@ -981,9 +970,6 @@ onMounted(reload)
 .promo-ads-fade-leave-to { opacity: 0; transform: translate(-50%, 12px); }
 
 @media (max-width: 1024px) {
-  .promo-ads__filter,
-  .promo-ads__filter--wide,
-  .promo-ads__filter--sm { width: 100%; }
   .promo-ads__summary {
     flex-direction: column;
     align-items: stretch;
