@@ -32,6 +32,8 @@ export const SORT_OPTIONS = [
   { label: 'Ordem padrão (anúncio)', value: null },
   { label: 'Maior margem', value: '-margin' },
   { label: 'Menor margem', value: 'margin' },
+  { label: 'Maior lucro/un', value: '-profit' },
+  { label: 'Menor lucro/un', value: 'profit' },
   { label: 'Maior desconto', value: '-discount' },
   { label: 'Maior preço', value: '-price' },
   { label: 'Menor preço', value: 'price' },
@@ -209,11 +211,17 @@ export function blockingReasons (subject, thresholds = {}) {
       reasons.push('proposta sem dados suficientes para cálculo')
     }
   } else {
-    if (has(minMarginPct) && isNum(fin.estimated_margin_pct) && fin.estimated_margin_pct < Number(minMarginPct)) {
-      reasons.push('margem abaixo do mínimo')
-    }
-    if (has(minProfit) && isNum(fin.estimated_profit_unit) && fin.estimated_profit_unit < Number(minProfit)) {
-      reasons.push('lucro abaixo do mínimo')
+    // piso rígido: prejuízo nunca ativa, com ou sem alvo definido.
+    if ((isNum(fin.estimated_profit_unit) && fin.estimated_profit_unit < 0) ||
+        (isNum(fin.estimated_margin_pct) && fin.estimated_margin_pct < 0)) {
+      reasons.push('prejuízo — margem/lucro negativo')
+    } else {
+      if (has(minMarginPct) && isNum(fin.estimated_margin_pct) && fin.estimated_margin_pct < Number(minMarginPct)) {
+        reasons.push('margem abaixo do mínimo')
+      }
+      if (has(minProfit) && isNum(fin.estimated_profit_unit) && fin.estimated_profit_unit < Number(minProfit)) {
+        reasons.push('lucro abaixo do mínimo')
+      }
     }
   }
 
