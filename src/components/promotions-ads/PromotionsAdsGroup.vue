@@ -385,22 +385,26 @@ $c-danger: #dc2626;
 .pa-chip--muted { background: #f1f5f9; color: #94a3b8; }
 
 /* ---------- lista de anúncios (sempre expandida) ---------- */
-.pa-list { padding: 6px; }
+.pa-list { padding: 10px; background: #f1f4f8; }
 .pa-ad {
-  border: 1px solid #eef2f6;
+  border: 1px solid #d3dbe4;
   border-radius: 10px;
-  margin: 6px;
+  margin: 0 0 12px;
+  max-width: 1040px;
   overflow: hidden;
-  border-left: 3px solid #e2e8f0;
+  border-left: 4px solid #cbd5e1;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
+.pa-ad:last-child { margin-bottom: 0; }
 .pa-ad[data-accent="active"]     { border-left-color: $c-active; }
 .pa-ad[data-accent="available"]  { border-left-color: $c-available; }
 .pa-ad[data-accent="processing"] { border-left-color: $c-processing; }
-.pa-ad--skubreak { margin-top: 16px; }
+.pa-ad--skubreak { margin-top: 22px; }
 
 .pa-ad__head {
   display: flex; align-items: center; gap: 12px;
-  padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid #eef2f6;
+  padding: 9px 12px; background: #eef2f7; border-bottom: 1px solid #d3dbe4;
 }
 .pa-ad__thumb {
   width: 36px; height: 36px; border-radius: 7px; object-fit: cover;
@@ -412,16 +416,36 @@ $c-danger: #dc2626;
 .pa-ad__sku-amb { color: #b45309; text-decoration: underline dotted; }
 .pa-ad__counts { display: flex; gap: 4px; flex: none; }
 
-.pa-promos { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; color: #334155; }
+/* largura limitada: sem `max-width` a coluna "Promoção" (auto) engole toda a
+   folga em telas largas e joga o texto pra longe dos números. */
+.pa-promos {
+  width: 100%;
+  border-collapse: collapse; table-layout: fixed; font-size: 13px; color: #334155;
+}
 .pa-promos .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.pa-promos tbody td { padding: 7px 10px; border-bottom: 1px solid #f4f6f8; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
+.pa-promos tbody td { padding: 7px 10px; border-bottom: 1px solid #e9edf2; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
 .pa-promos tbody tr:last-child td { border-bottom: none; }
 .pa-hrow th {
-  padding: 6px 10px; text-align: left; font-size: 9.5px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.04em; color: #94a3b8;
-  background: #fff; border-bottom: 1px solid #eef2f6; cursor: help; white-space: nowrap;
+  padding: 7px 10px; text-align: left; font-size: 9.5px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.04em; color: #7c8797;
+  background: #f7f9fb; border-bottom: 2px solid #dbe1e8; cursor: help; white-space: nowrap;
 }
 .pa-hrow th.num { text-align: right; }
+
+/* divisórias verticais entre grupos de colunas:
+   ² Promoção · ³ Desconto ‖ ⁴ Preço final ‖ ⁵⁶⁷ custos ‖ ⁸ Lucro · ⁹ Margem ‖ ¹⁰ Situação */
+.pa-promos th:nth-child(4), .pa-promos td:nth-child(4),
+.pa-promos th:nth-child(5), .pa-promos td:nth-child(5),
+.pa-promos th:nth-child(8), .pa-promos td:nth-child(8),
+.pa-promos th:nth-child(10), .pa-promos td:nth-child(10) {
+  border-left: 1px solid #dbe1e8;
+}
+/* zona de custos levemente esmaecida, zona de resultado levemente destacada */
+.pa-promos tbody td:nth-child(5),
+.pa-promos tbody td:nth-child(6),
+.pa-promos tbody td:nth-child(7) { background: #fafbfc; }
+.pa-promos tbody td:nth-child(8),
+.pa-promos tbody td:nth-child(9) { background: #f5faf7; }
 .pa-sim {
   margin-left: 6px; font-size: 9.5px; font-weight: 700; text-transform: uppercase;
   color: #b45309; background: #fef3c7; padding: 1px 5px; border-radius: 4px;
@@ -449,6 +473,8 @@ $c-danger: #dc2626;
 .pa-prow--available  > td:first-child { border-left-color: $c-available; }
 .pa-prow--processing > td:first-child { border-left-color: $c-processing; }
 .pa-prow:hover td { background: #f8fafc; }
+.pa-prow:hover td:nth-child(5), .pa-prow:hover td:nth-child(6), .pa-prow:hover td:nth-child(7) { background: #f2f4f6; }
+.pa-prow:hover td:nth-child(8), .pa-prow:hover td:nth-child(9) { background: #edf6f0; }
 .pa-prow.is-chosen td { background: #ecfdf5 !important; }
 .pa-prow.is-chosen > td:first-child { border-left-color: $c-active; border-left-width: 4px; }
 .pa-prow.is-removing td { background: #fef2f2 !important; }
