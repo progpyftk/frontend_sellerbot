@@ -801,6 +801,8 @@ onMounted(reload)
 </script>
 
 <style lang="scss" scoped>
+@import 'src/css/tokens';
+
 /* largura de leitura: sem isto a página ocupa o monitor inteiro e as linhas
    ficam esticadas demais / a tabela "joga pra esquerda". Tudo (KPIs, filtros,
    barra e a árvore) compartilha a mesma coluna centralizada. */
@@ -809,71 +811,71 @@ onMounted(reload)
   margin-inline: auto;
 }
 
-/* no meio-termo (900–1199px) o grid de 4 cai pra 3 colunas e sobra 1 card
-   órfão esticado — 2×2 fica alinhado. Acima disso, 4 numa linha. */
+/* no meio-termo (900-1199px) o grid de 4 cai pra 3 colunas e sobra 1 card
+   órfão esticado - 2x2 fica alinhado. Acima disso, 4 numa linha. */
 @media (min-width: 900px) and (max-width: 1199px) {
   .promo-ads :deep(.kpi-grid--cols-4) { grid-template-columns: repeat(2, 1fr); }
 }
 
 .promo-ads__note {
-  font-size: 11px;
-  color: #94a3b8;
-  margin: 8px 2px 18px;
-  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 10.5px; }
+  font-size: $text-xs-size;
+  color: $text-muted;
+  margin: $space-3 2px $space-5;
+  code { background: $surface-2; padding: 1px 5px; border-radius: $radius-sm; font-size: $text-xs-size; }
 }
 
 .promo-ads__legend {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
-  font-size: 11.5px; color: #64748b;
-  padding: 9px 14px; margin: 12px 0 14px;
-  background: #f8fafc; border: 1px solid #eef2f6; border-radius: 10px;
-  strong { color: #334155; font-weight: 700; }
+  font-size: $text-small-size; color: $text-muted;
+  padding: $space-3 $space-4; margin: $space-4 0;
+  background: $surface-2; border: 1px solid $border; border-radius: $radius-md;
+  strong { color: $text-body; font-weight: $font-bold; }
 }
 .promo-ads__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: 0; }
-.promo-ads__dot--active { background: #0d9488; }
-.promo-ads__dot--avail  { background: #0284c7; }
-.promo-ads__dot--proc   { background: #d97706; }
-.promo-ads__legend-sep { color: #cbd5e1; }
+.promo-ads__dot--active { background: $primary; }
+.promo-ads__dot--avail  { background: $info; }
+.promo-ads__dot--proc   { background: $warning; }
+.promo-ads__legend-sep { color: $border-strong; }
 .promo-ads__mchip {
-  display: inline-block; font-size: 10.5px; font-weight: 700;
+  display: inline-block; font-size: $text-xs-size; font-weight: $font-bold;
   padding: 1px 6px; border-radius: 5px; margin-left: 2px;
 }
-.promo-ads__mchip--pos  { background: #dcfce7; color: #15803d; }
-.promo-ads__mchip--warn { background: #fef3c7; color: #b45309; }
-.promo-ads__mchip--neg  { background: #fee2e2; color: #b91c1c; }
+.promo-ads__mchip--pos  { background: $tint-green-bg; color: $tint-green-text; }
+.promo-ads__mchip--warn { background: $tint-amber-bg; color: $tint-amber-text; }
+.promo-ads__mchip--neg  { background: $tint-red-bg; color: $tint-red-text; }
 
 /* ---------- Filtros ---------- */
 .pf-toggle {
   display: flex; align-items: center; gap: 8px;
   background: none; border: none; cursor: pointer; padding: 0;
-  font-size: 15px; font-weight: 600; color: #0f172a;
+  font-size: $text-h3-size; font-weight: $font-semibold; color: $text-primary;
 }
-.pf-toggle__hint { font-size: 12px; font-weight: 500; color: #94a3b8; }
+.pf-toggle__hint { font-size: $text-xs-size; font-weight: $font-regular; color: $text-muted; }
 
 .pf-active {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  padding: 10px 20px;
-  background: #f8fafc;
-  border-bottom: 1px solid #eef2f6;
+  padding: $space-3 $space-5;
+  background: $surface-2;
+  border-bottom: 1px solid $border;
 }
 
-.pf { padding: 4px 20px 0; }
+.pf { padding: $space-1 $space-5 0; }
 
-.pf__section { padding: 16px 0; }
+.pf__section { padding: $space-4 0; }
 .pf__head {
   display: flex; align-items: baseline; gap: 7px;
-  margin-bottom: 14px;
-  font-size: 12.5px; font-weight: 700; color: #334155;
-  .q-icon { color: #0d9488; align-self: center; }
+  margin-bottom: $space-4;
+  font-size: $text-small-size; font-weight: $font-bold; color: $text-body;
+  .q-icon { color: $primary; align-self: center; }
 }
-.pf__head-hint { font-size: 11px; font-weight: 500; color: #94a3b8; }
+.pf__head-hint { font-size: $text-xs-size; font-weight: $font-regular; color: $text-muted; }
 
-.pf__divider { margin: 0 -20px; }
+.pf__divider { margin: 0 -$space-5; }
 
 .pf__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 14px 16px;
+  gap: $space-4;
   align-items: start;
 }
 .pf__field { min-width: 0; }
@@ -885,16 +887,16 @@ onMounted(reload)
 .pf__toggle {
   display: flex; align-items: center; gap: 8px;
   align-self: center;
-  font-size: 13px; color: #475569; cursor: pointer;
+  font-size: $text-small-size; color: $text-muted; cursor: pointer;
   white-space: nowrap;
 }
 
 .pf__footer {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  padding: 14px 0 18px;
-  border-top: 1px solid #eef2f6;
+  display: flex; align-items: center; gap: $space-4; flex-wrap: wrap;
+  padding: $space-4 0 $space-5;
+  border-top: 1px solid $border;
 }
-.pf__footer-hint { flex: 1; min-width: 200px; font-size: 11.5px; color: #94a3b8; }
+.pf__footer-hint { flex: 1; min-width: 200px; font-size: $text-xs-size; color: $text-muted; }
 
 .promo-ads__viewbar {
   position: sticky;
@@ -902,79 +904,81 @@ onMounted(reload)
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 0 -24px 16px;
-  padding: 10px 24px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  .q-btn-toggle { border: 1px solid #e2e8f0; border-radius: 8px; }
+  gap: $space-3;
+  margin: 0 -$space-6 $space-4;
+  padding: $space-3 $space-6;
+  background: $surface-2;
+  border-bottom: 1px solid $border;
+  .q-btn-toggle { border: 1px solid $border; border-radius: $radius-md; }
 }
-.promo-ads__viewbar-hint { font-size: 12px; color: #64748b; }
-.promo-ads__viewbar-count { font-size: 12px; color: #64748b; }
+.promo-ads__viewbar-hint { font-size: $text-xs-size; color: $text-muted; }
+.promo-ads__viewbar-count { font-size: $text-xs-size; color: $text-muted; }
 
-.promo-ads__banner { font-size: 13px; }
-.promo-ads__banner--error { background: #fee2e2; color: #991b1b; }
-.promo-ads__banner--warn { background: #fef3c7; color: #92400e; }
-.promo-ads__skipped { margin: 6px 0 0; padding-left: 18px; font-size: 12px; }
+.promo-ads__banner { font-size: $text-small-size; }
+.promo-ads__banner--error { background: $tint-red-bg; color: $tint-red-text; }
+.promo-ads__banner--warn { background: $tint-amber-bg; color: $tint-amber-text; }
+.promo-ads__skipped { margin: 6px 0 0; padding-left: 18px; font-size: $text-xs-size; }
 
-.promo-ads__more { text-align: center; margin: 16px 0 120px; }
+.promo-ads__more { text-align: center; margin: $space-4 0 96px; }
 
 .promo-ads__summary {
+  --sb-x: -50%;
   position: fixed;
   left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
-  width: min(1160px, calc(100vw - 48px));
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
-  padding: 12px 18px;
+  bottom: $space-4;
+  transform: translateX(var(--sb-x));
+  width: min(1320px, calc(100vw - 48px));
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-lg;
+  padding: $space-3 $space-5;
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: $space-5;
   z-index: 3000;
 }
+@media (min-width: 769px) {
+  .promo-ads__summary {
+    --sb-x: calc(-50% + 124px);
+    width: min(1320px, calc(100vw - 248px - 48px));
+  }
+}
 .promo-ads__summary-main { flex-shrink: 0; }
-.promo-ads__summary-headline { font-size: 14px; color: #334155; strong { color: #0f172a; font-size: 16px; } }
-.promo-ads__summary-scope { font-size: 11.5px; color: #94a3b8; }
+.promo-ads__summary-headline { font-size: $text-body-size; color: $text-body; strong { color: $text-primary; font-size: $text-h3-size; } }
+.promo-ads__summary-scope { font-size: $text-xs-size; color: $text-muted; }
 .promo-ads__summary-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 20px;
-  font-size: 12px;
-  color: #64748b;
-  strong { color: #0f172a; }
+  display: flex; flex-wrap: wrap; gap: 4px $space-5;
+  font-size: $text-xs-size; color: $text-muted;
+  strong { color: $text-primary; }
 }
 .promo-ads__summary-flags {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  display: flex; align-items: center; gap: $space-2; flex-shrink: 0;
 }
-.promo-ads__summary-lock { font-size: 11.5px; color: #64748b; }
+.promo-ads__summary-lock { font-size: $text-xs-size; color: $text-muted; }
 .promo-ads__summary-bulk {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: #475569; flex-shrink: 0;
-  padding: 4px 10px; background: #f1f5f9; border-radius: 8px;
+  display: flex; align-items: center; gap: $space-2;
+  font-size: $text-xs-size; color: $text-muted; flex-shrink: 0;
+  padding: $space-1 $space-3; background: $surface-2; border-radius: $radius-md;
 }
 .promo-ads__bulk-input {
-  width: 58px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 6px;
-  font-size: 12.5px; font-weight: 700; text-align: right;
+  width: 58px; padding: $space-1 $space-2; border: 1px solid $border-strong; border-radius: $radius-sm;
+  font-size: $text-xs-size; font-weight: $font-bold; text-align: right; color: $text-primary;
 }
-.promo-ads__summary-actions { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
+.promo-ads__summary-actions { display: flex; gap: $space-2; flex-shrink: 0; margin-left: auto; }
 
 .promo-ads-fade-enter-active,
-.promo-ads-fade-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
+.promo-ads-fade-leave-active { transition: opacity $transition-base, transform $transition-base; }
 .promo-ads-fade-enter-from,
-.promo-ads-fade-leave-to { opacity: 0; transform: translate(-50%, 12px); }
+.promo-ads-fade-leave-to { opacity: 0; transform: translate(var(--sb-x), 12px); }
 
 @media (max-width: 1024px) {
   .promo-ads__summary {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: $space-3;
   }
   .promo-ads__summary-actions { margin-left: 0; }
 }
 </style>
+

@@ -221,10 +221,12 @@ function marginClass (value) {
 </script>
 
 <style lang="scss" scoped>
+@import 'src/css/tokens';
+
 .review-dialog {
   width: 1080px;
   max-width: 96vw;
-  border-radius: 20px;
+  border-radius: $radius-xl;
   display: flex;
   flex-direction: column;
   max-height: 92vh;
@@ -234,25 +236,25 @@ function marginClass (value) {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: $space-4;
 }
 
 .review-dialog__title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: $text-h2-size;
+  font-weight: $font-bold;
+  color: $text-primary;
   letter-spacing: -0.2px;
 }
 
 .review-dialog__subtitle {
-  font-size: 13px;
-  color: #64748b;
+  font-size: $text-small-size;
+  color: $text-muted;
   margin-top: 2px;
 }
 
 .review-dialog__lock {
   display: flex;
-  gap: 20px;
+  gap: $space-5;
   align-items: flex-start;
   flex-wrap: wrap;
 }
@@ -261,14 +263,14 @@ function marginClass (value) {
   flex: 1;
   min-width: 240px;
   margin: 0;
-  font-size: 12px;
-  color: #64748b;
+  font-size: $text-xs-size;
+  color: $text-muted;
   line-height: 1.5;
   code {
-    background: #f1f5f9;
+    background: $surface-2;
     padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 11px;
+    border-radius: $radius-sm;
+    font-size: $text-xs-size;
   }
 }
 
@@ -280,49 +282,49 @@ function marginClass (value) {
 .review-dialog__section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 8px;
-  &--gap { margin-top: 28px; }
+  gap: $space-2;
+  font-size: $text-small-size;
+  font-weight: $font-semibold;
+  color: $text-body;
+  margin-bottom: $space-2;
+  &--gap { margin-top: $space-6; }
 }
 
 .review-dialog__table-wrap {
   width: 100%;
   overflow-x: auto;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
 }
 
 .review-dialog__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
-  color: #334155;
+  font-size: $text-xs-size;
+  color: $text-body;
 
   thead th {
-    font-size: 10.5px;
-    font-weight: 600;
+    font-size: $text-xs-size;
+    font-weight: $font-semibold;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
-    background: #f8fafc;
-    padding: 10px 12px;
+    letter-spacing: 0.04em;
+    color: $text-muted;
+    background: $surface-2;
+    padding: $space-2 $space-3;
     text-align: left;
     white-space: nowrap;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid $border;
   }
   tbody td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: $space-2 $space-3;
+    border-bottom: 1px solid $border;
     vertical-align: top;
   }
   tbody tr:last-child td { border-bottom: none; }
   .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .is-pos { color: #16a34a; font-weight: 600; }
-  .is-neg { color: #dc2626; font-weight: 600; }
-  .is-warn { color: #d97706; font-weight: 600; }
+  .is-pos { color: $positive; font-weight: $font-semibold; }
+  .is-neg { color: $negative; font-weight: $font-semibold; }
+  .is-warn { color: $warning; font-weight: $font-semibold; }
 }
 
 .review-dialog__ad {
@@ -330,25 +332,26 @@ function marginClass (value) {
   flex-direction: column;
   min-width: 150px;
 }
-.review-dialog__muted { color: #94a3b8; font-size: 11px; }
-.review-dialog__reason { margin: 0 4px 4px 0; }
+.review-dialog__muted { color: $text-muted; font-size: $text-xs-size; }
+.review-dialog__reason { margin: 0 $space-1 $space-1 0; }
 
 .review-dialog__empty {
-  font-size: 13px;
-  color: #94a3b8;
-  padding: 12px 4px;
+  font-size: $text-small-size;
+  color: $text-muted;
+  padding: $space-3 $space-1;
   margin: 0;
 }
 
 .review-dialog__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: $space-2;
+  padding: $space-3 $space-4;
 }
 .review-dialog__actions-note {
-  font-size: 12px;
-  color: #64748b;
+  font-size: $text-xs-size;
+  color: $text-muted;
   max-width: 420px;
 }
 </style>
+
