@@ -333,19 +333,28 @@ export function applyClientFilters (rows, { onlyEstimable = false, minMarginPct 
 // Tipos cujo desconto é NEGOCIÁVEL pelo vendedor (têm faixa de preço). Nos demais
 // (SMART, LIGHTNING, cupom, PRICE_MATCHING…) o ML fixa o preço — o % é read-only.
 const NEGOTIABLE_TYPES = new Set(['DEAL', 'SELLER_CAMPAIGN', 'PRICE_DISCOUNT', 'DOD'])
+// o ML dita o preço destes — o % é read-only mesmo que venha uma faixa (LIGHTNING
+// recusa qualquer preço fora do sugerido com ERROR_CREDIBILITY).
+const ML_PRICED_TYPES = new Set(['LIGHTNING', 'SMART', 'PRICE_MATCHING', 'PRICE_MATCHING_MELI_ALL', 'SELLER_COUPON_CAMPAIGN', 'UNHEALTHY_STOCK'])
 
 export function discountEditable (promo) {
+  if (ML_PRICED_TYPES.has(promo.promotion_type)) return false
   return NEGOTIABLE_TYPES.has(promo.promotion_type) || !!(promo.financials && promo.financials.price_range)
 }
 
 const round1 = (n) => Math.round(n * 10) / 10
 const round2 = (n) => Math.round(n * 100) / 100
 
-// % de desconto MÍNIMO que o ML pede para entrar nessa promoção.
+// % de desconto que o ML pede para entrar nessa promoção (o mínimo, nas faixas;
+// o valor fixo, nos tipos que o ML precifica).
 export function promotionMinDiscountPct (promo) {
   const fin = promo.financials || {}
   const ref = fin.reference_price
   const range = fin.price_range
+  // tipos não editáveis: o % vem do próprio desconto do ML
+  if (!discountEditable(promo)) {
+    return numberOrNull(fin.discount_pct ?? promo.discount_pct)
+  }
   if (range && isNum(range.max) && isNum(ref) && ref > 0) {
     return Math.max(0, round1((1 - range.max / ref) * 100)) // maior preço permitido = menor desconto
   }

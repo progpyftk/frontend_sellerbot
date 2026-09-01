@@ -5,6 +5,7 @@ import {
   blockingReasons,
   buildActivatePayload,
   clearSelectionForRow,
+  discountEditable,
   groupByAccount,
   groupByAccountSku,
   headerMetrics,
@@ -234,6 +235,16 @@ describe('seleção múltipla por anúncio', () => {
 
     const smartSel = toggleSelection({}, row, row.promotions[0]) // SMART
     expect(Object.values(smartSel)[0].discountEditable).toBe(false)
+  })
+
+  it('LIGHTNING é fixo mesmo trazendo faixa de preço (ML dita o preço)', () => {
+    const lgh = normalizeRow(rawRow({ promotions: [{
+      promotion_id: 'LGH-MLB1000', promotion_type: 'LIGHTNING', status: 'candidate', name: 'Relâmpago',
+      discount_pct: 39, financials: fin({ price_range: { min: 7, max: 34, suggested: 32 }, discount_pct: 39 }),
+    }] }), ACCOUNT_NAMES).promotions[0]
+    expect(discountEditable(lgh)).toBe(false)
+    // DEAL com faixa continua editável
+    expect(discountEditable(row.promotions[1])).toBe(true)
   })
 })
 
