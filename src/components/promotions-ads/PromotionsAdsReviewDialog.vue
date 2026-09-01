@@ -302,32 +302,27 @@ function marginClass (value) {
   color: #334155;
 
   thead th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 10.5px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #64748b;
-    background: #f4f6f9;
-    padding: 9px 12px;
+    background: #f8fafc;
+    padding: 10px 12px;
     text-align: left;
     white-space: nowrap;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
   }
   tbody td {
-    padding: 9px 12px;
+    padding: 10px 12px;
     border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
+    vertical-align: top;
   }
-  tbody tr:nth-child(even) td { background: #fafbfc; }
-  tbody tr:hover td { background: #f1f5f9; }
   tbody tr:last-child td { border-bottom: none; }
   .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .is-pos { color: #15803d; font-weight: 700; }
-  .is-neg { color: #b91c1c; font-weight: 700; }
-  .is-warn { color: #b45309; font-weight: 700; }
+  .is-pos { color: #16a34a; font-weight: 600; }
+  .is-neg { color: #dc2626; font-weight: 600; }
+  .is-warn { color: #d97706; font-weight: 600; }
 }
 
 .review-dialog__ad {
