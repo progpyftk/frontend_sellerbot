@@ -21,12 +21,11 @@
     </div>
 
     <!-- Indicadores resumidos -->
-    <SbKpiGrid :columns="5" class="q-mb-xs">
+    <SbKpiGrid :columns="4" class="q-mb-md">
       <SbKpiCard label="Anúncios com promoção" :value="adsTotal" variant="slate" title="Quantos anúncios têm ao menos uma promoção (ativa ou candidata) no catálogo" />
       <SbKpiCard label="Promoções ativas" :value="metrics.active" variant="teal" title="Promoções já rodando no ML (linhas carregadas)" />
       <SbKpiCard label="Faltam ativar" :value="metrics.available" variant="sky" title="Promoções candidatas que você ainda não ativou (linhas carregadas)" />
-      <SbKpiCard label="Calculáveis" :value="metrics.estimable" variant="green" title="Promoções com tarifa, frete e CMV suficientes para estimar a margem" />
-      <SbKpiCard label="Bloqueadas" :value="metrics.blocked" variant="amber" title="Sem dados para calcular a margem (falta CMV, tarifa ou preço)" />
+      <SbKpiCard label="Bloqueadas (sem CMV/tarifa)" :value="metrics.blocked" variant="amber" title="Sem dados para calcular a margem (falta CMV, tarifa ou preço). As demais são calculáveis." />
     </SbKpiGrid>
     <p class="promo-ads__note">
       <template v-if="snapshotInfo">
@@ -823,18 +822,32 @@ onMounted(reload)
 </script>
 
 <style lang="scss" scoped>
+/* largura de leitura: sem isto a página ocupa o monitor inteiro e as linhas
+   ficam esticadas demais / a tabela "joga pra esquerda". Tudo (KPIs, filtros,
+   barra e a árvore) compartilha a mesma coluna centralizada. */
+.promo-ads {
+  max-width: 1400px;
+  margin-inline: auto;
+}
+
+/* no meio-termo (900–1199px) o grid de 4 cai pra 3 colunas e sobra 1 card
+   órfão esticado — 2×2 fica alinhado. Acima disso, 4 numa linha. */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .promo-ads :deep(.kpi-grid--cols-4) { grid-template-columns: repeat(2, 1fr); }
+}
+
 .promo-ads__note {
   font-size: 11px;
   color: #94a3b8;
-  margin: 6px 0 16px;
+  margin: 8px 2px 18px;
   code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 10.5px; }
 }
 
 .promo-ads__legend {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
   font-size: 11.5px; color: #64748b;
-  padding: 8px 12px; margin: 10px 0 4px;
-  background: #f8fafc; border: 1px solid #eef2f6; border-radius: 8px;
+  padding: 9px 14px; margin: 12px 0 14px;
+  background: #f8fafc; border: 1px solid #eef2f6; border-radius: 10px;
   strong { color: #334155; font-weight: 700; }
 }
 .promo-ads__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: 0; }

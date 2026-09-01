@@ -50,10 +50,10 @@
         <!-- promoções, agrupadas por estado, sempre visíveis -->
         <table class="pa-promos">
           <colgroup>
-            <col style="width:42px" /><col /><col style="width:132px" />
-            <col style="width:96px" /><col style="width:86px" />
-            <col style="width:76px" /><col style="width:76px" />
-            <col style="width:92px" /><col style="width:82px" /><col style="width:172px" />
+            <col style="width:44px" /><col style="width:190px" /><col style="width:150px" />
+            <col style="width:104px" /><col style="width:90px" />
+            <col style="width:82px" /><col style="width:82px" />
+            <col style="width:104px" /><col style="width:94px" /><col style="width:210px" />
           </colgroup>
           <thead>
             <tr class="pa-hrow">
@@ -390,7 +390,6 @@ $c-danger: #dc2626;
   border: 1px solid #d3dbe4;
   border-radius: 10px;
   margin: 0 0 12px;
-  max-width: 1040px;
   overflow: hidden;
   border-left: 4px solid #cbd5e1;
   background: #fff;
