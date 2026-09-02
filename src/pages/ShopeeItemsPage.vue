@@ -1295,7 +1295,7 @@ onMounted(loadAccounts)
 /* ── Tabela ───────────────────────────────────────────────────────────── */
 .shopee-table { background: #fff; }
 :deep(.shopee-table .q-table__top) { display: none; }
-:deep(.shopee-table thead tr th) { position: sticky; top: 0; z-index: 1; background: #f8fafc; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1.5px solid #e2e8f0; }
+:deep(.shopee-table thead tr th) { position: sticky; top: 56px; z-index: 1; background: #f8fafc; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1.5px solid #e2e8f0; }
 :deep(.shopee-table tbody tr.hover-row:hover) { background: #f0fdf9 !important; }
 :deep(.shopee-table tbody tr.row-selected) { background: #e6fdf8 !important; }
 :deep(.shopee-table tbody tr.row-active) { background: #f0fdf9 !important; border-left: 3px solid #0d9488; }

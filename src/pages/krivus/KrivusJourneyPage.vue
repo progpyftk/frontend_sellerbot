@@ -1232,7 +1232,7 @@ onUnmounted(() => {
 /* Sub-navegação sticky */
 .section-nav {
   position: sticky;
-  top: 0;
+  top: $app-header-h;
   z-index: 5;
   display: flex;
   gap: $space-1;

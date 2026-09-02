@@ -1454,6 +1454,7 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+@import 'src/css/tokens.scss';
 /* ── Página base ───────────────────────────────────────────── */
 .shopee-orders-page { background: #f8fafc; min-height: 100vh; }
 
@@ -1462,7 +1463,7 @@ onMounted(() => {
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
   padding: 14px 20px;
-  position: sticky; top: 0; z-index: 10;
+  position: sticky; top: $app-header-h; z-index: 10;
 }
 .header-icon {
   width: 36px; height: 36px; border-radius: 10px;
@@ -1656,7 +1657,7 @@ onMounted(() => {
 :deep(.shopee-table .q-table__top) { display: none; }
 
 :deep(.shopee-table thead tr th) {
-  position: sticky; top: 0; z-index: 1;
+  position: sticky; top: calc($app-header-h + 65px); z-index: 1;
   background: #f8fafc;
   font-size: 11px; font-weight: 700; color: #64748b;
   text-transform: uppercase; letter-spacing: .4px;

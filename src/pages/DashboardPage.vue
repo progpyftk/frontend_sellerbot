@@ -4289,7 +4289,7 @@ watch(selectedAccountKeys, () => {
   white-space: nowrap;
   background: #f8f9fa;
   position: sticky;
-  top: 0;
+  top: $app-header-h;
   z-index: 2;
 }
 
@@ -4988,7 +4988,7 @@ watch(selectedAccountKeys, () => {
   border-bottom: 1.5px solid #e8edf3;
   white-space: nowrap;
   position: sticky;
-  top: 0;
+  top: $app-header-h;
   z-index: 2;
 }
 .daily-table thead th.col-date { text-align: left; }
