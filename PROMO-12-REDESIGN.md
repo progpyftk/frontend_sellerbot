@@ -5,7 +5,7 @@ Status: implementação local, **sem deploy**. Aguarda revisão do contrato visu
 
 Referências: `backend_sellerbot/docs/plans/2026-08-29-promo-11-promocoes-por-anuncios.md`
 (§4 contrato read-only, §7 replanejamento PROMO-12) e o briefing da sprint
-`sprints/done/2026-08-18-remocao-promocoes-ml/plans/briefing.md`.
+`sprints/done/2026-08-18-promocoes-ml-visao-anuncios/plans/briefing.md`.
 
 ---
 
