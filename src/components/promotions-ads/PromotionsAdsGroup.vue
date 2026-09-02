@@ -329,10 +329,12 @@ function moneyClass (value) {
 <style lang="scss" scoped>
 @import 'src/css/tokens';
 
-/* ---------- linha da conta (sticky abaixo do cabeçalho) ---------- */
+/* ---------- linha da conta (sticky abaixo da barra e do cabeçalho) ----------
+   `--pa-bar-h` e `--pa-head-h` vêm herdados do `.promo-ads` da página; somar
+   `--pa-top` é obrigatório porque o header do app é fixo e cobre o topo. */
 .pa-acctrow td {
   position: sticky;
-  top: calc(var(--pa-bar-h) + var(--pa-head-h));
+  top: calc(var(--pa-top) + var(--pa-bar-h) + var(--pa-head-h));
   z-index: 2;
   background: $surface-2;
   border-top: 1px solid $border-strong;

@@ -30,9 +30,11 @@
         <span class="pa-stat__v">{{ metrics.available }}</span>
         <span class="pa-stat__l">Faltam ativar</span>
       </div>
-      <div class="pa-stat" title="Sem CMV, tarifa ou preço para calcular a margem">
+      <!-- "Sem dados" e não "Bloqueadas": no dock de resumo "bloqueadas" quer
+           dizer "selecionadas que não passam nos pisos" — outro significado. -->
+      <div class="pa-stat" title="Promoções sem CMV, tarifa ou preço — não dá para calcular a margem">
         <span class="pa-stat__v">{{ metrics.blocked }}</span>
-        <span class="pa-stat__l">Bloqueadas</span>
+        <span class="pa-stat__l">Sem dados</span>
       </div>
       <span class="pa-stats__scope">
         desta página<template v-if="adsTotal > visibleAdCount"> · {{ adsTotal }} no catálogo</template>
@@ -813,9 +815,19 @@ onMounted(reload)
 <style lang="scss" scoped>
 @import 'src/css/tokens';
 
+// Respiro para o dock fixo de resumo (2 linhas + margem inferior). Se o dock
+// ganhar uma terceira linha, este valor precisa subir.
+$pa-dock-clearance: 120px;
+
 /* Alturas fixas: o cabeçalho da tabela e a linha da conta são sticky e
-   precisam saber exatamente onde a barra termina. Daí as CSS vars. */
+   precisam saber exatamente onde a barra termina. Daí as CSS vars.
+
+   `--pa-top` é a altura do header do app, que é FIXO (`view="hHh lpR fFf"`
+   tem `H` maiúsculo → Quasar aplica `fixed-top` ao <q-header>). O conteúdo da
+   página rola por baixo dele, então todo `top:` deste stack precisa somar
+   esse valor — sem isso a barra fica escondida atrás do header. */
 .promo-ads {
+  --pa-top: #{$app-header-h};
   --pa-bar-h: 52px;
   --pa-head-h: 34px;
   max-width: 1400px;
@@ -842,7 +854,7 @@ onMounted(reload)
    por baixo dela — e fica alinhada com a tabela. */
 .pa-bar {
   position: sticky;
-  top: 0;
+  top: var(--pa-top);
   z-index: 30;
   height: var(--pa-bar-h);
   background: $surface;
@@ -942,7 +954,7 @@ onMounted(reload)
 
 .pa-thead th {
   position: sticky;
-  top: var(--pa-bar-h);
+  top: calc(var(--pa-top) + var(--pa-bar-h));
   z-index: 3;
   height: var(--pa-head-h);
   padding: 0 $space-2;
@@ -953,8 +965,11 @@ onMounted(reload)
   background: $surface-2;
   border-top: 1px solid $border-strong;
   border-bottom: 1px solid $border-strong;
-  white-space: nowrap; cursor: help;
+  white-space: nowrap;
 }
+/* Só as colunas que realmente têm `title` ganham cursor de ajuda — a coluna
+   do checkbox (`.c-pick`) não tem tooltip e não deve fingir que tem. */
+.pa-thead th[title] { cursor: help; }
 .pa-thead th.num { text-align: right; }
 
 /* Abaixo de 1100px as três colunas de custo saem; as larguras precisam
@@ -975,7 +990,8 @@ onMounted(reload)
 
 /* Telas estreitas: sticky atrapalha mais do que ajuda, e a tabela passa a
    rolar na horizontal. overflow-x cria um container de scroll, então o
-   stickyPrecisa ser desligado junto. */
+   sticky precisa ser desligado junto — inclusive o da linha de conta, que
+   mora no componente filho e por isso precisa de :deep(). */
 @media (max-width: 900px) {
   .pa-bar { position: static; }
   .pa-thead th { position: static; }
@@ -984,7 +1000,7 @@ onMounted(reload)
   .pa-table { min-width: 880px; }
 }
 
-.promo-ads__more { text-align: center; margin: $space-5 0 120px; }
+.promo-ads__more { text-align: center; margin: $space-5 0 $pa-dock-clearance; }
 
 /* ---------- dock de resumo ---------- */
 .promo-ads__summary {

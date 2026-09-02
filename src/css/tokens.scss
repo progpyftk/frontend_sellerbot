@@ -15,6 +15,14 @@ $space-10: 40px;
 $space-12: 48px;
 $space-16: 64px;
 
+// ── LAYOUT ──
+// Altura do header do app (MainLayout). O `view="hHh lpR fFf"` tem `H`
+// maiúsculo, o que faz o Quasar fixar o <q-header> no topo; o conteúdo da
+// página rola POR BAIXO dele. Todo `position: sticky; top: ...` dentro de uma
+// página precisa somar este valor (é o `--pa-top` do PromotionsAdsPage).
+// Fonte da verdade: `.app-toolbar { min-height }` em MainLayout.vue.
+$app-header-h: 56px;
+
 // ── RAIO ──
 $radius-sm: 6px;   // inputs, chips
 $radius-md: 10px;  // botões
