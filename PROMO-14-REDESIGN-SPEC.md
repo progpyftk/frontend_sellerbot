@@ -16,6 +16,18 @@ dentro de cada caixa.
 Este ticket troca a estrutura. Ele é complementar ao PROMO-13, não substituto: tudo o que a
 especificação anterior documenta sobre tokens continua valendo.
 
+### 0.1 PROMO-14b — correção pós-deploy (2026-09-02)
+
+A revisão depois do deploy achou um bug bloqueante que só aparece rolando a página: o stack sticky
+tinha `top: 0` e o **header do app é fixo** (`view="hHh lpR fFf"`), então a barra de
+modo/agrupamento/filtros/expandir ficava escondida atrás dele. Detalhes em §3.1.
+
+Junto vieram quatro ajustes menores: `cursor: help` só nas colunas com `title`, "Bloqueadas" →
+"Sem dados" na faixa de métricas, respiro do dock nomeado (`$pa-dock-clearance`) e correção de
+comentário. Nada disso muda regras de negócio.
+
+**Branch:** `melhoria/PROMO-14b-sticky-header-offset`
+
 ---
 
 ## 1. Problemas estruturais encontrados
@@ -100,15 +112,34 @@ alinhada com a tabela.
 Três níveis empilhados, com alturas fixas declaradas em CSS vars no `.promo-ads`:
 
 ```scss
-.promo-ads { --pa-bar-h: 52px; --pa-head-h: 34px; }
-.pa-bar          { position: sticky; top: 0;                                      z-index: 30; }
-.pa-thead th     { position: sticky; top: var(--pa-bar-h);                        z-index: 3;  }
-.pa-acctrow td   { position: sticky; top: calc(var(--pa-bar-h) + var(--pa-head-h)); z-index: 2; }
+.promo-ads { --pa-top: 56px; --pa-bar-h: 52px; --pa-head-h: 34px; }
+.pa-bar        { position: sticky; top: var(--pa-top);                                      z-index: 30; }
+.pa-thead th   { position: sticky; top: calc(var(--pa-top) + var(--pa-bar-h));               z-index: 3;  }
+.pa-acctrow td { position: sticky; top: calc(var(--pa-top) + var(--pa-bar-h) + var(--pa-head-h)); z-index: 2; }
 ```
 
 As alturas precisam ser **fixas** (`height`, não `padding`) — é o que torna a conta exata. Abaixo
 de 900px o sticky é desligado (`.pa-bar`, `th`, `.pa-acctrow td` → `position: static`) e a tabela
 passa a rolar na horizontal.
+
+### 3.1 `--pa-top`: o header do app é fixo e cobre o topo
+
+`MainLayout.vue` usa `view="hHh lpR fFf"`. O **`H` maiúsculo** faz o Quasar marcar o header como
+fixo (`quasar/src/components/header/QHeader.js` → `fixed = view.indexOf('H') !== -1`) e aplicar a
+classe `fixed-top`. O `QPageContainer` só recebe `padding-top` de 56px — ou seja, o conteúdo
+**começa** abaixo do header, mas **rola por baixo** dele.
+
+Consequência: qualquer `position: sticky` com `top: 0` dentro de uma página fica escondido atrás do
+header assim que a página rola. `top: 0` aqui significa "topo da viewport", não "topo do conteúdo".
+
+Foi exatamente o bug que o PROMO-14 entregou: a barra de modo/agrupamento/filtros/expandir
+desaparecia ao rolar a lista. Corrigido em **PROMO-14b** somando `--pa-top` aos três níveis.
+
+`--pa-top` vem do token `$app-header-h` (`src/css/tokens.scss`), cuja fonte da verdade é
+`.app-toolbar { min-height: 56px }` em `MainLayout.vue`. Se a altura do toolbar mudar, mudar o token.
+
+> **Regra geral, válida para qualquer página do SellerBot:** offset de sticky no topo =
+> `$app-header-h` + a soma das alturas dos elementos sticky acima dele.
 
 ---
 
@@ -129,6 +160,12 @@ passa a rolar na horizontal.
    está desligado.
 6. **O fragment root de `PromotionsAdsGroup.vue` é deliberado** (uma `<tbody>` para a conta + uma
    por anúncio). Voltar para um elemento único envolve reaplicar o `<thead>` por anúncio.
+   6a. **Isto funciona porque célula sticky é limitada pela tabela, não pelo row group.** Se fosse
+   limitada ao `<tbody>`, a linha da conta (sozinha no seu `<tbody>`) não grudaria em nada. A prova
+   empírica é que `thead th { position: sticky }` funciona no mundo inteiro, e o `<thead>` também
+   só tem uma linha de altura. Vários `<tbody>` sticky se sobrepõem em ordem de DOM, o que produz
+   exatamente o efeito desejado de "cabeçalho do grupo atual". **Não** "consertar" isso movendo a
+   conta para dentro do `<tbody>` dos anúncios.
 7. **Hover vs. seleção.** `.pa-ad:hover .pa-prow:not(.is-chosen):not(.is-removing) td` — sem o
    `:not()`, a especificidade do hover (0,3,1) ganha de `.is-chosen` (0,2,1) e a linha selecionada
    perde o tint verde ao passar o mouse.
@@ -137,6 +174,14 @@ passa a rolar na horizontal.
 9. **Estilos inline em JS não veem SCSS.** Os `$q.dialog` de remoção/edição usam
    `style="font-size:12px;color:#64748b"` em template string. Os valores batem com a escala
    (`12px` = `$text-xs-size`), mas não há como usar o token ali.
+10. **Todo `top:` de sticky precisa somar `--pa-top`** (56px, do token `$app-header-h`). Ver §3.1.
+    Esquecer isso não dá erro de build nem de teste — só faz o elemento desaparecer ao rolar.
+11. **Esconder colunas com `display: none` não desalinha as larguras** — contanto que `<thead>` e
+    `<tbody>` escondam as mesmas células, a ordem das renderizadas fica idêntica. O bloco
+    `@media (max-width: 1100px)` recalcula as 7 restantes e elas também precisam somar 100%.
+12. **"Bloqueadas" tem dois significados na tela.** Na faixa de métricas virou **"Sem dados"**
+    (promoções sem CMV/tarifa/preço); no dock de resumo continua "bloqueadas" (selecionadas que
+    não passam nos pisos de margem/lucro). Não voltar a unificar os dois sob o mesmo rótulo.
 
 ---
 
@@ -146,6 +191,21 @@ passa a rolar na horizontal.
 - `vitest run` → **16 arquivos, 121 testes, todos verdes**
   (inclui `promotionsAdsGroup` — 5 testes de regressão de checkbox/botão — e `promotionsAdsView` — 34)
 - Contraste: nenhum texto novo fora da escala tipográfica; todo texto de corpo ≥ 4.5:1
+- **PROMO-14b:** 121 testes verdes + build ok; CSS compilado conferido —
+  `--pa-top: 56px` e os três `top:` do stack resolvendo para
+  `var(--pa-top)`, `calc(var(--pa-top) + var(--pa-bar-h))` e
+  `calc(var(--pa-top) + var(--pa-bar-h) + var(--pa-head-h))`.
+
+### 5.1 O que a validação automática **não** pega
+
+Build e testes passaram com o bug do §3.1 em produção porque ele é puramente visual e só aparece
+depois de rolar a página. A checagem que vale é olhar a tela: rolar a lista e confirmar que a barra
+continua visível logo abaixo do header do app.
+
+**Débito técnico deixado para outro ticket:** `DashboardPage`, `KrivusJourneyPage`,
+`ShopeeOrdersPage`, `ShopeeItemsPage`, `TikTokShopOrdersPage` e `TikTokShopItemsPage` também usam
+`position: sticky; top: 0` e têm o mesmo problema — seus cabeçalhos somem atrás do header ao rolar.
+A correção é a mesma (somar `$app-header-h`), mas está fora do escopo do PROMO-14.
 
 ## 6. O que **não** mudou
 
