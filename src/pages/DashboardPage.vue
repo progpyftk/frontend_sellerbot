@@ -4288,8 +4288,12 @@ watch(selectedAccountKeys, () => {
   border-bottom: 1.5px solid #e8edf3;
   white-space: nowrap;
   background: #f8f9fa;
+  /* `top: 0` e nao `$app-header-h`: o container de rolagem aqui e o proprio
+     `.table-wrap` (max-height + overflow-y), nao a pagina — o header fixo do
+     app nunca cobre esta tabela. Somar a altura do header faz o cabecalho
+     parar 56px abaixo do topo do wrapper, encobrindo as primeiras linhas. */
   position: sticky;
-  top: $app-header-h;
+  top: 0;
   z-index: 2;
 }
 
@@ -4987,8 +4991,10 @@ watch(selectedAccountKeys, () => {
   background: #f8fafc;
   border-bottom: 1.5px solid #e8edf3;
   white-space: nowrap;
+  /* `top: 0` pelo mesmo motivo de `.data-table th`: quem rola e o
+     `.daily-table-wrap` (max-height + overflow-y), nao a pagina. */
   position: sticky;
-  top: $app-header-h;
+  top: 0;
   z-index: 2;
 }
 .daily-table thead th.col-date { text-align: left; }
