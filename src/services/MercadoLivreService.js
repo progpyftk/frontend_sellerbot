@@ -130,6 +130,16 @@ export default {
   },
 
   // ==========================================
+  // ASSISTENTE DE PROMOÇÕES (PROMO-IA-2)
+  // ==========================================
+  // Painel de acompanhamento — somente leitura. Junta o log de decisões do
+  // assistente (recomendação/ação) com o retrato diário dos anúncios.
+  // params: { days?, limit?, account_id? }
+  getPromotionsAdvisor(params = {}) {
+    return api.get('/mercadolivre/promotions-advisor/', { params })
+  },
+
+  // ==========================================
   // VENDAS (ORDERS)
   // ==========================================
   listOrders(params) {

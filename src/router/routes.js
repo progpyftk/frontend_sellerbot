@@ -61,6 +61,11 @@ const routes = [
         component: () => import('pages/PromotionsAdsPage.vue')
       },
       {
+        path: 'promotions/advisor',
+        name: "promotions-advisor",
+        component: () => import('pages/PromotionsAdvisorPage.vue')
+      },
+      {
         path: 'orders',
         name: "orders",
         component: () => import('pages/OrdersList.vue')

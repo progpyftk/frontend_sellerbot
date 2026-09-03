@@ -178,6 +178,7 @@ const menuSections = [
       { label: "Meus Anúncios",      icon: "mdi-package-variant-closed",   route: "items" },
       { label: "Promoções Ativas",   icon: "local_offer",                   route: "promotions" },
       { label: "Promoções · Por anúncios", icon: "local_offer",              route: "promotions-ads" },
+      { label: "Promoções · Assistente",  icon: "auto_graph",               route: "promotions-advisor" },
        { label: "Detalhe do Anúncio", icon: "mdi-chart-bar",                 route: "item-details" },
        { label: "Gestão Full",        icon: "warehouse",                    route: "fulfillment-management" },
     ],
