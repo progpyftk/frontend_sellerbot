@@ -18,9 +18,31 @@ $space-16: 64px;
 // ── LAYOUT ──
 // Altura do header do app (MainLayout). O `view="hHh lpR fFf"` tem `H`
 // maiúsculo, o que faz o Quasar fixar o <q-header> no topo; o conteúdo da
-// página rola POR BAIXO dele. Todo `position: sticky; top: ...` dentro de uma
-// página precisa somar este valor (é o `--pa-top` do PromotionsAdsPage).
+// página rola POR BAIXO dele.
 // Fonte da verdade: `.app-toolbar { min-height }` em MainLayout.vue.
+//
+// ── REGRA DO STICKY ────────────────────────────────────────────────────────
+// A pergunta que decide tudo é: QUAL É O SCROLLPORT? `position: sticky` é
+// relativo ao ancestral de rolagem mais próximo — nunca à página. Antes de
+// escrever `top:`, descubra quem rola:
+//
+//   1. A PRÓPRIA PÁGINA (nenhum ancestral com `overflow`) → SOME este valor.
+//      Ex.: `.page-header` (Shopee/TikTok), `.section-nav` (KrivusJourney) e a
+//      barra do PromotionsAdsPage (`--pa-top`).
+//   2. WRAPPER COM `max-height` + `overflow-y` → `top: 0`. Quem rola é o
+//      wrapper, e o header do app nunca cobre essa tabela. Ex.: `.table-wrap`
+//      (480px) e `.daily-table-wrap` (520px) do DashboardPage.
+//   3. SCROLLPORT `overflow: auto` DE ALTURA LIVRE, QUE NUNCA ROLA → `top: 0`,
+//      e saiba que o cabeçalho NÃO fica fixo. É o caso do `.q-table__middle`
+//      do Quasar (ele sempre recebe a classe `scroll`). Com scrollport parado
+//      o sticky não gruda em nada: qualquer `top:` vira um empurrão permanente
+//      do cabeçalho para baixo, por cima das primeiras linhas.
+//
+// Somar `$app-header-h` fora do caso 1 cobre as primeiras linhas — foi exatamente
+// a regressão de 2026-09-02 (commit `6e89d73`), que trocou `top: 0` por 56px
+// (ou 56+65) em todo sticky que "parecia estar no topo", sem olhar o scrollport.
+// Episódio e evidências: sprint `2026-09-02-sticky-tabelas-dashboard`
+// (repo backend_sellerbot), `plans/briefing.md`.
 $app-header-h: 56px;
 
 // ── RAIO ──
