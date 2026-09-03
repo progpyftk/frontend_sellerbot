@@ -1089,7 +1089,11 @@ onMounted(() => {
 :deep(.tiktok-table .q-table__top) { display: none; }
 
 :deep(.tiktok-table thead tr th) {
-  position: sticky; top: calc($app-header-h + 65px); z-index: 1;
+  /* `top: 0` e nao `$app-header-h`: o scrollport do thead e o `.q-table__middle`
+     do Quasar (`overflow: auto`, altura livre -> nunca rola). Com scrollport que
+     nao rola, qualquer `top:` vira empurrao permanente do cabecalho para baixo,
+     por cima das primeiras linhas. Nada aqui gruda no viewport da pagina. */
+  position: sticky; top: 0; z-index: 1;
   background: #f8fafc;
   font-size: 11px; font-weight: 700; color: #64748b;
   text-transform: uppercase; letter-spacing: .4px;
