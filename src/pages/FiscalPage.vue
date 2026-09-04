@@ -453,7 +453,7 @@
                   dense
                   outlined
                   clearable
-                  placeholder="Chave de 44 dígitos, número ou participante..."
+                  placeholder="Chave de 44 dígitos, número, participante ou produto da nota..."
                   bg-color="white"
                   @keyup.enter="loadDocuments(1)"
                   @clear="loadDocuments(1)"

@@ -11,8 +11,9 @@ export default {
   },
 
   /**
-   * Listagem paginada de NF-e com filtros
-   * @param {Object} params { page, page_size, access_key, stock_effect, document_status, ncm, fiscal_account }
+   * Listagem paginada de NF-e com filtros.
+   * `search` casa chave/número/participantes e também o título (product_description) dos itens da nota.
+   * @param {Object} params { page, page_size, access_key, stock_effect, document_status, ncm, search, fiscal_account }
    */
   /** Exporta o balanço de NCMs filtrado por CNPJ e período em XLSX. */
   exportNcmBalanceExcel(params = {}) {
