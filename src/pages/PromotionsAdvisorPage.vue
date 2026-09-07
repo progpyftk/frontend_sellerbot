@@ -21,13 +21,14 @@
     <template v-else>
       <p class="pv-note">
         Margem e lucro calculados <strong>na venda atual</strong> (promo ativa, ou preço-base se
-        não há promo). Lista servida do snapshot de
+        não há promo) com CMV do Tiny, tarifa e frete reais. Lista servida do snapshot de
         <strong>{{ snapshotAt || '—' }}</strong>{{ snapshotStale ? ' (defasado — atualize o snapshot)' : '' }}.
       </p>
 
-      <!-- Resumo em texto; cada número é um filtro -->
+      <!-- KPIs clicáveis: números são do escopo (conta/busca) e NÃO mudam quando
+           um chip é clicado — clicar filtra a tabela, não os números. -->
       <div class="pv-summary" role="group" aria-label="Resumo e filtros rápidos">
-        <button class="pv-chip" :class="{ 'pv-chip--on': !origem && !belowFloor && !hasPromo }" @click="resetFilters">
+        <button class="pv-chip" :class="{ 'pv-chip--on': !origem && !belowFloor && !hasPromo }" @click="resetFacets">
           {{ summary.ads }} anúncios
         </button>
         <button class="pv-chip" :class="{ 'pv-chip--on': hasPromo }" @click="toggleHasPromo">
@@ -41,39 +42,89 @@
         </button>
       </div>
 
-      <!-- Filtros: 1 fileira -->
-      <div class="pv-filters">
-        <q-input
-          v-model="q" dense outlined clearable debounce="350" class="pv-filters__q"
-          placeholder="Buscar título, MLB ou SKU"
-        />
+      <!-- Toolbar de escopo: conta, status e limpar -->
+      <div class="pv-toolbar">
         <q-select
           v-model="accountId" dense outlined clearable emit-value map-options
-          :options="accountOptions" class="pv-filters__account" label="Conta"
+          :options="accountOptions" class="pv-toolbar__account" label="Conta"
         />
         <q-select
-          v-model="health" dense outlined clearable emit-value map-options
-          :options="healthOptions" class="pv-filters__health" label="Saúde"
+          v-model="status" dense outlined clearable emit-value map-options
+          :options="statusOptions" class="pv-toolbar__status" label="Status do anúncio"
         />
-        <q-select
-          v-model="sort" dense outlined emit-value map-options
-          :options="sortOptions" class="pv-filters__sort" label="Ordenar por"
+        <q-btn
+          v-if="anyFilterActive" flat dense no-caps icon="filter_alt_off"
+          label="Limpar filtros" @click="clearAllFilters"
         />
       </div>
 
-      <!-- Tabela: protagonista (1 linha = 1 anúncio) -->
+      <!-- Tabela: protagonista (1 linha = 1 anúncio) + filtro por coluna -->
       <SbTable :scroll-x="true">
         <thead>
-          <tr>
+          <tr class="pv-head-row">
             <th class="pv-expand-col" aria-label="Expandir"></th>
             <th>Anúncio</th>
-            <th class="num pv-sortable" @click="cycleSort('-sales')">Vendas 30d</th>
+            <th>Saúde</th>
+            <th class="num pv-sortable" @click="cycleSort('-sales')">
+              Vendas 30d <span v-if="sortIndicator('sales')" class="pv-arrow">{{ sortIndicator('sales') }}</span>
+            </th>
+            <th class="num pv-sortable" @click="cycleSort('-price')">
+              Preço-base <span v-if="sortIndicator('price')" class="pv-arrow">{{ sortIndicator('price') }}</span>
+            </th>
             <th>Promo ativa</th>
-            <th class="num pv-sortable" @click="cycleSort('-discount')">% desc</th>
+            <th class="num pv-sortable" @click="cycleSort('-discount')">
+              % desc <span v-if="sortIndicator('discount')" class="pv-arrow">{{ sortIndicator('discount') }}</span>
+            </th>
             <th class="num">Preço promo</th>
-            <th class="num pv-sortable" @click="cycleSort('-margin')">Margem</th>
+            <th class="num">CMV</th>
+            <th class="num pv-sortable" @click="cycleSort('-margin')">
+              Margem <span v-if="sortIndicator('margin')" class="pv-arrow">{{ sortIndicator('margin') }}</span>
+            </th>
             <th class="num">Lucro</th>
+            <th class="pv-sortable" @click="cycleSort('-activation')">
+              Ativação assistente <span v-if="sortIndicator('activation')" class="pv-arrow">{{ sortIndicator('activation') }}</span>
+            </th>
             <th>Datas promo</th>
+          </tr>
+          <tr class="pv-filter-row">
+            <th class="pv-expand-col"></th>
+            <th>
+              <q-input v-model="filters.q" dense outlined clearable debounce="350" placeholder="buscar" aria-label="Buscar título, MLB ou SKU" />
+            </th>
+            <th>
+              <q-select v-model="filters.health" dense outlined clearable emit-value map-options :options="healthOptions" aria-label="Filtrar por saúde" />
+            </th>
+            <th>
+              <q-input v-model.number="filters.minSales" dense outlined type="number" min="0" debounce="400" placeholder="min" aria-label="Vendas mínimas em 30 dias" />
+            </th>
+            <th></th>
+            <th>
+              <q-select
+                v-model="promoFilter" dense outlined clearable emit-value map-options
+                :options="promoOptions" aria-label="Filtrar por promo ativa"
+              />
+            </th>
+            <th>
+              <q-input v-model.number="filters.minDiscount" dense outlined type="number" min="0" max="100" debounce="400" placeholder="min" aria-label="Desconto mínimo" />
+            </th>
+            <th></th>
+            <th></th>
+            <th>
+              <div class="pv-range">
+                <q-input v-model.number="filters.minMargin" dense outlined type="number" debounce="400" placeholder="min" aria-label="Margem mínima (%)" />
+                <q-input v-model.number="filters.maxMargin" dense outlined type="number" debounce="400" placeholder="máx" aria-label="Margem máxima (%)" />
+              </div>
+            </th>
+            <th>
+              <q-input v-model.number="filters.minProfit" dense outlined type="number" debounce="400" placeholder="min" aria-label="Lucro mínimo por venda" />
+            </th>
+            <th>
+              <div class="pv-range">
+                <q-input v-model="filters.activationFrom" dense outlined type="date" aria-label="Ativação a partir de" />
+                <q-input v-model="filters.activationTo" dense outlined type="date" aria-label="Ativação até" />
+              </div>
+            </th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -89,9 +140,14 @@
               </td>
               <td>
                 <span class="pv-title">{{ row.title }}</span>
-                <span class="pv-sub">{{ row.item_id }}<template v-if="row.sku"> · {{ row.sku }}</template> · {{ row.account_nickname }}</span>
+                <span class="pv-sub">{{ row.item_id }}<template v-if="row.sku"> · {{ row.sku }}</template> · {{ row.account_nickname }}<template v-if="row.status && row.status !== 'active'"> · {{ statusLabel(row.status) }}</template></span>
+              </td>
+              <td>
+                <SbBadge v-if="row.health" :variant="healthMeta(row.health).variant">{{ healthMeta(row.health).label }}</SbBadge>
+                <template v-else>—</template>
               </td>
               <td class="num">{{ row.sales_30d ?? '—' }}</td>
+              <td class="num">{{ brl(row.price) }}</td>
               <td>
                 <template v-if="row.active_promo">
                   <span class="pv-promo">{{ promoLabel(row.active_promo) }}</span>
@@ -103,12 +159,20 @@
               </td>
               <td class="num">{{ pct(row.active_promo?.discount_pct) }}</td>
               <td class="num">{{ brl(row.active_promo?.buyer_price) }}</td>
+              <td class="num">{{ brl(row.cmv_unit) }}</td>
               <td class="num" :class="{ 'pv-alert': row.below_floor }">{{ pct(row.margin_pct) }}</td>
               <td class="num" :class="{ 'pv-alert': row.below_floor }">{{ brl(row.profit_unit) }}</td>
+              <td class="pv-dates">
+                <template v-if="row.agent_last">
+                  <span>{{ dateShort(row.agent_last.created_at) }}</span>
+                  <SbBadge :variant="acaoMeta(row.agent_last.acao).variant" class="q-ml-xs">{{ acaoMeta(row.agent_last.acao).label }}</SbBadge>
+                </template>
+                <template v-else>—</template>
+              </td>
               <td class="pv-dates">{{ promoDates(row.active_promo) }}</td>
             </tr>
             <tr v-if="expandedId === row.item_id">
-              <td colspan="9" class="pv-detail-cell">
+              <td colspan="13" class="pv-detail-cell">
                 <PromoOverviewDetail :item-id="row.item_id" />
               </td>
             </tr>
@@ -224,7 +288,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import SbPageHeader from 'src/components/common/SbPageHeader.vue';
 import SbEmptyState from 'src/components/common/SbEmptyState.vue';
@@ -250,6 +314,13 @@ const HEALTH_META = {
   alto: { label: 'Alto', variant: 'green' },
 };
 
+const STATUS_LABELS = {
+  active: 'Ativo',
+  paused: 'Pausado',
+  closed: 'Encerrado',
+  under_review: 'Em revisão',
+};
+
 const PROMO_LABELS = {
   PRICE_DISCOUNT: 'Oferta do dia',
   DEAL: 'O melhor de todos os dias',
@@ -259,7 +330,15 @@ const PROMO_LABELS = {
   SELLER_COUPON_CAMPAIGN: 'Cupom da loja',
 };
 
-const SORT_CYCLE = { '-sales': 'sales', sales: '-sales', '-margin': 'margin', margin: '-margin', '-discount': 'discount', discount: '-discount' };
+// Clique no th cicla desc → asc → desc …; título cicla A–Z/Z–A.
+const SORT_CYCLE = {
+  '-sales': 'sales', sales: '-sales',
+  '-margin': 'margin', margin: '-margin',
+  '-discount': 'discount', discount: '-discount',
+  '-price': 'price', price: '-price',
+  '-activation': 'activation', activation: '-activation',
+  health: 'health',
+};
 
 const loading = ref(false);
 const error = ref('');
@@ -273,35 +352,48 @@ const accounts = ref([]);
 const insights = ref({});
 // Uma linha expandida por vez — o detalhe consulta o ML ao vivo.
 const expandedId = ref(null);
-
-function toggleExpand(itemId) {
-  expandedId.value = expandedId.value === itemId ? null : itemId;
-}
-
-// filtros
-const q = ref('');
-const accountId = ref(null);
-const health = ref(null);
-const origem = ref('');
-const hasPromo = ref(false);
-const belowFloor = ref(false);
 const sort = ref('-sales');
 
-const accountOptions = computed(() => accounts.value.map((a) => ({ label: a.account_nickname || a.account_id, value: a.account_id })));
+// Filtros de escopo (afetam tabela e KPIs) e facets dos KPIs (só a tabela).
+const filters = reactive({
+  q: '',
+  accountId: null,
+  status: null,
+  health: null,
+  origem: '',
+  hasPromo: false,
+  belowFloor: false,
+  minSales: null,
+  minMargin: null,
+  maxMargin: null,
+  minDiscount: null,
+  minProfit: null,
+  activationFrom: '',
+  activationTo: '',
+});
+
+const accountOptions = computed(() => {
+  const derived = accounts.value.map((a) => ({ label: a.account_nickname || a.account_id, value: a.account_id }));
+  if (filters.accountId && !derived.some((o) => o.value === filters.accountId)) {
+    derived.push({ label: filters.accountId, value: filters.accountId });
+  }
+  return derived;
+});
 const healthOptions = Object.entries(HEALTH_META).map(([value, meta]) => ({ label: meta.label, value }));
-const sortOptions = [
-  { label: 'Vendas (maior primeiro)', value: '-sales' },
-  { label: 'Vendas (menor primeiro)', value: 'sales' },
-  { label: 'Margem (menor primeiro)', value: '-margin' },
-  { label: 'Margem (maior primeiro)', value: 'margin' },
-  { label: 'Desconto (maior primeiro)', value: '-discount' },
-  { label: 'Título (A–Z)', value: 'title' },
+const statusOptions = Object.entries(STATUS_LABELS).map(([value, label]) => ({ label, value }));
+const promoOptions = [
+  { label: 'Com promo ativa', value: 'has_promo' },
+  { label: 'Sem promo', value: 'sem_promo' },
+  { label: '🤖 Assistente', value: 'assistente' },
+  { label: 'ML', value: 'ml' },
 ];
 const insightRows = computed(() => insights.value.insights || {});
 const snapshotAt = computed(() => (snapshot.value.computed_at ? dateTime(snapshot.value.computed_at) : ''));
 const snapshotStale = computed(() => Boolean(snapshot.value.stale));
-
-const totalFiltered = computed(() => summary.value.ads ?? total.value);
+const anyFilterActive = computed(() => Object.entries(filters).some(([key, value]) => {
+  if (value === null || value === '' || value === false) return false;
+  return true;
+}));
 
 function promoLabel(promo) {
   if (!promo) return '—';
@@ -318,6 +410,10 @@ function promoDates(promo) {
 function dateShort(iso) {
   const parsed = new Date(iso);
   return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString('pt-BR');
+}
+
+function statusLabel(status) {
+  return STATUS_LABELS[status] || status;
 }
 
 // ── Formatação ────────────────────────────────────────────────────────────────
@@ -366,38 +462,76 @@ function healthMeta(healthValue) {
 }
 
 // ── Filtros e ordenação ──────────────────────────────────────────────────────
-function resetFilters() {
-  origem.value = '';
-  hasPromo.value = false;
-  belowFloor.value = false;
+// Chips = facets independentes (combináveis): "abaixo do piso" + "assistente"
+// mostram a interseção; os números dos KPIs seguem do escopo. "N anúncios" limpa.
+function resetFacets() {
+  filters.origem = '';
+  filters.hasPromo = false;
+  filters.belowFloor = false;
 }
 
 function toggleHasPromo() {
-  hasPromo.value = !hasPromo.value;
-  if (hasPromo.value) belowFloor.value = false;
+  filters.hasPromo = !filters.hasPromo;
 }
 
 function toggleBelowFloor() {
-  belowFloor.value = !belowFloor.value;
-  if (belowFloor.value) hasPromo.value = false;
+  filters.belowFloor = !filters.belowFloor;
 }
 
 function toggleAssistente() {
-  origem.value = origem.value === 'assistente' ? '' : 'assistente';
+  filters.origem = filters.origem === 'assistente' ? '' : 'assistente';
 }
 
-function cycleSort(column) {
-  sort.value = SORT_CYCLE[column] ?? column;
+function setPromoColumnFilter(value) {
+  // Select da coluna "Promo ativa": mapeia p/ os mesmos refs dos chips.
+  if (value === 'has_promo') {
+    filters.hasPromo = true;
+    filters.origem = '';
+  } else {
+    filters.hasPromo = false;
+    filters.origem = value || '';
+  }
+}
+
+// Getter/setter unificados para o select da coluna "Promo ativa".
+const promoFilter = computed({
+  get: () => (filters.hasPromo ? 'has_promo' : filters.origem),
+  set: setPromoColumnFilter,
+});
+
+function clearAllFilters() {
+  Object.assign(filters, {
+    q: '', accountId: null, status: null, health: null,
+    origem: '', hasPromo: false, belowFloor: false,
+    minSales: null, minMargin: null, maxMargin: null,
+    minDiscount: null, minProfit: null, activationFrom: '', activationTo: '',
+  });
+  if (sort.value !== '-sales') sort.value = '-sales';
+}
+
+function cycleSort(current) {
+  sort.value = SORT_CYCLE[current] ?? current;
+}
+
+function sortIndicator(base) {
+  if (sort.value === base) return '▲';
+  if (sort.value === `-${base}`) return '▼';
+  return '';
+}
+
+function toggleExpand(itemId) {
+  expandedId.value = expandedId.value === itemId ? null : itemId;
 }
 
 function goTo(next) {
   page.value = next;
 }
 
-watch([q, accountId, health, origem, hasPromo, belowFloor, sort], () => {
+watch(filters, () => {
   page.value = 1;
   load();
 });
+watch(sort, () => load());
 
 async function load() {
   loading.value = true;
@@ -408,12 +542,21 @@ async function load() {
       page_size: pageSize.value,
       sort: sort.value,
     };
-    if (q.value) params.q = q.value;
-    if (accountId.value) params.account_id = accountId.value;
-    if (health.value) params.health = health.value;
-    if (origem.value) params.origem = origem.value;
-    if (hasPromo.value) params.has_promo = 1;
-    if (belowFloor.value) params.below_floor = 1;
+    if (filters.q) params.q = filters.q;
+    if (filters.accountId) params.account_id = filters.accountId;
+    if (filters.status) params.status = filters.status;
+    if (filters.health) params.health = filters.health;
+    if (filters.minSales !== null && filters.minSales !== undefined && filters.minSales !== '') params.min_sales_30d = filters.minSales;
+    if (filters.minMargin !== null && filters.minMargin !== undefined && filters.minMargin !== '') params.min_margin_pct = filters.minMargin;
+    if (filters.maxMargin !== null && filters.maxMargin !== undefined && filters.maxMargin !== '') params.max_margin_pct = filters.maxMargin;
+    if (filters.minDiscount !== null && filters.minDiscount !== undefined && filters.minDiscount !== '') params.min_discount_pct = filters.minDiscount;
+    if (filters.minProfit !== null && filters.minProfit !== undefined && filters.minProfit !== '') params.min_profit = filters.minProfit;
+    if (filters.activationFrom) params.activation_from = filters.activationFrom;
+    if (filters.activationTo) params.activation_to = filters.activationTo;
+    // Facets dos chips: has_promo/origem/below_floor (números dos KPIs não mudam).
+    if (filters.origem) params.origem = filters.origem;
+    if (filters.hasPromo) params.has_promo = 1;
+    if (filters.belowFloor) params.below_floor = 1;
     const { data: payload } = await MercadoLivreService.getPromoOverview(params);
     rows.value = payload.results || [];
     total.value = payload.total || 0;
@@ -429,7 +572,8 @@ async function load() {
 }
 
 // As opções de conta vêm das linhas carregadas (lista é paginada; o backend
-// não expõe um índice de contas para este endpoint).
+// não expõe um índice de contas para este endpoint). A conta selecionada
+// permanece nas opções mesmo saindo da página atual.
 function deriveAccounts(results) {
   const seen = new Map();
   for (const row of results) {
@@ -467,12 +611,12 @@ onMounted(() => {
   max-width: 900px;
 }
 
-// ── Resumo clicável ──────────────────────────────────────────────────────────
+// ── KPIs clicáveis (números estáveis) ────────────────────────────────────────
 .pv-summary {
   display: flex;
   flex-wrap: wrap;
   gap: $space-2;
-  margin-bottom: $space-4;
+  margin-bottom: $space-3;
 }
 
 .pv-chip {
@@ -503,30 +647,24 @@ onMounted(() => {
   }
 }
 
-// ── Filtros (1 fileira) ─────────────────────────────────────────────────────
-.pv-filters {
+// ── Toolbar de escopo ────────────────────────────────────────────────────────
+.pv-toolbar {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: $space-3;
-  margin-bottom: $space-4;
-
-  &__q {
-    flex: 1 1 260px;
-    min-width: 220px;
-  }
+  margin-bottom: $space-3;
 
   &__account,
-  &__health,
-  &__sort {
-    flex: 0 1 180px;
-    min-width: 150px;
+  &__status {
+    width: 200px;
   }
 }
 
-// ── Tabela ───────────────────────────────────────────────────────────────────
+// ── Tabela (cabeçalho + linha de filtro por coluna) ──────────────────────────
 :deep(.sb-table) {
-  td,
-  th {
+  th,
+  td {
     white-space: nowrap;
   }
 
@@ -544,6 +682,44 @@ onMounted(() => {
       color: $text-primary;
     }
   }
+}
+
+.pv-filter-row th {
+  padding: $space-1 $space-2 !important;
+  border-bottom: 1px solid $border !important;
+  font-weight: $font-regular;
+}
+
+.pv-filter-row :deep(.q-field__control) {
+  min-height: 30px;
+  height: 30px;
+  font-size: $text-xs-size;
+  background: $surface;
+}
+
+.pv-filter-row :deep(.q-field__marginal) {
+  height: 30px;
+  min-width: 22px;
+}
+
+.pv-filter-row :deep(input) {
+  font-size: $text-xs-size;
+  padding: 0;
+}
+
+.pv-range {
+  display: flex;
+  gap: $space-1;
+  min-width: 120px;
+
+  :deep(.q-field) {
+    width: 58px;
+  }
+}
+
+.pv-arrow {
+  color: $primary;
+  font-size: $text-xs-size;
 }
 
 .pv-title {
@@ -586,6 +762,10 @@ onMounted(() => {
 .pv-dates {
   font-size: $text-xs-size;
   color: $text-muted;
+
+  :deep(.sb-badge) {
+    vertical-align: middle;
+  }
 }
 
 // Alerta de piso: vermelho (única cor de alerta da página)
