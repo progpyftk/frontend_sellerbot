@@ -153,6 +153,12 @@ export default {
     return api.get('/mercadolivre/promo-overview/', { params })
   },
 
+  // Expande UMA linha da tabela de acompanhamento: promoções ao vivo (a única
+  // chamada ao ML da visão), timeline do assistente e retrato do anúncio.
+  getPromoOverviewDetail(itemId) {
+    return api.get(`/mercadolivre/promo-overview/${itemId}/`)
+  },
+
   // ==========================================
   // VENDAS (ORDERS)
   // ==========================================

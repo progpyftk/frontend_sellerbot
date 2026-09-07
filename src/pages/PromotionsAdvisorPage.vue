@@ -65,6 +65,7 @@
       <SbTable :scroll-x="true">
         <thead>
           <tr>
+            <th class="pv-expand-col" aria-label="Expandir"></th>
             <th>Anúncio</th>
             <th class="num pv-sortable" @click="cycleSort('-sales')">Vendas 30d</th>
             <th>Promo ativa</th>
@@ -76,27 +77,42 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in rows" :key="row.item_id">
-            <td>
-              <span class="pv-title">{{ row.title }}</span>
-              <span class="pv-sub">{{ row.item_id }}<template v-if="row.sku"> · {{ row.sku }}</template> · {{ row.account_nickname }}</span>
-            </td>
-            <td class="num">{{ row.sales_30d ?? '—' }}</td>
-            <td>
-              <template v-if="row.active_promo">
-                <span class="pv-promo">{{ promoLabel(row.active_promo) }}</span>
-                <SbBadge :variant="row.origem === 'assistente' ? 'indigo' : 'slate'" class="q-ml-xs">
-                  {{ row.origem === 'assistente' ? '🤖 assistente' : 'ML' }}
-                </SbBadge>
-              </template>
-              <template v-else>—</template>
-            </td>
-            <td class="num">{{ pct(row.active_promo?.discount_pct) }}</td>
-            <td class="num">{{ brl(row.active_promo?.buyer_price) }}</td>
-            <td class="num" :class="{ 'pv-alert': row.below_floor }">{{ pct(row.margin_pct) }}</td>
-            <td class="num" :class="{ 'pv-alert': row.below_floor }">{{ brl(row.profit_unit) }}</td>
-            <td class="pv-dates">{{ promoDates(row.active_promo) }}</td>
-          </tr>
+          <template v-for="row in rows" :key="row.item_id">
+            <tr :class="{ 'pv-row--open': expandedId === row.item_id }">
+              <td class="pv-expand-col">
+                <q-btn
+                  flat dense round size="sm"
+                  :icon="expandedId === row.item_id ? 'expand_less' : 'expand_more'"
+                  :aria-label="expandedId === row.item_id ? 'Recolher detalhe' : 'Expandir detalhe'"
+                  @click="toggleExpand(row.item_id)"
+                />
+              </td>
+              <td>
+                <span class="pv-title">{{ row.title }}</span>
+                <span class="pv-sub">{{ row.item_id }}<template v-if="row.sku"> · {{ row.sku }}</template> · {{ row.account_nickname }}</span>
+              </td>
+              <td class="num">{{ row.sales_30d ?? '—' }}</td>
+              <td>
+                <template v-if="row.active_promo">
+                  <span class="pv-promo">{{ promoLabel(row.active_promo) }}</span>
+                  <SbBadge :variant="row.origem === 'assistente' ? 'indigo' : 'slate'" class="q-ml-xs">
+                    {{ row.origem === 'assistente' ? '🤖 assistente' : 'ML' }}
+                  </SbBadge>
+                </template>
+                <template v-else>—</template>
+              </td>
+              <td class="num">{{ pct(row.active_promo?.discount_pct) }}</td>
+              <td class="num">{{ brl(row.active_promo?.buyer_price) }}</td>
+              <td class="num" :class="{ 'pv-alert': row.below_floor }">{{ pct(row.margin_pct) }}</td>
+              <td class="num" :class="{ 'pv-alert': row.below_floor }">{{ brl(row.profit_unit) }}</td>
+              <td class="pv-dates">{{ promoDates(row.active_promo) }}</td>
+            </tr>
+            <tr v-if="expandedId === row.item_id">
+              <td colspan="9" class="pv-detail-cell">
+                <PromoOverviewDetail :item-id="row.item_id" />
+              </td>
+            </tr>
+          </template>
         </tbody>
       </SbTable>
 
@@ -214,6 +230,7 @@ import SbPageHeader from 'src/components/common/SbPageHeader.vue';
 import SbEmptyState from 'src/components/common/SbEmptyState.vue';
 import SbTable from 'src/components/common/SbTable.vue';
 import SbBadge from 'src/components/common/SbBadge.vue';
+import PromoOverviewDetail from 'src/components/promotions-ads/PromoOverviewDetail.vue';
 
 import MercadoLivreService from 'src/services/MercadoLivreService';
 
@@ -254,6 +271,12 @@ const summary = ref({});
 const snapshot = ref({});
 const accounts = ref([]);
 const insights = ref({});
+// Uma linha expandida por vez — o detalhe consulta o ML ao vivo.
+const expandedId = ref(null);
+
+function toggleExpand(itemId) {
+  expandedId.value = expandedId.value === itemId ? null : itemId;
+}
 
 // filtros
 const q = ref('');
@@ -531,6 +554,22 @@ onMounted(() => {
   font-size: $text-small-size;
   font-weight: $font-medium;
   color: $text-primary;
+}
+
+// coluna ⏵ + painel do detalhe
+.pv-expand-col {
+  width: 40px;
+  text-align: center;
+  padding-right: 0 !important;
+}
+
+.pv-row--open td {
+  background: #f8fafc;
+}
+
+.pv-detail-cell {
+  padding: 0 $space-3 $space-3 !important;
+  background: #f8fafc;
 }
 
 .pv-sub {
