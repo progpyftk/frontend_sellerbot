@@ -12,6 +12,8 @@
     </div>
 
     <div v-else class="pod-grid">
+      <p v-if="consultedAt" class="pod-consulted">Consultado ao vivo em <strong>{{ consultedAt }}</strong> — promoções e margens vêm do Mercado Livre neste momento.</p>
+
       <!-- 1. Promoções (ativas + candidatas, ao vivo) -->
       <section class="pod-block">
         <h4 class="pod-block__t">Promoções</h4>
@@ -35,7 +37,7 @@
             <span class="pod-promo__meta">{{ promoMeta(promo) }}</span>
           </div>
         </template>
-        <p class="pod-note">Margem de hoje = CMV + tarifa + frete reais sobre o preço de cada promoção.</p>
+        <p class="pod-note">Margem estimada = (preço − CMV − tarifa − frete) ÷ preço. Valores estimados com CMV do Tiny, tarifa e frete modelados — não são custos reais confirmados.</p>
       </section>
 
       <!-- 2. Assistente (timeline de decisões) -->
@@ -56,13 +58,13 @@
                 <SbBadge v-if="log.event_type === 'action'" :variant="statusVariant(log.execution_status)">
                   {{ statusLabel(log.execution_status) }}
                 </SbBadge>
-                <SbBadge v-if="log.vigente === false" variant="red">não vigente — ML invalidou</SbBadge>
+                <SbBadge v-if="log.vigente === false" variant="red">não corresponde à promo vigente</SbBadge>
                 <span class="pod-timeline__date">{{ dateTime(log.created_at) }}</span>
               </div>
               <p v-if="log.deal_price != null || log.proposed_margin_pct != null" class="pod-timeline__meta">
                 <template v-if="log.deal_price != null">Preço {{ brl(log.deal_price) }} · </template>
                 <template v-if="log.proposed_margin_pct != null">margem proposta {{ pct(log.proposed_margin_pct) }} · </template>
-                <template v-if="log.current_margin_pct != null">margem atual {{ pct(log.current_margin_pct) }}</template>
+                <template v-if="log.current_margin_pct != null">margem registrada na decisão {{ pct(log.current_margin_pct) }}</template>
               </p>
               <p v-if="log.reason" class="pod-timeline__reason">{{ log.reason }}</p>
             </div>
@@ -89,7 +91,7 @@
             {{ healthInfo?.conversion_pct != null ? pct(healthInfo.conversion_pct) : '—' }}
             <span v-if="healthInfo?.visits != null" class="pod-retrato__extra">{{ healthInfo.visits }} visitas</span>
           </dd>
-          <dt>Status no ML</dt><dd>{{ item.status }}</dd>
+          <dt>Status no ML</dt><dd>{{ itemStatusLabel(item.status) }}</dd>
           <dt>Link</dt>
           <dd><a v-if="item.permalink" :href="item.permalink" target="_blank" rel="noopener">abrir no ML</a><template v-else>—</template></dd>
         </dl>
@@ -131,6 +133,13 @@ const PROMO_LABELS = {
   SELLER_COUPON_CAMPAIGN: 'Cupom da loja',
 };
 
+const STATUS_LABELS = {
+  active: 'Ativo',
+  paused: 'Pausado',
+  closed: 'Encerrado',
+  under_review: 'Em revisão',
+};
+
 const props = defineProps({
   itemId: { type: String, required: true },
 });
@@ -144,6 +153,7 @@ const activePromos = computed(() => payload.value?.promotions?.active || []);
 const candidatePromos = computed(() => payload.value?.promotions?.candidates || []);
 const logs = computed(() => payload.value?.agent_logs || []);
 const healthInfo = computed(() => item.value.health_info || null);
+const consultedAt = computed(() => (payload.value?.consulted_at ? dateTime(payload.value.consulted_at) : ''));
 
 function promoName(promo) {
   return promo.promotion_name || PROMO_LABELS[promo.promotion_type] || promo.promotion_type || '—';
@@ -152,13 +162,12 @@ function promoName(promo) {
 function promoMeta(promo) {
   const parts = [];
   const fin = promo.financials || {};
-  if (promo.status === 'started') {
-    parts.push(`${brl(fin.proposed_price)} · ${pct(fin.estimated_margin_pct)} margem`);
-  } else {
-    const desconto = promo.discount_pct != null ? `${pct(promo.discount_pct)} desc.` : null;
-    const margem = fin.estimated_margin_pct != null ? `${pct(fin.estimated_margin_pct)} margem` : 'sem margem calculável';
-    parts.push([desconto, margem].filter(Boolean).join(' · '));
-  }
+  const preco = fin.proposed_price ?? promo.buyer_price;
+  if (preco != null) parts.push(`preço ${brl(preco)}`);
+  if (promo.discount_pct != null) parts.push(`${pct(promo.discount_pct)} desc.`);
+  if (fin.estimated_margin_pct != null) parts.push(`${pct(fin.estimated_margin_pct)} margem`);
+  if (fin.estimated_profit_unit != null) parts.push(`${brl(fin.estimated_profit_unit)} lucro`);
+  if (promo.status !== 'started' && fin.estimated_margin_pct == null) parts.push('sem margem calculável');
   if (promo.start_date) {
     const fim = promo.finish_date ? ` → ${dateShort(promo.finish_date)}` : ' → …';
     parts.push(`${dateShort(promo.start_date)}${fim}`);
@@ -167,7 +176,7 @@ function promoMeta(promo) {
 }
 
 function eventLabel(eventType) {
-  return eventType === 'action' ? 'Ação executada' : eventType === 'snapshot' ? 'Baseline' : 'Recomendação';
+  return eventType === 'action' ? 'Ação' : eventType === 'snapshot' ? 'Baseline' : 'Recomendação';
 }
 
 function statusVariant(status) {
@@ -178,6 +187,10 @@ function statusVariant(status) {
 
 function statusLabel(status) {
   return { executed: 'executado', failed: 'falhou', error: 'erro', pending: 'pendente', skipped: 'ignorado' }[status] || status;
+}
+
+function itemStatusLabel(status) {
+  return STATUS_LABELS[status] || status;
 }
 
 function acaoMeta(acao) {
@@ -249,6 +262,13 @@ onMounted(load);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: $space-6;
+}
+
+.pod-consulted {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: $text-xs-size;
+  color: $text-muted;
 }
 
 .pod-block__t {

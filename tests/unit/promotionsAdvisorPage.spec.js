@@ -36,6 +36,8 @@ const stubs = {
   SbBadge: { template: '<span class="stub-badge"><slot /></span>' },
   SbEmptyState: { props: ['title'], template: '<div class="stub-empty">{{ title }}</div>' },
   PromoOverviewDetail: { props: ['itemId'], template: '<div class="stub-detail" />' },
+  'q-btn-toggle': { template: '<div class="stub-toggle"><slot /></div>' },
+  'q-dialog': { props: ['modelValue'], template: '<div class="stub-dialog" v-if="modelValue"><slot /></div>' },
 }
 
 const payload = () => ({
@@ -58,7 +60,7 @@ const payload = () => ({
   total: 2,
   page: 1,
   page_size: 40,
-  summary: { ads: 753, with_active_promo: 563, below_floor: 169, assistente: 44 },
+  summary: { ads: 753, with_active_promo: 563, below_floor: 169, assistente: 44, agent_history: 120 },
   snapshot: { computed_at: '2026-09-07T19:26:00Z', stale: false, empty: false },
 })
 
@@ -81,28 +83,35 @@ describe('PromotionsAdvisorPage', () => {
   it('mostra os KPIs do escopo e não os recalcula ao clicar nos chips (bug do dono: "5 do assistente")', async () => {
     const wrapper = await mountAndSettle()
     const chips = () => wrapper.findAll('button.pv-chip').map((c) => c.text())
-    expect(chips()).toEqual(['753 anúncios', '563 com promo ativa', '169 abaixo do piso', '44 do assistente'])
+    const expected = [
+      '753 anúncios',
+      '563 com promo ativa',
+      '169 abaixo do piso',
+      '44 ativas com registro do assistente',
+      '120 com ação no histórico',
+    ]
+    expect(chips()).toEqual(expected)
 
     // Combina os dois facets: a tabela recebe os dois filtros...
     await wrapper.findAll('button.pv-chip')[2].trigger('click') // abaixo do piso
     await flushPromises()
-    await wrapper.findAll('button.pv-chip')[3].trigger('click') // do assistente
+    await wrapper.findAll('button.pv-chip')[3].trigger('click') // ativas com registro
     await flushPromises()
 
     const last = getPromoOverview.mock.calls.at(-1)[0]
     expect(last.below_floor).toBe(1)
     expect(last.origem).toBe('assistente')
     // ...e os números continuam os do escopo (nada de contagem do conjunto filtrado).
-    expect(chips()).toEqual(['753 anúncios', '563 com promo ativa', '169 abaixo do piso', '44 do assistente'])
+    expect(chips()).toEqual(expected)
   })
 
   it('fila de filtros por coluna: faixa de margem, vendas mínimas e promo ativa chegam como params', async () => {
     const wrapper = await mountAndSettle()
-    const inputs = wrapper.findAll('input.stub-input')
-    // Ordem do filtro por coluna: q, minSales, minDiscount, minMargin, maxMargin, minProfit…
-    await inputs[1].setValue('3')    // vendas 30d mín
+    const salesMin = wrapper.find('input[aria-label="Vendas 30d mínima"]')
+    await salesMin.setValue('3')
     await flushPromises()
-    await inputs[3].setValue('40')   // margem mín (%)
+    const marginMin = wrapper.find('input[aria-label="Margem mínima"]')
+    await marginMin.setValue('40')
     await flushPromises()
     const promoSelect = wrapper.find('select[aria-label="Filtrar por promo ativa"]')
     await promoSelect.setValue('has_promo')
