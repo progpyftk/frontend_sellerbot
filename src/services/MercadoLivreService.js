@@ -140,6 +140,20 @@ export default {
   },
 
   // ==========================================
+  // ACOMPANHAMENTO POR ANÚNCIO (PROMO-15) — read-only
+  // ==========================================
+  // Tabela 1 linha = 1 anúncio, TODOS os anúncios das contas (com e sem
+  // promoção): vendas 30d, promo ativa + datas, margem/lucro na venda atual,
+  // origem (assistente/ML) e alerta de piso. Lista 100% do banco (snapshot
+  // `PromotionAdSnapshot`); sem escrita — ativar/remover segue na tela de
+  // operação. params: { account_id?, q?, origem? (assistente|ml|sem_promo),
+  // has_promo?, health?, below_floor?, min_margin_pct?, max_margin_pct?,
+  // min_discount_pct?, min_sales_30d?, sort?, page?, page_size? }
+  getPromoOverview(params = {}) {
+    return api.get('/mercadolivre/promo-overview/', { params })
+  },
+
+  // ==========================================
   // VENDAS (ORDERS)
   // ==========================================
   listOrders(params) {

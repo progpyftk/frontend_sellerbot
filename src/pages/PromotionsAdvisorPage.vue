@@ -2,21 +2,11 @@
   <q-page class="promo-advisor q-pa-lg">
     <SbPageHeader
       eyebrow="Mercado Livre"
-      title="Assistente de promoções"
-      subtitle="O que o assistente recomendou, o que foi executado e o efeito nas vendas — o log de decisões cruzado com o retrato diário de cada anúncio."
+      title="Promoções · Assistente"
+      subtitle="Todos os anúncios das suas contas: vendas, promo ativa, margem na venda atual e o que já passou pelo assistente. Somente leitura — ativar e remover continuam na visão operacional."
       icon="auto_graph"
     >
       <template #actions>
-        <q-btn-toggle
-          v-model="days"
-          :options="[
-            { label: '7 dias', value: 7 },
-            { label: '30 dias', value: 30 },
-            { label: '90 dias', value: 90 },
-          ]"
-          no-caps unelevated toggle-color="primary" color="grey-2" text-color="grey-8"
-          @update:model-value="load"
-        />
         <q-btn outline no-caps icon="refresh" label="Atualizar" :loading="loading" @click="load" />
       </template>
     </SbPageHeader>
@@ -29,290 +19,198 @@
     />
 
     <template v-else>
-      <SbKpiGrid :columns="5" :gap="12">
-        <SbKpiCard
-          label="Anúncios acompanhados"
-          :value="summary.items_tracked ?? 0"
-          :sub="`janela de ${summary.window_days ?? days} dias`"
-          variant="slate"
-        />
-        <SbKpiCard
-          label="Recomendações"
-          :value="summary.recommendations ?? 0"
-          sub="leituras do assistente"
-          variant="sky"
-        />
-        <SbKpiCard
-          label="Ações executadas"
-          :value="summary.actions ?? 0"
-          sub="escritas no Mercado Livre"
-          variant="teal"
-        />
-        <SbKpiCard
-          label="Pendentes"
-          :value="summary.pending ?? 0"
-          sub="recomendadas, ainda não feitas"
-          variant="amber"
-        />
-        <SbKpiCard
-          label="Margem média executada"
-          :value="pct(summary.avg_executed_margin_pct)"
-          :sub="summary.avg_target_margin_pct != null ? `alvo médio ${pct(summary.avg_target_margin_pct)}` : 'sem ações na janela'"
-          variant="indigo"
-        />
-      </SbKpiGrid>
+      <p class="pv-note">
+        Margem e lucro calculados <strong>na venda atual</strong> (promo ativa, ou preço-base se
+        não há promo). Lista servida do snapshot de
+        <strong>{{ snapshotAt || '—' }}</strong>{{ snapshotStale ? ' (defasado — atualize o snapshot)' : '' }}.
+      </p>
 
-      <q-tabs
-        v-model="tab"
-        class="pa-tabs"
-        active-color="primary"
-        indicator-color="primary"
-        align="left"
-        no-caps
-        narrow-indicator
+      <!-- Resumo em texto; cada número é um filtro -->
+      <div class="pv-summary" role="group" aria-label="Resumo e filtros rápidos">
+        <button class="pv-chip" :class="{ 'pv-chip--on': !origem && !belowFloor && !hasPromo }" @click="resetFilters">
+          {{ summary.ads }} anúncios
+        </button>
+        <button class="pv-chip" :class="{ 'pv-chip--on': hasPromo }" @click="toggleHasPromo">
+          {{ summary.with_active_promo }} com promo ativa
+        </button>
+        <button class="pv-chip pv-chip--alert" :class="{ 'pv-chip--on': belowFloor }" @click="toggleBelowFloor">
+          {{ summary.below_floor }} abaixo do piso
+        </button>
+        <button class="pv-chip pv-chip--agent" :class="{ 'pv-chip--on': origem === 'assistente' }" @click="toggleAssistente">
+          {{ summary.assistente }} do assistente
+        </button>
+      </div>
+
+      <!-- Filtros: 1 fileira -->
+      <div class="pv-filters">
+        <q-input
+          v-model="q" dense outlined clearable debounce="350" class="pv-filters__q"
+          placeholder="Buscar título, MLB ou SKU"
+        />
+        <q-select
+          v-model="accountId" dense outlined clearable emit-value map-options
+          :options="accountOptions" class="pv-filters__account" label="Conta"
+        />
+        <q-select
+          v-model="health" dense outlined clearable emit-value map-options
+          :options="healthOptions" class="pv-filters__health" label="Saúde"
+        />
+        <q-select
+          v-model="sort" dense outlined emit-value map-options
+          :options="sortOptions" class="pv-filters__sort" label="Ordenar por"
+        />
+      </div>
+
+      <!-- Tabela: protagonista (1 linha = 1 anúncio) -->
+      <SbTable :scroll-x="true">
+        <thead>
+          <tr>
+            <th>Anúncio</th>
+            <th class="num pv-sortable" @click="cycleSort('-sales')">Vendas 30d</th>
+            <th>Promo ativa</th>
+            <th class="num pv-sortable" @click="cycleSort('-discount')">% desc</th>
+            <th class="num">Preço promo</th>
+            <th class="num pv-sortable" @click="cycleSort('-margin')">Margem</th>
+            <th class="num">Lucro</th>
+            <th>Datas promo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in rows" :key="row.item_id">
+            <td>
+              <span class="pv-title">{{ row.title }}</span>
+              <span class="pv-sub">{{ row.item_id }}<template v-if="row.sku"> · {{ row.sku }}</template> · {{ row.account_nickname }}</span>
+            </td>
+            <td class="num">{{ row.sales_30d ?? '—' }}</td>
+            <td>
+              <template v-if="row.active_promo">
+                <span class="pv-promo">{{ promoLabel(row.active_promo) }}</span>
+                <SbBadge :variant="row.origem === 'assistente' ? 'indigo' : 'slate'" class="q-ml-xs">
+                  {{ row.origem === 'assistente' ? '🤖 assistente' : 'ML' }}
+                </SbBadge>
+              </template>
+              <template v-else>—</template>
+            </td>
+            <td class="num">{{ pct(row.active_promo?.discount_pct) }}</td>
+            <td class="num">{{ brl(row.active_promo?.buyer_price) }}</td>
+            <td class="num" :class="{ 'pv-alert': row.below_floor }">{{ pct(row.margin_pct) }}</td>
+            <td class="num" :class="{ 'pv-alert': row.below_floor }">{{ brl(row.profit_unit) }}</td>
+            <td class="pv-dates">{{ promoDates(row.active_promo) }}</td>
+          </tr>
+        </tbody>
+      </SbTable>
+
+      <SbEmptyState
+        v-if="!rows.length && !loading"
+        title="Nenhum anúncio com esses filtros"
+        message="Ajuste a busca ou os filtros para ver o catálogo."
+      />
+
+      <!-- Paginação -->
+      <div class="pv-pager" v-if="total > pageSize || page > 1">
+        <q-btn flat no-caps icon="chevron_left" label="Anterior" :disable="page <= 1" @click="goTo(page - 1)" />
+        <span class="pv-pager__info">Página {{ page }} · {{ total }} anúncios</span>
+        <q-btn flat no-caps label="Próxima" icon-right="chevron_right" :disable="page * pageSize >= total" @click="goTo(page + 1)" />
+      </div>
+
+      <!-- Insights (mantido do painel do assistente) -->
+      <q-expansion-item
+        class="pv-insights"
+        icon="insights"
+        label="Insights do assistente"
+        caption="Por ação, por saúde e maiores efeitos medidos"
+        default-opened
+        header-class="pv-insights__header"
       >
-        <q-tab name="today" label="Hoje" />
-        <q-tab name="active" label="Ativas" />
-        <q-tab name="history" label="Histórico" />
-        <q-tab name="insights" label="Insights" />
-      </q-tabs>
+        <div class="pa-insights">
+          <section class="pa-block">
+            <h3 class="pa-block__t">Por ação</h3>
+            <SbEmptyState v-if="!insightRows.by_acao?.length" title="Sem ações na janela" />
+            <SbTable v-else>
+              <thead>
+                <tr>
+                  <th>Ação</th>
+                  <th class="num">Vezes</th>
+                  <th class="num">Margem executada</th>
+                  <th class="num">Δ un. médio</th>
+                  <th class="num">Δ lucro médio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in insightRows.by_acao" :key="row.acao">
+                  <td><SbBadge :variant="acaoMeta(row.acao).variant">{{ acaoMeta(row.acao).label }}</SbBadge></td>
+                  <td class="num">{{ row.count }}</td>
+                  <td class="num">{{ pct(row.avg_executed_margin_pct) }}</td>
+                  <td class="num"><span :class="deltaClass(row.avg_delta_units_pct)">{{ signedPct(row.avg_delta_units_pct) }}</span></td>
+                  <td class="num"><span :class="deltaClass(row.avg_delta_profit)">{{ signedBrl(row.avg_delta_profit) }}</span></td>
+                </tr>
+              </tbody>
+            </SbTable>
+          </section>
 
-      <q-tab-panels v-model="tab" animated class="pa-panels">
-        <!-- Hoje (último lote de recomendações) -->
-        <q-tab-panel name="today" class="q-pa-none">
-          <p class="pa-note">
-            Última recomendação de cada anúncio — gerada em
-            <strong>{{ generatedAt || '—' }}</strong>. A automação diária ainda não existe
-            (PROMO-IA-3); enquanto isso, o lote é o da última execução do assistente.
-          </p>
-          <SbEmptyState
-            v-if="!todayRows.length"
-            title="Nenhuma recomendação na janela"
-            message="Rode o assistente de promoções no chat para gerar o primeiro lote."
-          />
-          <SbTable v-else>
-            <thead>
-              <tr>
-                <th>Anúncio</th>
-                <th>Saúde</th>
-                <th>Ação</th>
-                <th class="num">Margem atual</th>
-                <th class="num">Alvo</th>
-                <th class="num">Preço proposto</th>
-                <th class="num">Margem proposta</th>
-                <th>Frete</th>
-                <th>Razão</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in todayRows" :key="`${row.item_id}-${row.created_at}`">
-                <td>
-                  <span class="pa-title">{{ row.title }}</span>
-                  <span class="pa-sub">{{ row.item_id }}</span>
-                </td>
-                <td><SbBadge :variant="healthMeta(row.health).variant">{{ healthMeta(row.health).label }}</SbBadge></td>
-                <td><SbBadge :variant="acaoMeta(row.acao).variant">{{ acaoMeta(row.acao).label }}</SbBadge></td>
-                <td class="num">{{ pct(row.current_margin_pct) }}</td>
-                <td class="num">{{ pct(row.target_margin_pct) }}</td>
-                <td class="num">{{ brl(row.proposed_price) }}</td>
-                <td class="num">{{ pct(row.proposed_margin_pct) }}</td>
-                <td>
-                  <SbBadge v-if="row.shipping?.needs_manual_review" variant="red">SEM CERTEZA</SbBadge>
-                  <SbBadge v-else-if="row.shipping?.high" variant="amber">ALTO</SbBadge>
-                  <SbBadge v-else variant="slate">{{ shippingLabel(row.shipping) }}</SbBadge>
-                </td>
-                <td class="pa-reason">{{ row.reason || '—' }}</td>
-              </tr>
-            </tbody>
-          </SbTable>
-        </q-tab-panel>
+          <section class="pa-block">
+            <h3 class="pa-block__t">Por saúde (recomendações)</h3>
+            <SbEmptyState v-if="!insightRows.by_health?.length" title="Sem recomendações na janela" />
+            <SbTable v-else>
+              <thead>
+                <tr>
+                  <th>Saúde</th>
+                  <th class="num">Anúncios</th>
+                  <th class="num">Margem atual média</th>
+                  <th class="num">Margem-alvo média</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in insightRows.by_health" :key="row.health">
+                  <td><SbBadge :variant="healthMeta(row.health).variant">{{ healthMeta(row.health).label }}</SbBadge></td>
+                  <td class="num">{{ row.count }}</td>
+                  <td class="num">{{ pct(row.avg_current_margin_pct) }}</td>
+                  <td class="num">{{ pct(row.avg_target_margin_pct) }}</td>
+                </tr>
+              </tbody>
+            </SbTable>
+          </section>
 
-        <!-- Ativas (ações executadas + efeito 7d antes / 7d depois) -->
-        <q-tab-panel name="active" class="q-pa-none">
-          <p class="pa-note">
-            Cada ação executada comparada com os {{ outcomeWindow }} dias anteriores no
-            <code>ItemDailySnapshot</code>. Não é medição pareada — é o retrato simples do efeito
-            enquanto o aprendizado (PROMO-IA-3) não existe.
-          </p>
-          <SbEmptyState
-            v-if="!activeRows.length"
-            title="Nenhuma ação executada na janela"
-            message="As ações aparecem aqui depois que o dono aprova a escrita no chat."
-          />
-          <SbTable v-else>
-            <thead>
-              <tr>
-                <th>Anúncio</th>
-                <th>Ação</th>
-                <th>Executado em</th>
-                <th class="num">Preço</th>
-                <th class="num">Margem</th>
-                <th class="num">Un. antes</th>
-                <th class="num">Un. depois</th>
-                <th class="num">Δ un.</th>
-                <th class="num">Lucro antes</th>
-                <th class="num">Lucro depois</th>
-                <th class="num">Δ lucro</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in activeRows" :key="`${row.item_id}-${row.created_at}`">
-                <td>
-                  <span class="pa-title">{{ row.title }}</span>
-                  <span class="pa-sub">{{ row.item_id }}</span>
-                </td>
-                <td><SbBadge :variant="acaoMeta(row.acao).variant">{{ acaoMeta(row.acao).label }}</SbBadge></td>
-                <td>{{ dateTime(row.created_at) }}</td>
-                <td class="num">{{ brl(row.proposed_price) }}</td>
-                <td class="num">{{ pct(row.proposed_margin_pct) }}</td>
-                <td class="num">{{ row.before_units ?? '—' }}</td>
-                <td class="num">{{ row.after_units ?? '—' }}</td>
-                <td class="num">
-                  <span :class="deltaClass(row.delta_units_pct)">{{ signedPct(row.delta_units_pct) }}</span>
-                  <span v-if="row.outcome_complete === false" class="pa-flag" :title="`só ${row.after_days_observed} de ${outcomeWindow} dias observados`">parcial</span>
-                </td>
-                <td class="num">{{ brl(row.before_profit) }}</td>
-                <td class="num">{{ brl(row.after_profit) }}</td>
-                <td class="num">
-                  <span :class="deltaClass(row.delta_profit)">{{ signedBrl(row.delta_profit) }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </SbTable>
-        </q-tab-panel>
-
-        <!-- Histórico (timeline de decisões) -->
-        <q-tab-panel name="history" class="q-pa-none">
-          <SbEmptyState
-            v-if="!historyRows.length"
-            title="Sem eventos na janela"
-            message="Ajuste a janela de dias para ver decisões mais antigas."
-          />
-          <SbTable v-else>
-            <thead>
-              <tr>
-                <th>Quando</th>
-                <th>Evento</th>
-                <th>Anúncio</th>
-                <th>Saúde</th>
-                <th>Ação</th>
-                <th class="num">Margem</th>
-                <th class="num">Lucro</th>
-                <th>Razão</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, idx) in historyRows" :key="`${row.item_id}-${row.created_at}-${idx}`">
-                <td>{{ dateTime(row.created_at) }}</td>
-                <td><SbBadge :variant="row.event_type === 'action' ? 'teal' : 'sky'">{{ eventLabel(row.event_type) }}</SbBadge></td>
-                <td>
-                  <span class="pa-title">{{ row.title }}</span>
-                  <span class="pa-sub">{{ row.item_id }}</span>
-                </td>
-                <td><SbBadge :variant="healthMeta(row.health).variant">{{ healthMeta(row.health).label }}</SbBadge></td>
-                <td><SbBadge :variant="acaoMeta(row.acao).variant">{{ acaoMeta(row.acao).label }}</SbBadge></td>
-                <td class="num">{{ pct(row.current_margin_pct) }}</td>
-                <td class="num">{{ brl(row.current_profit) }}</td>
-                <td class="pa-reason">{{ row.reason || '—' }}</td>
-              </tr>
-            </tbody>
-          </SbTable>
-        </q-tab-panel>
-
-        <!-- Insights (agregados por ação e por saúde) -->
-        <q-tab-panel name="insights" class="q-pa-none">
-          <div class="pa-insights">
-            <section class="pa-block">
-              <h3 class="pa-block__t">Por ação</h3>
-              <SbEmptyState v-if="!insightRows.by_acao?.length" title="Sem ações na janela" />
-              <SbTable v-else>
-                <thead>
-                  <tr>
-                    <th>Ação</th>
-                    <th class="num">Vezes</th>
-                    <th class="num">Margem executada</th>
-                    <th class="num">Δ un. médio</th>
-                    <th class="num">Δ lucro médio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in insightRows.by_acao" :key="row.acao">
-                    <td><SbBadge :variant="acaoMeta(row.acao).variant">{{ acaoMeta(row.acao).label }}</SbBadge></td>
-                    <td class="num">{{ row.count }}</td>
-                    <td class="num">{{ pct(row.avg_executed_margin_pct) }}</td>
-                    <td class="num"><span :class="deltaClass(row.avg_delta_units_pct)">{{ signedPct(row.avg_delta_units_pct) }}</span></td>
-                    <td class="num"><span :class="deltaClass(row.avg_delta_profit)">{{ signedBrl(row.avg_delta_profit) }}</span></td>
-                  </tr>
-                </tbody>
-              </SbTable>
-            </section>
-
-            <section class="pa-block">
-              <h3 class="pa-block__t">Por saúde (recomendações)</h3>
-              <SbEmptyState v-if="!insightRows.by_health?.length" title="Sem recomendações na janela" />
-              <SbTable v-else>
-                <thead>
-                  <tr>
-                    <th>Saúde</th>
-                    <th class="num">Anúncios</th>
-                    <th class="num">Margem atual média</th>
-                    <th class="num">Margem-alvo média</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in insightRows.by_health" :key="row.health">
-                    <td><SbBadge :variant="healthMeta(row.health).variant">{{ healthMeta(row.health).label }}</SbBadge></td>
-                    <td class="num">{{ row.count }}</td>
-                    <td class="num">{{ pct(row.avg_current_margin_pct) }}</td>
-                    <td class="num">{{ pct(row.avg_target_margin_pct) }}</td>
-                  </tr>
-                </tbody>
-              </SbTable>
-            </section>
-
-            <section class="pa-block">
-              <h3 class="pa-block__t">Maiores altas e baixas (Δ un.)</h3>
-              <SbEmptyState
-                v-if="!insightRows.melhores?.length && !insightRows.piores?.length"
-                title="Ainda sem efeito medido"
-                message="Precisa de ações executadas e de snapshots diários depois delas."
-              />
-              <div v-else class="pa-extremes">
-                <div>
-                  <p class="pa-extremes__l">Altas</p>
-                  <ul class="pa-extremes__list">
-                    <li v-for="row in insightRows.melhores" :key="`up-${row.item_id}`">
-                      <span class="pa-title">{{ row.title }}</span>
-                      <span :class="deltaClass(row.delta_units_pct)">{{ signedPct(row.delta_units_pct) }}</span>
-                    </li>
-                    <li v-if="!insightRows.melhores?.length" class="pa-extremes__empty">—</li>
-                  </ul>
-                </div>
-                <div>
-                  <p class="pa-extremes__l">Baixas</p>
-                  <ul class="pa-extremes__list">
-                    <li v-for="row in insightRows.piores" :key="`down-${row.item_id}`">
-                      <span class="pa-title">{{ row.title }}</span>
-                      <span :class="deltaClass(row.delta_units_pct)">{{ signedPct(row.delta_units_pct) }}</span>
-                    </li>
-                    <li v-if="!insightRows.piores?.length" class="pa-extremes__empty">—</li>
-                  </ul>
-                </div>
+          <section class="pa-block">
+            <h3 class="pa-block__t">Maiores altas e baixas (Δ un.)</h3>
+            <SbEmptyState
+              v-if="!insightRows.melhores?.length && !insightRows.piores?.length"
+              title="Ainda sem efeito medido"
+              message="Precisa de ações executadas e de snapshots diários depois delas."
+            />
+            <div v-else class="pa-extremes">
+              <div>
+                <p class="pa-extremes__l">Altas</p>
+                <ul class="pa-extremes__list">
+                  <li v-for="row in insightRows.melhores" :key="`up-${row.item_id}`">
+                    <span class="pv-title">{{ row.title }}</span>
+                    <span :class="deltaClass(row.delta_units_pct)">{{ signedPct(row.delta_units_pct) }}</span>
+                  </li>
+                  <li v-if="!insightRows.melhores?.length" class="pa-extremes__empty">—</li>
+                </ul>
               </div>
-            </section>
-          </div>
-        </q-tab-panel>
-      </q-tab-panels>
+              <div>
+                <p class="pa-extremes__l">Baixas</p>
+                <ul class="pa-extremes__list">
+                  <li v-for="row in insightRows.piores" :key="`down-${row.item_id}`">
+                    <span class="pv-title">{{ row.title }}</span>
+                    <span :class="deltaClass(row.delta_units_pct)">{{ signedPct(row.delta_units_pct) }}</span>
+                  </li>
+                  <li v-if="!insightRows.piores?.length" class="pa-extremes__empty">—</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        </div>
+      </q-expansion-item>
     </template>
   </q-page>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import SbPageHeader from 'src/components/common/SbPageHeader.vue';
-import SbKpiGrid from 'src/components/common/SbKpiGrid.vue';
-import SbKpiCard from 'src/components/common/SbKpiCard.vue';
 import SbEmptyState from 'src/components/common/SbEmptyState.vue';
 import SbTable from 'src/components/common/SbTable.vue';
 import SbBadge from 'src/components/common/SbBadge.vue';
@@ -335,46 +233,68 @@ const HEALTH_META = {
   alto: { label: 'Alto', variant: 'green' },
 };
 
+const PROMO_LABELS = {
+  PRICE_DISCOUNT: 'Oferta do dia',
+  DEAL: 'O melhor de todos os dias',
+  SMART: 'O melhor de todos os dias',
+  LIGHTNING: 'Oferta relâmpago',
+  SELLER_CAMPAIGN: 'Promo DoseVerde',
+  SELLER_COUPON_CAMPAIGN: 'Cupom da loja',
+};
+
+const SORT_CYCLE = { '-sales': 'sales', sales: '-sales', '-margin': 'margin', margin: '-margin', '-discount': 'discount', discount: '-discount' };
+
 const loading = ref(false);
 const error = ref('');
-const tab = ref('today');
-const days = ref(30);
-const data = ref({
-  summary: {},
-  today: [],
-  active: [],
-  history: [],
-  insights: {},
-});
+const rows = ref([]);
+const total = ref(0);
+const page = ref(1);
+const pageSize = ref(40);
+const summary = ref({});
+const snapshot = ref({});
+const accounts = ref([]);
+const insights = ref({});
 
-const summary = computed(() => data.value.summary || {});
-const todayRows = computed(() => data.value.today || []);
-const activeRows = computed(() => data.value.active || []);
-const historyRows = computed(() => data.value.history || []);
-const insightRows = computed(() => data.value.insights || {});
-const outcomeWindow = computed(() => data.value.outcome_window_days || 7);
+// filtros
+const q = ref('');
+const accountId = ref(null);
+const health = ref(null);
+const origem = ref('');
+const hasPromo = ref(false);
+const belowFloor = ref(false);
+const sort = ref('-sales');
 
-const generatedAt = computed(() => {
-  const stamps = todayRows.value.map((row) => row.created_at).filter(Boolean).sort();
-  return stamps.length ? dateTime(stamps[stamps.length - 1]) : '';
-});
+const accountOptions = computed(() => accounts.value.map((a) => ({ label: a.account_nickname || a.account_id, value: a.account_id })));
+const healthOptions = Object.entries(HEALTH_META).map(([value, meta]) => ({ label: meta.label, value }));
+const sortOptions = [
+  { label: 'Vendas (maior primeiro)', value: '-sales' },
+  { label: 'Vendas (menor primeiro)', value: 'sales' },
+  { label: 'Margem (menor primeiro)', value: '-margin' },
+  { label: 'Margem (maior primeiro)', value: 'margin' },
+  { label: 'Desconto (maior primeiro)', value: '-discount' },
+  { label: 'Título (A–Z)', value: 'title' },
+];
+const insightRows = computed(() => insights.value.insights || {});
+const snapshotAt = computed(() => (snapshot.value.computed_at ? dateTime(snapshot.value.computed_at) : ''));
+const snapshotStale = computed(() => Boolean(snapshot.value.stale));
 
-function acaoMeta(acao) {
-  return ACAO_META[acao] || { label: acao || '—', variant: 'slate' };
+const totalFiltered = computed(() => summary.value.ads ?? total.value);
+
+function promoLabel(promo) {
+  if (!promo) return '—';
+  return promo.promotion_name || PROMO_LABELS[promo.promotion_type] || promo.promotion_type;
 }
 
-function healthMeta(health) {
-  return HEALTH_META[health] || { label: health || '—', variant: 'slate' };
+function promoDates(promo) {
+  if (!promo?.start_date) return '—';
+  const start = dateShort(promo.start_date);
+  const finish = promo.finish_date ? dateShort(promo.finish_date) : null;
+  return finish ? `${start} → ${finish}` : `${start} → …`;
 }
 
-function eventLabel(eventType) {
-  return eventType === 'action' ? 'Ação' : eventType === 'snapshot' ? 'Baseline' : 'Recomendação';
-}
-
-function shippingLabel(shipping) {
-  if (!shipping?.source) return '—';
-  return { item_own: 'do anúncio', flex_default: 'da conta', baseline: 'estimado' }[shipping.source]
-    || shipping.source;
+function dateShort(iso) {
+  const parsed = new Date(iso);
+  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString('pt-BR');
 }
 
 // ── Formatação ────────────────────────────────────────────────────────────────
@@ -414,24 +334,100 @@ function dateTime(iso) {
   return parsed.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function acaoMeta(acao) {
+  return ACAO_META[acao] || { label: acao || '—', variant: 'slate' };
+}
+
+function healthMeta(healthValue) {
+  return HEALTH_META[healthValue] || { label: healthValue || '—', variant: 'slate' };
+}
+
+// ── Filtros e ordenação ──────────────────────────────────────────────────────
+function resetFilters() {
+  origem.value = '';
+  hasPromo.value = false;
+  belowFloor.value = false;
+}
+
+function toggleHasPromo() {
+  hasPromo.value = !hasPromo.value;
+  if (hasPromo.value) belowFloor.value = false;
+}
+
+function toggleBelowFloor() {
+  belowFloor.value = !belowFloor.value;
+  if (belowFloor.value) hasPromo.value = false;
+}
+
+function toggleAssistente() {
+  origem.value = origem.value === 'assistente' ? '' : 'assistente';
+}
+
+function cycleSort(column) {
+  sort.value = SORT_CYCLE[column] ?? column;
+}
+
+function goTo(next) {
+  page.value = next;
+}
+
+watch([q, accountId, health, origem, hasPromo, belowFloor, sort], () => {
+  page.value = 1;
+  load();
+});
+
 async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const { data: payload } = await MercadoLivreService.getPromotionsAdvisor({
-      days: days.value,
-      limit: 100,
-    });
-    data.value = payload || {};
+    const params = {
+      page: page.value,
+      page_size: pageSize.value,
+      sort: sort.value,
+    };
+    if (q.value) params.q = q.value;
+    if (accountId.value) params.account_id = accountId.value;
+    if (health.value) params.health = health.value;
+    if (origem.value) params.origem = origem.value;
+    if (hasPromo.value) params.has_promo = 1;
+    if (belowFloor.value) params.below_floor = 1;
+    const { data: payload } = await MercadoLivreService.getPromoOverview(params);
+    rows.value = payload.results || [];
+    total.value = payload.total || 0;
+    summary.value = payload.summary || {};
+    snapshot.value = payload.snapshot || {};
+    accounts.value = deriveAccounts(payload.results);
   } catch (err) {
     error.value = err?.response?.data?.detail || err?.message || 'Erro inesperado.';
-    data.value = { summary: {}, today: [], active: [], history: [], insights: {} };
+    rows.value = [];
   } finally {
     loading.value = false;
   }
 }
 
-onMounted(load);
+// As opções de conta vêm das linhas carregadas (lista é paginada; o backend
+// não expõe um índice de contas para este endpoint).
+function deriveAccounts(results) {
+  const seen = new Map();
+  for (const row of results) {
+    if (!seen.has(row.account_id)) seen.set(row.account_id, { account_id: row.account_id, account_nickname: row.account_nickname });
+  }
+  return [...seen.values()];
+}
+
+async function loadInsights() {
+  try {
+    const { data: payload } = await MercadoLivreService.getPromotionsAdvisor({ days: 30, limit: 100 });
+    insights.value = payload || {};
+  } catch {
+    insights.value = {};
+  }
+}
+
+onMounted(() => {
+  load();
+  loadInsights();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -441,30 +437,70 @@ onMounted(load);
   background: $background;
 }
 
-.pa-tabs {
-  margin-top: $space-6;
-  border-bottom: 1px solid $border;
-}
-
-.pa-panels {
-  background: transparent;
-}
-
-.pa-note {
+.pv-note {
   margin: $space-4 0 $space-3;
   font-size: $text-small-size;
   color: $text-muted;
   max-width: 900px;
+}
 
-  code {
-    font-family: $font-mono;
-    font-size: $text-xs-size;
+// ── Resumo clicável ──────────────────────────────────────────────────────────
+.pv-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  margin-bottom: $space-4;
+}
+
+.pv-chip {
+  border: 1px solid $border;
+  background: $surface;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: $text-small-size;
+  font-weight: $font-medium;
+  color: $text-primary;
+  cursor: pointer;
+
+  &:hover {
+    border-color: $text-disabled;
+  }
+
+  &--on {
+    border-color: $primary;
+    background: rgba($primary, 0.08);
+  }
+
+  &--alert {
+    color: $negative;
+  }
+
+  &--agent {
+    color: $indigo-8;
   }
 }
 
-// SbTable já entrega borda, raio e rolagem horizontal — aqui só o que é
-// específico desta página: colunas numéricas, título em duas linhas e os
-// deltas coloridos.
+// ── Filtros (1 fileira) ─────────────────────────────────────────────────────
+.pv-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-3;
+  margin-bottom: $space-4;
+
+  &__q {
+    flex: 1 1 260px;
+    min-width: 220px;
+  }
+
+  &__account,
+  &__health,
+  &__sort {
+    flex: 0 1 180px;
+    min-width: 150px;
+  }
+}
+
+// ── Tabela ───────────────────────────────────────────────────────────────────
 :deep(.sb-table) {
   td,
   th {
@@ -476,11 +512,20 @@ onMounted(load);
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
+
+  th.pv-sortable {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
 }
 
-.pa-title {
+.pv-title {
   display: block;
-  max-width: 260px;
+  max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: $text-small-size;
@@ -488,44 +533,58 @@ onMounted(load);
   color: $text-primary;
 }
 
-.pa-sub {
+.pv-sub {
   display: block;
   font-size: $text-xs-size;
   color: $text-disabled;
 }
 
-.pa-reason {
-  white-space: normal;
-  max-width: 320px;
+.pv-promo {
+  font-size: $text-small-size;
+  color: $text-primary;
+}
+
+.pv-dates {
   font-size: $text-xs-size;
   color: $text-muted;
 }
 
-.pa-flag {
-  margin-left: $space-1;
-  font-size: $text-xs-size;
-  color: $text-disabled;
-}
-
-// ↑/↓ seguem a convenção brasileira de variação: alta é verde, baixa é vermelho.
-.pa-delta--up {
-  color: $positive;
-  font-weight: $font-semibold;
-}
-
-.pa-delta--down {
+// Alerta de piso: vermelho (única cor de alerta da página)
+.pv-alert {
   color: $negative;
   font-weight: $font-semibold;
 }
 
-.pa-delta--none {
-  color: $text-disabled;
+// ── Paginação ────────────────────────────────────────────────────────────────
+.pv-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-4;
+  margin-top: $space-3;
+
+  &__info {
+    font-size: $text-small-size;
+    color: $text-muted;
+  }
+}
+
+// ── Insights (mantido) ───────────────────────────────────────────────────────
+.pv-insights {
+  margin-top: $space-6;
+  border: 1px solid $border;
+  border-radius: 14px;
+  background: $surface;
+
+  &__header {
+    font-size: $text-small-size;
+  }
 }
 
 .pa-insights {
   display: grid;
   gap: $space-6;
-  margin-top: $space-4;
+  padding: $space-4;
 }
 
 .pa-block__t {
@@ -569,6 +628,21 @@ onMounted(load);
 }
 
 .pa-extremes__empty {
+  color: $text-disabled;
+}
+
+// ↑/↓ seguem a convenção brasileira de variação: alta é verde, baixa é vermelho.
+.pa-delta--up {
+  color: $positive;
+  font-weight: $font-semibold;
+}
+
+.pa-delta--down {
+  color: $negative;
+  font-weight: $font-semibold;
+}
+
+.pa-delta--none {
   color: $text-disabled;
 }
 </style>
