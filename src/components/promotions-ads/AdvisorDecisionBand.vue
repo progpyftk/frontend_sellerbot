@@ -85,6 +85,8 @@
         os {{ page.total }} anúncios desta página.
       </p>
     </article>
+
+    <p class="adb-hint">Deslize para ver o que o assistente sugere e o que está protegido →</p>
   </section>
 </template>
 
@@ -177,6 +179,20 @@ const suggestionChips = computed(() => SUGGESTION_ORDER
   &--muted { color: $text-muted; }
 }
 
+.adb-hint {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .adb-hint {
+    display: block;
+    flex: 0 0 100%;
+    margin: 0;
+    font-size: 11px;
+    color: $text-muted;
+  }
+}
+
 .adb-footnote {
   grid-column: 1 / -1;
   margin: $space-1 0 0;
@@ -213,7 +229,21 @@ const suggestionChips = computed(() => SUGGESTION_ORDER
 }
 
 @media (max-width: 768px) {
-  .adb { grid-template-columns: 1fr; gap: $space-2; }
+  /* Carrossel: a primeira dobra do celular mostra o cartão de atenção E o começo
+     da tabela. Empilhar os três cartões empurrava o dado para ~1.000px. */
+  .adb {
+    display: flex;
+    gap: $space-2;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: $space-1;
+    margin-bottom: $space-2;
+  }
+
+  .adb-card {
+    flex: 0 0 86%;
+    scroll-snap-align: start;
+  }
   .adb-card { padding: $space-3; }
   .adb-card__value strong { font-size: 20px; }
   /* No celular, o cartão de proteção fica só com a regra: a lista detalhada
@@ -221,6 +251,20 @@ const suggestionChips = computed(() => SUGGESTION_ORDER
   /* No celular a faixa precisa caber na dobra com a tabela logo abaixo:
      o valor + a regra respondem as três perguntas; a lista é detalhe. */
   .adb-card__list { display: none; }
-  .adb-footnote { display: none; }
+  .adb-hint {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .adb-hint {
+    display: block;
+    flex: 0 0 100%;
+    margin: 0;
+    font-size: 11px;
+    color: $text-muted;
+  }
+}
+
+.adb-footnote { display: none; }
 }
 </style>

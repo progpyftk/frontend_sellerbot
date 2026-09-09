@@ -59,9 +59,9 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
   test('a primeira dobra responde atenção, sugestão e bloqueio', async ({ page }) => {
     await openAdvisor(page)
 
-    await expect(page.getByText('Requer atenção hoje')).toBeVisible()
-    await expect(page.getByText('O que o assistente sugere')).toBeVisible()
-    await expect(page.getByText('Protegido / bloqueado')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Requer atenção hoje' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'O que o assistente sugere' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Protegido / bloqueado' })).toBeVisible()
 
     // Números do escopo, não da página filtrada.
     await expect(page.locator('.pv-scope__kpi').first()).toContainText('753')
@@ -99,7 +99,7 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
     await expect(page.getByText('Não conseguimos falar com o servidor agora')).toBeVisible()
     await expect(page.getByText('Tentar novamente')).toBeVisible()
     await expect(page.locator('.pv-result')).toHaveCount(0)
-    await expect(page.getByText('Requer atenção hoje')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Requer atenção hoje' })).toHaveCount(0)
   })
 
   test('mobile: cartões com rótulo e sem rolagem horizontal da tabela', async ({ page }) => {
