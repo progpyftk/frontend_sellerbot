@@ -106,9 +106,15 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openAdvisor(page)
 
-    // O cartão de atenção aparece na primeira dobra.
-    const band = await page.locator('.adb-card--alert').boundingBox()
-    expect(band.y).toBeLessThan(844)
+    // No celular as três respostas viram três linhas, todas na primeira dobra.
+    const alertRow = await page.locator('.adb-compact__row--alert').boundingBox()
+    expect(alertRow.y).toBeLessThan(844)
+    await expect(page.locator('.adb-compact__row--assistant')).toContainText('Sugere')
+    await expect(page.locator('.adb-compact__row--safe')).toContainText('Escrita barrada')
+
+    // A primeira linha de dado também aparece sem rolar.
+    const firstRow = await page.locator('table tbody tr').first().boundingBox()
+    expect(firstRow.y).toBeLessThan(844)
 
     // Modo cartão: cada célula carrega o rótulo da coluna em data-label, que o
     // CSS imprime via ::before (o <thead> fica oculto no celular).

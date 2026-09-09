@@ -41,7 +41,7 @@
       <tr v-for="row in rows" :key="`${row.account_id}-${row.item_id}`" :class="{ 'av-row--alert': row.below_floor }">
         <td class="av-expand">
           <q-btn
-            flat dense round size="sm" icon="open_in_full" class="av-expand__btn"
+            flat dense round size="sm" icon="open_in_full" color="grey-9" class="av-expand__btn"
             :aria-label="`Abrir detalhe de ${row.title}`" @click="$emit('open-detail', row)"
           />
         </td>
@@ -295,7 +295,7 @@ function acaoMeta(acao) {
 }
 
 .av-expand { width: 40px; text-align: center; padding-right: 0 !important; }
-.av-expand__btn { color: $text-muted; }
+.av-expand__btn { color: $text-primary; }
 
 .av-th-btn {
   display: inline-flex;

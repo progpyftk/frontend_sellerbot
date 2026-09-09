@@ -13,26 +13,12 @@
       </header>
       <p class="adb-card__value">
         <strong>{{ scope.below_floor ?? 0 }}</strong>
-        <span>{{ (scope.below_floor ?? 0) === 1 ? 'anúncio abaixo do piso' : 'anúncios abaixo do piso' }} <em>no escopo</em></span>
+        <span>{{ (scope.below_floor ?? 0) === 1 ? 'anúncio abaixo do piso' : 'anúncios abaixo do piso' }} <em>no total da operação</em></span>
       </p>
       <p class="adb-card__rule">
         Piso da operação: margem ≥ {{ FLOOR_MARGIN_PCT }}% <em>e</em> lucro ≥ {{ brl(FLOOR_PROFIT_BRL) }} por venda
         <span class="adb-card__rule-hint">(detalhe no cartão ao lado)</span>.
       </p>
-      <ul class="adb-card__list">
-        <li v-if="page.blockedFloor">
-          <q-icon name="block" size="14px" aria-hidden="true" />
-          {{ page.blockedFloor }} nesta página abaixo do piso
-        </li>
-        <li v-if="page.missingData">
-          <q-icon name="help_outline" size="14px" aria-hidden="true" />
-          {{ page.missingData }} nesta página sem dados para calcular margem
-        </li>
-        <li v-if="page.lowTraction">
-          <q-icon name="trending_down" size="14px" aria-hidden="true" />
-          {{ page.lowTraction }} nesta página parado{{ page.lowTraction === 1 ? '' : 's' }}/fraco{{ page.lowTraction === 1 ? '' : 's' }}
-        </li>
-      </ul>
       <q-btn
         v-if="(scope.below_floor ?? 0) > 0"
         class="adb-card__action" unelevated no-caps dense color="negative"
@@ -77,17 +63,31 @@
         <li><q-icon name="help_outline" size="14px" aria-hidden="true" /> sem custo/frete não há cálculo — e sem cálculo não há escrita</li>
         <li><q-icon name="lock" size="14px" aria-hidden="true" /> escrita automática desligada nesta entrega</li>
       </ul>
-      <p class="adb-card__rule adb-card__rule--muted">
-        {{ scope.below_floor ?? 0 }} no escopo · {{ scope.with_active_promo ?? 0 }} com promoção ativa.
-      </p>
       <p class="adb-footnote">
-        O primeiro cartão conta o escopo inteiro (conta + status); os cartões do meio e da direita resumem
-        os {{ page.total }} anúncios desta página.
+        Cartão da esquerda: total da operação (conta + status). Cartões do meio e da direita: os
+        {{ page.total }} anúncios desta página.
       </p>
     </article>
 
-    <p class="adb-hint">Deslize para ver o que o assistente sugere e o que está protegido →</p>
   </section>
+
+    <!-- Mobile: as três respostas em três linhas (sem swipe). -->
+    <ul class="adb-compact">
+      <li class="adb-compact__row adb-compact__row--alert">
+        <q-icon name="priority_high" size="15px" aria-hidden="true" />
+        <span><strong>{{ scope.below_floor ?? 0 }}</strong> abaixo do piso no escopo · <strong>{{ page.blockedFloor }}</strong> nesta página</span>
+        <q-btn dense no-caps unelevated color="negative" size="sm" label="Ver e priorizar" @click="$emit('focus-below-floor')" />
+      </li>
+      <li class="adb-compact__row adb-compact__row--assistant">
+        <q-icon name="auto_fix_high" size="15px" aria-hidden="true" />
+        <span>Sugere: {{ suggestionChips.map((c) => `${c.label} ${c.count}`).join(' · ') || 'sem anúncios nesta página' }}</span>
+      </li>
+      <li class="adb-compact__row adb-compact__row--safe">
+        <q-icon name="shield" size="15px" aria-hidden="true" />
+        <span>Escrita barrada: margem &lt; {{ FLOOR_MARGIN_PCT }}% ou lucro &lt; {{ brl(FLOOR_PROFIT_BRL) }} (nada é alterado no ML)</span>
+      </li>
+    </ul>
+
 </template>
 
 <script setup>
@@ -179,18 +179,31 @@ const suggestionChips = computed(() => SUGGESTION_ORDER
   &--muted { color: $text-muted; }
 }
 
-.adb-hint {
+.adb-compact {
   display: none;
+  grid-column: 1 / -1;
+  gap: 6px;
+  margin: 0 0 $space-2;
+  padding: 0;
+  list-style: none;
 }
 
-@media (max-width: 768px) {
-  .adb-hint {
-    display: block;
-    flex: 0 0 100%;
-    margin: 0;
-    font-size: 11px;
-    color: $text-muted;
-  }
+.adb-compact__row {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: 6px $space-3;
+  border: 1px solid $border;
+  border-left-width: 4px;
+  border-radius: $radius-sm;
+  background: $surface;
+  font-size: $text-xs-size;
+  color: $text-primary;
+
+  span { flex: 1 1 auto; }
+  &--alert { border-left-color: $negative; }
+  &--assistant { border-left-color: $indigo-8; }
+  &--safe { border-left-color: $text-disabled; }
 }
 
 .adb-footnote {
@@ -229,42 +242,10 @@ const suggestionChips = computed(() => SUGGESTION_ORDER
 }
 
 @media (max-width: 768px) {
-  /* Carrossel: a primeira dobra do celular mostra o cartão de atenção E o começo
-     da tabela. Empilhar os três cartões empurrava o dado para ~1.000px. */
-  .adb {
-    display: flex;
-    gap: $space-2;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: $space-1;
-    margin-bottom: $space-2;
-  }
-
-  .adb-card {
-    flex: 0 0 86%;
-    scroll-snap-align: start;
-  }
-  .adb-card { padding: $space-3; }
-  .adb-card__value strong { font-size: 20px; }
-  /* No celular, o cartão de proteção fica só com a regra: a lista detalhada
-     empurraria a tabela para longe sem responder nada novo. */
-  /* No celular a faixa precisa caber na dobra com a tabela logo abaixo:
-     o valor + a regra respondem as três perguntas; a lista é detalhe. */
-  .adb-card__list { display: none; }
-  .adb-hint {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .adb-hint {
-    display: block;
-    flex: 0 0 100%;
-    margin: 0;
-    font-size: 11px;
-    color: $text-muted;
-  }
-}
-
-.adb-footnote { display: none; }
+  /* No celular os três cartões viram três linhas: as três respostas continuam
+     visíveis (sem swipe) e a tabela sobe para a primeira dobra. */
+  .adb { display: none; }
+  .adb-compact { display: grid; }
+  .adb-footnote { display: none; }
 }
 </style>
