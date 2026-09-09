@@ -16,7 +16,8 @@
         <span>{{ (scope.below_floor ?? 0) === 1 ? 'anúncio abaixo do piso' : 'anúncios abaixo do piso' }} <em>no escopo</em></span>
       </p>
       <p class="adb-card__rule">
-        Piso da operação: margem ≥ {{ FLOOR_MARGIN_PCT }}% <em>e</em> lucro ≥ {{ brl(FLOOR_PROFIT_BRL) }} por venda.
+        Piso da operação: margem ≥ {{ FLOOR_MARGIN_PCT }}% <em>e</em> lucro ≥ {{ brl(FLOOR_PROFIT_BRL) }} por venda
+        <span class="adb-card__rule-hint">(detalhe no cartão ao lado)</span>.
       </p>
       <ul class="adb-card__list">
         <li v-if="page.blockedFloor">

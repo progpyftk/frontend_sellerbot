@@ -112,15 +112,15 @@
 
           <!-- Margem: cor + ícone + motivo (nunca só cor) -->
           <template v-else-if="col.key === 'margin_pct'">
-            <span class="av-num" :class="{ 'av-num--alert': row.below_floor }" :title="marginTitle(row)">
-              <q-icon v-if="row.below_floor" name="block" size="13px" aria-hidden="true" />
+            <span class="av-num" :class="{ 'av-num--alert': marginBreached(row) }" :title="marginTitle(row)">
+              <q-icon v-if="marginBreached(row)" name="block" size="13px" aria-hidden="true" />
               {{ pct(row.margin_pct) }}
             </span>
           </template>
 
           <template v-else-if="col.key === 'profit_unit'">
-            <span class="av-num" :class="{ 'av-num--alert': row.below_floor }" :title="marginTitle(row)">
-              <q-icon v-if="row.below_floor" name="block" size="13px" aria-hidden="true" />
+            <span class="av-num" :class="{ 'av-num--alert': profitBreached(row) }" :title="marginTitle(row)">
+              <q-icon v-if="profitBreached(row)" name="block" size="13px" aria-hidden="true" />
               {{ brl(row.profit_unit) }}
             </span>
           </template>
@@ -221,6 +221,16 @@ function healthTitle(row) {
   if (info.units_per_week != null) parts.push(`${info.units_per_week} un./semana`);
   if (info.parado_sob_promocao) parts.push('parado sob promoção');
   return parts.join(' · ') || undefined;
+}
+
+// Só o número que realmente furou o piso fica vermelho: pintar margem E lucro
+// de vermelho confunde qual critério barrou a escrita.
+function marginBreached(row) {
+  return row.below_floor && row.margin_pct != null && row.margin_pct < 30;
+}
+
+function profitBreached(row) {
+  return row.below_floor && row.profit_unit != null && row.profit_unit < 12;
 }
 
 function marginTitle(row) {

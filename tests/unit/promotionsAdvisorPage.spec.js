@@ -107,7 +107,7 @@ describe('PromotionsAdvisorPage', () => {
     const expected = [
       '753 anúncios',
       '563 com promoção ativa',
-      '44 com indício do assistente',
+      '44 com registro do assistente',
       '120 já passaram pelo assistente',
     ]
     expect(chips()).toEqual(expected)

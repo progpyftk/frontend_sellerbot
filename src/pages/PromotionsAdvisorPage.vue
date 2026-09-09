@@ -41,7 +41,7 @@
           <strong>{{ summary.with_active_promo ?? 0 }}</strong> com promoção ativa
         </button>
         <button class="pv-scope__kpi" :class="{ 'pv-scope__kpi--on': filters.origem === 'assistente' }" :aria-pressed="filters.origem === 'assistente'" title="Promoções ativas em tipos que o assistente escreve e que têm ação registrada no histórico (indício de associação, não prova de autoria)." @click="toggleAssistente">
-          <strong>{{ summary.assistente ?? 0 }}</strong> com indício do assistente
+          <strong>{{ summary.assistente ?? 0 }}</strong> com registro do assistente
         </button>
         <button class="pv-scope__kpi" :class="{ 'pv-scope__kpi--on': filters.hasAgentHistory }" :aria-pressed="filters.hasAgentHistory" @click="toggle('hasAgentHistory')">
           <strong>{{ summary.agent_history ?? 0 }}</strong> já passaram pelo assistente
