@@ -4,11 +4,25 @@
       v-if="error"
       variant="error"
       title="Não foi possível carregar o detalhe"
-      :message="error"
-    />
-    <div v-else-if="loading" class="pod-loading">
-      <q-spinner-dots size="28px" color="grey-6" />
-      <span>Consultando o Mercado Livre…</span>
+      :message="friendlyError"
+    >
+      <template #action>
+        <q-btn unelevated color="primary" no-caps icon="refresh" label="Tentar novamente" @click="load" />
+      </template>
+    </SbEmptyState>
+    <!-- Carregando: esqueleto da estrutura real (promoções, assistente, retrato)
+         em vez de tela branca — o dono vê o que vai chegar e há feedback de vida. -->
+    <div v-else-if="loading" class="pod-skeleton" role="status" aria-live="polite">
+      <p class="pod-skeleton__hint">
+        <q-spinner-dots size="20px" color="primary" aria-hidden="true" />
+        Consultando as promoções deste anúncio no Mercado Livre…
+      </p>
+      <div class="pod-grid">
+        <section v-for="block in 3" :key="`sk-${block}`" class="pod-block pod-block--skeleton">
+          <span class="pod-skel pod-skel--title" />
+          <span v-for="line in 3" :key="`sk-${block}-${line}`" class="pod-skel" :style="{ width: line === 3 ? '62%' : '100%' }" />
+        </section>
+      </div>
     </div>
 
     <div v-else class="pod-grid">
@@ -111,7 +125,7 @@ import MercadoLivreService from 'src/services/MercadoLivreService';
 const ACAO_META = {
   aprofundar: { label: 'Aprofundar', variant: 'amber' },
   reduzir: { label: 'Reduzir desconto', variant: 'sky' },
-  manter: { label: 'Manter', variant: 'slate' },
+  manter: { label: 'Não mexer', variant: 'slate' },
   rebase: { label: 'Rebase de preço', variant: 'indigo' },
   remover: { label: 'Remover', variant: 'red' },
   sem_oferta: { label: 'Sem oferta ML', variant: 'slate' },
@@ -147,6 +161,15 @@ const props = defineProps({
 const loading = ref(false);
 const error = ref('');
 const payload = ref(null);
+
+// Erro de rede/servidor sem jargão: o dono precisa saber o que fazer, não o nome do erro.
+const friendlyError = computed(() => {
+  const raw = error.value || '';
+  if (/network|failed to fetch|timeout|econn/i.test(raw)) {
+    return 'O Mercado Livre não respondeu agora. Tente novamente em alguns segundos — nada foi alterado no anúncio.';
+  }
+  return raw;
+});
 
 const item = computed(() => payload.value?.item || {});
 const activePromos = computed(() => payload.value?.promotions?.active || []);
@@ -256,6 +279,40 @@ onMounted(load);
   padding: $space-4;
   font-size: $text-small-size;
   color: $text-muted;
+}
+
+.pod-skeleton {
+  padding: $space-4;
+
+  &__hint {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin: 0 0 $space-4;
+    font-size: $text-small-size;
+    color: $text-primary;
+  }
+}
+
+.pod-block--skeleton {
+  display: grid;
+  gap: $space-2;
+}
+
+.pod-skel {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 37%, #eef2f7 63%);
+  background-size: 400% 100%;
+  animation: pod-shimmer 1.4s ease infinite;
+
+  &--title { width: 40%; height: 14px; margin-bottom: $space-1; }
+}
+
+@keyframes pod-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }
 
 .pod-grid {
