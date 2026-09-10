@@ -159,6 +159,18 @@ export default {
     return api.get(`/mercadolivre/promo-overview/${itemId}/`)
   },
 
+  // Política da automação do assistente (PROMO-IA-14): o GET devolve o bloco
+  // `automation` e o PATCH altera UMA conta — auto_write, wave_size,
+  // paused/pause_reason e canary_approved (aval da primeira onda). Nunca escreve
+  // no Mercado Livre: só guarda a decisão do dono.
+  getAdvisorPolicy() {
+    return api.get('/mercadolivre/promotions-advisor/policy/')
+  },
+
+  patchAdvisorPolicy(payload) {
+    return api.patch('/mercadolivre/promotions-advisor/policy/', payload)
+  },
+
   // ==========================================
   // VENDAS (ORDERS)
   // ==========================================

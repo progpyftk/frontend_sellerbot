@@ -3,7 +3,7 @@
     <SbPageHeader
       eyebrow="Mercado Livre"
       title="Promoções · Assistente"
-      subtitle="O que exige atenção, o que o assistente faria e o que está protegido. Somente leitura."
+      subtitle="O que exige atenção, o que o assistente faria e o que está protegido. Catálogo em leitura; controles só da automação."
       icon="auto_graph"
     >
       <template #actions>
@@ -30,6 +30,13 @@
         :page="decision"
         :only-below-floor="filters.belowFloor"
         @focus-below-floor="focusBelowFloor"
+      />
+
+      <!-- Automação: estado do robô por conta, alertas de margem e aval da primeira onda -->
+      <AdvisorAutomationPanel
+        v-if="automation"
+        :automation="automation"
+        @updated="onAutomationUpdated"
       />
 
       <!-- Escopo (conta + status): números do servidor, clicáveis para filtrar -->
@@ -184,6 +191,7 @@ import SbEmptyState from 'src/components/common/SbEmptyState.vue';
 import SbTable from 'src/components/common/SbTable.vue';
 import SbBadge from 'src/components/common/SbBadge.vue';
 import AdvisorDecisionBand from 'src/components/promotions-ads/AdvisorDecisionBand.vue';
+import AdvisorAutomationPanel from 'src/components/promotions-ads/AdvisorAutomationPanel.vue';
 import AdvisorTable from 'src/components/promotions-ads/AdvisorTable.vue';
 import AdvisorInsights from 'src/components/promotions-ads/AdvisorInsights.vue';
 import PromoOverviewDetail from 'src/components/promotions-ads/PromoOverviewDetail.vue';
@@ -235,6 +243,7 @@ const total = ref(0);
 const page = ref(1);
 const pageSize = ref(40);
 const summary = ref({});
+const automation = ref(null);
 const snapshot = ref({});
 const accounts = ref([]);
 const insights = ref({});
@@ -441,6 +450,7 @@ async function load() {
     total.value = payload.total || 0;
     summary.value = payload.summary || {};
     snapshot.value = payload.snapshot || {};
+    automation.value = payload.automation || null;
     if (payload.accounts?.length) accounts.value = payload.accounts;
   } catch (err) {
     if (seq !== requestSeq) return;
@@ -452,6 +462,16 @@ async function load() {
   } finally {
     if (seq === requestSeq) loading.value = false;
   }
+}
+
+// O PATCH da política devolve o estado atualizado da conta: atualiza só aquele card
+// do painel de automação, sem recarregar a lista de anúncios inteira.
+function onAutomationUpdated({ account_id: accountId, state } = {}) {
+  if (!automation.value || !accountId || !state) return;
+  automation.value = {
+    ...automation.value,
+    by_account: { ...(automation.value.by_account || {}), [accountId]: state },
+  };
 }
 
 // Reinicia para a página 1 e recarrega; se já está na 1, recarrega direto
