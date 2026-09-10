@@ -253,12 +253,15 @@ async function applyRow(row) {
   busyRow.value = row.id
   try {
     const { data } = await MercadoLivreService.applySeoReviewRow(row.id)
-    $q.notify({
-      type: 'positive',
-      message: `Aplicado em ${row.item_id}: ${(data.fixes || []).join(', ') || 'nada a corrigir'}.`
-        + ((data.escala || []).length ? ` Escalado ao dono: ${data.escala.map((e) => e.campo).join(', ')}.` : ''),
-      icon: 'done_all',
-    })
+    const fixes = (data.fixes || []).join(', ') || 'nada a corrigir'
+    const escala = (data.escala || []).length
+      ? ` Escalado ao dono: ${data.escala.map((e) => e.campo).join(', ')}.` : ''
+    $q.notify(
+      data.landed
+        ? { type: 'positive', icon: 'done_all', message: `Aplicado em ${row.item_id}: ${fixes}.${escala}` }
+        : { type: 'warning', icon: 'error_outline', timeout: 6000,
+            message: `Gravação parcial em ${row.item_id} (${fixes}). A linha segue pendente — revise.${escala}` },
+    )
     await loadQueue()
   } catch (e) {
     $q.notify({ type: 'negative', message: e?.response?.data?.detail || e?.message || 'Falha ao aplicar.' })
