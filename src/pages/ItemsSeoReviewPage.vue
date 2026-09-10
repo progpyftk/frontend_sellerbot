@@ -116,6 +116,29 @@
                   :label="r.title || r.key"
                 />
               </div>
+
+              <div class="seo-review__actions q-mt-md">
+                <q-btn
+                  unelevated color="green-7" no-caps icon="done_all"
+                  label="Aplicar correções seguras"
+                  :loading="busyRow === props.row.id"
+                  :disable="!canApply(props.row) || busyRow !== null"
+                  @click="confirmApply(props.row)"
+                />
+                <q-btn
+                  outline color="deep-orange-8" no-caps icon="north_east" label="Escalar"
+                  :disable="busyRow !== null"
+                  @click="rowAction(props.row, 'escalate')"
+                />
+                <q-btn
+                  flat color="grey-8" no-caps icon="block" label="Dispensar"
+                  :disable="busyRow !== null"
+                  @click="rowAction(props.row, 'dismiss')"
+                />
+                <span v-if="!canApply(props.row)" class="text-caption text-grey-6 q-ml-sm">
+                  {{ applyHint(props.row) }}
+                </span>
+              </div>
             </q-td>
           </q-tr>
         </template>
@@ -139,6 +162,7 @@ const running = ref(false)
 const error = ref('')
 const lastRun = ref(null)
 const expanded = ref(new Set())
+const busyRow = ref(null)
 
 const columns = [
   { name: 'expand', label: '', field: 'expand' },
@@ -206,6 +230,56 @@ async function runBatch() {
   }
 }
 
+const autoFixCount = (row) => (row.proposal?.propostas || []).filter((p) => p.classe === 'auto_fix').length
+const canApply = (row) => Boolean(row.proposal?.tem_referencia) && autoFixCount(row) > 0
+function applyHint(row) {
+  if (!row.proposal?.tem_referencia) return 'sem linha de catálogo — só escalar ou dispensar'
+  if (autoFixCount(row) === 0) return 'só decisões do dono nesta linha — use Escalar'
+  return ''
+}
+
+function confirmApply(row) {
+  $q.dialog({
+    title: 'Aplicar correções seguras',
+    message: `Vai gravar no Mercado Livre as ${autoFixCount(row)} correção(ões) segura(s) do anúncio `
+      + `${row.item_id} (descrição/atributos/fotos com referência de catálogo). `
+      + 'Título, preço e fotos sem referência não são tocados. Confirmar?',
+    cancel: true,
+    ok: { label: 'Aplicar', color: 'green-7', noCaps: true },
+  }).onOk(() => applyRow(row))
+}
+
+async function applyRow(row) {
+  busyRow.value = row.id
+  try {
+    const { data } = await MercadoLivreService.applySeoReviewRow(row.id)
+    $q.notify({
+      type: 'positive',
+      message: `Aplicado em ${row.item_id}: ${(data.fixes || []).join(', ') || 'nada a corrigir'}.`
+        + ((data.escala || []).length ? ` Escalado ao dono: ${data.escala.map((e) => e.campo).join(', ')}.` : ''),
+      icon: 'done_all',
+    })
+    await loadQueue()
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e?.response?.data?.detail || e?.message || 'Falha ao aplicar.' })
+  } finally {
+    busyRow.value = null
+  }
+}
+
+async function rowAction(row, action) {
+  busyRow.value = row.id
+  try {
+    await MercadoLivreService.setSeoReviewRowAction(row.id, action)
+    $q.notify({ type: 'positive', message: action === 'escalate' ? 'Escalado ao dono.' : 'Linha dispensada.' })
+    await loadQueue()
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e?.response?.data?.detail || e?.message || 'Falha na ação.' })
+  } finally {
+    busyRow.value = null
+  }
+}
+
 onMounted(loadQueue)
 </script>
 
@@ -221,6 +295,14 @@ onMounted(loadQueue)
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 10px;
+}
+.seo-review__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
 }
 .seo-review__card {
   border: 1px solid #e2e8f0;

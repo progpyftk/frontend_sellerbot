@@ -155,6 +155,20 @@ export default {
     return api.get('/mercadolivre/seo-review/queue/', { params })
   },
 
+  // Aplica as correções seguras (`auto_fix`) de UMA linha da fila — ESCREVE no
+  // Mercado Livre (descrição/SKU/atributos/fotos com referência de catálogo) e
+  // salva evidência. Título/preço/fotos seguem report-only. 422 = sem referência
+  // ou sem correção segura; 409 = linha já fechada.
+  applySeoReviewRow(rowId) {
+    return api.post(`/mercadolivre/seo-review/queue/${rowId}/apply/`)
+  },
+
+  // Dispensa / escala / retoma UMA linha — NÃO toca no Mercado Livre.
+  // action: 'dismiss' | 'escalate' | 'start' | 'reopen'
+  setSeoReviewRowAction(rowId, action, note = '') {
+    return api.post(`/mercadolivre/seo-review/queue/${rowId}/action/`, { action, note })
+  },
+
   // ==========================================
   // ACOMPANHAMENTO POR ANÚNCIO (PROMO-15) — read-only
   // ==========================================
