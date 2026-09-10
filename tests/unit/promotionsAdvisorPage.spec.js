@@ -131,8 +131,8 @@ describe('PromotionsAdvisorPage', () => {
     const wrapper = await mountAndSettle()
     const text = wrapper.text()
     expect(text).toContain('Requer atenção hoje')
-    expect(text).toContain('O que o assistente sugere')
-    expect(text).toContain('Protegido / bloqueado')
+    expect(text).toContain('Sugestões nesta página')
+    expect(text).toContain('Bloqueios nesta página')
     expect(text).toContain('169')
     expect(text).toContain('Sugestão da régua — nada é alterado no Mercado Livre')
 
@@ -246,7 +246,7 @@ describe('PromotionsAdvisorPage', () => {
 
     const panel = wrapper.find('.av-auto')
     expect(panel.exists()).toBe(true)
-    expect(panel.text()).toContain('Robô em modo recomendação')
+    expect(panel.text()).toContain('Modo Somente Sugestão')
     expect(panel.text()).toContain('1 alerta de margem')
     expect(panel.text()).toContain('1 conta aguardando seu aval')
   })

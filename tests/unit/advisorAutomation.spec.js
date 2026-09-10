@@ -77,9 +77,8 @@ describe('AdvisorAutomationPanel', () => {
   it('resume o estado do robô quando o servidor está em modo recomendação', () => {
     const wrapper = mountPanel({ automation: automation({ ACC1: state() }, { write_mode_global: false }) })
 
-    expect(text(wrapper)).toContain('Robô em modo recomendação')
-    expect(text(wrapper)).toContain('modo de escrita está')
-    expect(text(wrapper)).toContain('desligado no servidor')
+    expect(text(wrapper)).toContain('Modo Somente Sugestão')
+    expect(text(wrapper)).toContain('não aplica alterações no Mercado Livre')
   })
 
   it('mostra o kill switch como parada de tudo', () => {
