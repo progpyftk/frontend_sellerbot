@@ -3,7 +3,7 @@
     <SbPageHeader
       eyebrow="Mercado Livre"
       title="Anúncios · Revisão SEO"
-      subtitle="O revisor aponta os anúncios parados/fracos que valem revisão e o que mudaria em cada um. Leitura apenas — nada é gravado no Mercado Livre."
+      subtitle="O revisor aponta os anúncios parados/fracos que valem revisão e o que mudaria em cada um. Você aplica as correções seguras, escala ou dispensa cada linha."
       icon="fact_check"
     >
       <template #actions>
@@ -39,11 +39,21 @@
         Contas: {{ (lastRun.accounts || []).join(', ') || '—' }}.
       </div>
 
+      <q-btn-toggle
+        v-model="statusFilter"
+        class="q-mb-md"
+        no-caps unelevated toggle-color="primary" color="grey-3" text-color="grey-9"
+        :options="statusOptions"
+        @update:model-value="loadQueue"
+      />
+
       <SbEmptyState
         v-if="!loading && rows.length === 0"
         variant="empty"
-        title="Fila vazia"
-        message="Nenhum anúncio pendente de revisão. Clique em “Gerar lote de hoje” para o revisor varrer os anúncios parados/fracos."
+        :title="statusFilter === 'pending' ? 'Fila vazia' : 'Nada aqui'"
+        :message="statusFilter === 'pending'
+          ? 'Nenhum anúncio pendente de revisão. Clique em “Gerar lote de hoje” para o revisor varrer os anúncios parados/fracos.'
+          : 'Nenhum anúncio neste estado.'"
       />
 
       <q-table
@@ -118,26 +128,42 @@
               </div>
 
               <div class="seo-review__actions q-mt-md">
-                <q-btn
-                  unelevated color="green-7" no-caps icon="done_all"
-                  label="Aplicar correções seguras"
-                  :loading="busyRow === props.row.id"
-                  :disable="!canApply(props.row) || busyRow !== null"
-                  @click="confirmApply(props.row)"
-                />
-                <q-btn
-                  outline color="deep-orange-8" no-caps icon="north_east" label="Escalar"
-                  :disable="busyRow !== null"
-                  @click="rowAction(props.row, 'escalate')"
-                />
-                <q-btn
-                  flat color="grey-8" no-caps icon="block" label="Dispensar"
-                  :disable="busyRow !== null"
-                  @click="rowAction(props.row, 'dismiss')"
-                />
-                <span v-if="!canApply(props.row)" class="text-caption text-grey-6 q-ml-sm">
-                  {{ applyHint(props.row) }}
-                </span>
+                <template v-if="statusFilter === 'pending'">
+                  <q-btn
+                    unelevated color="green-7" no-caps icon="done_all"
+                    label="Aplicar correções seguras"
+                    :loading="busyRow === props.row.id"
+                    :disable="!canApply(props.row) || busyRow !== null"
+                    @click="confirmApply(props.row)"
+                  />
+                  <q-btn
+                    outline color="deep-orange-8" no-caps icon="north_east" label="Escalar"
+                    :disable="busyRow !== null"
+                    @click="rowAction(props.row, 'escalate')"
+                  />
+                  <q-btn
+                    flat color="grey-8" no-caps icon="block" label="Dispensar"
+                    :disable="busyRow !== null"
+                    @click="rowAction(props.row, 'dismiss')"
+                  />
+                  <span v-if="!canApply(props.row)" class="text-caption text-grey-6 q-ml-sm">
+                    {{ applyHint(props.row) }}
+                  </span>
+                </template>
+                <template v-else>
+                  <div v-if="props.row.proposal?.resolution" class="text-caption text-grey-7">
+                    {{ resolutionLabel(props.row.proposal.resolution) }}
+                  </div>
+                  <div v-else-if="props.row.proposal?.applied" class="text-caption text-grey-7">
+                    Aplicado {{ props.row.proposal.applied.at }} — {{ (props.row.proposal.applied.fixes || []).join(', ') || 'nada a corrigir' }}
+                  </div>
+                  <q-btn
+                    outline color="primary" no-caps icon="undo" label="Reabrir"
+                    :loading="busyRow === props.row.id"
+                    :disable="busyRow !== null"
+                    @click="rowAction(props.row, 'reopen')"
+                  />
+                </template>
               </div>
             </q-td>
           </q-tr>
@@ -163,6 +189,13 @@ const error = ref('')
 const lastRun = ref(null)
 const expanded = ref(new Set())
 const busyRow = ref(null)
+const statusFilter = ref('pending')
+const statusOptions = [
+  { label: 'Pendentes', value: 'pending' },
+  { label: 'Escaladas', value: 'escalated' },
+  { label: 'Dispensadas', value: 'dismissed' },
+  { label: 'Concluídas', value: 'done' },
+]
 
 const columns = [
   { name: 'expand', label: '', field: 'expand' },
@@ -187,6 +220,10 @@ const CLASSE_LABELS = { auto_fix: 'correção segura', owner_gate: 'decisão do 
 const gapLabel = (g) => GAP_LABELS[g] || g
 const campoLabel = (c) => CAMPO_LABELS[c] || c
 const classeLabel = (c) => CLASSE_LABELS[c] || c
+const resolutionLabel = (r) => {
+  const who = r.resolution === 'escalado' ? 'Escalado ao dono' : 'Dispensado'
+  return `${who} ${r.at}${r.note ? ` — ${r.note}` : ''}`
+}
 const healthColor = (h) => (h === 'parado' ? 'red-7' : 'orange-8')
 const classeColor = (c) => (c === 'auto_fix' ? 'green-7' : c === 'owner_gate' ? 'deep-orange-8' : 'blue-grey-6')
 
@@ -200,7 +237,7 @@ async function loadQueue() {
   loading.value = true
   error.value = ''
   try {
-    const { data } = await MercadoLivreService.getSeoReviewQueue({ status: 'pending' })
+    const { data } = await MercadoLivreService.getSeoReviewQueue({ status: statusFilter.value })
     rows.value = data.items || []
   } catch (e) {
     error.value = e?.response?.data?.detail || e?.message || 'Erro ao carregar a fila.'
@@ -220,6 +257,7 @@ async function runBatch() {
       message: `Lote gerado: ${data.queued} novos, ${data.refreshed} atualizados.`,
       icon: 'playlist_add_check',
     })
+    statusFilter.value = 'pending'
     await loadQueue()
   } catch (e) {
     const msg = e?.response?.data?.detail || e?.message || 'Falha ao gerar o lote.'
