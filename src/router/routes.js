@@ -51,6 +51,11 @@ const routes = [
         name: "items",
         component: () => import("pages/ItemsPage.vue"),
       },
+      {
+        path: "items/revisao",
+        name: "items-seo-review",
+        component: () => import("pages/ItemsSeoReviewPage.vue"),
+      },
       { path: 'promotions',
         name: "promotions",
         component: () => import('pages/PromotionsManagerPage.vue')

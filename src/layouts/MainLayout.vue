@@ -176,6 +176,7 @@ const menuSections = [
       { label: "Vendas e Pedidos",   icon: "receipt_long",                  route: "orders" },
       { label: "Publicidade · Ads",  icon: "mdi-bullhorn",                  route: "ads" },
       { label: "Meus Anúncios",      icon: "mdi-package-variant-closed",   route: "items" },
+      { label: "Anúncios · Revisão SEO", icon: "fact_check",                route: "items-seo-review" },
       { label: "Promoções Ativas",   icon: "local_offer",                   route: "promotions" },
       { label: "Promoções · Por anúncios", icon: "local_offer",              route: "promotions-ads" },
       { label: "Promoções · Assistente",  icon: "auto_graph",               route: "promotions-advisor" },

@@ -140,6 +140,22 @@ export default {
   },
 
   // ==========================================
+  // REVISÃO SEO — PAINEL DE DECISÃO SOB DEMANDA (REV-4/REV-5) — read-only
+  // ==========================================
+  // Botão "Gerar lote de hoje": roda o audit ao vivo dos anúncios parado/fraco
+  // ativos e popula a fila com a proposta de revisão por anúncio. NÃO escreve no
+  // Mercado Livre e NÃO chama LLM. body: { limit? (padrão 30), account_ids? }
+  runSeoReviewBatch(payload = {}) {
+    return api.post('/mercadolivre/seo-review/run/', payload)
+  },
+
+  // Fila da revisão SEO — 1 linha = 1 anúncio, com a proposta (`proposal`) por
+  // campo (atual → proposto, evidência, confiança, classe). params: { status?, limit? }
+  getSeoReviewQueue(params = {}) {
+    return api.get('/mercadolivre/seo-review/queue/', { params })
+  },
+
+  // ==========================================
   // ACOMPANHAMENTO POR ANÚNCIO (PROMO-15) — read-only
   // ==========================================
   // Tabela 1 linha = 1 anúncio, TODOS os anúncios das contas (com e sem
