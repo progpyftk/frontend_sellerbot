@@ -9,6 +9,8 @@ vi.mock('src/services/MercadoLivreService', () => ({
     getPromoOverview: (...args) => getPromoOverview(...args),
     getPromotionsAdvisor: vi.fn().mockResolvedValue({ data: {} }),
     getPromoOverviewDetail: vi.fn().mockResolvedValue({ data: {} }),
+    patchAdvisorPolicy: vi.fn().mockResolvedValue({ data: {} }),
+    getAdvisorPolicy: vi.fn().mockResolvedValue({ data: {} }),
   },
 }))
 
@@ -218,5 +220,40 @@ describe('PromotionsAdvisorPage', () => {
     expect(legend.exists()).toBe(true)
     expect(legend.text()).toContain('bloqueado pelo piso')
     expect(legend.text()).toContain('sugestão do assistente')
+  })
+
+  // PROMO-IA-20: o bloco `automation` do payload vira painel com o estado do robô,
+  // os alertas de margem e o aval da primeira onda.
+  it('renderiza o painel de automação a partir do bloco do payload', async () => {
+    getPromoOverview.mockResolvedValue({
+      data: {
+        ...payload(),
+        automation: {
+          write_mode_global: false,
+          kill_switch: false,
+          by_account: {
+            ACC1: {
+              account_nickname: 'Mogi', auto_write: false, wave_size: 50, paused: false,
+              pause_reason: '', canary_pending: true, canary_approved_at: null,
+              canary_approved_by: '', writes_today: 0,
+              margin_alerts: [{ kind: 'smart_low_margin', item_id: 'MLB1', margin_pct: '22.4' }],
+            },
+          },
+        },
+      },
+    })
+    const wrapper = await mountAndSettle()
+
+    const panel = wrapper.find('.av-auto')
+    expect(panel.exists()).toBe(true)
+    expect(panel.text()).toContain('Robô em modo recomendação')
+    expect(panel.text()).toContain('1 alerta de margem')
+    expect(panel.text()).toContain('1 conta aguardando seu aval')
+  })
+
+  it('não renderiza painel de automação quando o payload não traz o bloco', async () => {
+    const wrapper = await mountAndSettle()
+
+    expect(wrapper.find('.av-auto').exists()).toBe(false)
   })
 })
