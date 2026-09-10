@@ -130,6 +130,7 @@
       <!-- Tabela: protagonista -->
       <AdvisorTable
         :rows="rows" :columns="visibleColumns" :sort="sort" :loading="loading"
+        :fit="preset === 'assistente'"
         @sort="cycleSort" @open-detail="openDetail"
       />
 
@@ -200,20 +201,22 @@ const STATUS_LABELS = {
 // Schema de colunas. `group`: 'always' | 'assistente' | 'financeiro' | 'completo'.
 // `sticky` mantém o contexto (anúncio + situação) visível ao rolar na horizontal.
 const COLUMNS = [
-  { key: 'title', label: 'Anúncio', group: 'always', sticky: true },
-  { key: 'situation', label: 'Situação', group: 'assistente', sticky: true, stickySecond: true },
-  { key: 'suggestion', label: 'Sugestão', group: 'assistente' },
-  { key: 'margin_pct', label: 'Margem', group: 'assistente', numeric: true, sortable: true, sortKey: 'margin' },
-  { key: 'profit_unit', label: 'Lucro', group: 'assistente', numeric: true },
-  { key: 'sales_30d', label: 'Vendas 30d', group: 'assistente', numeric: true, sortable: true, sortKey: 'sales' },
-  { key: 'agent_last', label: 'Última ação', group: 'assistente', sortable: true, sortKey: 'activation' },
-  { key: 'health', label: 'Saúde', group: 'completo' },
-  { key: 'price', label: 'Preço-base', group: 'completo', numeric: true, sortable: true, sortKey: 'price', hideMobile: true },
-  { key: 'promo', label: 'Promoção ativa', group: 'completo' },
-  { key: 'discount_pct', label: '% desconto', group: 'completo', numeric: true, sortable: true, sortKey: 'discount', hideMobile: true },
-  { key: 'buyer_price', label: 'Preço promo', group: 'financeiro', numeric: true, hideMobile: true },
-  { key: 'cmv_unit', label: 'CMV', group: 'financeiro', numeric: true, hideMobile: true },
-  { key: 'promo_dates', label: 'Datas promo', group: 'completo', hideMobile: true },
+  // Ordem = leitura de decisão. `width` é a fatia no preset enxuto (tabela fixa que
+  // cabe na tela); `minWidth` é o piso quando o preset é largo e a tabela rola.
+  { key: 'title', label: 'Anúncio', group: 'always', sticky: true, width: '24%', minWidth: 220 },
+  { key: 'situation', label: 'Situação', group: 'assistente', sticky: true, stickySecond: true, width: '11%', minWidth: 118 },
+  { key: 'suggestion', label: 'Sugestão', group: 'assistente', width: '14%', minWidth: 150 },
+  { key: 'price', label: 'Preço-base', group: 'assistente', numeric: true, sortable: true, sortKey: 'price', width: '9%', minWidth: 100 },
+  { key: 'buyer_price', label: 'Preço promo', group: 'assistente', numeric: true, width: '9%', minWidth: 100 },
+  { key: 'margin_pct', label: 'Margem', group: 'assistente', numeric: true, sortable: true, sortKey: 'margin', width: '8%', minWidth: 90 },
+  { key: 'profit_unit', label: 'Lucro', group: 'assistente', numeric: true, width: '8%', minWidth: 90 },
+  { key: 'sales_30d', label: 'Vendas 30d', group: 'assistente', numeric: true, sortable: true, sortKey: 'sales', width: '7%', minWidth: 86 },
+  { key: 'agent_last', label: 'Última ação', group: 'assistente', sortable: true, sortKey: 'activation', width: '10%', minWidth: 124 },
+  { key: 'health', label: 'Saúde', group: 'completo', minWidth: 96 },
+  { key: 'promo', label: 'Promoção ativa', group: 'completo', minWidth: 180 },
+  { key: 'discount_pct', label: '% desconto', group: 'completo', numeric: true, sortable: true, sortKey: 'discount', minWidth: 104 },
+  { key: 'cmv_unit', label: 'CMV', group: 'financeiro', numeric: true, minWidth: 96 },
+  { key: 'promo_dates', label: 'Datas promo', group: 'completo', minWidth: 150 },
 ];
 
 // Presets começam pelo enxuto "Assistente" (padrão), não por "tudo".

@@ -4,14 +4,15 @@
     sugestão, margem/lucro e última ação. No mobile vira cartão (rótulo + valor),
     mantendo o <table> semântico para leitores de tela.
   -->
-  <SbTable :scroll-x="true">
+  <div class="av-wrap" :class="{ 'av-fit': fit }">
+    <SbTable :scroll-x="true">
     <thead>
       <tr>
         <th class="av-expand" scope="col" aria-label="Detalhe"></th>
         <th
           v-for="col in columns" :key="col.key" scope="col"
           :class="[colClass(col), { 'av-sticky': col.sticky, 'av-sticky--2': col.stickySecond, 'av-hide-mobile': col.hideMobile }]"
-          :aria-sort="ariaSort(col)"
+          :style="cellStyle(col)" :aria-sort="ariaSort(col)"
         >
           <button
             v-if="col.sortable"
@@ -31,7 +32,7 @@
     <tbody v-if="loading && !rows.length">
       <tr v-for="n in 6" :key="`sk-${n}`" class="av-skeleton-row" aria-hidden="true">
         <td class="av-expand"></td>
-        <td v-for="col in columns" :key="`sk-${col.key}`" :class="[colClass(col), { 'av-sticky': col.sticky, 'av-sticky--2': col.stickySecond, 'av-hide-mobile': col.hideMobile }]">
+        <td v-for="col in columns" :key="`sk-${col.key}`" :class="[colClass(col), { 'av-sticky': col.sticky, 'av-sticky--2': col.stickySecond, 'av-hide-mobile': col.hideMobile }]" :style="cellStyle(col)">
           <span class="av-skeleton" :style="{ width: skeletonWidth(col) }" />
         </td>
       </tr>
@@ -46,7 +47,7 @@
           />
         </td>
 
-        <td v-for="col in columns" :key="col.key" :class="[colClass(col), { 'av-sticky': col.sticky, 'av-sticky--2': col.stickySecond, 'av-hide-mobile': col.hideMobile }]" :data-label="col.label">
+        <td v-for="col in columns" :key="col.key" :class="[colClass(col), { 'av-sticky': col.sticky, 'av-sticky--2': col.stickySecond, 'av-hide-mobile': col.hideMobile }]" :style="cellStyle(col)" :data-label="col.label">
           <!-- Anúncio -->
           <template v-if="col.key === 'title'">
             <a class="av-title" :href="row.permalink" target="_blank" rel="noopener" :title="row.title">{{ row.title }}</a>
@@ -142,7 +143,13 @@
         </td>
       </tr>
     </tbody>
-  </SbTable>
+    </SbTable>
+
+    <p v-if="!fit" class="av-scroll-hint" role="note">
+      <q-icon name="swipe" size="13px" aria-hidden="true" />
+      Arraste a barra abaixo para ver as outras colunas
+    </p>
+  </div>
 </template>
 
 <script setup>
@@ -155,6 +162,9 @@ const props = defineProps({
   columns: { type: Array, default: () => [] },
   sort: { type: String, default: '-sales' },
   loading: { type: Boolean, default: false },
+  // `fit` = tabela de largura fixa que cabe na tela (preset enxuto).
+  // Sem `fit`, a tabela respeita uma largura mínima por coluna e rola na horizontal.
+  fit: { type: Boolean, default: false },
 });
 
 defineEmits(['sort', 'open-detail']);
@@ -187,6 +197,14 @@ const PROMO_LABELS = {
 
 function colClass(col) {
   return col.numeric ? 'num' : '';
+}
+
+// No modo `fit`, cada coluna leva sua fatia (tabela fixa, sem rolagem).
+// Fora dele, a coluna ganha um piso em px para o conteúdo respirar (com rolagem).
+function cellStyle(col) {
+  if (props.fit && col.width) return { width: col.width };
+  if (!props.fit && col.minWidth) return { minWidth: `${col.minWidth}px` };
+  return undefined;
 }
 
 function ariaSort(col) {
@@ -288,6 +306,28 @@ function acaoMeta(acao) {
 
 <style lang="scss" scoped>
 @import 'src/css/tokens';
+
+/* Modo enxuto: a tabela cabe na tela — largura fixa, colunas espremidas e texto
+   com reticencias (valor completo no title/aria-label). */
+.av-wrap.av-fit :deep(.sb-table) {
+  table-layout: fixed;
+  width: 100%;
+
+  th, td { overflow: hidden; text-overflow: ellipsis; }
+  thead th { padding: 10px 8px; }
+  tbody td { padding: 10px 8px; }
+}
+
+/* Preset largo: rola na horizontal com barra sempre visivel (macOS esconde). */
+:deep(.sb-table-wrap) {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+
+  &::-webkit-scrollbar { height: 10px; }
+  &::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+  &::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 8px; }
+  &::-webkit-scrollbar-thumb:hover { background: #64748b; }
+}
 
 :deep(.sb-table) {
   th, td { white-space: nowrap; }
@@ -416,5 +456,9 @@ function acaoMeta(acao) {
   }
 
   .av-title { max-width: none; }
+}
+
+@media (min-width: 769px) {
+  .av-wrap.av-fit :deep(.av-title) { max-width: none; }
 }
 </style>

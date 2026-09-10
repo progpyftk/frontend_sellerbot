@@ -73,7 +73,7 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
     // Tabela responde na ordem pedida.
     const headers = (await page.locator('table thead th').allInnerTexts())
       .map((h) => h.replace(/\s*(unfold_more|arrow_downward|arrow_upward)\s*/g, '').trim().toUpperCase())
-    expect(headers.slice(1, 6)).toEqual(['ANÚNCIO', 'SITUAÇÃO', 'SUGESTÃO', 'MARGEM', 'LUCRO'])
+    expect(headers.slice(1, 8)).toEqual(['ANÚNCIO', 'SITUAÇÃO', 'SUGESTÃO', 'PREÇO-BASE', 'PREÇO PROMO', 'MARGEM', 'LUCRO'])
 
     // Estado honesto + sugestão da régua por linha.
     await expect(page.locator('table tbody .sb-badge').filter({ hasText: 'Bloqueado: piso' }).first()).toBeVisible()

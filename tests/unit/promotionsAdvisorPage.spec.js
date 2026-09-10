@@ -143,10 +143,10 @@ describe('PromotionsAdvisorPage', () => {
     expect(last.sort).toBe('margin')
   })
 
-  it('tabela responde na ordem pedida: anúncio, situação, sugestão, margem, lucro', async () => {
+  it('tabela responde na ordem pedida: anúncio, situação, sugestão, preços, margem e lucro', async () => {
     const wrapper = await mountAndSettle()
     const headers = wrapper.findAll('table.stub-table thead th').map((th) => th.text().trim()).filter(Boolean)
-    expect(headers.slice(0, 5)).toEqual(['Anúncio', 'Situação', 'Sugestão', 'Margem', 'Lucro'])
+    expect(headers.slice(0, 7)).toEqual(['Anúncio', 'Situação', 'Sugestão', 'Preço-base', 'Preço promo', 'Margem', 'Lucro'])
 
     const text = wrapper.text()
     expect(text).toContain('Bloqueado: piso')      // situação honesta
@@ -157,12 +157,16 @@ describe('PromotionsAdvisorPage', () => {
     expect(text).toContain('Aprofundou')  // última ação com verbo legível
   })
 
-  it('preset padrão é o enxuto "Assistente": sem CMV/preço promo na primeira leitura', async () => {
+  it('preset padrão é o enxuto "Assistente" e SEMPRE traz preço-base e preço promo', async () => {
     const wrapper = await mountAndSettle()
     const headers = wrapper.findAll('table.stub-table thead th').map((th) => th.text().trim()).filter(Boolean)
+    // preços são obrigatórios em todas as views (pedido do dono)
+    expect(headers).toContain('Preço-base')
+    expect(headers).toContain('Preço promo')
+    // o que continua fora da primeira leitura
     expect(headers).not.toContain('CMV')
-    expect(headers).not.toContain('Preço promo')
     expect(headers).not.toContain('Datas promo')
+    expect(headers).not.toContain('Promoção ativa')
   })
 
   it('filtros avançados ficam escondidos por padrão e mandam os params certos quando abertos', async () => {
