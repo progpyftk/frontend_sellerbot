@@ -648,6 +648,13 @@ onMounted(() => {
 // ── Mobile: filtros e escopo compactos, tabela em cartões ───────────────────
 @media (max-width: 768px) {
   .pv-scope {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+  .pv-scope__kpi { flex: 0 0 auto; }
+  .pv-scope {
     gap: $space-2;
 
     &__sort { margin-left: 0; }

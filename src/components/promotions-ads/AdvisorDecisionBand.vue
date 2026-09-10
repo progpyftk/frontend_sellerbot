@@ -31,7 +31,7 @@
     <article class="adb-card adb-card--assistant">
       <header class="adb-card__head">
         <q-icon name="auto_fix_high" size="18px" aria-hidden="true" />
-        <h2 class="adb-card__title">O que o assistente sugere</h2>
+        <h2 class="adb-card__title">Sugestões nesta página</h2>
       </header>
       <p class="adb-card__value">
         <strong>{{ page.total }}</strong>
@@ -52,21 +52,17 @@
     <article class="adb-card adb-card--safe">
       <header class="adb-card__head">
         <q-icon name="shield" size="18px" aria-hidden="true" />
-        <h2 class="adb-card__title">Protegido / bloqueado</h2>
+        <h2 class="adb-card__title">Bloqueios nesta página</h2>
       </header>
       <p class="adb-card__value">
         <strong>{{ page.blockedFloor }}</strong>
         <span>bloqueado{{ page.blockedFloor === 1 ? '' : 's' }} pelo piso nesta página</span>
       </p>
       <ul class="adb-card__list">
-        <li><q-icon name="block" size="14px" aria-hidden="true" /> escrita barrada quando margem &lt; {{ FLOOR_MARGIN_PCT }}% ou lucro &lt; {{ brl(FLOOR_PROFIT_BRL) }}</li>
-        <li><q-icon name="help_outline" size="14px" aria-hidden="true" /> sem custo/frete não há cálculo — e sem cálculo não há escrita</li>
-        <li><q-icon name="lock" size="14px" aria-hidden="true" /> escrita automática desligada nesta entrega</li>
+        <li><q-icon name="block" size="14px" aria-hidden="true" /> alterações bloqueadas quando margem &lt; {{ FLOOR_MARGIN_PCT }}% ou lucro &lt; {{ brl(FLOOR_PROFIT_BRL) }}</li>
+        <li><q-icon name="help_outline" size="14px" aria-hidden="true" /> sem custo ou frete não há cálculo — e não há alteração automática</li>
+        <li><q-icon name="lock" size="14px" aria-hidden="true" /> modo Somente Sugestão ativo</li>
       </ul>
-      <p class="adb-footnote">
-        Cartão da esquerda: total da operação (conta + status). Cartões do meio e da direita: os
-        {{ page.total }} anúncios desta página.
-      </p>
     </article>
 
   </section>
@@ -206,13 +202,6 @@ const suggestionChips = computed(() => SUGGESTION_ORDER
   &--safe { border-left-color: $text-disabled; }
 }
 
-.adb-footnote {
-  grid-column: 1 / -1;
-  margin: $space-1 0 0;
-  font-size: $text-xs-size;
-  color: $text-muted;
-}
-
 .adb-card__list {
   margin: 0;
   padding: 0;
@@ -246,6 +235,5 @@ const suggestionChips = computed(() => SUGGESTION_ORDER
      visíveis (sem swipe) e a tabela sobe para a primeira dobra. */
   .adb { display: none; }
   .adb-compact { display: grid; }
-  .adb-footnote { display: none; }
 }
 </style>

@@ -20,10 +20,9 @@
       />
     </header>
 
-    <!-- Servidor sem modo de escrita: nada é escrito no Mercado Livre, mesmo com a conta ligada -->
+    <!-- F1: a automação pode ser consultada, mas não altera o Mercado Livre. -->
     <p v-if="globalOff" class="av-auto__note av-auto__note--warn">
-      O modo de escrita está <strong>desligado no servidor</strong>: o assistente só recomenda. Ligar uma conta aqui
-      não faz o robô escrever enquanto essa chave não for ativada pela operação.
+      <strong>Modo Somente Sugestão ativo.</strong> O assistente recomenda, mas não aplica alterações no Mercado Livre.
     </p>
     <p v-if="killSwitch" class="av-auto__note av-auto__note--stop">
       <strong>Kill switch ligado:</strong> nenhuma escrita acontece em nenhuma conta, agora.
@@ -189,7 +188,7 @@ const totalAlerts = computed(() => accounts.value.reduce((sum, a) => sum + a.mar
 const anyWrite = computed(() => accounts.value.some((a) => a.auto_write) && !globalOff.value && !killSwitch.value);
 const robotLabel = computed(() => {
   if (killSwitch.value) return 'Robô parado pelo kill switch';
-  if (globalOff.value) return 'Robô em modo recomendação (servidor)';
+  if (globalOff.value) return 'Modo Somente Sugestão';
   return anyWrite.value ? 'Robô ligado' : 'Robô desligado nas contas';
 });
 const robotVariant = computed(() => {

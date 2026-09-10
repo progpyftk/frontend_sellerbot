@@ -382,6 +382,7 @@ function acaoMeta(acao) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 
   &--alert { color: $negative; font-weight: $font-semibold; }
 }
