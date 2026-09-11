@@ -66,8 +66,20 @@ const routes = [
         component: () => import('pages/PromotionsAdsPage.vue')
       },
       {
+        // PROMO-IA-22: superfícies separadas. "Hoje" é a nova (AdvisorTodayPage); as outras duas
+        // ainda apontam para a página antiga até a migração de cada fase (F2 catálogo, F3 automação).
         path: 'promotions/advisor',
         name: "promotions-advisor",
+        component: () => import('pages/advisor/AdvisorTodayPage.vue')
+      },
+      {
+        path: 'promotions/advisor/anuncios',
+        name: "promotions-advisor-anuncios",
+        component: () => import('pages/PromotionsAdvisorPage.vue')
+      },
+      {
+        path: 'promotions/advisor/automacao',
+        name: "promotions-advisor-automacao",
         component: () => import('pages/PromotionsAdvisorPage.vue')
       },
       {

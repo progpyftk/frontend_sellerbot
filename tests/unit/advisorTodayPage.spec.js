@@ -1,0 +1,153 @@
+// @vitest-environment jsdom
+/**
+ * Testes da superfície "Hoje" (PROMO-IA-22 · F0+F1).
+ *
+ * O que protegem:
+ * - a resposta à pergunta central aparece primeiro (proteção + métricas), com unidade e contexto;
+ * - "não mexeu (avaliados)" não soma contas com escrita desligada;
+ * - cada anúncio alterado é UMA linha, com antes → depois, estado e hora;
+ * - o botão de emergência chama o PATCH `pause_all` e recarrega;
+ * - erro tem estado próprio (não parece lista vazia).
+ */
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const getToday = vi.fn();
+const patchAutomation = vi.fn();
+
+vi.mock('src/services/AdvisorService', () => ({
+  default: {
+    getToday: (...a) => getToday(...a),
+    patchAutomation: (...a) => patchAutomation(...a),
+  },
+}));
+
+import AdvisorTodayPage from 'src/pages/advisor/AdvisorTodayPage.vue';
+
+const PAYLOAD = {
+  write_mode_global: true,
+  kill_switch: false,
+  day_window: { start: '2026-09-11T03:00:00Z', end: '2026-09-12T03:00:00Z', timezone: 'America/Sao_Paulo' },
+  cycle_today: true,
+  next_cycle_at: '2026-09-12T12:00:00Z',
+  last_cycle: {
+    started_at: '2026-09-11T12:00:00Z', status: 'partial', duration_seconds: 513,
+    items_processed: 3, errors_count: 0, reconciled: 23, unreconciled: 2,
+  },
+  by_account: {
+    ACC1: {
+      account_nickname: 'MOGIVITTA', auto_write: true, wave_size: 10, paused: false,
+      canary_pending: true, margin_alerts: [],
+      today: {
+        alterados: 3, ja_no_alvo: 17, nao_confirmados: 1, recusados: 0, bloqueados: 217,
+        no_plano: 106, anuncios_ativos: 406, aguardando_aval: 17, sem_dado_de_custo: 12,
+        motivos: {
+          SMART_READ_ONLY: { label: 'o preço é do Mercado Livre (SMART)', anuncios: 96 },
+          WRITE_DISABLED: { label: 'estão em conta com a escrita desligada', anuncios: 121 },
+        },
+      },
+      protection: { aplicadas: 3, abaixo_do_piso: 0, menor_margem_pct: 30.2, menor_lucro_brl: 12.32, ultima_escrita_at: '2026-09-11T13:36:00Z' },
+      last_writes: [
+        { item_id: 'MLB1', title: 'Basacote 12m', price_before: '47.00', price_after: '39.00',
+          margin_pct: '31.3', profit_unit: '12.19', state: 'executed_verified', origin: 'automation',
+          at: '2026-09-11T12:05:00Z' },
+        { item_id: 'MLB2', title: 'Quelato de Ferro', price_before: null, price_after: '139.00',
+          margin_pct: '30.3', profit_unit: '42.07', state: 'executed_verified', origin: 'reconcile',
+          at: '2026-09-11T13:36:00Z' },
+      ],
+    },
+  },
+};
+
+const stubs = {
+  'q-icon': true,
+  'q-btn': { template: '<button @click="$emit(\'click\')"><slot />{{ label }}</button>', props: ['label'] },
+  'router-link': { template: '<a><slot /></a>' },
+  'q-page': { template: '<div><slot /></div>' },
+};
+
+async function montar(payload = PAYLOAD) {
+  getToday.mockResolvedValue({ data: payload });
+  const wrapper = mount(AdvisorTodayPage, { global: { stubs } });
+  await flushPromises();
+  wrapper.text = () => wrapper.element.textContent.replace(/\u00a0/g, ' ');
+  return wrapper;
+}
+
+describe('AdvisorTodayPage', () => {
+  beforeEach(() => {
+    getToday.mockReset();
+    patchAutomation.mockReset();
+    patchAutomation.mockResolvedValue({ data: { success: true } });
+  });
+
+  it('mostra a navegação por superfície com Hoje ativo', async () => {
+    const texto = (await montar()).text();
+    expect(texto).toContain('Hoje');
+    expect(texto).toContain('Anúncios');
+    expect(texto).toContain('Automação');
+  });
+
+  it('responde primeiro se algo saiu do piso, com margem e lucro mínimos', async () => {
+    const texto = (await montar()).text();
+    expect(texto).toContain('Nenhum preço saiu abaixo do piso');
+    expect(texto).toContain('30,2%');
+    expect(texto).toContain('R$ 12,32');
+  });
+
+  it('traz as métricas do dia com unidade e contexto', async () => {
+    const texto = (await montar()).text();
+    expect(texto).toContain('anúncios alterados hoje');
+    expect(texto).toContain('já estavam no preço-alvo');
+    expect(texto).toContain('aguardando confirmação do ML');
+    expect(texto).toContain('MOGIVITTA · leva de 10');
+  });
+
+  it('não soma contas com escrita desligada em "não mexeu"', async () => {
+    const texto = (await montar()).text();
+    // 217 bloqueados = 96 de proteção (SMART) + 121 de conta desligada.
+    // "não mexeu (avaliados)" = 17 (já no alvo) + 96 (proteção) = 113 — os 121 não contam.
+    expect(texto).toContain('113');
+    expect(texto).toContain('não mexeu (avaliados)');
+    expect(texto).toContain('121');
+    expect(texto).toContain('nem foram avaliados');
+    expect(texto).not.toContain('não mexeu no preço de 217');
+  });
+
+  it('lista cada anúncio uma vez com antes → depois e o estado', async () => {
+    const texto = (await montar()).text();
+    expect(texto).toContain('MLB1');
+    expect(texto).toContain('R$ 47,00');
+    expect(texto).toContain('R$ 39,00');
+    expect(texto).toContain('confirmado depois');   // origem reconcile
+  });
+
+  it('mostra o ciclo e sinaliza não confirmados', async () => {
+    const texto = (await montar()).text();
+    expect(texto).toContain('2 aguardando confirmação');
+    expect(texto).toContain('parcial');
+  });
+
+  it('pausa toda a escrita com um clique depois da confirmação', async () => {
+    const wrapper = await montar();
+    wrapper.vm.confirmarPausa = true;
+    await wrapper.vm.pausarTudo();
+    expect(patchAutomation).toHaveBeenCalledWith({ pause_all: true });
+    expect(getToday).toHaveBeenCalledTimes(2);   // recarrega depois de pausar
+  });
+
+  it('aprovar a leva usa a conta com canário pendente', async () => {
+    const wrapper = await montar();
+    await wrapper.vm.aprovarLeva();
+    expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', canary_approved: true });
+  });
+
+  it('erro tem estado próprio e nunca parece lista vazia', async () => {
+    getToday.mockRejectedValue(new Error('boom'));
+    const wrapper = mount(AdvisorTodayPage, { global: { stubs } });
+    await flushPromises();
+    const texto = wrapper.element.textContent;
+    expect(texto).toContain('Tentar novamente');
+    expect(texto).not.toContain('Nenhum anúncio alterado');
+  });
+});
