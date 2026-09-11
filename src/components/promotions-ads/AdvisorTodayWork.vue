@@ -126,7 +126,7 @@
     <!-- 3º: por que não mexeu (proteção, não erro) -->
     <div class="atw__block">
       <h3 class="atw__h3">
-        3. Ele não mexeu no preço de {{ total.bloqueados + total.ja_no_alvo }} anúncios
+        3. Ele não mexeu no preço de {{ naoMexidos }} anúncios que avaliou
       </h3>
       <p class="atw__lead">
         <strong>Isso é proteção, não erro.</strong> Você não precisa fazer nada — cada motivo:
@@ -140,8 +140,9 @@
         </li>
         <li v-if="!total.ja_no_alvo && !motivos.length">Nenhum bloqueio registrado hoje.</li>
       </ul>
-      <p v-if="ligadoAgora === false" class="atw__hint">
-        A escrita automática está desligada — por isso a maioria dos anúncios não foi avaliada.
+      <p v-if="naoAvaliados" class="atw__hint">
+        Outros {{ naoAvaliados }} anúncios <strong>nem foram avaliados</strong>: a escrita automática
+        está desligada nas contas deles.
       </p>
     </div>
 
@@ -214,10 +215,13 @@ const total = computed(() => {
   return base;
 });
 
+// `WRITE_DISABLED` não é decisão sobre o anúncio: é conta desligada (não avaliado). Fica
+// separado para o dono não ler "o robô decidiu não mexer" onde na verdade ele nem olhou.
 const motivos = computed(() => {
   const acc = new Map();
   for (const conta of selecionadas.value) {
     for (const [codigo, info] of Object.entries(conta.today?.motivos || {})) {
+      if (codigo === 'WRITE_DISABLED') continue;
       const atual = acc.get(codigo) || { codigo, anuncios: 0, label: info.label };
       atual.anuncios += Number(info.anuncios || 0);
       acc.set(codigo, atual);
@@ -225,6 +229,17 @@ const motivos = computed(() => {
   }
   return [...acc.values()].sort((a, b) => b.anuncios - a.anuncios);
 });
+
+const naoAvaliados = computed(() => {
+  let total = 0;
+  for (const conta of selecionadas.value) {
+    total += Number(conta.today?.motivos?.WRITE_DISABLED?.anuncios || 0);
+  }
+  return total;
+});
+
+// O que o robô **avaliou e decidiu não mexer** (exclui conta desligada, que nem foi olhada).
+const naoMexidos = computed(() => total.value.ja_no_alvo + Math.max(total.value.bloqueados - naoAvaliados.value, 0));
 
 const lista = computed(() => {
   const todas = selecionadas.value.flatMap((conta) => conta.last_writes || []);
@@ -248,12 +263,22 @@ const protecao = computed(() => {
   };
 });
 
+function quandoProximo(iso) {
+  if (!iso) return 'amanhã 09:00 (Brasília)';
+  const alvo = new Date(iso);
+  const fmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+  const hoje = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }).format(new Date());
+  const dia = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }).format(alvo);
+  const horaTxt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }).format(alvo);
+  return dia === hoje ? `hoje ${horaTxt} (Brasília)` : `${dia} ${horaTxt} (Brasília)`;
+}
+
 const identityLine = computed(() => {
   const ligadas = contas.value.filter((c) => c.auto_write);
-  const quando = props.automation?.next_cycle_at ? `próxima ${hora(props.automation.next_cycle_at)}` : 'todo dia às 09:00';
+  const quando = `próxima: ${quandoProximo(props.automation?.next_cycle_at)}`;
   if (!ligadas.length) return `escrita automática desligada · ${quando}`;
   const nomes = ligadas.map((c) => c.account_nickname || c.account_id).join(', ');
-  return `ligado em ${nomes} · escreve 1×/dia às 09:00 (${quando})`;
+  return `ligado em ${nomes} · escreve 1×/dia às 09:00 · ${quando}`;
 });
 
 const stateBadge = computed(() => {
@@ -266,7 +291,7 @@ const stateBadge = computed(() => {
 
 const ciclo = computed(() => props.automation?.last_cycle || null);
 const cycleToday = computed(() => Boolean(props.automation?.cycle_today));
-const proximo = computed(() => (props.automation?.next_cycle_at ? `${hora(props.automation.next_cycle_at)} (Brasília)` : 'amanhã 09:00 (Brasília)'));
+const proximo = computed(() => quandoProximo(props.automation?.next_cycle_at));
 const waveSize = computed(() => selecionadas.value[0]?.wave_size || 10);
 const ligadoAgora = computed(() => contas.value.some((c) => c.auto_write));
 
