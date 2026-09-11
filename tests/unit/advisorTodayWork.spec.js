@@ -116,6 +116,36 @@ describe('AdvisorTodayWork', () => {
     expect(texto).toContain('2 aguardando confirmação');
   });
 
+  it('cenário: escrita desligada mostra "não avaliados" e não finge que avaliou', () => {
+    const desligada = JSON.parse(JSON.stringify(AUTOMATION));
+    const conta = desligada.by_account['221146867'];
+    conta.auto_write = false;
+    conta.today.alterados = 0;
+    conta.today.bloqueados = 121;
+    conta.today.ja_no_alvo = 0;
+    conta.today.motivos = { WRITE_DISABLED: { label: 'estão em conta com a escrita desligada', anuncios: 121 } };
+    conta.last_writes = [];
+    const texto = montar(desligada).text();
+    expect(texto).toContain('nem foram avaliados');
+    expect(texto).toContain('escrita automática desligada');
+    expect(texto).not.toContain('Ele não mexeu no preço de 121');   // não foi avaliação
+  });
+
+  it('cenário: item confirmado depois é rotulado, não como escrita do robô', () => {
+    const comReconcile = JSON.parse(JSON.stringify(AUTOMATION));
+    comReconcile.by_account['221146867'].last_writes[0].origin = 'reconcile';
+    const texto = montar(comReconcile).text();
+    expect(texto).toContain('confirmado depois');
+  });
+
+  it('cenário: escrita sem preço anterior mostra travessão e o aviso, nunca um número', () => {
+    const semAntes = JSON.parse(JSON.stringify(AUTOMATION));
+    semAntes.by_account['221146867'].last_writes[0].price_before = null;
+    const texto = montar(semAntes).text();
+    expect(texto).toContain('Escritas anteriores a 11/09/2026');
+    expect(texto).toContain('—');
+  });
+
   it('pausa toda a escrita emite updated depois do PATCH', async () => {
     const service = (await import('src/services/MercadoLivreService')).default;
     const wrapper = montar();
