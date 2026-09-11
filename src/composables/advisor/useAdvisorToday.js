@@ -95,6 +95,11 @@ export function useAdvisorToday() {
     };
   });
 
+  /** Quantas contas de fato escrevem e quanto do plano é delas (contas desligadas inflavam o total). */
+  const contasQueEscrevem = computed(() => contas.value.filter((conta) => conta.auto_write));
+  const noPlanoEscrita = computed(() => contasQueEscrevem.value
+    .reduce((soma, conta) => soma + Number(conta.today?.no_plano || 0), 0));
+
   const killSwitch = computed(() => Boolean(data.value?.kill_switch));
   const modoGlobal = computed(() => data.value?.write_mode_global !== false);
 
@@ -120,7 +125,7 @@ export function useAdvisorToday() {
   return {
     data, carregando, erro, carregar,
     contas, total, motivos, naoAvaliados, naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
-    factsError, killSwitch, modoGlobal,
+    factsError, killSwitch, modoGlobal, contasQueEscrevem, noPlanoEscrita,
     brl, pct, STATUS_LABEL,
   };
 }

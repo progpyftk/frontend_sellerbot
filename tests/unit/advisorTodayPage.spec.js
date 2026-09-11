@@ -196,6 +196,33 @@ describe('AdvisorTodayPage', () => {
     expect(texto).not.toContain('escrita(s) confirmada(s) pelo Mercado Livre');
   });
 
+  it('não soma o plano de contas que não escrevem', async () => {
+    // Conta desligada também tem plano do dia; somá-la faria o rodapé anunciar trabalho que não
+    // vai acontecer. O total agora é escopado e a contagem de contas ativas aparece ao lado.
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.by_account.ACC2 = {
+      account_nickname: 'AGF_ORGANICS', auto_write: false, wave_size: 50, paused: false,
+      canary_pending: false, margin_alerts: [],
+      today: { alterados: 0, ja_no_alvo: 0, nao_confirmados: 0, recusados: 0, bloqueados: 43,
+               no_plano: 43, anuncios_ativos: 50, aguardando_aval: 0,
+               motivos: { WRITE_DISABLED: { label: 'estão em conta com a escrita desligada', anuncios: 43 } } },
+      protection: { aplicadas: 0, abaixo_do_piso: 0, menor_margem_pct: null, menor_lucro_brl: null, ultima_escrita_at: null },
+      last_writes: [],
+    };
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('2 contas (1 escrevendo)');
+    expect(texto).toContain('106 entraram no plano do dia nas contas que escrevem');
+  });
+
+  it('sobe o erro do ciclo para perto do escudo', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.last_cycle.errors_count = 4;
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('O ciclo de hoje terminou com 4 erro(s)');
+  });
+
   it('avisa quando a lista de alterados está truncada', async () => {
     // A métrica conta 25 alterações, mas a lista mostra no máximo 10 (as mais recentes).
     const payload = JSON.parse(JSON.stringify(PAYLOAD));

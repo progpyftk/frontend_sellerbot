@@ -31,6 +31,12 @@
         />
       </div>
 
+      <p v-if="errosDoCiclo" class="today__confirm" role="alert">
+        <q-icon name="error_outline" size="16px" aria-hidden="true" />
+        <strong>O ciclo de hoje terminou com {{ ciclo.errors_count }} erro(s).</strong>
+        As escritas confirmadas continuam valendo; o que ficou sem confirmação o robô relê no próximo ciclo.
+      </p>
+
       <p v-if="escrita.bloqueadaPorKillSwitch" class="today__confirm" role="alert">
         <q-icon name="report" size="16px" aria-hidden="true" />
         <strong>O robô está desligado pelo interruptor de emergência.</strong>
@@ -145,8 +151,9 @@
           </template>
         </span>
         <span>
-          próxima {{ proximo }} · suas {{ contas.length }} contas · {{ total.anuncios_ativos }} anúncios ativos ·
-          {{ total.no_plano }} entraram no plano do dia
+          próxima {{ proximo }} · suas {{ contas.length }} contas
+          ({{ contasQueEscrevem.length }} escrevendo) · {{ total.anuncios_ativos }} anúncios ativos ·
+          {{ noPlanoEscrita }} entraram no plano do dia nas contas que escrevem
         </span>
       </div>
     </template>
@@ -167,7 +174,7 @@ import AdvisorService from 'src/services/AdvisorService';
 const {
   data, carregando, erro, carregar, contas, total, motivos, naoAvaliados,
   naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
-  factsError, killSwitch,
+  factsError, killSwitch, contasQueEscrevem, noPlanoEscrita,
   brl, pct, STATUS_LABEL,
 } = useAdvisorToday();
 
@@ -191,6 +198,11 @@ const aguardandoAval = computed(() => Number(contaCanario.value?.today?.aguardan
  * nunca "nenhum preço saiu abaixo do piso", que soaria como um atestado de que nada pode dar errado.
  */
 const temEscrita = computed(() => Number(protecao.value.aplicadas || 0) > 0);
+
+/** Erro do ciclo só importa se o ciclo de HOJE rodou — erro de ontem já foi relido. */
+const errosDoCiclo = computed(
+  () => Boolean(cicloHoje.value && ciclo.value && Number(ciclo.value.errors_count || 0) > 0),
+);
 
 const tituloEscudo = computed(() => {
   if (factsError.value) return 'Não foi possível ler o trabalho de hoje';
