@@ -17,20 +17,27 @@
 
     <template v-else-if="data">
       <!-- Proteção: a resposta que o dono mais precisa, antes de qualquer número -->
+      <!-- Sem conta avaliada não existe proteção: o banner NUNCA pode dar paz com dado vazio. -->
       <div class="today__shield" :class="{ 'today__shield--warn': protecao.abaixo_do_piso > 0 }">
-        <q-icon :name="protecao.abaixo_do_piso > 0 ? 'report' : 'shield'" size="20px" aria-hidden="true" />
+        <q-icon :name="iconeEscudo" size="20px" aria-hidden="true" />
         <div class="today__shieldText">
-          <strong v-if="protecao.abaixo_do_piso > 0">
+          <strong v-if="!contas.length">Nenhum anúncio foi avaliado hoje</strong>
+          <strong v-else-if="protecao.abaixo_do_piso > 0">
             {{ protecao.abaixo_do_piso }} anúncio(s) aplicado(s) abaixo do piso hoje
           </strong>
           <strong v-else>Nenhum preço saiu abaixo do piso</strong>
-          <span>
+          <span v-if="!contas.length">
+            Nenhuma conta do Mercado Livre entrou no ciclo de hoje — nada foi lido nem protegido.
+            Ligue a escrita automática em Automação para o robô começar.
+          </span>
+          <span v-else>
             margem mínima aplicada {{ protecao.menor_margem_pct === null ? '—' : pct(protecao.menor_margem_pct) }} ·
             lucro mínimo {{ protecao.menor_lucro_brl === null ? '—' : brl(protecao.menor_lucro_brl) }} por unidade vendida ·
             última leitura {{ hora(protecao.ultima_escrita_at) }}
           </span>
         </div>
         <q-btn
+          v-if="contas.length"
           outline no-caps dense color="negative" icon="pause_circle"
           label="Pausar toda a escrita" :loading="pausando" @click="confirmarPausa = true"
         />
@@ -168,6 +175,12 @@ const aprovando = ref(false);
 const confirmarPausa = ref(false);
 
 const algumSemAntes = computed(() => escritas.value.some((w) => !w.price_before));
+
+/** Ícone do escudo: alerta quando houve violação do piso ou quando nada foi avaliado. */
+const iconeEscudo = computed(() => {
+  if (!contas.value.length) return 'help_outline';
+  return protecao.value.abaixo_do_piso > 0 ? 'report' : 'shield';
+});
 
 function hora(iso) {
   if (!iso) return '—';

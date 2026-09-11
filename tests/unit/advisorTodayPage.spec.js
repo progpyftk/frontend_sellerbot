@@ -132,6 +132,19 @@ describe('AdvisorTodayPage', () => {
     expect(texto).not.toContain('alterado(s)');
   });
 
+  it('nunca dá paz com dado vazio: sem conta avaliada o escudo avisa', async () => {
+    // Resposta sem nenhuma conta no ciclo (conta não conectada, backend antigo, universo vazio):
+    // o banner NÃO pode dizer "nenhum preço saiu abaixo do piso", porque nada foi lido.
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.by_account = {};
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('Nenhum anúncio foi avaliado hoje');
+    expect(texto).toContain('Nenhuma conta do Mercado Livre entrou no ciclo de hoje');
+    expect(texto).not.toContain('Nenhum preço saiu abaixo do piso');
+    expect(texto).not.toContain('Pausar toda a escrita');   // sem conta, não há o que pausar
+  });
+
   it('avisa quando a lista de alterados está truncada', async () => {
     // A métrica conta 25 alterações, mas a lista mostra no máximo 10 (as mais recentes).
     const payload = JSON.parse(JSON.stringify(PAYLOAD));
