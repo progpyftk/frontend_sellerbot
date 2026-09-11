@@ -128,7 +128,9 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('parcial');
     // `items_processed` é o que PASSOU pelo ciclo, não o que foi alterado: chamar de
     // "alterado(s)" criava dois números diferentes para a mesma ideia na mesma tela.
-    expect(texto).toContain('3 anúncios passaram pelo ciclo');
+    // `items_processed` é a soma das ESCRITAS CONFIRMADAS no ciclo (views/promotions.py:210),
+    // não "anúncios processados" nem "alterados".
+    expect(texto).toContain('3 escrita(s) confirmada(s) pelo Mercado Livre');
     expect(texto).not.toContain('alterado(s)');
   });
 
@@ -143,6 +145,55 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('Nenhuma conta do Mercado Livre entrou no ciclo de hoje');
     expect(texto).not.toContain('Nenhum preço saiu abaixo do piso');
     expect(texto).not.toContain('Pausar toda a escrita');   // sem conta, não há o que pausar
+  });
+
+  it('não afirma segurança quando a agregação do dia falhou', async () => {
+    // Achado P0-2: erro de agregação zerava os baldes e a tela mostrava escudo verde.
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.facts_error = true;
+    payload.by_account.ACC1.today = { alterados: 0, ja_no_alvo: 0, nao_confirmados: 0, recusados: 0, bloqueados: 0, motivos: {} };
+    payload.by_account.ACC1.last_writes = [];
+    payload.by_account.ACC1.protection = { aplicadas: 0, abaixo_do_piso: 0, menor_margem_pct: null, menor_lucro_brl: null, ultima_escrita_at: null };
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('Não foi possível ler o trabalho de hoje');
+    expect(texto).toContain('NÃO são confiáveis');
+    expect(texto).not.toContain('Nenhum preço saiu abaixo do piso');
+  });
+
+  it('sem escrita hoje não atesta proteção (nada foi aplicado)', async () => {
+    // Achado P0-1: conta conectada mas sem nenhum anúncio escrito não pode render "tudo seguro".
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.by_account.ACC1.today = { alterados: 0, ja_no_alvo: 0, nao_confirmados: 0, recusados: 0, bloqueados: 0, motivos: {} };
+    payload.by_account.ACC1.last_writes = [];
+    payload.by_account.ACC1.protection = { aplicadas: 0, abaixo_do_piso: 0, menor_margem_pct: null, menor_lucro_brl: null, ultima_escrita_at: null };
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('Nenhum preço foi alterado hoje');
+    expect(texto).toContain('sem escrita hoje, não há preço para proteger');
+    expect(texto).not.toContain('Nenhum preço saiu abaixo do piso');
+  });
+
+  it('mostra o kill switch ligado, mesmo com conta autorizada', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.kill_switch = true;
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('interruptor de emergência');
+    // com o kill switch ligado o robô NÃO está autorizado: o card não pode anunciar a conta ativa
+    expect(texto).toContain('nenhuma conta ligada');
+    expect(texto).not.toContain('MOGIVITTA · leva de 10');
+  });
+
+  it('não mostra o ciclo de ontem como se fosse o de hoje', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.cycle_today = false;   // o ciclo de hoje morreu no timeout e não deixou registro
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('O ciclo de hoje não deixou registro');
+    // o registro de ontem é citado como histórico, nunca como o ciclo de hoje
+    expect(texto).toContain('A última execução registrada foi em');
+    expect(texto).not.toContain('escrita(s) confirmada(s) pelo Mercado Livre');
   });
 
   it('avisa quando a lista de alterados está truncada', async () => {

@@ -47,7 +47,10 @@ export function useAdvisorToday() {
   const motivos = computed(() => {
     const acc = new Map();
     for (const conta of contas.value) {
-      for (const [codigo, info] of Object.entries(conta.today?.motivos || {})) {
+      // contrato drift (lista em vez de objeto) não pode virar "<strong>undefined</strong>"
+      const mapa = conta.today?.motivos;
+      if (!mapa || Array.isArray(mapa) || typeof mapa !== 'object') continue;
+      for (const [codigo, info] of Object.entries(mapa)) {
         if (codigo === 'WRITE_DISABLED') continue;      // conta desligada = não avaliado
         const atual = acc.get(codigo) || { codigo, anuncios: 0, label: info.label };
         atual.anuncios += Number(info.anuncios || 0);
@@ -60,13 +63,20 @@ export function useAdvisorToday() {
   const naoAvaliados = computed(() => contas.value.reduce(
     (soma, conta) => soma + Number(conta.today?.motivos?.WRITE_DISABLED?.anuncios || 0), 0));
 
+  /** O backend sinaliza que a agregação do dia falhou: os baldes vieram zerados por erro. */
+  const factsError = computed(() => Boolean(data.value?.facts_error));
+
   const naoMexidosQueAvaliou = computed(
     () => total.value.ja_no_alvo + Math.max(total.value.bloqueados - naoAvaliados.value, 0));
 
+  // Limite POR CONTA: um `slice` global deixava 10 escritas de uma conta esconderem todas as de
+  // outra (o dono via "0 alterados" numa conta que escreveu).
   const escritas = computed(() => contas.value
-    .flatMap((conta) => conta.last_writes || [])
-    .sort((a, b) => String(b.at).localeCompare(String(a.at)))
-    .slice(0, 10));
+    .flatMap((conta) => (conta.last_writes || [])
+      .slice()
+      .sort((a, b) => String(b.at).localeCompare(String(a.at)))
+      .slice(0, 10))
+    .sort((a, b) => String(b.at).localeCompare(String(a.at))));
 
   const protecao = computed(() => {
     const partes = contas.value.map((conta) => conta.protection).filter(Boolean);
@@ -85,11 +95,24 @@ export function useAdvisorToday() {
     };
   });
 
-  const escrita = computed(() => ({
-    algumaLigada: contas.value.some((conta) => conta.auto_write),
-    nomes: contas.value.filter((conta) => conta.auto_write).map((conta) => conta.account_nickname).join(', '),
-    leva: contas.value[0]?.wave_size || 10,
-  }));
+  const killSwitch = computed(() => Boolean(data.value?.kill_switch));
+  const modoGlobal = computed(() => data.value?.write_mode_global !== false);
+
+  /** Quem está de fato autorizado a escrever AGORA (conta + modo global + kill switch). */
+  const escrita = computed(() => {
+    const ligadas = contas.value.filter(
+      (conta) => conta.auto_write && modoGlobal.value && !killSwitch.value,
+    );
+    // a leva exibida é a da conta que escreve — nunca a de `contas[0]` por acaso da ordenação
+    const referencia = contas.value.find((c) => c.canary_pending)
+      || ligadas[0] || contas.value.find((c) => c.auto_write);
+    return {
+      algumaLigada: ligadas.length > 0,
+      bloqueadaPorKillSwitch: killSwitch.value && contas.value.some((conta) => conta.auto_write),
+      nomes: ligadas.map((conta) => conta.account_nickname).join(', '),
+      leva: referencia?.wave_size || 10,
+    };
+  });
 
   const ciclo = computed(() => data.value?.last_cycle || null);
   const cicloHoje = computed(() => Boolean(data.value?.cycle_today));
@@ -97,6 +120,7 @@ export function useAdvisorToday() {
   return {
     data, carregando, erro, carregar,
     contas, total, motivos, naoAvaliados, naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
+    factsError, killSwitch, modoGlobal,
     brl, pct, STATUS_LABEL,
   };
 }

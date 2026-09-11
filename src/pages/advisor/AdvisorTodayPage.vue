@@ -18,23 +18,11 @@
     <template v-else-if="data">
       <!-- Proteção: a resposta que o dono mais precisa, antes de qualquer número -->
       <!-- Sem conta avaliada não existe proteção: o banner NUNCA pode dar paz com dado vazio. -->
-      <div class="today__shield" :class="{ 'today__shield--warn': protecao.abaixo_do_piso > 0 }">
+      <div class="today__shield" :class="classeEscudo">
         <q-icon :name="iconeEscudo" size="20px" aria-hidden="true" />
         <div class="today__shieldText">
-          <strong v-if="!contas.length">Nenhum anúncio foi avaliado hoje</strong>
-          <strong v-else-if="protecao.abaixo_do_piso > 0">
-            {{ protecao.abaixo_do_piso }} anúncio(s) aplicado(s) abaixo do piso hoje
-          </strong>
-          <strong v-else>Nenhum preço saiu abaixo do piso</strong>
-          <span v-if="!contas.length">
-            Nenhuma conta do Mercado Livre entrou no ciclo de hoje — nada foi lido nem protegido.
-            Ligue a escrita automática em Automação para o robô começar.
-          </span>
-          <span v-else>
-            margem mínima aplicada {{ protecao.menor_margem_pct === null ? '—' : pct(protecao.menor_margem_pct) }} ·
-            lucro mínimo {{ protecao.menor_lucro_brl === null ? '—' : brl(protecao.menor_lucro_brl) }} por unidade vendida ·
-            última leitura {{ hora(protecao.ultima_escrita_at) }}
-          </span>
+          <strong>{{ tituloEscudo }}</strong>
+          <span>{{ detalheEscudo }}</span>
         </div>
         <q-btn
           v-if="contas.length"
@@ -42,6 +30,13 @@
           label="Pausar toda a escrita" :loading="pausando" @click="confirmarPausa = true"
         />
       </div>
+
+      <p v-if="escrita.bloqueadaPorKillSwitch" class="today__confirm" role="alert">
+        <q-icon name="report" size="16px" aria-hidden="true" />
+        <strong>O robô está desligado pelo interruptor de emergência.</strong>
+        Nenhuma escrita vai acontecer enquanto ele estiver ligado, mesmo com as contas autorizadas.
+        Reative em Automação quando quiser voltar.
+      </p>
 
       <p v-if="confirmarPausa" class="today__confirm" role="alert">
         Desliga a escrita automática em <strong>todas as contas</strong> agora (vale no meio do ciclo).
@@ -108,8 +103,8 @@
       </AdvisorSection>
 
       <!-- Espera de aval (só aparece quando existe) -->
-      <AdvisorSection v-if="total.aguardando_aval && contaCanario" title="Esperando você" :count="total.aguardando_aval"
-                      :lead="`${total.aguardando_aval} anúncios estão prontos e parados no portão da primeira leva. Sem o seu aval, o robô escreve no máximo ${escrita.leva} por dia e para.`">
+      <AdvisorSection v-if="aguardandoAval && contaCanario" title="Esperando você" :count="aguardandoAval"
+                      :lead="`${aguardandoAval} anúncios da conta ${contaCanario.account_nickname} estão prontos e parados no portão da primeira leva. Enquanto você não aprovar, o robô escreve no máximo uma leva de ${contaCanario.wave_size || escrita.leva} anúncios e para no próximo portão.`">
         <q-btn unelevated no-caps color="primary" icon="check_circle" label="Aprovar a próxima leva"
                :loading="aprovando" @click="aprovarLeva" />
       </AdvisorSection>
@@ -133,15 +128,20 @@
       <!-- Ciclo e universo -->
       <div class="today__foot">
         <span>
-          <template v-if="ciclo">
-            última execução {{ hora(ciclo.started_at) }}, {{ duracao(ciclo.duration_seconds) }},
-            {{ ciclo.items_processed || 0 }} anúncios passaram pelo ciclo
+          <template v-if="ciclo && cicloHoje">
+            última execução {{ hora(ciclo.started_at) }}, {{ duracao(ciclo.duration_seconds) }} ·
+            {{ ciclo.items_processed || 0 }} escrita(s) confirmada(s) pelo Mercado Livre
+            <template v-if="ciclo.planned"> · {{ ciclo.planned }} no plano</template>
             <template v-if="ciclo.unreconciled"> · {{ ciclo.unreconciled }} aguardando confirmação</template>
             <template v-if="ciclo.errors_count"> · {{ ciclo.errors_count }} erro(s)</template>
             · status {{ STATUS_LABEL[ciclo.status] || ciclo.status }}
           </template>
-          <template v-else-if="!cicloHoje">
-            <strong>Sem registro do ciclo de hoje</strong> — provavelmente interrompido no limite de tempo.
+          <template v-else-if="ciclo">
+            <strong>O ciclo de hoje não deixou registro</strong> — provavelmente interrompido no limite
+            de tempo. A última execução registrada foi em {{ dataHora(ciclo.started_at) }}.
+          </template>
+          <template v-else>
+            <strong>Sem registro de ciclo</strong> — o job diário ainda não rodou nenhuma vez.
           </template>
         </span>
         <span>
@@ -167,6 +167,7 @@ import AdvisorService from 'src/services/AdvisorService';
 const {
   data, carregando, erro, carregar, contas, total, motivos, naoAvaliados,
   naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
+  factsError, killSwitch,
   brl, pct, STATUS_LABEL,
 } = useAdvisorToday();
 
@@ -179,9 +180,54 @@ const algumSemAntes = computed(() => escritas.value.some((w) => !w.price_before)
 /** Conta que está de fato esperando o aval — a aprovação é sempre dela, nunca de um palpite. */
 const contaCanario = computed(() => contas.value.find((c) => c.canary_pending) || null);
 
-/** Ícone do escudo: alerta quando houve violação do piso ou quando nada foi avaliado. */
+/** Anúncios parados no portão DAQUELA conta (o total global mentiria sobre o que o botão resolve). */
+const aguardandoAval = computed(() => Number(contaCanario.value?.today?.aguardando_aval || 0));
+
+/**
+ * Escudo de proteção — a resposta que o dono mais precisa.
+ *
+ * REGRA INEGOCIÁVEL: esta faixa só afirma segurança quando existe escrita para proteger. Sem dado
+ * (erro de agregação, nenhuma conta, nenhum anúncio escrito) ela diz o que NÃO foi verificado —
+ * nunca "nenhum preço saiu abaixo do piso", que soaria como um atestado de que nada pode dar errado.
+ */
+const temEscrita = computed(() => Number(protecao.value.aplicadas || 0) > 0);
+
+const tituloEscudo = computed(() => {
+  if (factsError.value) return 'Não foi possível ler o trabalho de hoje';
+  if (!contas.value.length) return 'Nenhum anúncio foi avaliado hoje';
+  if (!temEscrita.value) return 'Nenhum preço foi alterado hoje';
+  if (protecao.value.abaixo_do_piso > 0) {
+    return `${protecao.value.abaixo_do_piso} anúncio(s) aplicado(s) abaixo do piso hoje`;
+  }
+  return `Nenhum preço saiu abaixo do piso nos ${protecao.value.aplicadas} anúncios escritos hoje`;
+});
+
+const detalheEscudo = computed(() => {
+  if (factsError.value) {
+    return 'A agregação do dia falhou, então os números abaixo NÃO são confiáveis — trate como '
+      + 'leitura pendente, não como "nada aconteceu". Tente atualizar em alguns minutos.';
+  }
+  if (!contas.value.length) {
+    return 'Nenhuma conta do Mercado Livre entrou no ciclo de hoje — nada foi lido nem protegido. '
+      + 'Ligue a escrita automática em Automação para o robô começar.';
+  }
+  const escopo = temEscrita.value
+    ? `margem mínima aplicada ${protecao.value.menor_margem_pct === null ? '—' : pct(protecao.value.menor_margem_pct)} · `
+      + `lucro mínimo ${protecao.value.menor_lucro_brl === null ? '—' : brl(protecao.value.menor_lucro_brl)} por unidade vendida · `
+      + `última escrita ${hora(protecao.value.ultima_escrita_at)}`
+    : 'sem escrita hoje, não há preço para proteger';
+  return escopo;
+});
+
+const classeEscudo = computed(() => ({
+  'today__shield--warn': protecao.value.abaixo_do_piso > 0,
+  'today__shield--erro': factsError.value,
+}));
+
 const iconeEscudo = computed(() => {
+  if (factsError.value) return 'sync_problem';
   if (!contas.value.length) return 'help_outline';
+  if (!temEscrita.value) return 'info';
   return protecao.value.abaixo_do_piso > 0 ? 'report' : 'shield';
 });
 
@@ -194,8 +240,15 @@ function hora(iso) {
 function duracao(segundos) {
   if (!segundos) return '—';
   const min = Math.floor(segundos / 60);
-  const seg = Math.round(segundos % 60);
+  const seg = Math.floor(segundos % 60);   // `Math.round` produzia "1 min 60 s"
   return min ? `${min} min ${seg} s` : `${seg} s`;
+}
+
+function dataHora(iso) {
+  if (!iso) return '—';
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
+  }).format(new Date(iso));
 }
 
 const proximo = computed(() => {
@@ -247,6 +300,8 @@ onMounted(carregar);
     margin-bottom: $space-5;
 
     &--warn { background: $tint-red-bg; color: $tint-red-text; }
+    // leitura indisponível: amber, nunca verde (verde aqui seria atestado de segurança sem dado)
+    &--erro { background: $tint-amber-bg; color: $tint-amber-text; }
   }
 
   &__shieldText {
