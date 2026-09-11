@@ -20,6 +20,14 @@
       />
     </header>
 
+    <!-- Propósito do controle (PROMO-IA-21): o texto fica junto do botão que liga/desliga,
+         porque é ali que o dono decide — não no bloco explicativo do topo da página. -->
+    <ul class="av-auto__purpose">
+      <li>ligado, ele <strong>escreve a promoção</strong> no Mercado Livre 1× por dia, em levas;</li>
+      <li>nunca abaixo do piso, nunca em anúncio com <strong>SMART</strong> ou <strong>cupom</strong>;</li>
+      <li>desligar vale <strong>na hora</strong> — e a promoção que já está no ar <strong>continua no ar</strong>.</li>
+    </ul>
+
     <!-- F1: a automação pode ser consultada, mas não altera o Mercado Livre. -->
     <p v-if="globalOff" class="av-auto__note av-auto__note--warn">
       <strong>Modo Somente Sugestão ativo.</strong> O assistente recomenda, mas não aplica alterações no Mercado Livre.

@@ -3,7 +3,7 @@
     <SbPageHeader
       eyebrow="Mercado Livre"
       title="Promoções · Assistente"
-      subtitle="O que exige atenção, o que o assistente faria e o que está protegido. Catálogo em leitura; controles só da automação."
+      subtitle="O que o robô fez hoje, o que espera por você e o que exige atenção. Ele só mexe em promoção quando a escrita automática está ligada — e nunca abaixo da sua margem mínima."
       icon="auto_graph"
     >
       <template #actions>
@@ -24,6 +24,19 @@
     </SbEmptyState>
 
     <template v-else>
+      <!-- Como funciona (camada 2): explica a função em linguagem de negócio, fecha por padrão -->
+      <AdvisorHowItWorks />
+
+      <!-- Hoje: o trabalho do robô (o que fez, o que espera, por que não mexeu, como parar) -->
+      <AdvisorTodayWork
+        v-if="automation"
+        :automation="automation"
+        :loading="loading"
+        @updated="load"
+        @search="applyQuickSearch"
+        @open-item="openItemById"
+      />
+
       <!-- Leitura de decisão: atenção → sugestão → proteção -->
       <AdvisorDecisionBand
         :scope="summary"
@@ -39,8 +52,11 @@
         @updated="onAutomationUpdated"
       />
 
-      <!-- Escopo (conta + status): números do servidor, clicáveis para filtrar -->
-      <div class="pv-scope">
+      <!-- Lista de anúncios: os controles vivem junto do dado que eles filtram (PROMO-IA-21 §4.4) -->
+      <h2 class="pv-listTitle">Anúncios</h2>
+
+      <!-- Escopo (conta + status): números do servidor, clicáveis para filtrar (chips) -->
+      <div class="pv-scope pv-scope--chips">
         <button class="pv-scope__kpi" :class="{ 'pv-scope__kpi--on': isScopeDefault }" :aria-pressed="isScopeDefault" @click="resetFacets">
           <strong>{{ summary.ads ?? 0 }}</strong> anúncios
         </button>
@@ -190,6 +206,8 @@ import SbPageHeader from 'src/components/common/SbPageHeader.vue';
 import SbEmptyState from 'src/components/common/SbEmptyState.vue';
 import SbTable from 'src/components/common/SbTable.vue';
 import SbBadge from 'src/components/common/SbBadge.vue';
+import AdvisorHowItWorks from 'src/components/promotions-ads/AdvisorHowItWorks.vue';
+import AdvisorTodayWork from 'src/components/promotions-ads/AdvisorTodayWork.vue';
 import AdvisorDecisionBand from 'src/components/promotions-ads/AdvisorDecisionBand.vue';
 import AdvisorAutomationPanel from 'src/components/promotions-ads/AdvisorAutomationPanel.vue';
 import AdvisorTable from 'src/components/promotions-ads/AdvisorTable.vue';
@@ -389,6 +407,19 @@ function clearAllFilters() {
 function cycleSort(sortKey) {
   const desc = `-${sortKey}`;
   sort.value = sort.value === desc ? sortKey : desc;
+}
+
+// A busca do bloco "Hoje" reaproveita a busca server-side da tabela (mesmo filtro `q`).
+function applyQuickSearch(termo) {
+  filters.q = termo || '';
+}
+
+// Abrir um anúncio direto do bloco "Hoje" (sem depender de ele estar na página atual).
+function openItemById(itemId) {
+  if (!itemId) return;
+  detailId.value = itemId;
+  detailTitle.value = itemId;
+  detailOpen.value = true;
 }
 
 function openDetail(row) {

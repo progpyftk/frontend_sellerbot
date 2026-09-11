@@ -201,6 +201,14 @@ export default {
     return api.patch('/mercadolivre/promotions-advisor/policy/', payload)
   },
 
+  // Emergência (PROMO-IA-21): desliga a escrita automática de TODAS as contas do usuário
+  // de uma vez. É ação no banco do SellerBot (não escreve no Mercado Livre) e vale na hora,
+  // inclusive no meio de um ciclo. Reversível por conta no painel de automação.
+  pauseAllAdvisorWrites({ pause_all = true, pause_reason } = {}) {
+    return api.patch('/mercadolivre/promotions-advisor/policy/',
+      pause_reason ? { pause_all, pause_reason } : { pause_all })
+  },
+
   // ==========================================
   // VENDAS (ORDERS)
   // ==========================================
