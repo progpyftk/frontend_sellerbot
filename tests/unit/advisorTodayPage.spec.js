@@ -169,6 +169,19 @@ describe('AdvisorTodayPage', () => {
     expect(getToday).toHaveBeenCalledTimes(2);   // recarrega depois de pausar
   });
 
+  it('não aprova conta errada quando nenhuma tem canário pendente', async () => {
+    // Sem conta pendente o botão nem aparece e a chamada não acontece: aprovar no palpite
+    // (`contas[0]`) escreveria preço na conta errada, ou daria aval falso ao dono.
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.by_account.ACC1.canary_pending = false;
+
+    const wrapper = await montar(payload);
+    expect(wrapper.text()).not.toContain('Esperando você');
+
+    await wrapper.vm.aprovarLeva();
+    expect(patchAutomation).not.toHaveBeenCalled();
+  });
+
   it('aprovar a leva usa a conta com canário pendente', async () => {
     const wrapper = await montar();
     await wrapper.vm.aprovarLeva();

@@ -108,7 +108,7 @@
       </AdvisorSection>
 
       <!-- Espera de aval (só aparece quando existe) -->
-      <AdvisorSection v-if="total.aguardando_aval" title="Esperando você" :count="total.aguardando_aval"
+      <AdvisorSection v-if="total.aguardando_aval && contaCanario" title="Esperando você" :count="total.aguardando_aval"
                       :lead="`${total.aguardando_aval} anúncios estão prontos e parados no portão da primeira leva. Sem o seu aval, o robô escreve no máximo ${escrita.leva} por dia e para.`">
         <q-btn unelevated no-caps color="primary" icon="check_circle" label="Aprovar a próxima leva"
                :loading="aprovando" @click="aprovarLeva" />
@@ -176,6 +176,9 @@ const confirmarPausa = ref(false);
 
 const algumSemAntes = computed(() => escritas.value.some((w) => !w.price_before));
 
+/** Conta que está de fato esperando o aval — a aprovação é sempre dela, nunca de um palpite. */
+const contaCanario = computed(() => contas.value.find((c) => c.canary_pending) || null);
+
 /** Ícone do escudo: alerta quando houve violação do piso ou quando nada foi avaliado. */
 const iconeEscudo = computed(() => {
   if (!contas.value.length) return 'help_outline';
@@ -216,8 +219,10 @@ async function pausarTudo() {
 async function aprovarLeva() {
   aprovando.value = true;
   try {
-    const alvo = contas.value.find((c) => c.canary_pending) || contas.value[0];
-    if (alvo) await AdvisorService.patchAutomation({ account_id: alvo.account_id, canary_approved: true });
+    // Nunca adivinha a conta: aprovar a conta errada (ou nenhuma) em silêncio é pior que não aprovar.
+    const alvo = contaCanario.value;
+    if (!alvo) return;
+    await AdvisorService.patchAutomation({ account_id: alvo.account_id, canary_approved: true });
     await carregar();
   } finally {
     aprovando.value = false;
