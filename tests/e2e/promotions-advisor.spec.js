@@ -85,7 +85,9 @@ async function openAdvisor(page, { overviewPayload = overview } = {}) {
   await page.route('**/users/me/', (route) => route.fulfill({ json: { id: 1, email: 'dono@local', is_staff: true } }))
   await page.route('**/mercadolivre/promotions-advisor/**', (route) => route.fulfill({ json: { success: true, insights: {} } }))
   await page.route('**/mercadolivre/promo-overview/**', (route) => route.fulfill({ json: overviewPayload }))
-  await page.goto(`${BASE_URL}/app/promotions/advisor`, { waitUntil: 'domcontentloaded' })
+  // PROMO-IA-22: a superfície "Hoje" é a rota principal; esta suíte cobre a página de catálogo,
+  // que segue na rota /anuncios até a migração do F2.
+  await page.goto(`${BASE_URL}/app/promotions/advisor/anuncios`, { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('table tbody tr, .sb-empty')
 }
 
@@ -145,7 +147,7 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
     await page.route('**/users/me/', (route) => route.fulfill({ json: { id: 1, email: 'dono@local', is_staff: true } }))
     await page.route('**/mercadolivre/promotions-advisor/**', (route) => route.fulfill({ json: { insights: {} } }))
     await page.route('**/mercadolivre/promo-overview/**', (route) => route.abort('failed'))
-    await page.goto(`${BASE_URL}/app/promotions/advisor`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`${BASE_URL}/app/promotions/advisor/anuncios`, { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('.sb-empty')
 
     await expect(page.getByText('Não conseguimos falar com o servidor agora')).toBeVisible()
@@ -185,5 +187,101 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
       return wrap ? wrap.scrollWidth - wrap.clientWidth : 0
     })
     expect(overflow).toBeLessThanOrEqual(1)
+  })
+})
+
+
+/**
+ * PROMO-IA-22 — a superfície "Hoje" (rota principal do advisor).
+ *
+ * Responde, na ordem: está tudo dentro do piso? quanto o robô alterou? o que espera aval?
+ * por que não mexeu no resto? E oferece a parada de emergência.
+ */
+const hoje = {
+  write_mode_global: true,
+  kill_switch: false,
+  day_window: { start: '2026-09-11T03:00:00Z', end: '2026-09-12T03:00:00Z', timezone: 'America/Sao_Paulo' },
+  cycle_today: true,
+  next_cycle_at: '2026-09-12T12:00:00Z',
+  last_cycle: {
+    started_at: '2026-09-11T12:00:00Z', status: 'partial', duration_seconds: 513,
+    items_processed: 3, errors_count: 0, reconciled: 23, unreconciled: 2,
+  },
+  by_account: {
+    'ACC-1': {
+      account_nickname: 'MOGIVITTA', auto_write: true, wave_size: 10, paused: false,
+      canary_pending: false, margin_alerts: [],
+      today: {
+        alterados: 3, ja_no_alvo: 17, nao_confirmados: 2, recusados: 0, bloqueados: 96,
+        no_plano: 106, anuncios_ativos: 406, aguardando_aval: 17, sem_dado_de_custo: 12,
+        motivos: { SMART_READ_ONLY: { label: 'o preço é do Mercado Livre (SMART)', anuncios: 37 } },
+      },
+      protection: { aplicadas: 3, abaixo_do_piso: 0, menor_margem_pct: 30.2, menor_lucro_brl: 12.32,
+                    ultima_escrita_at: '2026-09-11T13:36:00Z' },
+      last_writes: [{
+        item_id: 'MLB3795974187', title: 'Basacote 12m', price_before: '47.00', price_after: '39.00',
+        margin_pct: '31.3', profit_unit: '12.19', state: 'executed_verified', origin: 'automation',
+        at: '2026-09-11T12:05:00Z',
+      }],
+    },
+  },
+};
+
+test.describe('PROMO-IA-22 · superfície Hoje', () => {
+  test.skip(!BASE_URL, 'Requer E2E_BASE_URL (frontend servido)')
+
+  test('responde piso, alterados, espera de aval e motivos', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('accessToken', 'e2e-token')
+      localStorage.setItem('refreshToken', 'e2e-token')
+      localStorage.setItem('currentUser', JSON.stringify({ id: 1, email: 'dono@local', is_staff: true }))
+    })
+    await page.route('**/users/me/', (r) => r.fulfill({ json: { id: 1, email: 'dono@local', is_staff: true } }))
+    await page.route(/\/mercadolivre\/advisor\/today\/?/, (r) => r.fulfill({ json: hoje }))
+    await page.route(/\/mercadolivre\/advisor\/automation\/?/, (r) => r.fulfill({ json: hoje }))
+    await page.goto(`${BASE_URL}/app/promotions/advisor`, { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('.adv-metric')
+
+    // navegação por superfície
+    await expect(page.getByRole('link', { name: 'Hoje' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Anúncios' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Automação' })).toBeVisible()
+
+    // a resposta que dá paz vem antes de tudo
+    await expect(page.getByText('Nenhum preço saiu abaixo do piso').first()).toBeVisible()
+    await expect(page.getByText(/R\$\s*12,32/).first()).toBeVisible()
+
+    // métricas com unidade
+    await expect(page.getByText('anúncios alterados hoje', { exact: true })).toBeVisible()
+    await expect(page.getByText('já estavam no preço-alvo', { exact: true })).toBeVisible()
+    await expect(page.getByText('Esperando você')).toBeVisible()
+
+    // lista antes → depois
+    await expect(page.getByText('MLB3795974187', { exact: true })).toBeVisible()
+    await expect(page.getByText(/R\$\s*47,00/).first()).toBeVisible()
+
+    // motivos como proteção
+    await expect(
+      page.locator('.today__motivos li').filter({ hasText: 'o preço é do Mercado Livre (SMART)' }),
+    ).toBeVisible()
+  })
+
+  test('mobile: a primeira dobra traz piso, métricas e o botão de parada', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.addInitScript(() => {
+      localStorage.setItem('accessToken', 'e2e-token')
+      localStorage.setItem('refreshToken', 'e2e-token')
+      localStorage.setItem('currentUser', JSON.stringify({ id: 1, email: 'dono@local', is_staff: true }))
+    })
+    await page.route('**/users/me/', (r) => r.fulfill({ json: { id: 1, email: 'dono@local', is_staff: true } }))
+    await page.route(/\/mercadolivre\/advisor\/today\/?/, (r) => r.fulfill({ json: hoje }))
+    await page.goto(`${BASE_URL}/app/promotions/advisor`, { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('.adv-metric')
+
+    const shield = await page.locator('.today__shield').boundingBox()
+    expect(shield.y).toBeLessThan(844)
+    await expect(page.getByRole('button', { name: /Pausar toda a escrita/ })).toBeVisible()
+    const metrica = await page.locator('.adv-metric').first().boundingBox()
+    expect(metrica.y).toBeLessThan(844)
   })
 })
