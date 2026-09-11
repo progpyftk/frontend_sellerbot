@@ -54,7 +54,7 @@
       </div>
 
       <!-- O que foi alterado: o dado vem ANTES da explicação -->
-      <AdvisorSection title="O que foi alterado" :count="escritas.length">
+      <AdvisorSection title="O que foi alterado" :count="total.alterados">
         <AdvisorEmptyState v-if="!escritas.length" variant="vazio"
                            title="Nenhum anúncio alterado hoje"
                            message="Se o robô está ligado e nada mudou, veja os motivos abaixo — o mais comum é o preço já estar no alvo." />
@@ -92,6 +92,9 @@
             </tbody>
           </table>
         </div>
+        <p v-if="total.alterados > escritas.length" class="today__hint">
+          Exibindo {{ escritas.length }} de {{ total.alterados }} alterações de hoje — as mais recentes primeiro.
+        </p>
         <p v-if="algumSemAntes" class="today__hint">
           Escritas anteriores a 11/09/2026 não têm o preço anterior registrado — aparecem como “—”.
         </p>
@@ -125,7 +128,7 @@
         <span>
           <template v-if="ciclo">
             última execução {{ hora(ciclo.started_at) }}, {{ duracao(ciclo.duration_seconds) }},
-            {{ ciclo.items_processed || 0 }} alterado(s)
+            {{ ciclo.items_processed || 0 }} anúncios passaram pelo ciclo
             <template v-if="ciclo.unreconciled"> · {{ ciclo.unreconciled }} aguardando confirmação</template>
             <template v-if="ciclo.errors_count"> · {{ ciclo.errors_count }} erro(s)</template>
             · status {{ STATUS_LABEL[ciclo.status] || ciclo.status }}

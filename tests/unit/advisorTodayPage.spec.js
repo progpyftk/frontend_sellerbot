@@ -126,6 +126,26 @@ describe('AdvisorTodayPage', () => {
     const texto = (await montar()).text();
     expect(texto).toContain('2 aguardando confirmação');
     expect(texto).toContain('parcial');
+    // `items_processed` é o que PASSOU pelo ciclo, não o que foi alterado: chamar de
+    // "alterado(s)" criava dois números diferentes para a mesma ideia na mesma tela.
+    expect(texto).toContain('3 anúncios passaram pelo ciclo');
+    expect(texto).not.toContain('alterado(s)');
+  });
+
+  it('avisa quando a lista de alterados está truncada', async () => {
+    // A métrica conta 25 alterações, mas a lista mostra no máximo 10 (as mais recentes).
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.by_account.ACC1.today.alterados = 25;
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('Exibindo 2 de 25 alterações de hoje');
+  });
+
+  it('não avisa truncamento quando a lista mostra tudo', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.by_account.ACC1.today.alterados = 2;   // as 2 escritas estão todas na lista
+    const texto = (await montar(payload)).text();
+    expect(texto).not.toContain('mais recentes de');
   });
 
   it('pausa toda a escrita com um clique depois da confirmação', async () => {
