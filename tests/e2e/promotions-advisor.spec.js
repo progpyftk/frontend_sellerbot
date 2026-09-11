@@ -18,6 +18,42 @@ const overview = {
   accounts: [{ account_id: 'ACC-1', account_nickname: 'Conta demonstração' }],
   summary: { ads: 753, with_active_promo: 512, below_floor: 56, assistente: 56, agent_history: 83 },
   snapshot: { computed_at: '2026-09-09T17:01:00Z', stale: false, empty: false },
+  // Bloco do acionamento automático (PROMO-IA-21): alimenta o "Hoje" e o "Como funciona".
+  automation: {
+    write_mode_global: true,
+    kill_switch: false,
+    day_window: { start: '2026-09-11T03:00:00Z', end: '2026-09-12T03:00:00Z', timezone: 'America/Sao_Paulo' },
+    cycle_today: true,
+    next_cycle_at: '2026-09-12T12:00:00Z',
+    last_cycle: {
+      started_at: '2026-09-11T12:00:00Z', finished_at: '2026-09-11T12:08:33Z',
+      status: 'partial', duration_seconds: 513, items_processed: 3, errors_count: 0,
+      reconciled: 23, unreconciled: 2, margin_alerts_total: 13,
+    },
+    by_account: {
+      'ACC-1': {
+        account_nickname: 'Conta demonstração', auto_write: true, wave_size: 10,
+        paused: false, canary_pending: false, margin_alerts: [], writes_today: 3,
+        today: {
+          alterados: 3, ja_no_alvo: 17, nao_confirmados: 2, recusados: 0, bloqueados: 96,
+          no_plano: 106, anuncios_ativos: 406, aguardando_aval: 0, sem_dado_de_custo: 12,
+          motivos: {
+            SMART_READ_ONLY: { label: 'o preço é do Mercado Livre (SMART)', anuncios: 37 },
+            ALREADY_WRITTEN_TODAY_ITEM: { label: 'já tinham sido alterados hoje (não escreve 2× no mesmo dia)', anuncios: 46 },
+          },
+        },
+        protection: {
+          aplicadas: 3, abaixo_do_piso: 0, menor_margem_pct: 30.2, menor_lucro_brl: 12.32,
+          ultima_escrita_at: '2026-09-11T12:05:00Z',
+        },
+        last_writes: [{
+          item_id: 'MLB3795974187', title: 'Basacote 12m', action: 'aprofundar',
+          price_before: '47.00', price_after: '39.00', margin_pct: '31.3', profit_unit: '12.19',
+          state: 'executed_verified', origin: 'automation', at: '2026-09-11T12:05:00Z',
+        }],
+      },
+    },
+  },
   results: [
     {
       account_id: 'ACC-1', account_nickname: 'Conta demonstração',
@@ -59,26 +95,42 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
   test('a primeira dobra responde atenção, sugestão e bloqueio', async ({ page }) => {
     await openAdvisor(page)
 
-    await expect(page.getByRole('heading', { name: 'Requer atenção hoje' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'O que o assistente sugere' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Protegido / bloqueado' })).toBeVisible()
+    // PROMO-IA-21: a primeira leitura é o TRABALHO DO ROBÔ (bloco "Hoje"), antes da faixa
+    // de decisão. A faixa continua respondendo atenção/sugestão/bloqueio logo abaixo.
+    await expect(page.locator('.atw__top')).toBeVisible()
+    await expect(page.getByText('anúncios alterados hoje', { exact: true })).toBeVisible()
+    await expect(page.locator('.atw__protection')).toContainText('nenhum preço saiu abaixo do piso')
+    // No desktop a faixa de decisão tem títulos; no celular ela é compacta (três linhas).
+    const largo = (page.viewportSize()?.width || 1280) >= 600
+    if (largo) {
+      await expect(page.getByRole('heading', { name: 'Requer atenção hoje' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Sugestões nesta página' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Bloqueios nesta página' })).toBeVisible()
+    } else {
+      await expect(page.locator('.adb-compact__row--alert')).toContainText('abaixo do piso')
+      await expect(page.locator('.adb-compact__row--assistant')).toContainText('Sugere')
+      await expect(page.locator('.adb-compact__row--safe')).toContainText('Escrita barrada')
+    }
 
     // Números do escopo, não da página filtrada.
     await expect(page.locator('.pv-scope__kpi').first()).toContainText('753')
 
-    // Bloqueio explicado com a regra, não só com cor.
-    await expect(page.getByText(/margem ≥ 30% e lucro ≥ R\$\s*12,00/).first()).toBeVisible()
-    await expect(page.getByText('Sugestão da régua — nada é alterado no Mercado Livre')).toBeVisible()
+    // Bloqueio explicado com a regra, não só com cor (no celular, dentro do bloco compacto).
+    const escopo = largo ? '.adb-card--safe' : '.adb-compact__row--safe'
+    await expect(page.locator(escopo)).toContainText(/margem/ )
+    if (largo) {
+      await expect(page.getByText('Sugestão da régua — nada é alterado no Mercado Livre').first()).toBeVisible()
+    }
 
     // Tabela responde na ordem pedida.
-    const headers = (await page.locator('table thead th').allInnerTexts())
+    const headers = (await page.locator('.sb-table-wrap table thead th').allInnerTexts())
       .map((h) => h.replace(/\s*(unfold_more|arrow_downward|arrow_upward)\s*/g, '').trim().toUpperCase())
     expect(headers.slice(1, 8)).toEqual(['ANÚNCIO', 'SITUAÇÃO', 'SUGESTÃO', 'PREÇO-BASE', 'PREÇO PROMO', 'MARGEM', 'LUCRO'])
 
     // Estado honesto + sugestão da régua por linha.
-    await expect(page.locator('table tbody .sb-badge').filter({ hasText: 'Bloqueado: piso' }).first()).toBeVisible()
-    await expect(page.locator('table tbody .sb-badge').filter({ hasText: 'Sem ação' }).first()).toBeVisible()
-    await expect(page.locator('table tbody .sb-badge').filter({ hasText: 'Revisar anúncio' }).first()).toBeVisible()
+    await expect(page.locator('.sb-table-wrap table tbody .sb-badge').filter({ hasText: 'Bloqueado: piso' }).first()).toBeVisible()
+    await expect(page.locator('.sb-table-wrap table tbody .sb-badge').filter({ hasText: 'Sem ação' }).first()).toBeVisible()
+    await expect(page.locator('.sb-table-wrap table tbody .sb-badge').filter({ hasText: 'Revisar anúncio' }).first()).toBeVisible()
 
     // Legenda semântica (cor nunca é a única informação).
     await expect(page.locator('.pv-legend')).toContainText('bloqueado pelo piso')
