@@ -288,7 +288,7 @@ const GAP_LABELS = {
   componentes: 'componentes',
   sku: 'SKU',
 }
-const CAMPO_LABELS = { descricao: 'Descrição', atributos: 'Atributos', titulo: 'Título', fotos: 'Fotos', preco: 'Preço' }
+const CAMPO_LABELS = { descricao: 'Descrição', atributos: 'Atributos', titulo: 'Título', fotos: 'Fotos', preco: 'Preço', sku: 'SKU' }
 const CLASSE_LABELS = { auto_fix: 'correção segura', owner_gate: 'decisão do dono', needs_evidence: 'precisa de evidência' }
 const CLASSE_VARIANTS = { auto_fix: 'green', owner_gate: 'amber', needs_evidence: 'slate' }
 const CLASSE_ICONS = { auto_fix: 'bolt', owner_gate: 'priority_high', needs_evidence: 'help_outline' }
