@@ -106,15 +106,17 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openAdvisor(page)
 
-    // No celular as três respostas viram três linhas, todas na primeira dobra.
-    const alertRow = await page.locator('.adb-compact__row--alert').boundingBox()
-    expect(alertRow.y).toBeLessThan(844)
+    // A primeira dobra do celular é o TRABALHO DO ROBÔ (PROMO-IA-21): o dono precisa ver
+    // "mexeu em quê / nada a fazer" antes de qualquer outra coisa.
+    const topo = await page.locator('.atw__top').boundingBox()
+    expect(topo.y).toBeLessThan(844)
+    await expect(page.locator('.atw__protection')).toBeVisible()
+    const protecao = await page.locator('.atw__protection').boundingBox()
+    expect(protecao.y).toBeLessThan(844)
+
+    // A faixa de decisão continua existindo (agora depois do bloco do robô).
     await expect(page.locator('.adb-compact__row--assistant')).toContainText('Sugere')
     await expect(page.locator('.adb-compact__row--safe')).toContainText('Escrita barrada')
-
-    // A primeira linha de dado também aparece sem rolar.
-    const firstRow = await page.locator('table tbody tr').first().boundingBox()
-    expect(firstRow.y).toBeLessThan(844)
 
     // Modo cartão: cada célula carrega o rótulo da coluna em data-label, que o
     // CSS imprime via ::before (o <thead> fica oculto no celular).
