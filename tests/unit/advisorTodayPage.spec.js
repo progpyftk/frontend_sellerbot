@@ -223,6 +223,39 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('O ciclo de hoje terminou com 4 erro(s)');
   });
 
+  it('aprova a conta que tem anúncios no portão, não a que só tem canário pendente', async () => {
+    // Regressão de produção 11/09: AGF nasce com `canary_pending` (conta nova) mas escrita
+    // desligada e zero anúncios no portão; a MOGIVITTA é quem tem 17 parados. Gatear por
+    // `canary_pending` escondia o botão de quem precisava dele.
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.by_account.ACC2 = {
+      account_nickname: 'AGF_ORGANICS', auto_write: false, wave_size: 50, paused: false,
+      canary_pending: true, margin_alerts: [],
+      today: { alterados: 0, ja_no_alvo: 0, nao_confirmados: 0, recusados: 0, bloqueados: 43,
+               no_plano: 43, anuncios_ativos: 50, aguardando_aval: 0,
+               motivos: { WRITE_DISABLED: { label: 'estão em conta com a escrita desligada', anuncios: 43 } } },
+      protection: { aplicadas: 0, abaixo_do_piso: 0, menor_margem_pct: null, menor_lucro_brl: null, ultima_escrita_at: null },
+      last_writes: [],
+    };
+
+    const wrapper = await montar(payload);
+    expect(wrapper.text()).toContain('Esperando você');
+    expect(wrapper.text()).toContain('da conta MOGIVITTA');
+    expect(wrapper.text()).toContain('leva de 10');
+
+    await wrapper.vm.aprovarLeva();
+    expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', canary_approved: true });
+  });
+
+  it('conta em modo canário sem anúncio no portão ainda mostra o aval', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.by_account.ACC1.today.aguardando_aval = 0;
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('Esperando você');
+    expect(texto).toContain('está em modo de primeira leva (canário) esperando o seu aval');
+  });
+
   it('avisa quando a lista de alterados está truncada', async () => {
     // A métrica conta 25 alterações, mas a lista mostra no máximo 10 (as mais recentes).
     const payload = JSON.parse(JSON.stringify(PAYLOAD));
@@ -251,7 +284,8 @@ describe('AdvisorTodayPage', () => {
     // Sem conta pendente o botão nem aparece e a chamada não acontece: aprovar no palpite
     // (`contas[0]`) escreveria preço na conta errada, ou daria aval falso ao dono.
     const payload = JSON.parse(JSON.stringify(PAYLOAD));
-    payload.by_account.ACC1.canary_pending = false;
+    payload.by_account.ACC1.today.aguardando_aval = 0;   // nada parado no portão…
+    payload.by_account.ACC1.canary_pending = false;      // …e a conta não está em modo canário
 
     const wrapper = await montar(payload);
     expect(wrapper.text()).not.toContain('Esperando você');

@@ -108,9 +108,10 @@ export function useAdvisorToday() {
     const ligadas = contas.value.filter(
       (conta) => conta.auto_write && modoGlobal.value && !killSwitch.value,
     );
-    // a leva exibida é a da conta que escreve — nunca a de `contas[0]` por acaso da ordenação
-    const referencia = contas.value.find((c) => c.canary_pending)
-      || ligadas[0] || contas.value.find((c) => c.auto_write);
+    // A leva exibida é a da conta QUE ESCREVE. Pegar a conta com `canary_pending` dava o número
+    // de outra conta (produção, 11/09: "MOGIVITTA · leva de 50" com a MOGIVITTA valendo 10),
+    // porque conta nova nasce com canário pendente mesmo com a escrita desligada.
+    const referencia = ligadas[0] || contas.value.find((c) => c.auto_write);
     return {
       algumaLigada: ligadas.length > 0,
       bloqueadaPorKillSwitch: killSwitch.value && contas.value.some((conta) => conta.auto_write),

@@ -210,7 +210,7 @@ const hoje = {
   by_account: {
     'ACC-1': {
       account_nickname: 'MOGIVITTA', auto_write: true, wave_size: 10, paused: false,
-      canary_pending: true, margin_alerts: [],   // coerente com aguardando_aval abaixo
+      canary_pending: false, margin_alerts: [],
       today: {
         alterados: 3, ja_no_alvo: 17, nao_confirmados: 2, recusados: 0, bloqueados: 96,
         no_plano: 106, anuncios_ativos: 406, aguardando_aval: 17, sem_dado_de_custo: 12,

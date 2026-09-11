@@ -109,8 +109,7 @@
       </AdvisorSection>
 
       <!-- Espera de aval (só aparece quando existe) -->
-      <AdvisorSection v-if="aguardandoAval && contaCanario" title="Esperando você" :count="aguardandoAval"
-                      :lead="`${aguardandoAval} anúncios da conta ${contaCanario.account_nickname} estão prontos e parados no portão da primeira leva. Enquanto você não aprovar, o robô escreve no máximo uma leva de ${contaCanario.wave_size || escrita.leva} anúncios e para no próximo portão.`">
+      <AdvisorSection v-if="contaCanario" title="Esperando você" :count="aguardandoAval || undefined" :lead="leadAval">
         <q-btn unelevated no-caps color="primary" icon="check_circle" label="Aprovar a próxima leva"
                :loading="aprovando" @click="aprovarLeva" />
       </AdvisorSection>
@@ -174,7 +173,7 @@ import AdvisorService from 'src/services/AdvisorService';
 const {
   data, carregando, erro, carregar, contas, total, motivos, naoAvaliados,
   naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
-  factsError, killSwitch, contasQueEscrevem, noPlanoEscrita,
+  factsError, killSwitch, modoGlobal, contasQueEscrevem, noPlanoEscrita,
   brl, pct, STATUS_LABEL,
 } = useAdvisorToday();
 
@@ -184,11 +183,39 @@ const confirmarPausa = ref(false);
 
 const algumSemAntes = computed(() => escritas.value.some((w) => !w.price_before));
 
-/** Conta que está de fato esperando o aval — a aprovação é sempre dela, nunca de um palpite. */
-const contaCanario = computed(() => contas.value.find((c) => c.canary_pending) || null);
+/**
+ * Conta que está de fato esperando o aval: a que tem ANÚNCIOS parados no portão.
+ *
+ * Não serve `canary_pending`: conta recém-conectada nasce com canário pendente mesmo com a escrita
+ * desligada (produção, 11/09: AGF e CASADOS pendentes com zero anúncios no portão, e a MOGIVITTA
+ * — que escreve — com 17 anúncios esperando). Gatear por `canary_pending` esconderia o botão de
+ * aprovar justamente de quem precisa dele.
+ */
+const contaCanario = computed(() => {
+  const escreveAgora = (c) => c.auto_write && modoGlobal.value && !killSwitch.value;
+  // 1) conta em modo de primeira leva que de fato escreve: é ela que precisa do aval;
+  // 2) senão, quem tem anúncio parado no portão hoje (a fonte mais concreta).
+  return contas.value.find((c) => c.canary_pending && escreveAgora(c))
+    || contas.value.find((c) => Number(c.today?.aguardando_aval || 0) > 0)
+    || null;
+});
 
 /** Anúncios parados no portão DAQUELA conta (o total global mentiria sobre o que o botão resolve). */
 const aguardandoAval = computed(() => Number(contaCanario.value?.today?.aguardando_aval || 0));
+
+const leadAval = computed(() => {
+  if (!contaCanario.value) return '';
+  const leva = contaCanario.value.wave_size || escrita.value.leva;
+  const conta = contaCanario.value.account_nickname;
+  if (!aguardandoAval.value) {
+    return `A conta ${conta} está em modo de primeira leva (canário) esperando o seu aval. `
+      + `Nenhum anúncio ficou parado no portão hoje; ao aprovar, o robô pode escrever uma leva de `
+      + `até ${leva} anúncios e para no próximo portão.`;
+  }
+  return `${aguardandoAval.value} anúncios da conta ${conta} estão prontos e parados no portão da `
+    + `primeira leva. Enquanto você não aprovar, o robô escreve no máximo uma leva de ${leva} `
+    + `anúncios e para no próximo portão.`;
+});
 
 /**
  * Escudo de proteção — a resposta que o dono mais precisa.
