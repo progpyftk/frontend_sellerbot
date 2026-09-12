@@ -28,15 +28,15 @@
 
         <q-select
           v-model="filtros.conta" :options="contasOpcoes" dense outlined clearable emit-value map-options
-          placeholder="Todas as contas" aria-label="Conta" class="cat__select"
+          label="Conta" aria-label="Conta" class="cat__select"
         />
         <q-select
           v-model="filtros.saude" :options="saudeOpcoes" dense outlined clearable emit-value map-options
-          placeholder="Qualquer saúde" aria-label="Saúde de vendas" class="cat__select"
+          label="Saúde" aria-label="Saúde de vendas" class="cat__select"
         />
         <q-select
           v-model="filtros.status" :options="statusOpcoes" dense outlined clearable emit-value map-options
-          placeholder="Só ativos" aria-label="Situação do anúncio" class="cat__select"
+          label="Situação" aria-label="Situação do anúncio" class="cat__select"
         />
 
         <q-toggle v-model="filtros.soAbaixoDoPiso" dense label="Só abaixo do piso" />
@@ -315,7 +315,7 @@ onMounted(carregar);
     margin-bottom: $space-3;
   }
   &__busca { flex: 1 1 260px; max-width: 380px; }
-  &__select { min-width: 170px; }
+  &__select { min-width: 150px; }
 
   &__nota {
     display: flex;
