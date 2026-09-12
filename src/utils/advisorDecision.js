@@ -13,11 +13,14 @@
  * - A sugestão é a **régua vigente** aplicada ao retrato do anúncio, exibida com
  *   o rótulo "sugestão da régua — nada é alterado no Mercado Livre". Ela não é
  *   uma ordem de execução nem uma promessa de escrita.
- * - Piso: margem ≥ 30% E lucro ≥ R$ 12 por venda (regra do dono).
+ * - Piso: margem ≥ 30% E lucro ≥ R$ 20 por venda (regra do dono; subiu de R$ 12 em 12/09).
  */
 
 export const FLOOR_MARGIN_PCT = 30;
-export const FLOOR_PROFIT_BRL = 12;
+// Piso de lucro por venda do dono. PROMO-IA-23 (12/09/2026) subiu de R$ 12 para R$ 20 —
+// a fonte de verdade é `app_mercado_livre/services/promotions_ads/floors.py`. Este valor é
+// apenas fallback: o ideal é o backend mandar os pisos no payload (ver briefing §F3).
+export const FLOOR_PROFIT_BRL = 20;
 export const TARGET_MARGIN_PCT = { parado: 30, fraco: 30, medio: 40, alto: null };
 
 export const INPUT_LABELS = {

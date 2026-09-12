@@ -100,7 +100,7 @@ describe('AdvisorAutomationPage', () => {
   it('mostra a régua e o glossário na própria tela', async () => {
     const texto = (await montar()).texto();
     expect(texto).toContain('Margem-alvo por saúde de vendas');
-    expect(texto).toContain('R$ 12 por venda');
+    expect(texto).toContain('R$ 20,00 por venda');   // piso vigente (PROMO-IA-23)
     expect(texto).toContain('Uma escrita por anúncio por dia');
     expect(texto).toContain('Glossário');
     expect(texto).toContain('Portão');

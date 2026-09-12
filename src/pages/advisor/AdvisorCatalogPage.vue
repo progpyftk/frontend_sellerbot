@@ -140,7 +140,7 @@
           </dl>
           <p class="cat__detalheNota">
             A situação e a sugestão saem da mesma régua que o robô usa para escrever: margem-alvo por
-            saúde de vendas, com piso de 30% de margem e R$ 12 de lucro por venda.
+            saúde de vendas, com piso de {{ FLOOR_MARGIN_PCT }}% de margem e {{ brl(FLOOR_PROFIT_BRL) }} de lucro por venda.
           </p>
         </div>
 
@@ -169,7 +169,9 @@ import AdvisorShell from 'src/components/advisor/AdvisorShell.vue';
 import AdvisorStatusPill from 'src/components/advisor/AdvisorStatusPill.vue';
 import AdvisorTable from 'src/components/advisor/AdvisorTable.vue';
 import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
-import { HEALTH_META, brl, pct, situationOf, suggestionOf } from 'src/utils/advisorDecision';
+import {
+  FLOOR_MARGIN_PCT, FLOOR_PROFIT_BRL, HEALTH_META, brl, pct, situationOf, suggestionOf,
+} from 'src/utils/advisorDecision';
 
 const {
   linhas, total, resumo, retrato, carregando, erro, filtros, ordenacao, pagina, porPagina,

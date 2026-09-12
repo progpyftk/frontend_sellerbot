@@ -112,7 +112,7 @@
           <div>
             <h4>Pisos que nunca são cruzados</h4>
             <ul>
-              <li>Margem mínima de <strong>30%</strong> e lucro mínimo de <strong>R$ 12 por venda</strong>. Se o preço oferecido não fecha os dois, o robô não escreve.</li>
+              <li>Margem mínima de <strong>{{ FLOOR_MARGIN_PCT }}%</strong> e lucro mínimo de <strong>{{ brl(FLOOR_PROFIT_BRL) }} por venda</strong>. Se o preço oferecido não fecha os dois, o robô não escreve.</li>
               <li>Se a margem atual já está <strong>abaixo de 30%</strong>, o caminho é <strong>rebase de preço</strong> no precificador — não mais desconto.</li>
               <li>Frete estimado com pouca amostra (&gt; R$ 25 ou &gt; 20% do preço): marcado como <strong>sem certeza</strong> e não é auto-ativado.</li>
             </ul>
@@ -155,7 +155,7 @@ import AdvisorSection from 'src/components/advisor/AdvisorSection.vue';
 import AdvisorShell from 'src/components/advisor/AdvisorShell.vue';
 import AdvisorStatusPill from 'src/components/advisor/AdvisorStatusPill.vue';
 import { useAdvisorAutomation } from 'src/composables/advisor/useAdvisorAutomation';
-import { pct } from 'src/utils/advisorDecision';
+import { FLOOR_MARGIN_PCT, FLOOR_PROFIT_BRL, brl, pct } from 'src/utils/advisorDecision';
 
 const {
   data, carregando, erro, salvando, aviso, contas, levas, alertas,
@@ -167,7 +167,7 @@ const confirmarPausa = ref(false);
 
 const GLOSSARIO = [
   { nome: 'Leva', texto: 'Quantos anúncios o robô altera numa onda antes de parar no portão.' },
-  { nome: 'Piso', texto: 'Margem mínima de 30% e lucro mínimo de R$ 12 por venda. Nenhuma escrita passa por baixo.' },
+  { nome: 'Piso', texto: `Margem mínima de ${FLOOR_MARGIN_PCT}% e lucro mínimo de ${brl(FLOOR_PROFIT_BRL)} por venda. Nenhuma escrita passa por baixo.` },
   { nome: 'Portão', texto: 'Trava que segura a próxima onda: pode ser o seu aval (primeira leva) ou o teto do dia.' },
   { nome: 'Ciclo', texto: 'A execução diária das 09:00 (Brasília) que lê o mercado e decide.' },
   { nome: 'Confirmada', texto: 'Escrita conferida no Mercado Livre — o preço realmente mudou.' },
