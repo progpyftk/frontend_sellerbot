@@ -75,7 +75,7 @@ const routes = [
       {
         path: 'promotions/advisor/anuncios',
         name: "promotions-advisor-anuncios",
-        component: () => import('pages/PromotionsAdvisorPage.vue')
+        component: () => import('pages/advisor/AdvisorCatalogPage.vue')
       },
       {
         path: 'promotions/advisor/automacao',

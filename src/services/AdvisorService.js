@@ -3,7 +3,7 @@
  *
  * Regra da área: nenhum componente chama a API direto — tudo passa por aqui, com as 4 superfícies
  * separadas (Hoje, Catálogo, Automação e detalhe). Os endpoints reaproveitam os contratos do
- * backend (`/advisor/today/`, `/advisor/automation/`, `/promo-overview/`).
+ * backend (`/advisor/today/`, `/advisor/catalog/`, `/advisor/automation/`).
  */
 import { api } from 'src/boot/axios';
 
@@ -23,9 +23,9 @@ export default {
     return api.patch('/mercadolivre/advisor/automation/', payload);
   },
 
-  /** Superfície Catálogo: linhas por anúncio + facetas (sem as agregações do dia). */
+  /** Superfície Anúncios: linhas por anúncio + facetas (sem as agregações do dia). */
   getCatalog(params = {}) {
-    return api.get('/mercadolivre/promo-overview/', { params });
+    return api.get('/mercadolivre/advisor/catalog/', { params });
   },
 
   /** Detalhe do anúncio (promoções vivas, timeline do robô, retrato). */

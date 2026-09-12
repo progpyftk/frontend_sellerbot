@@ -84,58 +84,60 @@ async function openAdvisor(page, { overviewPayload = overview } = {}) {
   })
   await page.route('**/users/me/', (route) => route.fulfill({ json: { id: 1, email: 'dono@local', is_staff: true } }))
   await page.route('**/mercadolivre/promotions-advisor/**', (route) => route.fulfill({ json: { success: true, insights: {} } }))
+  await page.route('**/mercadolivre/advisor/catalog/**', (route) => route.fulfill({ json: overviewPayload }))
   await page.route('**/mercadolivre/promo-overview/**', (route) => route.fulfill({ json: overviewPayload }))
-  // PROMO-IA-22: a superfície "Hoje" é a rota principal; esta suíte cobre a página de catálogo,
-  // que segue na rota /anuncios até a migração do F2.
+  // PROMO-IA-22 F2: a superfície "Anúncios" tem rota e contrato próprios.
   await page.goto(`${BASE_URL}/app/promotions/advisor/anuncios`, { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('table tbody tr, .sb-empty')
+  await page.waitForSelector('.adv-table__table tbody tr:visible, .adv-table__cards li:visible, .adv-empty')
 }
 
-test.describe('PROMO-IA-15 · painel do advisor', () => {
+test.describe('PROMO-IA-22 · superfície Anúncios', () => {
   test.skip(!BASE_URL, 'Requer E2E_BASE_URL (frontend servido)')
 
-  test('a primeira dobra responde atenção, sugestão e bloqueio', async ({ page }) => {
+  /** A primeira linha VISÍVEL: tabela no desktop, cartão no celular. */
+  const primeiraLinha = (page) => page
+    .locator('.adv-table__table tbody tr:visible, .adv-table__cards li:visible').first();
+
+  test('responde o recorte, os números do catálogo e a situação de cada linha', async ({ page }) => {
     await openAdvisor(page)
+    await page.waitForSelector('.adv-table__table tbody tr:visible, .adv-table__cards li:visible')
 
-    // PROMO-IA-21: a primeira leitura é o TRABALHO DO ROBÔ (bloco "Hoje"), antes da faixa
-    // de decisão. A faixa continua respondendo atenção/sugestão/bloqueio logo abaixo.
-    await expect(page.locator('.atw__top')).toBeVisible()
-    await expect(page.getByText('anúncios alterados hoje', { exact: true })).toBeVisible()
-    await expect(page.locator('.atw__protection')).toContainText('nenhum preço saiu abaixo do piso')
-    // No desktop a faixa de decisão tem títulos; no celular ela é compacta (três linhas).
-    const largo = (page.viewportSize()?.width || 1280) >= 600
-    if (largo) {
-      await expect(page.getByRole('heading', { name: 'Requer atenção hoje' })).toBeVisible()
-      await expect(page.getByRole('heading', { name: 'Sugestões nesta página' })).toBeVisible()
-      await expect(page.getByRole('heading', { name: 'Bloqueios nesta página' })).toBeVisible()
-    } else {
-      await expect(page.locator('.adb-compact__row--alert')).toContainText('abaixo do piso')
-      await expect(page.locator('.adb-compact__row--assistant')).toContainText('Sugere')
-      await expect(page.locator('.adb-compact__row--safe')).toContainText('Escrita barrada')
-    }
+    // Números do catálogo (escopo inteiro), não da página paginada.
+    const metrica = (rotulo) => page.locator('.adv-metric').filter({ hasText: rotulo })
+    await expect(metrica('anúncios no catálogo')).toContainText('753')
+    await expect(metrica('abaixo do piso')).toContainText('56')
+    await expect(metrica('com promoção ativa')).toContainText('512')
 
-    // Números do escopo, não da página filtrada.
-    await expect(page.locator('.pv-scope__kpi').first()).toContainText('753')
-
-    // Bloqueio explicado com a regra, não só com cor (no celular, dentro do bloco compacto).
-    const escopo = largo ? '.adb-card--safe' : '.adb-compact__row--safe'
-    await expect(page.locator(escopo)).toContainText(/margem/ )
-    if (largo) {
-      await expect(page.getByText('Sugestão da régua — nada é alterado no Mercado Livre').first()).toBeVisible()
-    }
-
-    // Tabela responde na ordem pedida.
-    const headers = (await page.locator('.sb-table-wrap table thead th').allInnerTexts())
+    // Hierarquia do preset padrão ("Assistente"): o que fazer vem antes de quanto custou.
+    const headers = (await page.locator('.adv-table__table thead th').allInnerTexts())
       .map((h) => h.replace(/\s*(unfold_more|arrow_downward|arrow_upward)\s*/g, '').trim().toUpperCase())
-    expect(headers.slice(1, 8)).toEqual(['ANÚNCIO', 'SITUAÇÃO', 'SUGESTÃO', 'PREÇO-BASE', 'PREÇO PROMO', 'MARGEM', 'LUCRO'])
+    expect(headers).toEqual([
+      'ANÚNCIO', 'SITUAÇÃO', 'O QUE FAZER', 'PREÇO-BASE', 'PREÇO PROMO',
+      'MARGEM', 'LUCRO/UN.', 'VENDAS 30D', 'ÚLTIMA AÇÃO', 'NO MERCADO LIVRE',
+    ])
 
-    // Estado honesto + sugestão da régua por linha.
-    await expect(page.locator('.sb-table-wrap table tbody .sb-badge').filter({ hasText: 'Bloqueado: piso' }).first()).toBeVisible()
-    await expect(page.locator('.sb-table-wrap table tbody .sb-badge').filter({ hasText: 'Sem ação' }).first()).toBeVisible()
-    await expect(page.locator('.sb-table-wrap table tbody .sb-badge').filter({ hasText: 'Revisar anúncio' }).first()).toBeVisible()
+    // Linha com dado real e estado explicado (cor nunca é a única informação).
+    await expect(primeiraLinha(page)).toContainText('Ureia 25kg')
+    await expect(primeiraLinha(page)).toContainText('Bloqueado: piso')
+    await expect(primeiraLinha(page)).toContainText('Sem ação')
+  })
 
-    // Legenda semântica (cor nunca é a única informação).
-    await expect(page.locator('.pv-legend')).toContainText('bloqueado pelo piso')
+  test('o preset "Completo" traz as colunas financeiras de volta', async ({ page }) => {
+    await openAdvisor(page)
+    await page.getByRole('button', { name: 'Completo' }).click()
+    await expect(page.locator('.adv-table__table thead th').filter({ hasText: 'CMV' })).toHaveCount(1)
+    await expect(page.locator('.adv-table__table thead th').filter({ hasText: 'SAÚDE' })).toHaveCount(1)
+  })
+
+  test('drill-down mostra a linha inteira sem sair da página e sem popup', async ({ page }) => {
+    await openAdvisor(page)
+    await primeiraLinha(page).click()
+
+    const detalhe = page.locator('.cat__detalhe')
+    await expect(detalhe).toBeVisible()
+    await expect(detalhe).toContainText('Lucro por venda')
+    await expect(detalhe).toContainText('Última ação do robô')
+    await expect(detalhe.getByRole('link')).toHaveCount(0)   // o popup ficou de fora por decisão
   })
 
   test('estado de erro não parece busca vazia e oferece retry', async ({ page }) => {
@@ -145,47 +147,26 @@ test.describe('PROMO-IA-15 · painel do advisor', () => {
       localStorage.setItem('currentUser', JSON.stringify({ id: 1, email: 'dono@local', is_staff: true }))
     })
     await page.route('**/users/me/', (route) => route.fulfill({ json: { id: 1, email: 'dono@local', is_staff: true } }))
-    await page.route('**/mercadolivre/promotions-advisor/**', (route) => route.fulfill({ json: { insights: {} } }))
-    await page.route('**/mercadolivre/promo-overview/**', (route) => route.abort('failed'))
+    await page.route('**/mercadolivre/advisor/catalog/**', (route) => route.abort('failed'))
     await page.goto(`${BASE_URL}/app/promotions/advisor/anuncios`, { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('.sb-empty')
+    await page.waitForSelector('.adv-empty')
 
-    await expect(page.getByText('Não conseguimos falar com o servidor agora')).toBeVisible()
     await expect(page.getByText('Tentar novamente')).toBeVisible()
-    await expect(page.locator('.pv-result')).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: 'Requer atenção hoje' })).toHaveCount(0)
+    await expect(page.locator('.adv-table__table')).toHaveCount(0)
+    await expect(page.locator('.adv-metric')).toHaveCount(0)
   })
 
-  test('mobile: cartões com rótulo e sem rolagem horizontal da tabela', async ({ page }) => {
+  test('mobile: cartões em vez de tabela, sem rolagem horizontal', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openAdvisor(page)
+    await page.waitForSelector('.adv-table__cards li')
 
-    // A primeira dobra do celular é o TRABALHO DO ROBÔ (PROMO-IA-21): o dono precisa ver
-    // "mexeu em quê / nada a fazer" antes de qualquer outra coisa.
-    const topo = await page.locator('.atw__top').boundingBox()
-    expect(topo.y).toBeLessThan(844)
-    await expect(page.locator('.atw__protection')).toBeVisible()
-    const protecao = await page.locator('.atw__protection').boundingBox()
-    expect(protecao.y).toBeLessThan(844)
+    await expect(page.locator('.adv-table__cards li').first()).toBeVisible()
+    await expect(page.locator('.adv-table__cards li').first()).toContainText('Ureia 25kg')
+    // a tabela larga fica fora do caminho: no celular ela nem é exibida
+    await expect(page.locator('.adv-table__wrap')).toBeHidden()
 
-    // A faixa de decisão continua existindo (agora depois do bloco do robô).
-    await expect(page.locator('.adb-compact__row--assistant')).toContainText('Sugere')
-    await expect(page.locator('.adb-compact__row--safe')).toContainText('Escrita barrada')
-
-    // Modo cartão: cada célula carrega o rótulo da coluna em data-label, que o
-    // CSS imprime via ::before (o <thead> fica oculto no celular).
-    await expect(page.locator('td[data-label="Situação"]').first()).toBeVisible()
-    await expect(page.locator('td[data-label="Sugestão"]').first()).toBeVisible()
-    const labelText = await page.evaluate(() => {
-      const td = document.querySelector('td[data-label="Situação"]')
-      return td ? getComputedStyle(td, '::before').content : ''
-    })
-    expect(labelText).toContain('Situação')
-
-    const overflow = await page.evaluate(() => {
-      const wrap = document.querySelector('.sb-table-wrap')
-      return wrap ? wrap.scrollWidth - wrap.clientWidth : 0
-    })
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     expect(overflow).toBeLessThanOrEqual(1)
   })
 })
