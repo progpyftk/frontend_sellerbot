@@ -27,9 +27,4 @@ export default {
   getCatalog(params = {}) {
     return api.get('/mercadolivre/advisor/catalog/', { params });
   },
-
-  /** Detalhe do anúncio (promoções vivas, timeline do robô, retrato). */
-  getItem(itemId) {
-    return api.get(`/mercadolivre/promo-overview/${itemId}/`);
-  },
 };

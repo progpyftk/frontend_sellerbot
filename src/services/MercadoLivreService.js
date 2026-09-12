@@ -130,16 +130,6 @@ export default {
   },
 
   // ==========================================
-  // ASSISTENTE DE PROMOÇÕES (PROMO-IA-2)
-  // ==========================================
-  // Painel de acompanhamento — somente leitura. Junta o log de decisões do
-  // assistente (recomendação/ação) com o retrato diário dos anúncios.
-  // params: { days?, limit?, account_id? }
-  getPromotionsAdvisor(params = {}) {
-    return api.get('/mercadolivre/promotions-advisor/', { params })
-  },
-
-  // ==========================================
   // REVISÃO SEO — PAINEL DE DECISÃO SOB DEMANDA (REV-4/REV-5) — read-only
   // ==========================================
   // Botão "Gerar lote de hoje": roda o audit ao vivo dos anúncios parado/fraco
@@ -172,43 +162,6 @@ export default {
   // ==========================================
   // ACOMPANHAMENTO POR ANÚNCIO (PROMO-15) — read-only
   // ==========================================
-  // Tabela 1 linha = 1 anúncio, TODOS os anúncios das contas (com e sem
-  // promoção): vendas 30d, promo ativa + datas, margem/lucro na venda atual,
-  // origem (assistente/ML) e alerta de piso. Lista 100% do banco (snapshot
-  // `PromotionAdSnapshot`); sem escrita — ativar/remover segue na tela de
-  // operação. params: { account_id?, q?, origem? (assistente|ml|sem_promo),
-  // has_promo?, health?, below_floor?, min_margin_pct?, max_margin_pct?,
-  // min_discount_pct?, min_sales_30d?, sort?, page?, page_size? }
-  getPromoOverview(params = {}) {
-    return api.get('/mercadolivre/promo-overview/', { params })
-  },
-
-  // Expande UMA linha da tabela de acompanhamento: promoções ao vivo (a única
-  // chamada ao ML da visão), timeline do assistente e retrato do anúncio.
-  getPromoOverviewDetail(itemId) {
-    return api.get(`/mercadolivre/promo-overview/${itemId}/`)
-  },
-
-  // Política da automação do assistente (PROMO-IA-14): o GET devolve o bloco
-  // `automation` e o PATCH altera UMA conta — auto_write, wave_size,
-  // paused/pause_reason e canary_approved (aval da primeira onda). Nunca escreve
-  // no Mercado Livre: só guarda a decisão do dono.
-  getAdvisorPolicy() {
-    return api.get('/mercadolivre/promotions-advisor/policy/')
-  },
-
-  patchAdvisorPolicy(payload) {
-    return api.patch('/mercadolivre/promotions-advisor/policy/', payload)
-  },
-
-  // Emergência (PROMO-IA-21): desliga a escrita automática de TODAS as contas do usuário
-  // de uma vez. É ação no banco do SellerBot (não escreve no Mercado Livre) e vale na hora,
-  // inclusive no meio de um ciclo. Reversível por conta no painel de automação.
-  pauseAllAdvisorWrites({ pause_all = true, pause_reason } = {}) {
-    return api.patch('/mercadolivre/promotions-advisor/policy/',
-      pause_reason ? { pause_all, pause_reason } : { pause_all })
-  },
-
   // ==========================================
   // VENDAS (ORDERS)
   // ==========================================

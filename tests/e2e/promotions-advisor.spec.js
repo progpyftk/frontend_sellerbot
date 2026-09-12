@@ -266,3 +266,112 @@ test.describe('PROMO-IA-22 · superfície Hoje', () => {
     expect(metrica.y).toBeLessThan(844)
   })
 })
+
+
+/**
+ * PROMO-IA-22 — a superfície "Automação" (rota /automacao).
+ *
+ * É a única que ESCREVE (política). O que precisa ficar travado aqui: quem escreve agora, a régua
+ * ao lado do controle, a pausa de emergência com confirmação e o aval da primeira leva.
+ */
+const automacao = {
+  write_mode_global: true,
+  kill_switch: false,
+  cycle_today: true,
+  next_cycle_at: '2026-09-13T12:00:00Z',
+  by_account: {
+    'ACC-1': {
+      account_nickname: 'MOGIVITTA', auto_write: true, wave_size: 10, paused: false,
+      pause_reason: '', canary_pending: false, writes_today: 3,
+      margin_alerts: [{
+        kind: 'smart_low_margin', item_id: 'MLB3796050843', title: 'Adubo 2kg SMART',
+        margin_pct: '23.2', profit_unit: 28.47, price: 119.14, threshold_pct: '25', at: null,
+      }],
+    },
+    'ACC-2': {
+      // conta nova: escrita LIGADA e parada no portão da primeira leva (estado real de onboarding)
+      account_nickname: 'AGF_ORGANICS', auto_write: true, wave_size: 50, paused: false,
+      pause_reason: '', canary_pending: true, writes_today: 0, margin_alerts: [],
+    },
+  },
+};
+
+async function abrirAutomacao(page, payload = automacao) {
+  await page.addInitScript(() => {
+    localStorage.setItem('accessToken', 'e2e-token')
+    localStorage.setItem('refreshToken', 'e2e-token')
+    localStorage.setItem('currentUser', JSON.stringify({ id: 1, email: 'dono@local', is_staff: true }))
+  })
+  await page.route('**/users/me/', (r) => r.fulfill({ json: { id: 1, email: 'dono@local', is_staff: true } }))
+  await page.route('**/mercadolivre/advisor/automation/**', (route) => {
+    if (route.request().method() === 'PATCH') return route.fulfill({ json: { success: true } })
+    return route.fulfill({ json: payload })
+  })
+  await page.goto(`${BASE_URL}/app/promotions/advisor/automacao`, { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('.aut__contas')
+}
+
+test.describe('PROMO-IA-22 · superfície Automação', () => {
+  test.skip(!BASE_URL, 'Requer E2E_BASE_URL (frontend servido)')
+
+  test('diz quem escreve, mostra a régua ao lado do controle e o glossário', async ({ page }) => {
+    await abrirAutomacao(page)
+
+    // MOGIVITTA escreve; a AGF está autorizada mas parada no portão — não conta como escrita
+    await expect(page.locator('.aut__estado')).toContainText('1 conta(s) escrevendo agora: MOGIVITTA')
+    await expect(page.locator('.aut__estado')).toContainText('esperam o seu aval')
+    await expect(page.locator('.aut__contas')).toContainText('MOGIVITTA')
+    await expect(page.locator('.aut__contas')).toContainText('AGF_ORGANICS')
+    // conta em canário: o dono vê o portão e o botão de aprovar
+    await expect(page.locator('.aut__canario')).toContainText('Primeira leva esperando o seu aval')
+    // alerta SMART é sinalização, não escrita
+    await expect(page.locator('.aut__alertas')).toContainText('abaixo do limite de 25,0%')
+
+    const corpo = page.locator('.adv-shell__body')
+    await expect(corpo).toContainText('Margem-alvo por saúde de vendas')
+    await expect(corpo).toContainText('Pisos que nunca são cruzados')
+    await expect(corpo).toContainText('Uma escrita por anúncio por dia')
+    await expect(corpo).toContainText('09:00 (Brasília)')
+    await expect(corpo).toContainText('Glossário')
+    await expect(corpo).toContainText('Portão')
+  })
+
+  test('a pausa de emergência pede confirmação antes de agir', async ({ page }) => {
+    await abrirAutomacao(page)
+
+    await page.getByRole('button', { name: 'Pausar toda a escrita' }).click()
+    // a confirmação explica a consequência ANTES de qualquer PATCH
+    await expect(page.locator('.aut__confirmar')).toContainText('já aplicadas continuam no ar')
+
+    let patch = 0
+    page.on('request', (r) => { if (r.method() === 'PATCH') patch += 1 })
+    await page.getByRole('button', { name: 'Cancelar' }).click()
+    await expect(page.locator('.aut__confirmar')).toHaveCount(0)
+    expect(patch).toBe(0)
+
+    await page.getByRole('button', { name: 'Pausar toda a escrita' }).click()
+    await page.getByRole('button', { name: 'Confirmar pausa' }).click()
+    await expect(page.locator('.aut__aviso')).toContainText('continuam no ar')
+  })
+
+  test('com o kill switch ligado, nenhuma conta aparece como ativa', async ({ page }) => {
+    await abrirAutomacao(page, { ...automacao, kill_switch: true })
+
+    await expect(page.locator('.aut__estado')).toContainText('interruptor de emergência')
+    await expect(page.locator('.aut__contas')).toContainText('Autorizada, mas travada')
+    // sem conta escrevendo, o botão de pausa total sai de cena
+    await expect(page.getByRole('button', { name: 'Pausar toda a escrita' })).toHaveCount(0)
+  })
+
+  test('mobile: controle e régua legíveis, sem rolagem horizontal', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await abrirAutomacao(page)
+
+    await expect(page.locator('.aut__estado')).toBeVisible()
+    await expect(page.locator('.aut__contas li').first()).toBeVisible()
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    expect(overflow).toBeLessThanOrEqual(1)
+  })
+})
