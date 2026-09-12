@@ -295,11 +295,17 @@ onMounted(async () => {
   }
   &__linha {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     align-items: flex-start;
-    gap: $space-4;
+    gap: $space-2;
   }
-  &__leva { max-width: 230px; }
+  &__leva { width: 100%; max-width: 320px; }
+
+  // O rótulo do interruptor é a informação principal do cartão: não pode sair em letra miúda.
+  &__linha :deep(.q-toggle__label) {
+    font-size: $text-small-size;
+    color: $text-body;
+  }
 
   &__pausada, &__canario {
     display: flex;
