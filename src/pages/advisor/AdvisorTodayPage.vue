@@ -162,7 +162,7 @@
             {{ ciclo.items_processed || 0 }} escrita(s) confirmada(s) pelo Mercado Livre
             <template v-if="ciclo.planned"> · {{ ciclo.planned }} no plano</template>
             <template v-if="ciclo.unreconciled"> · {{ ciclo.unreconciled }} aguardando confirmação</template>
-            <template v-if="ciclo.errors_count"> · {{ ciclo.errors_count }} erro(s)</template>
+            <template v-if="ciclo.errors_count && !falhas.length"> · {{ ciclo.errors_count }} erro(s)</template>
             · status {{ STATUS_LABEL[ciclo.status] || ciclo.status }}
           </template>
           <template v-else-if="ciclo">
@@ -259,7 +259,8 @@ const resumoFalhas = computed(() => {
   const partes = [];
   if (acao) partes.push(`${acao} exigem seu olhar`);
   if (espera) partes.push(`${espera} são só espera do Mercado Livre`);
-  return `O ciclo de hoje registrou ${total} ocorrência(s): ${partes.join(' e ')}.`;
+  return `O ciclo de hoje registrou ${total} ocorrência(s) em anúncios distintos: `
+    + `${partes.join(' e ')}.`;
 });
 
 /** Erro do ciclo só importa se o ciclo de HOJE rodou — erro de ontem já foi relido. */

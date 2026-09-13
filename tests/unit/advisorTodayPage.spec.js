@@ -270,7 +270,7 @@ describe('AdvisorTodayPage', () => {
     ];
 
     const texto = (await montar(payload)).text();
-    expect(texto).toContain('O ciclo de hoje registrou 34 ocorrência(s)');
+    expect(texto).toContain('O ciclo de hoje registrou 34 ocorrência(s) em anúncios distintos');
     expect(texto).toContain('2 exigem seu olhar');
     expect(texto).toContain('32 são só espera do Mercado Livre');
     // cada motivo com o rótulo de negócio, a explicação e a lista de anúncios
@@ -281,6 +281,7 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('e mais 31');          // truncou a lista de itens
     // e a frase antiga, que só contava, não aparece mais
     expect(texto).not.toContain('terminou com 37 erro(s)');
+    expect(texto).not.toContain('37 erro(s)');   // o rodapé não repete a contagem do bloco
   });
 
   it('avisa quando a lista de alterados está truncada', async () => {
