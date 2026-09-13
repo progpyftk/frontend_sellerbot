@@ -66,6 +66,17 @@ export function useAdvisorToday() {
   /** O backend sinaliza que a agregação do dia falhou: os baldes vieram zerados por erro. */
   const factsError = computed(() => Boolean(data.value?.facts_error));
 
+  /**
+   * Por que o ciclo terminou com erro, agrupado por motivo e com rótulo de negócio.
+   * `exige_acao` separa falha real de espera (o ML ainda não propagou o preço) — sem isso a
+   * tela anunciava "37 erros" quando 32 eram só espera.
+   */
+  const falhas = computed(() => data.value?.failures || []);
+  const falhasComAcao = computed(() => falhas.value.filter((f) => f.exige_acao));
+  const falhasDeEspera = computed(() => falhas.value.filter((f) => !f.exige_acao));
+  const totalFalhas = computed(() => falhas.value.reduce((soma, f) => soma + Number(f.anuncios || 0), 0));
+  const totalComAcao = computed(() => falhasComAcao.value.reduce((soma, f) => soma + Number(f.anuncios || 0), 0));
+
   const naoMexidosQueAvaliou = computed(
     () => total.value.ja_no_alvo + Math.max(total.value.bloqueados - naoAvaliados.value, 0));
 
@@ -126,7 +137,7 @@ export function useAdvisorToday() {
   return {
     data, carregando, erro, carregar,
     contas, total, motivos, naoAvaliados, naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
-    factsError, killSwitch, modoGlobal, contasQueEscrevem, noPlanoEscrita,
+    factsError, killSwitch, modoGlobal, falhas, falhasComAcao, falhasDeEspera, totalFalhas, totalComAcao, contasQueEscrevem, noPlanoEscrita,
     brl, pct, STATUS_LABEL,
   };
 }

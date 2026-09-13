@@ -55,6 +55,46 @@ export const SUGGESTION_META = {
   aguardando: { label: 'Aguardando próximo ciclo', variant: 'slate', icon: 'schedule' },
 };
 
+/**
+ * Legendarário: a REGRA por trás de cada rótulo da tabela.
+ *
+ * Os rótulos vêm do mesmo `META` que a tabela usa (nome e cor nunca divergem); o texto explica
+ * o critério e o que fazer. Isto existe porque "Bloqueado: piso" e "Baixo giro" não dizem nada
+ * para quem não escreveu a régua.
+ */
+export const REGRA_SITUACOES = {
+  bloqueado_piso: 'O preço com a promoção deixa a margem abaixo de 30% ou o lucro abaixo de R$ 20 por venda. É o piso do dono: nenhuma escrita pode furar — inclusive a do robô.',
+  sem_dados: 'Não dá para calcular a margem: falta custo (CMV), frete ou tarifa confiável, ou o SKU não resolve no Tiny. Sem margem calculável, o robô não escreve.',
+  baixo_giro: 'Vende até 1 unidade por semana. Giro baixo quase nunca é só preço — a regra do dono manda revisar o anúncio (SEO, completude e fotos) antes de aprofundar desconto.',
+  promo_ativa: 'Tem promoção ativa e a margem está acima do piso. O robô não precisa agir: se vende, está bom.',
+  sem_promo: 'Não há promoção ativa agora. Se a régua pedir desconto, não existe oferta disponível para ativar no momento.',
+};
+
+export const REGRA_ACOES = {
+  bloqueado: 'Sem ação até o preço-base mudar: qualquer escrita aqui furaria o piso. O caminho é corrigir custo ou refazer o preço-base, não dar desconto.',
+  rebase: 'Margem abaixo de 30% sem promoção ativa: o problema é o preço-base, então o caso vai para o precificador — o robô de promoção não escreve.',
+  revisar: 'Regra do dono: anúncio parado ou fraco SEMPRE passa por revisão de anúncio, mesmo sem retrato financeiro — a revisão não depende de margem.',
+  reduzir: 'Giro médio com margem abaixo do alvo de 40%: reduzir o desconto para capturar margem sem perder a venda.',
+  manter: 'Giro alto (ou margem já no alvo): a régua manda não mexer. Se vende, está bom.',
+  sem_dados: 'Falta dado para calcular a margem (CMV, frete ou tarifa). Nada é escrito até o dado existir.',
+  aguardando: 'Sem regra aplicável com os dados atuais deste anúncio.',
+};
+
+export const REGRA_SAUDE = {
+  parado: 'Zero venda em 14 dias sob promoção. Prioridade máxima: destravar a venda.',
+  fraco: 'Menos de 1 unidade por semana. Candidato a aprofundar desconto e a revisar o anúncio.',
+  medio: 'De 1 a 3 unidades por semana. Alvo de margem de 40% — abaixo disso o robô reduz o desconto.',
+  alto: '3 ou mais unidades por semana. Não mexer enquanto a margem estiver acima do piso.',
+};
+
+/** Lista pronta para a tela: rótulo (com a mesma cor da tabela) + a regra. */
+export const LEGENDARIO_SITUACOES = Object.entries(SITUATION_META)
+  .map(([key, meta]) => ({ key, ...meta, regra: REGRA_SITUACOES[key] || '' }));
+export const LEGENDARIO_ACOES = Object.entries(SUGGESTION_META)
+  .map(([key, meta]) => ({ key, ...meta, regra: REGRA_ACOES[key] || '' }));
+export const LEGENDARIO_SAUDE = Object.entries(HEALTH_META)
+  .map(([key, meta]) => ({ key, ...meta, regra: REGRA_SAUDE[key] || '' }));
+
 export function brl(value) {
   if (value === null || value === undefined) return '—';
   return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

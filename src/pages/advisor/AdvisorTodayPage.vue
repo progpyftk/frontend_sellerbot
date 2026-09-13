@@ -31,7 +31,31 @@
         />
       </div>
 
-      <p v-if="errosDoCiclo" class="today__confirm" role="alert">
+      <!-- O que o ciclo registrou como erro: por motivo, e separando espera de falha real -->
+      <div v-if="falhas.length" class="today__falhas" :class="{ 'today__falhas--acao': totalComAcao > 0 }" role="status">
+        <header>
+          <q-icon :name="totalComAcao ? 'error_outline' : 'schedule'" size="16px" aria-hidden="true" />
+          <strong>{{ resumoFalhas }}</strong>
+        </header>
+        <ul>
+          <li v-for="falha in falhas" :key="falha.codigo">
+            <div class="today__falhaTopo">
+              <strong>{{ falha.anuncios }}</strong>
+              <span>{{ falha.label }}</span>
+              <span class="today__falhaTag" :class="{ 'is-acao': falha.exige_acao }">
+                {{ falha.exige_acao ? 'exige seu olhar' : 'não exige ação' }}
+              </span>
+            </div>
+            <p class="today__falhaExp">{{ falha.explicacao }}</p>
+            <p v-if="falha.exemplo" class="today__falhaExemplo">No Mercado Livre: {{ falha.exemplo }}</p>
+            <p v-if="falha.itens && falha.itens.length" class="today__falhaItens">
+              {{ falha.itens.join(' · ') }}<template v-if="falha.anuncios > falha.itens.length"> e mais {{ falha.anuncios - falha.itens.length }}</template>
+            </p>
+          </li>
+        </ul>
+      </div>
+
+      <p v-else-if="errosDoCiclo" class="today__confirm" role="alert">
         <q-icon name="error_outline" size="16px" aria-hidden="true" />
         <strong>O ciclo de hoje terminou com {{ ciclo.errors_count }} erro(s).</strong>
         As escritas confirmadas continuam valendo; o que ficou sem confirmação o robô relê no próximo ciclo.
@@ -174,6 +198,7 @@ const {
   data, carregando, erro, carregar, contas, total, motivos, naoAvaliados,
   naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
   factsError, killSwitch, modoGlobal, contasQueEscrevem, noPlanoEscrita,
+  falhas, totalFalhas, totalComAcao,
   brl, pct, STATUS_LABEL,
 } = useAdvisorToday();
 
@@ -225,6 +250,17 @@ const leadAval = computed(() => {
  * nunca "nenhum preço saiu abaixo do piso", que soaria como um atestado de que nada pode dar errado.
  */
 const temEscrita = computed(() => Number(protecao.value.aplicadas || 0) > 0);
+
+/** Frase de topo: quantas ocorrências, quantas exigem olhar e quantas são só espera. */
+const resumoFalhas = computed(() => {
+  const total = totalFalhas.value;
+  const acao = totalComAcao.value;
+  const espera = total - acao;
+  const partes = [];
+  if (acao) partes.push(`${acao} exigem seu olhar`);
+  if (espera) partes.push(`${espera} são só espera do Mercado Livre`);
+  return `O ciclo de hoje registrou ${total} ocorrência(s): ${partes.join(' e ')}.`;
+});
 
 /** Erro do ciclo só importa se o ciclo de HOJE rodou — erro de ontem já foi relido. */
 const errosDoCiclo = computed(
@@ -398,6 +434,44 @@ onMounted(carregar);
 
     li { margin-bottom: $space-1; }
   }
+
+  &__falhas {
+    margin-bottom: $space-4;
+    padding: $space-3 $space-4;
+    border-radius: $radius-md;
+    background: $tint-sky-bg;
+    color: $tint-sky-text;
+    font-size: $text-small-size;
+
+    &--acao { background: $tint-red-bg; color: $tint-red-text; }
+
+    header { display: flex; align-items: center; gap: $space-2; }
+    ul { margin: $space-2 0 0; padding-left: $space-4; }
+    li + li { margin-top: $space-3; }
+  }
+  &__falhaTopo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: $space-2;
+
+    strong { font-variant-numeric: tabular-nums; }
+  }
+  &__falhaTag {
+    font-size: $text-xs-size;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    opacity: .85;
+    &.is-acao { font-weight: $font-semibold; opacity: 1; }
+  }
+  &__falhaExp, &__falhaExemplo, &__falhaItens {
+    margin: 2px 0 0;
+    font-size: $text-xs-size;
+    line-height: 1.45;
+    opacity: .92;
+  }
+  &__falhaExemplo { font-style: italic; }
+  &__falhaItens { font-variant-numeric: tabular-nums; }
 
   &__hint { margin: $space-3 0 0; font-size: $text-xs-size; color: $text-muted; }
 

@@ -98,7 +98,9 @@
           </template>
 
           <template #cell-situacao="{ row }">
-            <AdvisorStatusPill :status="situacao(row).status">{{ situacao(row).label }}</AdvisorStatusPill>
+            <AdvisorStatusPill :status="situacao(row).status" :title="situacao(row).regra">
+              {{ situacao(row).label }}
+            </AdvisorStatusPill>
           </template>
 
           <template #cell-sugestao="{ row }">
@@ -155,6 +157,53 @@
           </div>
         </footer>
       </AdvisorSection>
+
+      <!-- Legenda: o rótulo sozinho não ensina nada a quem não escreveu a régua -->
+      <AdvisorSection
+        title="O que significa cada rótulo" tight
+        lead="A coluna Situação diz onde o anúncio está hoje; a coluna O que fazer diz o que a régua manda para ele. Os critérios:"
+      >
+        <div class="cat__legenda">
+          <div class="cat__legendaCol">
+            <h4>Situação</h4>
+            <dl>
+              <div v-for="item in LEGENDARIO_SITUACOES" :key="item.key">
+                <dt><AdvisorStatusPill :status="PILL_SITUACAO[item.key] || 'neutral'">{{ item.label }}</AdvisorStatusPill></dt>
+                <dd>{{ item.regra }}</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="cat__legendaCol">
+            <h4>O que fazer</h4>
+            <dl>
+              <div v-for="item in LEGENDARIO_ACOES" :key="item.key">
+                <dt>{{ item.label }}</dt>
+                <dd>{{ item.regra }}</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="cat__legendaCol">
+            <h4>Saúde de vendas</h4>
+            <dl>
+              <div v-for="item in LEGENDARIO_SAUDE" :key="item.key">
+                <dt>{{ item.label }}</dt>
+                <dd>{{ item.regra }}</dd>
+              </div>
+            </dl>
+            <h4 class="cat__legendaSub">Piso e alvo</h4>
+            <dl>
+              <div>
+                <dt>Piso</dt>
+                <dd>Margem mínima de {{ FLOOR_MARGIN_PCT }}% e lucro mínimo de {{ brl(FLOOR_PROFIT_BRL) }} por venda. Nem o robô escreve abaixo disso.</dd>
+              </div>
+              <div>
+                <dt>Alvo do giro médio</dt>
+                <dd>{{ TARGET_MARGIN_PCT.medio }}% de margem. Abaixo disso, o robô reduz o desconto.</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </AdvisorSection>
     </template>
   </AdvisorShell>
 </template>
@@ -170,7 +219,9 @@ import AdvisorStatusPill from 'src/components/advisor/AdvisorStatusPill.vue';
 import AdvisorTable from 'src/components/advisor/AdvisorTable.vue';
 import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import {
-  FLOOR_MARGIN_PCT, FLOOR_PROFIT_BRL, HEALTH_META, brl, pct, situationOf, suggestionOf,
+  FLOOR_MARGIN_PCT, FLOOR_PROFIT_BRL, HEALTH_META, LEGENDARIO_ACOES, LEGENDARIO_SAUDE,
+  LEGENDARIO_SITUACOES, REGRA_ACOES, REGRA_SITUACOES, TARGET_MARGIN_PCT,
+  brl, pct, situationOf, suggestionOf,
 } from 'src/utils/advisorDecision';
 
 const {
@@ -259,17 +310,24 @@ const retratoTexto = computed(() => {
   return retrato.value.stale ? `retrato de ${quando} (pode estar velho)` : `retrato de ${quando}`;
 });
 
+/** Cor do selo por situação (mesma nos cartões e na legenda). */
+const PILL_SITUACAO = {
+  bloqueado_piso: 'divergente', sem_dados: 'bloqueado', baixo_giro: 'recusado',
+  promo_ativa: 'verificado', sem_promo: 'neutral',
+};
+
 function situacao(row) {
   const s = situationOf(row);
-  const variantes = {
-    bloqueado_piso: 'divergente', sem_dados: 'bloqueado', baixo_giro: 'recusado',
-    promo_ativa: 'verificado', sem_promo: 'neutral',
+  return {
+    label: s?.label || '—',
+    status: PILL_SITUACAO[s?.key] || 'neutral',
+    regra: REGRA_SITUACOES[s?.key] || '',
   };
-  return { label: s?.label || '—', status: variantes[s?.key] || 'neutral' };
 }
 
 function sugestao(row) {
-  return suggestionOf(row) || { label: '—' };
+  const s = suggestionOf(row);
+  return { label: s?.label || '—', regra: REGRA_ACOES[s?.key] || '' };
 }
 
 /**
@@ -383,6 +441,25 @@ onMounted(carregar);
     margin: $space-3 0 0;
     font-size: $text-xs-size;
     color: $text-muted;
+  }
+
+  &__legenda {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: $space-5;
+  }
+  &__legendaCol {
+    h4 {
+      font-size: $text-xs-size;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: $text-muted;
+      margin: 0 0 $space-2;
+    }
+    &__legendaSub, .cat__legendaSub { margin-top: $space-4; }
+    dl { margin: 0; }
+    dt { font-weight: $font-semibold; font-size: $text-small-size; margin-top: $space-2; }
+    dd { margin: 2px 0 0; font-size: $text-xs-size; color: $text-muted; line-height: 1.5; }
   }
 
   &__paginacao {

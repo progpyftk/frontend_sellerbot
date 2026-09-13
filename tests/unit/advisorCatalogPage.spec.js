@@ -171,13 +171,29 @@ describe('AdvisorCatalogPage', () => {
   });
 
   it('o preset "Completo" traz as colunas financeiras', async () => {
+    // A legenda (sempre visível) cita "CMV" e "Saúde" em prosa, então a checagem é nos
+    // CABEÇALHOS da tabela — que é o que o preset realmente governa.
+    const cabecalhos = (w) => w.findAll('.adv-table__table thead th').map((th) => th.text());
+
     const wrapper = await montar();
-    expect(wrapper.text()).not.toContain('CMV');
+    expect(cabecalhos(wrapper)).not.toContain('CMV');
 
     wrapper.vm.preset = 'completo';
     await flushPromises();
-    expect(wrapper.text()).toContain('CMV');
-    expect(wrapper.text()).toContain('Saúde');
+    expect(cabecalhos(wrapper)).toContain('CMV');
+    expect(cabecalhos(wrapper)).toContain('Saúde');
+  });
+
+  it('explica cada rótulo da tabela com a regra', async () => {
+    // "Bloqueado: piso" e "Baixo giro" não dizem nada a quem não escreveu a régua.
+    const texto = (await montar()).texto();
+    expect(texto).toContain('O que significa cada rótulo');
+    expect(texto).toContain('Bloqueado: piso');
+    expect(texto).toContain('margem abaixo de 30% ou o lucro abaixo de R$ 20');
+    expect(texto).toContain('Giro baixo');   // rotulo vigente da situacao
+    expect(texto).toContain('revisar o anúncio (SEO, completude e fotos)');
+    expect(texto).toContain('Sem ação');
+    expect(texto).toContain('Alvo do giro médio');
   });
 
   it('erro tem estado próprio e não parece lista vazia', async () => {

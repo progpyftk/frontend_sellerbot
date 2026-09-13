@@ -256,6 +256,33 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('está em modo de primeira leva (canário) esperando o seu aval');
   });
 
+  it('diz QUAL erro o ciclo teve, não só quantos', async () => {
+    // Produção 12/09: o painel dizia "37 erro(s)" e 32 eram só o ML não ter propagado o preço.
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.last_cycle.errors_count = 37;
+    payload.failures = [
+      { codigo: 'WRITE_REJECTED', label: 'o Mercado Livre recusou a escrita',
+        explicacao: 'Normalmente a promoção não existe mais no anúncio.', exige_acao: true,
+        anuncios: 2, itens: ['MLB-A', 'MLB-B'], exemplo: 'ML recusou a escrita.' },
+      { codigo: 'PRICE_DIVERGED', label: 'o Mercado Livre ainda não mostra o preço novo',
+        explicacao: 'Ele relê no próximo ciclo — não é falha e não exige ação.', exige_acao: false,
+        anuncios: 32, itens: ['MLB-D1'], exemplo: 'ML mostra 76 — esperado R$ 75.00.' },
+    ];
+
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('O ciclo de hoje registrou 34 ocorrência(s)');
+    expect(texto).toContain('2 exigem seu olhar');
+    expect(texto).toContain('32 são só espera do Mercado Livre');
+    // cada motivo com o rótulo de negócio, a explicação e a lista de anúncios
+    expect(texto).toContain('o Mercado Livre recusou a escrita');
+    expect(texto).toContain('Normalmente a promoção não existe mais no anúncio.');
+    expect(texto).toContain('MLB-A · MLB-B');
+    expect(texto).toContain('No Mercado Livre: ML mostra 76 — esperado R$ 75.00.');
+    expect(texto).toContain('e mais 31');          // truncou a lista de itens
+    // e a frase antiga, que só contava, não aparece mais
+    expect(texto).not.toContain('terminou com 37 erro(s)');
+  });
+
   it('avisa quando a lista de alterados está truncada', async () => {
     // A métrica conta 25 alterações, mas a lista mostra no máximo 10 (as mais recentes).
     const payload = JSON.parse(JSON.stringify(PAYLOAD));
