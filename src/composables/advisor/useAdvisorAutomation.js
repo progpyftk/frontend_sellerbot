@@ -10,7 +10,7 @@
  * - a leva fica num mapa local por conta para o dono poder digitar sem disparar um PATCH por tecla;
  * - a pausa de emergência age em TODAS as contas do usuário e é a única ação irreversível de imediato.
  */
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 
 import AdvisorService from 'src/services/AdvisorService';
 
@@ -58,6 +58,96 @@ export function useAdvisorAutomation() {
   const levas = reactive({});
   function sincronizarLevas() {
     for (const conta of contas.value) levas[conta.account_id] = conta.wave_size;
+  }
+
+  /**
+   * Régua por conta (PROMO-CFG-3). `reguas[account_id]` guarda o RASCUNHO local (nomes de
+   * campo do payload de `update_policy`, não os nomes curtos que `regua` devolve) — assim o
+   * dono digita sem disparar um PATCH por tecla, igual à leva.
+   */
+  const reguas = reactive({});
+  function sincronizarReguas() {
+    for (const conta of contas.value) {
+      reguas[conta.account_id] = {
+        floor_margin_pct: conta.regua?.margin_pct ?? null,
+        floor_profit_brl: conta.regua?.profit_brl ?? null,
+        target_margin_parado_pct: conta.regua?.target_parado_pct ?? null,
+        target_margin_medio_pct: conta.regua?.target_medio_pct ?? null,
+        high_turnover_margin_pct: conta.regua?.high_turnover_pct ?? null,
+        smart_signal_margin_pct: conta.regua?.smart_signal_pct ?? null,
+      };
+    }
+  }
+  // Rede de segurança: o template acessa `reguas[conta.account_id].campo` (propriedade
+  // aninhada, ao contrário de `levas[conta.account_id]`) — sem isto, a 1ª renderização depois
+  // de `data` mudar podia rodar antes do `sincronizarReguas()` manual do chamador e quebrar
+  // com "Cannot read properties of undefined". `flush: 'pre'` garante que roda antes do render.
+  watch(contas, () => sincronizarReguas(), { immediate: true, flush: 'pre' });
+
+  const REGUA_ROTULOS = {
+    floor_margin_pct: 'piso de margem',
+    floor_profit_brl: 'piso de lucro',
+    target_margin_parado_pct: 'alvo de margem (parado/fraco)',
+    target_margin_medio_pct: 'alvo de margem (giro médio)',
+    high_turnover_margin_pct: 'teto de margem (giro alto)',
+    smart_signal_margin_pct: 'margem mínima de sinalização SMART',
+  };
+
+  const _CAMPO_PARA_CHAVE_CURTA = {
+    floor_margin_pct: 'margin_pct',
+    floor_profit_brl: 'profit_brl',
+    target_margin_parado_pct: 'target_parado_pct',
+    target_margin_medio_pct: 'target_medio_pct',
+    high_turnover_margin_pct: 'high_turnover_pct',
+    smart_signal_margin_pct: 'smart_signal_pct',
+  };
+
+  /** Grava 1 campo da régua se o rascunho difere do valor já resolvido da conta. `conta.regua`
+   * é sempre o valor RESOLVIDO (nunca diferencia default de override explícito igual ao
+   * default) — então limpar um campo que já está no default é inofensivo: no máximo confirma
+   * que não há override. Volta ao valor do servidor em caso de erro (via `sincronizarReguas`
+   * depois do `gravar`, que sempre relê o estado). */
+  async function salvarReguaCampo(conta, campo) {
+    const bruto = reguas[conta.account_id]?.[campo];
+    const atual = conta.regua?.[_CAMPO_PARA_CHAVE_CURTA[campo]] ?? null;
+    const novo = bruto === '' || bruto === null || bruto === undefined ? null : Number(bruto);
+    if (novo === null ? atual === null : Number(atual) === novo) return;
+    await gravar(conta.account_id, { [campo]: novo },
+      novo === null
+        ? `${conta.account_nickname}: ${REGUA_ROTULOS[campo]} voltou ao padrão da plataforma.`
+        : `${conta.account_nickname}: ${REGUA_ROTULOS[campo]} agora é ${novo}${campo === 'floor_profit_brl' ? ' (R$)' : '%'}.`);
+    sincronizarReguas();
+  }
+
+  const PRESETS_REGUA = {
+    conservador: {
+      label: 'Conservador', floor_margin_pct: 35, floor_profit_brl: 25,
+      target_margin_parado_pct: 35, target_margin_medio_pct: 45,
+    },
+    equilibrado: {
+      label: 'Equilibrado (recomendado — padrão da plataforma)', floor_margin_pct: 30, floor_profit_brl: 20,
+      target_margin_parado_pct: 30, target_margin_medio_pct: 40,
+    },
+    agressivo: {
+      label: 'Agressivo', floor_margin_pct: 20, floor_profit_brl: 12,
+      target_margin_parado_pct: 20, target_margin_medio_pct: 30,
+    },
+  };
+
+  /** Aplica um preset: só preenche os 4 campos principais no PAYLOAD de uma vez (1 gravação,
+   * não 4) — os campos avançados (giro alto / sinal SMART) não fazem parte de preset. */
+  async function aplicarPreset(conta, chave) {
+    const preset = PRESETS_REGUA[chave];
+    if (!preset) return;
+    const payload = {
+      floor_margin_pct: preset.floor_margin_pct,
+      floor_profit_brl: preset.floor_profit_brl,
+      target_margin_parado_pct: preset.target_margin_parado_pct,
+      target_margin_medio_pct: preset.target_margin_medio_pct,
+    };
+    await gravar(conta.account_id, payload,
+      `${conta.account_nickname}: régua "${preset.label}" aplicada.`);
+    sincronizarReguas();
   }
 
   async function ligarDesligar(conta, ligar) {
@@ -130,5 +220,6 @@ export function useAdvisorAutomation() {
     data, carregando, erro, salvando, aviso, contas, levas, alertas,
     modoGlobal, killSwitch, travada, escrevendo, esperandoAval,
     carregar, sincronizarLevas, ligarDesligar, salvarLeva, aprovarLeva, retomar, pausarTudo,
+    reguas, sincronizarReguas, salvarReguaCampo, aplicarPreset, PRESETS_REGUA,
   };
 }

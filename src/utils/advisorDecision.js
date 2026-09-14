@@ -16,12 +16,32 @@
  * - Piso: margem ≥ 30% E lucro ≥ R$ 20 por venda (regra do dono; subiu de R$ 12 em 12/09).
  */
 
+// Default da PLATAFORMA — só usado quando a linha não veio com a régua da própria conta
+// (PROMO-CFG-3: `/advisor/catalog/` manda `floor_margin_pct`/`floor_profit_brl`/
+// `target_parado_pct`/`target_medio_pct` já resolvidos por linha desde então; contas mais
+// antigas em cache ou uma resposta de um endpoint que ainda não manda o campo caem aqui).
 export const FLOOR_MARGIN_PCT = 30;
-// Piso de lucro por venda do dono. PROMO-IA-23 (12/09/2026) subiu de R$ 12 para R$ 20 —
-// a fonte de verdade é `app_mercado_livre/services/promotions_ads/floors.py`. Este valor é
-// apenas fallback: o ideal é o backend mandar os pisos no payload (ver briefing §F3).
 export const FLOOR_PROFIT_BRL = 20;
 export const TARGET_MARGIN_PCT = { parado: 30, fraco: 30, medio: 40, alto: null };
+
+/** Piso/alvo da régua da CONTA dona da linha — nunca a constante da plataforma quando a API
+ * já manda o valor resolvido (ver comentário acima). */
+export function floorMarginOf(row) {
+  const v = row?.floor_margin_pct;
+  return v === null || v === undefined ? FLOOR_MARGIN_PCT : Number(v);
+}
+export function floorProfitOf(row) {
+  const v = row?.floor_profit_brl;
+  return v === null || v === undefined ? FLOOR_PROFIT_BRL : Number(v);
+}
+export function targetParadoOf(row) {
+  const v = row?.target_parado_pct;
+  return v === null || v === undefined ? TARGET_MARGIN_PCT.parado : Number(v);
+}
+export function targetMedioOf(row) {
+  const v = row?.target_medio_pct;
+  return v === null || v === undefined ? TARGET_MARGIN_PCT.medio : Number(v);
+}
 
 export const INPUT_LABELS = {
   cmv: 'CMV',
@@ -122,7 +142,7 @@ export function situationOf(row) {
     return {
       key: 'bloqueado_piso',
       ...SITUATION_META.bloqueado_piso,
-      reason: `Abaixo do piso (margem ≥ ${FLOOR_MARGIN_PCT}% e lucro ≥ ${brl(FLOOR_PROFIT_BRL)}): ${partes.join(' · ') || 'sem valor calculável'}.`,
+      reason: `Abaixo do piso desta conta (margem ≥ ${pct(floorMarginOf(row))} e lucro ≥ ${brl(floorProfitOf(row))}): ${partes.join(' · ') || 'sem valor calculável'}.`,
     };
   }
   if (!row.estimable) {
@@ -194,16 +214,16 @@ export function suggestionOf(row) {
     return {
       key: 'bloqueado',
       ...SUGGESTION_META.bloqueado,
-      detail: `Qualquer escrita aqui furaria o piso (margem ≥ ${FLOOR_MARGIN_PCT}% e lucro ≥ ${brl(FLOOR_PROFIT_BRL)}).`,
+      detail: `Qualquer escrita aqui furaria o piso desta conta (margem ≥ ${pct(floorMarginOf(row))} e lucro ≥ ${brl(floorProfitOf(row))}).`,
       source: 'regua',
     };
   }
   if (row.margin_pct !== null && row.margin_pct !== undefined
-      && row.margin_pct < FLOOR_MARGIN_PCT && !row.has_active_promo) {
+      && row.margin_pct < floorMarginOf(row) && !row.has_active_promo) {
     return {
       key: 'rebase',
       ...SUGGESTION_META.rebase,
-      detail: `Margem ${pct(row.margin_pct)} abaixo de ${FLOOR_MARGIN_PCT}% sem promoção ativa — o preço-base é do precificador.`,
+      detail: `Margem ${pct(row.margin_pct)} abaixo de ${pct(floorMarginOf(row))} sem promoção ativa — o preço-base é do precificador.`,
       source: 'regua',
     };
   }
@@ -216,11 +236,11 @@ export function suggestionOf(row) {
     };
   }
   if (row.health === 'medio') {
-    if (row.margin_pct !== null && row.margin_pct !== undefined && row.margin_pct < TARGET_MARGIN_PCT.medio) {
+    if (row.margin_pct !== null && row.margin_pct !== undefined && row.margin_pct < targetMedioOf(row)) {
       return {
         key: 'reduzir',
         ...SUGGESTION_META.reduzir,
-        detail: `Margem ${pct(row.margin_pct)} abaixo do alvo de ${TARGET_MARGIN_PCT.medio}% para giro médio.`,
+        detail: `Margem ${pct(row.margin_pct)} abaixo do alvo de ${pct(targetMedioOf(row))} para giro médio.`,
         source: 'regua',
       };
     }

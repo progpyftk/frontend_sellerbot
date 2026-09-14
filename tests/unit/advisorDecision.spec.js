@@ -46,7 +46,7 @@ describe('advisorDecision · situação (estado honesto)', () => {
     expect(s.key).toBe('bloqueado_piso')
     expect(s.variant).toBe('red')
     expect(s.icon).toBe('block')
-    expect(s.reason).toContain(`margem ≥ ${FLOOR_MARGIN_PCT}%`)
+    expect(s.reason).toContain(`margem ≥ ${pct(FLOOR_MARGIN_PCT)}`)
     expect(s.reason).toContain('28,1%')
     expect(s.reason).toContain('11,89')
   })
@@ -143,5 +143,33 @@ describe('advisorDecision · resumo da página', () => {
     expect(d.total).toBe(0)
     expect(d.attention).toBe(0)
     expect(d.sugestoes).toEqual({})
+  })
+})
+
+describe('advisorDecision · régua por conta (PROMO-CFG-3)', () => {
+  it('usa o piso da PRÓPRIA linha, não a constante da plataforma, para decidir rebase', () => {
+    // 24% está ACIMA do piso de 15% desta conta: não deveria virar "rebase".
+    const linhaComPisoBaixo = baseRow({
+      has_active_promo: false, margin_pct: 24, floor_margin_pct: 15, floor_profit_brl: 8,
+    })
+    expect(suggestionOf(linhaComPisoBaixo).key).not.toBe('rebase')
+
+    // a mesma margem, sem o override de conta, cai no piso da plataforma (30%) e vira rebase.
+    const linhaSemOverride = baseRow({ has_active_promo: false, margin_pct: 24 })
+    expect(suggestionOf(linhaSemOverride).key).toBe('rebase')
+  })
+
+  it('usa o alvo de giro médio da PRÓPRIA linha para decidir reduzir vs. manter', () => {
+    const linha = baseRow({ health: 'medio', margin_pct: 22, target_medio_pct: 20 })
+    expect(suggestionOf(linha).key).toBe('manter') // 22% já está acima do alvo de 20% desta conta
+  })
+
+  it('mensagem de bloqueio cita o piso resolvido da linha, não o texto fixo', () => {
+    const s = situationOf(baseRow({
+      below_floor: true, margin_pct: 12, profit_unit: 6, floor_margin_pct: 15, floor_profit_brl: 8,
+    }))
+    expect(s.reason).toContain('15,0%')
+    expect(s.reason).toContain('R$')
+    expect(s.reason).toContain('8,00')
   })
 })

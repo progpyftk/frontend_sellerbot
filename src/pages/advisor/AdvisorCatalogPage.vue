@@ -141,8 +141,9 @@
             </div>
           </dl>
           <p class="cat__detalheNota">
-            A situação e a sugestão saem da mesma régua que o robô usa para escrever: margem-alvo por
-            saúde de vendas, com piso de {{ FLOOR_MARGIN_PCT }}% de margem e {{ brl(FLOOR_PROFIT_BRL) }} de lucro por venda.
+            A situação e a sugestão saem da mesma régua que o robô usa para escrever nesta conta:
+            margem-alvo por saúde de vendas, com piso de {{ pct(floorMarginOf(linhaExpandida)) }} de
+            margem e {{ brl(floorProfitOf(linhaExpandida)) }} de lucro por venda.
           </p>
         </div>
 
@@ -190,7 +191,7 @@
                 <dd>{{ item.regra }}</dd>
               </div>
             </dl>
-            <h4 class="cat__legendaSub">Piso e alvo</h4>
+            <h4 class="cat__legendaSub">Piso e alvo (padrão da plataforma)</h4>
             <dl>
               <div>
                 <dt>Piso</dt>
@@ -199,6 +200,11 @@
               <div>
                 <dt>Alvo do giro médio</dt>
                 <dd>{{ TARGET_MARGIN_PCT.medio }}% de margem. Abaixo disso, o robô reduz o desconto.</dd>
+              </div>
+              <div>
+                <dt>Sua conta configurou um piso diferente?</dt>
+                <dd>Cada linha usa a régua da PRÓPRIA conta — estes números são só o padrão de quem
+                  não configurou nada. Ajuste em <strong>Automação</strong>.</dd>
               </div>
             </dl>
           </div>
@@ -221,7 +227,7 @@ import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import {
   FLOOR_MARGIN_PCT, FLOOR_PROFIT_BRL, HEALTH_META, LEGENDARIO_ACOES, LEGENDARIO_SAUDE,
   LEGENDARIO_SITUACOES, REGRA_ACOES, REGRA_SITUACOES, TARGET_MARGIN_PCT,
-  brl, pct, situationOf, suggestionOf,
+  brl, floorMarginOf, floorProfitOf, pct, situationOf, suggestionOf,
 } from 'src/utils/advisorDecision';
 
 const {

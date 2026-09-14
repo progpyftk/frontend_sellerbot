@@ -50,6 +50,7 @@ const stubs = {
   'q-btn': { template: '<button @click="$emit(\'click\')"><slot />{{ label }}</button>', props: ['label'] },
   'q-toggle': { template: '<input type="checkbox" />', props: ['modelValue', 'label'] },
   'q-input': { template: '<input />', props: ['modelValue', 'label'] },
+  'q-select': true,
   'router-link': { template: '<a><slot /></a>' },
   'q-page': { template: '<div><slot /></div>' },
 };
@@ -142,6 +143,70 @@ describe('AdvisorAutomationPage', () => {
 
     expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', wave_size: 20 });
     expect(wrapper.text()).toContain('leva de 20 anúncios');
+  });
+
+  it('piso de margem igual ao já resolvido não gasta gravação', async () => {
+    const payload = {
+      ...PAYLOAD,
+      by_account: {
+        ...PAYLOAD.by_account,
+        ACC1: {
+          ...PAYLOAD.by_account.ACC1,
+          regua: {
+            margin_pct: '30.00', profit_brl: '20.00', target_parado_pct: '30.00',
+            target_medio_pct: '40.00', high_turnover_pct: '40.00', smart_signal_pct: '25.00',
+          },
+        },
+      },
+    };
+    const wrapper = await montar(payload);
+    await wrapper.vm.salvarReguaCampo(wrapper.vm.contas[0], 'floor_margin_pct');
+    expect(patchAutomation).not.toHaveBeenCalled();
+  });
+
+  it('novo piso de margem grava e informa o valor (PROMO-CFG-3)', async () => {
+    const wrapper = await montar();
+    wrapper.vm.reguas.ACC1.floor_margin_pct = 35;
+    await wrapper.vm.salvarReguaCampo(wrapper.vm.contas[0], 'floor_margin_pct');
+    await flushPromises();
+
+    expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', floor_margin_pct: 35 });
+    expect(wrapper.text()).toContain('piso de margem agora é 35%');
+  });
+
+  it('um preset preenche os 4 campos principais numa única gravação', async () => {
+    const wrapper = await montar();
+    await wrapper.vm.aplicarPreset(wrapper.vm.contas[0], 'conservador');
+    await flushPromises();
+
+    expect(patchAutomation).toHaveBeenCalledWith({
+      account_id: 'ACC1', floor_margin_pct: 35, floor_profit_brl: 25,
+      target_margin_parado_pct: 35, target_margin_medio_pct: 45,
+    });
+  });
+
+  it('contas com régua diferente avisam no card explicativo em vez de misturar os números', async () => {
+    const payload = {
+      ...PAYLOAD,
+      by_account: {
+        ACC1: {
+          ...PAYLOAD.by_account.ACC1,
+          regua: {
+            margin_pct: '30.00', profit_brl: '20.00', target_parado_pct: '30.00',
+            target_medio_pct: '40.00', high_turnover_pct: '40.00', smart_signal_pct: '25.00',
+          },
+        },
+        ACC2: {
+          ...PAYLOAD.by_account.ACC2,
+          regua: {
+            margin_pct: '15.00', profit_brl: '10.00', target_parado_pct: '15.00',
+            target_medio_pct: '25.00', high_turnover_pct: '25.00', smart_signal_pct: '15.00',
+          },
+        },
+      },
+    };
+    const wrapper = await montar(payload);
+    expect(wrapper.text()).toContain('Suas contas têm pisos diferentes');
   });
 
   it('a pausa de emergência exige confirmação e diz que nada foi desfeito', async () => {

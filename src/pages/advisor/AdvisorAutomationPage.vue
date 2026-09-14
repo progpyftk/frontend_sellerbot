@@ -72,6 +72,71 @@
               </q-input>
             </div>
 
+            <details class="aut__regua-conta">
+              <summary>
+                Régua desta conta
+                <span class="aut__regua-resumo">
+                  piso {{ pct(Number(conta.regua?.margin_pct)) }} de margem · {{ brl(Number(conta.regua?.profit_brl)) }} de lucro
+                </span>
+              </summary>
+              <div class="aut__regua-corpo">
+                <q-select
+                  dense outlined emit-value map-options
+                  :model-value="null" :options="presetOpcoes"
+                  label="Aplicar um preset (preenche os 4 campos abaixo)"
+                  :disable="salvando === conta.account_id"
+                  @update:model-value="(v) => v && aplicarPreset(conta, v)"
+                />
+                <div class="aut__regua-campos">
+                  <q-input
+                    v-model.number="reguas[conta.account_id].floor_margin_pct" type="number" dense outlined
+                    suffix="%" label="Piso de margem" :disable="salvando === conta.account_id"
+                    @blur="salvarReguaCampo(conta, 'floor_margin_pct')"
+                  >
+                    <template #hint>Nenhuma escrita passa por baixo — nem o robô, nem uma ativação manual.</template>
+                  </q-input>
+                  <q-input
+                    v-model.number="reguas[conta.account_id].floor_profit_brl" type="number" dense outlined
+                    prefix="R$" label="Piso de lucro por venda" :disable="salvando === conta.account_id"
+                    @blur="salvarReguaCampo(conta, 'floor_profit_brl')"
+                  />
+                  <q-input
+                    v-model.number="reguas[conta.account_id].target_margin_parado_pct" type="number" dense outlined
+                    suffix="%" label="Alvo — parado/fraco" :disable="salvando === conta.account_id"
+                    @blur="salvarReguaCampo(conta, 'target_margin_parado_pct')"
+                  >
+                    <template #hint>Até onde o robô pode aprofundar desconto para destravar a venda.</template>
+                  </q-input>
+                  <q-input
+                    v-model.number="reguas[conta.account_id].target_margin_medio_pct" type="number" dense outlined
+                    suffix="%" label="Alvo — giro médio" :disable="salvando === conta.account_id"
+                    @blur="salvarReguaCampo(conta, 'target_margin_medio_pct')"
+                  >
+                    <template #hint>Abaixo disso com giro médio, o robô reduz o desconto.</template>
+                  </q-input>
+                </div>
+                <details class="aut__regua-avancado">
+                  <summary>Avançado</summary>
+                  <div class="aut__regua-campos">
+                    <q-input
+                      v-model.number="reguas[conta.account_id].high_turnover_margin_pct" type="number" dense outlined
+                      suffix="%" label="Teto — giro alto" :disable="salvando === conta.account_id"
+                      @blur="salvarReguaCampo(conta, 'high_turnover_margin_pct')"
+                    >
+                      <template #hint>Margem mínima para considerar giro alto "sem necessidade de agir".</template>
+                    </q-input>
+                    <q-input
+                      v-model.number="reguas[conta.account_id].smart_signal_margin_pct" type="number" dense outlined
+                      suffix="%" label="Sinal SMART" :disable="salvando === conta.account_id"
+                      @blur="salvarReguaCampo(conta, 'smart_signal_margin_pct')"
+                    >
+                      <template #hint>Abaixo disso num anúncio SMART, o robô sinaliza (nunca escreve — preço é do ML).</template>
+                    </q-input>
+                  </div>
+                </details>
+              </div>
+            </details>
+
             <p v-if="conta.paused" class="aut__pausada">
               <q-icon name="pause_circle" size="14px" aria-hidden="true" />
               Pausada{{ conta.pause_reason ? `: ${conta.pause_reason}` : '' }}.
@@ -112,8 +177,14 @@
           <div>
             <h4>Pisos que nunca são cruzados</h4>
             <ul>
-              <li>Margem mínima de <strong>{{ FLOOR_MARGIN_PCT }}%</strong> e lucro mínimo de <strong>{{ brl(FLOOR_PROFIT_BRL) }} por venda</strong>. Se o preço oferecido não fecha os dois, o robô não escreve.</li>
-              <li>Se a margem atual já está <strong>abaixo de 30%</strong>, o caminho é <strong>rebase de preço</strong> no precificador — não mais desconto.</li>
+              <li>
+                Margem mínima de <strong>{{ pct(reguaComum.margin_pct) }}</strong> e lucro mínimo de
+                <strong>{{ brl(reguaComum.profit_brl) }} por venda</strong>. Se o preço oferecido não
+                fecha os dois, o robô não escreve.
+                <template v-if="reguaComum.divergente"> Suas contas têm pisos diferentes — veja o valor
+                  real de cada uma em "Régua desta conta", acima.</template>
+              </li>
+              <li>Se a margem atual já está <strong>abaixo do piso de margem-alvo (parado/fraco)</strong>, o caminho é <strong>rebase de preço</strong> no precificador — não mais desconto.</li>
               <li>Frete estimado com pouca amostra (&gt; R$ 25 ou &gt; 20% do preço): marcado como <strong>sem certeza</strong> e não é auto-ativado.</li>
             </ul>
           </div>
@@ -161,13 +232,38 @@ const {
   data, carregando, erro, salvando, aviso, contas, levas, alertas,
   modoGlobal, killSwitch, travada, escrevendo, esperandoAval,
   carregar, sincronizarLevas, ligarDesligar, salvarLeva, aprovarLeva, retomar, pausarTudo,
+  reguas, sincronizarReguas, salvarReguaCampo, aplicarPreset, PRESETS_REGUA,
 } = useAdvisorAutomation();
 
 const confirmarPausa = ref(false);
 
-const GLOSSARIO = [
+const presetOpcoes = Object.entries(PRESETS_REGUA).map(([value, p]) => ({ value, label: p.label }));
+
+/** Régua "representativa" para o card explicativo e o glossário: quando todas as contas
+ * concordam (o caso comum — ninguém configurou nada ainda), mostra o valor real de todo mundo;
+ * quando divergem, mostra o padrão da plataforma e avisa que cada conta pode ter o próprio. */
+const reguaComum = computed(() => {
+  const valores = contas.value.map((c) => ({
+    margin_pct: c.regua?.margin_pct != null ? Number(c.regua.margin_pct) : FLOOR_MARGIN_PCT,
+    profit_brl: c.regua?.profit_brl != null ? Number(c.regua.profit_brl) : FLOOR_PROFIT_BRL,
+  }));
+  if (!valores.length) return { margin_pct: FLOOR_MARGIN_PCT, profit_brl: FLOOR_PROFIT_BRL, divergente: false };
+  const divergente = valores.some((v) => (
+    v.margin_pct !== valores[0].margin_pct || v.profit_brl !== valores[0].profit_brl
+  ));
+  return divergente
+    ? { margin_pct: FLOOR_MARGIN_PCT, profit_brl: FLOOR_PROFIT_BRL, divergente: true }
+    : { ...valores[0], divergente: false };
+});
+
+const GLOSSARIO = computed(() => [
   { nome: 'Leva', texto: 'Quantos anúncios o robô altera numa onda antes de parar no portão.' },
-  { nome: 'Piso', texto: `Margem mínima de ${FLOOR_MARGIN_PCT}% e lucro mínimo de ${brl(FLOOR_PROFIT_BRL)} por venda. Nenhuma escrita passa por baixo.` },
+  {
+    nome: 'Piso',
+    texto: `Margem mínima e lucro mínimo por venda — configurável por conta em "Régua desta conta",
+      acima (padrão da plataforma: ${FLOOR_MARGIN_PCT}% e ${brl(FLOOR_PROFIT_BRL)}). Nenhuma escrita
+      passa por baixo, nem o robô nem uma ativação manual.`,
+  },
   { nome: 'Portão', texto: 'Trava que segura a próxima onda: pode ser o seu aval (primeira leva) ou o teto do dia.' },
   { nome: 'Ciclo', texto: 'A execução diária das 09:00 (Brasília) que lê o mercado e decide.' },
   { nome: 'Confirmada', texto: 'Escrita conferida no Mercado Livre — o preço realmente mudou.' },
@@ -175,7 +271,7 @@ const GLOSSARIO = [
   { nome: 'Recusada', texto: 'O Mercado Livre não aceitou a mudança; o preço ficou como estava.' },
   { nome: 'SMART', texto: 'Anúncio cujo preço é definido pelo Mercado Livre. O robô só sinaliza a margem.' },
   { nome: 'Saúde de vendas', texto: 'Parado (0 venda em 14 dias sob promoção), fraco (até 1/semana), médio (1 a 3) ou alto (3+).' },
-];
+]);
 
 const tituloEstado = computed(() => {
   if (killSwitch.value) return 'A escrita está barrada pelo interruptor de emergência';
@@ -227,6 +323,7 @@ function estadoDaConta(conta) {
 async function recarregar() {
   await carregar();
   sincronizarLevas();
+  sincronizarReguas();
 }
 
 async function pausar() {
@@ -237,6 +334,7 @@ async function pausar() {
 onMounted(async () => {
   await carregar();
   sincronizarLevas();
+  sincronizarReguas();
 });
 </script>
 
@@ -305,6 +403,45 @@ onMounted(async () => {
   &__linha :deep(.q-toggle__label) {
     font-size: $text-small-size;
     color: $text-body;
+  }
+
+  &__regua-conta {
+    margin-top: $space-2;
+    font-size: $text-small-size;
+
+    summary {
+      cursor: pointer;
+      color: $text-muted;
+      list-style: none;
+      &::-webkit-details-marker { display: none; }
+      &::before { content: '▸ '; }
+    }
+    &[open] summary::before { content: '▾ '; }
+  }
+  &__regua-resumo { margin-left: $space-2; color: $text-muted; }
+  &__regua-corpo {
+    display: flex;
+    flex-direction: column;
+    gap: $space-3;
+    margin-top: $space-2;
+    max-width: 640px;
+  }
+  &__regua-campos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: $space-3;
+  }
+  &__regua-avancado {
+    summary {
+      cursor: pointer;
+      color: $text-muted;
+      font-size: $text-xs-size;
+      list-style: none;
+      &::-webkit-details-marker { display: none; }
+      &::before { content: '▸ '; }
+    }
+    &[open] summary::before { content: '▾ '; }
+    .aut__regua-campos { margin-top: $space-2; }
   }
 
   &__pausada, &__canario {
