@@ -177,6 +177,11 @@ const routes = [
         name: 'fiscal',
         component: () => import('pages/FiscalPage.vue')
       },
+      {
+        path: 'financeiro/bancos',
+        name: 'financeiro-bancos',
+        component: () => import('pages/BancosExtratosPage.vue')
+      },
     ],
   },
   // Krivus CRM — acesso exclusivo para is_staff

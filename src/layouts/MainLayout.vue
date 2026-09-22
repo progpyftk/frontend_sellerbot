@@ -222,6 +222,13 @@ const menuSections = [
     ],
   },
   {
+    title: "Financeiro",
+    sectionIcon: "account_balance_wallet",
+    items: [
+      { label: "Bancos e Extratos", icon: "account_balance_wallet", route: "financeiro-bancos" },
+    ],
+  },
+  {
     title: "Logística",
     sectionIcon: "mdi-truck-fast",
     items: [
