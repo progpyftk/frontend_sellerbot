@@ -110,13 +110,25 @@
           <template #cell-preco="{ row }">{{ brl(row.price) }}</template>
           <template #cell-promo="{ row }">{{ brl(row.buyer_price) }}</template>
           <template #cell-margem="{ row }">
-            <span :class="{ 'cat__ruim': row.below_floor }">{{ pct(row.margin_pct) }}</span>
+            <span :class="{ 'cat__ruim': row.below_floor }" :title="row.margin_pct == null ? emptyCellReason(row) : ''">
+              {{ pct(row.margin_pct) }}
+            </span>
           </template>
           <template #cell-lucro="{ row }">
-            <span :class="{ 'cat__ruim': row.below_floor }">{{ brl(row.profit_unit) }}</span>
+            <span :class="{ 'cat__ruim': row.below_floor }" :title="row.profit_unit == null ? emptyCellReason(row) : ''">
+              {{ brl(row.profit_unit) }}
+            </span>
           </template>
           <template #cell-vendas="{ row }">{{ row.sales_30d ?? 0 }}</template>
-          <template #cell-cmv="{ row }">{{ brl(row.cmv_unit) }}</template>
+          <template #cell-cmv="{ row }">
+            <span :title="row.cmv_unit == null ? emptyCellReason(row) : ''">{{ brl(row.cmv_unit) }}</span>
+          </template>
+          <template #cell-frete="{ row }">
+            <span :title="row.shipping_cost == null ? 'Sem dado: sem histórico de frete nem baseline calculado para esta conta.' : ''">
+              {{ brl(row.shipping_cost) }}
+            </span>
+          </template>
+          <template #cell-logistica="{ row }">{{ logisticLabel(row.logistic_type) }}</template>
           <template #cell-saude="{ row }">{{ HEALTH_META[row.health]?.label || '—' }}</template>
           <template #cell-desconto="{ row }">{{ row.discount_pct === null ? '—' : pct(row.discount_pct) }}</template>
           <template #cell-ultimaAcao="{ row }">{{ ultimaAcaoTexto(row) }}</template>
@@ -227,7 +239,7 @@ import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import {
   FLOOR_MARGIN_PCT, FLOOR_PROFIT_BRL, HEALTH_META, LEGENDARIO_ACOES, LEGENDARIO_SAUDE,
   LEGENDARIO_SITUACOES, REGRA_ACOES, REGRA_SITUACOES, TARGET_MARGIN_PCT,
-  brl, floorMarginOf, floorProfitOf, pct, situationOf, suggestionOf,
+  brl, emptyCellReason, floorMarginOf, floorProfitOf, logisticLabel, pct, situationOf, suggestionOf,
 } from 'src/utils/advisorDecision';
 
 const {
@@ -253,6 +265,8 @@ const COLUNAS = [
   { key: 'vendas', label: 'Vendas 30d', grupo: 'assistente', numeric: true, sortable: true, sortKey: 'sales', minWidth: 96 },
   { key: 'ultimaAcao', label: 'Última ação', grupo: 'assistente', sortable: true, sortKey: 'activation', minWidth: 130 },
   { key: 'cmv', label: 'CMV', grupo: 'financeiro', numeric: true, minWidth: 96 },
+  { key: 'frete', label: 'Frete', grupo: 'financeiro', numeric: true, minWidth: 96 },
+  { key: 'logistica', label: 'Logística', grupo: 'financeiro', minWidth: 110 },
   { key: 'saude', label: 'Saúde', grupo: 'completo', minWidth: 100 },
   { key: 'desconto', label: 'Desconto', grupo: 'completo', numeric: true, sortable: true, sortKey: 'discount', minWidth: 96 },
   { key: 'abrir', label: 'No Mercado Livre', grupo: 'always', minWidth: 130 },
@@ -285,6 +299,8 @@ const detalheCampos = computed(() => {
     { label: 'Preço-base', valor: brl(l.price) },
     { label: 'Preço promo', valor: brl(l.buyer_price) },
     { label: 'CMV', valor: brl(l.cmv_unit) },
+    { label: 'Frete', valor: brl(l.shipping_cost) },
+    { label: 'Logística', valor: logisticLabel(l.logistic_type) },
     { label: 'Margem', valor: pct(l.margin_pct) },
     { label: 'Lucro por venda', valor: brl(l.profit_unit) },
     { label: 'Vendas 30 dias', valor: `${l.sales_30d ?? 0}` },

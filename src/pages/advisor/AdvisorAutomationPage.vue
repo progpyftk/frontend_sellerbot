@@ -163,6 +163,36 @@
         </ul>
       </AdvisorSection>
 
+      <!-- Legenda: PROMO-IA-41 — o rótulo do estado da conta explicado ao lado do controle -->
+      <AdvisorSection title="O que significa cada estado da conta" tight>
+        <dl class="aut__legenda">
+          <div>
+            <dt><AdvisorStatusPill status="ligado">Escrevendo</AdvisorStatusPill></dt>
+            <dd>Escrita ligada, sem trava — o robô pode alterar preço nesta conta no próximo ciclo.</dd>
+          </div>
+          <div>
+            <dt><AdvisorStatusPill status="aguardando">Esperando seu aval</AdvisorStatusPill></dt>
+            <dd>Conta em primeira leva (canário): escrita ligada, mas o robô para no portão até você
+              aprovar a próxima leva — veja "Esperando você" na aba Hoje.</dd>
+          </div>
+          <div>
+            <dt><AdvisorStatusPill status="bloqueado">Autorizada, mas travada</AdvisorStatusPill></dt>
+            <dd>Você ligou a escrita nesta conta, mas o interruptor de emergência ou o modo global do
+              ambiente está impedindo qualquer escrita — em qualquer conta.</dd>
+          </div>
+          <div>
+            <dt><AdvisorStatusPill status="pausado">Pausada</AdvisorStatusPill></dt>
+            <dd>Pausada manualmente ou pelo próprio robô por um motivo de segurança (aparece ao lado do
+              selo) — nenhuma escrita acontece até você retomar.</dd>
+          </div>
+          <div>
+            <dt><AdvisorStatusPill status="desligado">Só recomenda</AdvisorStatusPill></dt>
+            <dd>O robô calcula e mostra a sugestão em Anúncios, mas nunca escreve nada nesta conta até
+              você ligar o interruptor "O robô escreve sozinho".</dd>
+          </div>
+        </dl>
+      </AdvisorSection>
+
       <!-- 3. Como funciona: a régua ao lado do controle, não em outra página -->
       <AdvisorSection title="Como o robô decide" tight>
         <div class="aut__regua">
@@ -492,6 +522,16 @@ onMounted(async () => {
 
     dt { font-weight: $font-semibold; font-size: $text-small-size; }
     dd { margin: 0 0 $space-2; font-size: $text-xs-size; color: $text-muted; line-height: 1.5; }
+  }
+
+  &__legenda {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: $space-3 $space-5;
+    margin: 0;
+
+    dt { margin-bottom: 2px; }
+    dd { margin: 0; font-size: $text-xs-size; color: $text-muted; line-height: 1.5; }
   }
 }
 

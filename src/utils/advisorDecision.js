@@ -50,6 +50,21 @@ export const INPUT_LABELS = {
   price: 'preço',
 };
 
+/** PROMO-IA-41: rótulo amigável da logística do anúncio (`item.logistic_type` do ML). */
+export const LOGISTIC_TYPE_LABEL = {
+  self_service: 'Flex',
+  fulfillment: 'Full',
+  cross_docking: 'Correios/agência (ME2)',
+  xd_drop_off: 'Ponto de coleta (ME2)',
+  drop_off: 'Ponto de coleta',
+  not_specified: 'Não informado',
+};
+
+export function logisticLabel(value) {
+  if (!value) return '—';
+  return LOGISTIC_TYPE_LABEL[value] || value;
+}
+
 export const HEALTH_META = {
   parado: { label: 'Parado', variant: 'red', icon: 'trending_flat' },
   fraco: { label: 'Fraco', variant: 'amber', icon: 'trending_down' },
@@ -127,6 +142,18 @@ export function pct(value) {
 
 export function missingLabels(row) {
   return (row?.missing_inputs || []).map((item) => INPUT_LABELS[item] || item);
+}
+
+/**
+ * PROMO-IA-41: motivo de uma célula numérica vazia ("—") — margem, lucro, frete etc.
+ * Célula vazia sem explicação obriga o dono a adivinhar; isto vira o `title` (tooltip)
+ * de qualquer célula que caia em "—" por falta de retrato financeiro.
+ */
+export function emptyCellReason(row) {
+  const faltando = missingLabels(row);
+  if (faltando.length) return `Sem dado: falta ${faltando.join(', ')} para calcular.`;
+  if (row && !row.estimable) return 'Sem retrato financeiro deste anúncio ainda.';
+  return 'Sem dado disponível.';
 }
 
 /**

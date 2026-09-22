@@ -106,13 +106,23 @@
                   <span class="today__mlb">{{ w.item_id }}</span>
                   <span class="today__title">{{ w.title || '—' }}</span>
                 </th>
-                <td data-label="Antes">{{ w.price_before ? brl(w.price_before) : '—' }}</td>
+                <td data-label="Antes" :title="w.price_before ? '' : 'Escrita anterior a 11/09/2026 — preço de antes não foi registrado.'">
+                  {{ w.price_before ? brl(w.price_before) : '—' }}
+                </td>
                 <td data-label="Depois"><strong>{{ w.price_after ? brl(w.price_after) : '—' }}</strong></td>
-                <td data-label="Margem">{{ w.margin_pct ? pct(Number(w.margin_pct)) : '—' }}</td>
-                <td data-label="Lucro/un.">{{ w.profit_unit ? brl(w.profit_unit) : '—' }}</td>
+                <td data-label="Margem" :title="w.margin_pct ? '' : 'Sem dado: não calculado no momento desta escrita.'">
+                  {{ w.margin_pct ? pct(Number(w.margin_pct)) : '—' }}
+                </td>
+                <td data-label="Lucro/un." :title="w.profit_unit ? '' : 'Sem dado: não calculado no momento desta escrita.'">
+                  {{ w.profit_unit ? brl(w.profit_unit) : '—' }}
+                </td>
                 <td data-label="Estado">
-                  <AdvisorStatusPill :status="w.origin === 'reconcile' ? 'aguardando' : 'verificado'
-                                     ">{{ w.origin === 'reconcile' ? 'confirmado depois' : 'robô' }}</AdvisorStatusPill>
+                  <AdvisorStatusPill :status="w.origin === 'reconcile' ? 'aguardando' : 'verificado'"
+                                     :title="w.origin === 'reconcile'
+                                       ? 'O robô mandou a escrita e o Mercado Livre só confirmou depois, num ciclo seguinte.'
+                                       : 'O robô mandou a escrita e o Mercado Livre confirmou no mesmo ciclo.'">
+                    {{ w.origin === 'reconcile' ? 'confirmado depois' : 'robô' }}
+                  </AdvisorStatusPill>
                 </td>
                 <td data-label="Hora">{{ hora(w.at) }}</td>
                 <td>
@@ -152,6 +162,27 @@
           Outros {{ naoAvaliados }} anúncios <strong>nem foram avaliados</strong>: a escrita automática
           está desligada nas contas deles.
         </p>
+      </AdvisorSection>
+
+      <!-- Legenda: PROMO-IA-41 — o rótulo sozinho não ensina nada a quem não acompanha o robô todo dia -->
+      <AdvisorSection title="O que significa cada rótulo" tight>
+        <dl class="today__legenda">
+          <div>
+            <dt><AdvisorStatusPill status="verificado">robô</AdvisorStatusPill></dt>
+            <dd>O robô mandou a escrita e o Mercado Livre confirmou o preço novo no mesmo ciclo.</dd>
+          </div>
+          <div>
+            <dt><AdvisorStatusPill status="aguardando">confirmado depois</AdvisorStatusPill></dt>
+            <dd>O robô mandou a escrita, o Mercado Livre não confirmou na hora — a confirmação veio
+              num ciclo seguinte. O preço já estava certo; só a leitura demorou.</dd>
+          </div>
+          <div>
+            <dt>Célula com "—"</dt>
+            <dd>Sem dado para aquele número especificamente (ex.: escrita antiga sem preço "antes"
+              registrado, ou margem/lucro não calculados no momento da escrita) — passe o mouse sobre
+              a célula para o motivo exato.</dd>
+          </div>
+        </dl>
       </AdvisorSection>
 
       <!-- Ciclo e universo -->
@@ -475,6 +506,16 @@ onMounted(carregar);
   &__falhaItens { font-variant-numeric: tabular-nums; }
 
   &__hint { margin: $space-3 0 0; font-size: $text-xs-size; color: $text-muted; }
+
+  &__legenda {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: $space-3 $space-5;
+    margin: 0;
+
+    dt { margin-bottom: 2px; }
+    dd { margin: 0; font-size: $text-xs-size; color: $text-muted; line-height: 1.5; }
+  }
 
   &__foot {
     display: flex;
