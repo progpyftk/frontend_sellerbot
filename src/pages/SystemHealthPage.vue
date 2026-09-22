@@ -145,6 +145,72 @@
         </div>
       </div>
 
+      <!-- ═══ RELATÓRIO DO DIA (ROT-5) ═══════════════════════════════════════ -->
+      <div class="section-title" style="margin-top: 24px;">Relatório do dia</div>
+
+      <div v-if="!data.relatorio_dia || data.relatorio_dia.status === 'nao_gerado'" class="tiny-empty">
+        Relatório de hoje ainda não foi gerado (job das 09h30). O gerador ausente aparece aqui em vez de silêncio.
+      </div>
+
+      <div v-else class="infra-grid" style="padding: 0 24px;">
+        <div class="infra-card" :class="relatorioCardClass(data.relatorio_dia.status)">
+          <div class="infra-icon"><q-icon name="summarize" size="22px" /></div>
+          <div class="infra-body">
+            <div class="infra-label">Relatório de {{ fmtDate(data.relatorio_dia.report_date) }}</div>
+            <div class="infra-value">{{ relatorioLabel(data.relatorio_dia.status) }}</div>
+            <div class="infra-meta">Gerado em {{ fmtDatetime(data.relatorio_dia.generated_at) }}</div>
+            <div class="infra-meta" v-if="resumoSync">
+              {{ resumoSync }}
+            </div>
+            <div class="infra-meta" v-if="resumoPromo">
+              {{ resumoPromo }}
+            </div>
+            <div class="infra-meta" v-if="data.relatorio_dia.csv_uri">
+              CSV: <code>{{ data.relatorio_dia.csv_uri }}</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="alarmesExigemAcao.length" class="routines-table">
+        <div class="detail-title" style="padding: 10px 0 8px;">Exigem ação ({{ alarmesExigemAcao.length }})</div>
+        <div v-for="a in alarmesExigemAcao" :key="a.origin_key" class="rt-row">
+          <div class="rt-main">
+            <span class="col-name">{{ a.titulo }}</span>
+            <span class="col-status"><span class="badge badge--error">Exige ação</span></span>
+            <span class="col-time">{{ a.due_at }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ VENCIMENTOS (ROT-5) ═════════════════════════════════════════════ -->
+      <div class="section-title" style="margin-top: 24px;">
+        Vencimentos ({{ data.vencimentos?.exigem_acao ?? 0 }} exigem ação)
+      </div>
+
+      <div v-if="!data.vencimentos || !data.vencimentos.itens.length" class="tiny-empty">
+        Nenhum vencimento pendente na janela (vencidos + próximos 3 dias).
+      </div>
+
+      <div v-else class="routines-table">
+        <div
+          v-for="v in data.vencimentos.itens" :key="v.titulo + v.due_at"
+          class="rt-row"
+        >
+          <div class="rt-main">
+            <span class="col-name">{{ v.titulo }}</span>
+            <span class="col-status">
+              <span :class="['badge', v.exige_acao ? 'badge--error' : 'badge--skipped']">
+                {{ v.exige_acao ? 'Exige ação' : 'Acompanhar' }}
+              </span>
+            </span>
+            <span class="col-time">{{ v.due_brt }}</span>
+            <span class="col-dur">{{ v.situacao === 'vencido' ? 'Vencido' : 'A vencer' }}</span>
+            <span class="col-items">{{ v.kind }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ TINY ERP ══════════════════════════════════════════════════════ -->
       <div class="section-title" style="margin-top: 24px;">Contas Tiny ERP</div>
 
@@ -185,7 +251,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import CoreService from 'src/services/CoreService'
 
 const data      = ref(null)
@@ -193,6 +259,39 @@ const loading   = ref(false)
 const error     = ref(null)
 const checkedAt = ref(null)
 const expanded  = ref(null)
+
+const resumoSync = computed(() => {
+  const totais = data.value?.relatorio_dia?.payload?.sync?.totais
+  if (!totais) return ''
+  return `${totais.rodou ?? 0} rotinas rodaram, ${totais.nao_rodou ?? 0} não rodaram, ` +
+    `${totais.erros ?? 0} erros (${totais.exige_acao ?? 0} exigem ação).`
+})
+
+const resumoPromo = computed(() => {
+  const promo = data.value?.relatorio_dia?.payload?.promocoes
+  if (!promo) return ''
+  const estado = promo.estado?.rotulo || ''
+  const t = promo.totais || {}
+  return `${estado} — alterados: ${t.alterados ?? 0}, bloqueados: ${t.bloqueados ?? 0}.`
+})
+
+const alarmesExigemAcao = computed(() =>
+  (data.value?.relatorio_dia?.payload?.alarmes || []).filter((a) => a.exige_acao),
+)
+
+function relatorioCardClass(s) {
+  return { ok: 'card--ok', parcial: 'card--warn', erro: 'card--error', nao_gerado: 'card--warn' }[s] || 'card--warn'
+}
+
+function relatorioLabel(s) {
+  return { ok: 'OK', parcial: 'Parcial', erro: 'Erro', nao_gerado: 'Não gerado' }[s] || s
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—'
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
 
 async function load() {
   loading.value = true
