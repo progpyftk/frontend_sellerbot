@@ -26,6 +26,21 @@
 
     <template v-else-if="data">
 
+      <!-- ═══ ALERTA: ROTINA SEM RODAR HOJE (PROMO-IA-33) ═════════════════════ -->
+      <div v-if="overdueRoutines.length" class="overdue-banner">
+        <q-icon name="warning" size="20px" />
+        <div class="overdue-banner-body">
+          <div class="overdue-banner-title">
+            {{ overdueRoutines.length === 1 ? 'Rotina não rodou hoje' : `${overdueRoutines.length} rotinas não rodaram hoje` }}
+          </div>
+          <div class="overdue-banner-list">
+            <span v-for="r in overdueRoutines" :key="r.routine_name">
+              {{ r.label }} — esperado até {{ r.schedule.expected_at_brt }} BRT
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ SISTEMA ═══════════════════════════════════════════════════════ -->
       <div class="section-title">Infraestrutura</div>
       <div class="infra-grid">
@@ -78,7 +93,7 @@
         <div
           v-for="r in data.routines" :key="r.routine_name"
           class="rt-row"
-          :class="{ 'rt-row--expanded': expanded === r.routine_name }"
+          :class="{ 'rt-row--expanded': expanded === r.routine_name, 'rt-row--overdue': r.schedule?.overdue }"
           @click="toggleExpand(r.routine_name)"
         >
           <!-- Main row -->
@@ -91,7 +106,8 @@
               {{ r.label }}
             </span>
             <span class="col-status">
-              <span v-if="!r.last_run" class="badge badge--none">Sem dados</span>
+              <span v-if="r.schedule?.overdue" class="badge badge--overdue">Não rodou hoje</span>
+              <span v-else-if="!r.last_run" class="badge badge--none">Sem dados</span>
               <span v-else :class="['badge', `badge--${r.last_run.status}`]">
                 {{ statusLabel(r.last_run.status) }}
               </span>
@@ -336,6 +352,12 @@ const alarmesExigemAcao = computed(() =>
   (data.value?.relatorio_dia?.payload?.alarmes || []).filter((a) => a.exige_acao),
 )
 
+// PROMO-IA-33: "o dono descobre problema perguntando" — rotina com horário diário
+// conhecido (backend só marca `overdue` pra essas) que não tem NENHUM RoutineLog hoje.
+const overdueRoutines = computed(() =>
+  (data.value?.routines || []).filter((r) => r.schedule?.overdue),
+)
+
 function relatorioCardClass(s) {
   return { ok: 'card--ok', parcial: 'card--warn', erro: 'card--error', nao_gerado: 'card--warn' }[s] || 'card--warn'
 }
@@ -451,6 +473,22 @@ onMounted(load)
   height: 200px; color: #64748b;
 }
 
+/* ── Alerta: rotina sem rodar hoje (PROMO-IA-33) ── */
+.overdue-banner {
+  margin: 16px 24px 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(239,68,68,.1);
+  border: 1px solid rgba(239,68,68,.35);
+  display: flex; gap: 12px; align-items: flex-start;
+  color: #ef4444;
+}
+.overdue-banner-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.overdue-banner-list {
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 12px; color: #fca5a5;
+}
+
 /* ── Infra ── */
 .section-title {
   padding: 20px 24px 10px;
@@ -496,6 +534,7 @@ onMounted(load)
 }
 .rt-row:hover { border-color: rgba(255,255,255,0.12); }
 .rt-row--expanded { border-color: rgba(20,184,166,0.3); }
+.rt-row--overdue { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.06); }
 
 .rt-main { padding: 12px 14px; font-size: 13px; color: #cbd5e1; }
 
@@ -512,6 +551,7 @@ onMounted(load)
 .badge--error   { background: rgba(239,68,68,.15);  color: #ef4444; }
 .badge--skipped { background: rgba(100,116,139,.15);color: #94a3b8; }
 .badge--none    { background: rgba(100,116,139,.1); color: #475569; }
+.badge--overdue { background: rgba(239,68,68,.2);   color: #ef4444; }
 
 /* History pills */
 .hist-pills { display: flex; gap: 4px; flex-wrap: wrap; }
