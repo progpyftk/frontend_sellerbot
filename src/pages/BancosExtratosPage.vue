@@ -283,7 +283,109 @@
                 />
               </div>
             </div>
+            <div class="row items-center q-col-gutter-md q-mt-md">
+              <div class="col-12 col-md-auto">
+                <q-btn-toggle
+                  v-model="extratoFilters.classificacao"
+                  :options="filtroClassificacaoOptions"
+                  no-caps
+                  unelevated
+                  dense
+                  toggle-color="teal-8"
+                  color="grey-2"
+                  text-color="grey-8"
+                  @update:model-value="loadTransacoes"
+                />
+              </div>
+              <div class="col-12 col-md">
+                <div class="row items-center q-gutter-sm">
+                  <q-btn
+                    v-if="resumo.pendentes > 0"
+                    flat
+                    dense
+                    no-caps
+                    color="amber-9"
+                    icon="filter_alt"
+                    :label="`Ver as ${resumo.pendentes} pendentes`"
+                    @click="verPendentes"
+                  />
+                  <q-space />
+                  <q-btn
+                    v-if="resumo.pendentes > 0"
+                    outline
+                    no-caps
+                    color="teal-8"
+                    icon="groups"
+                    :label="`Resolver por contraparte${contrapartesPendentes ? ` (${contrapartesPendentes})` : ''}`"
+                    :disable="!extratoFilters.conta"
+                    @click="abrirContrapartes"
+                  />
+                  <q-btn
+                    outline
+                    no-caps
+                    color="teal-8"
+                    icon="auto_fix_high"
+                    label="Reclassificar automaticamente"
+                    :loading="reclassificando"
+                    :disable="!extratoFilters.conta"
+                    @click="confirmarReclassificacao"
+                  />
+                </div>
+              </div>
+            </div>
           </SbCard>
+
+          <!-- TERMÔMETRO: quanto do extrato ainda falta classificar -->
+          <div class="row q-col-gutter-md q-mb-md">
+            <div class="col-12 col-lg-6">
+              <SbKpiCard
+                label="Quanto falta classificar"
+                :value="percentualPendenteTexto"
+                :variant="termometroVariante"
+                :sub="`${resumo.classificadas} de ${resumo.total} transações classificadas`"
+              >
+                <q-linear-progress
+                  :value="percentualPendente / 100"
+                  :color="termometroCor"
+                  track-color="grey-3"
+                  rounded
+                  size="10px"
+                  class="q-mt-sm termometro-barra"
+                />
+                <div class="text-caption text-grey-7 q-mt-xs">
+                  {{ termometroMensagem }}
+                  <template v-if="contrapartesPendentes">
+                    São <strong>{{ contrapartesPendentes }} contrapartes</strong> — dá para
+                    resolver uma por uma.
+                  </template>
+                </div>
+              </SbKpiCard>
+            </div>
+            <div class="col-6 col-lg-2">
+              <SbKpiCard
+                label="Saídas pendentes"
+                :value="resumo.saidas_pendentes"
+                variant="red"
+                sub="travam o resultado"
+              />
+            </div>
+            <div class="col-6 col-lg-2">
+              <SbKpiCard
+                label="Entradas pendentes"
+                :value="resumo.entradas_pendentes"
+                variant="green"
+                sub="a classificar"
+              />
+            </div>
+            <div class="col-12 col-lg-2">
+              <SbKpiCard
+                label="Valor pendente"
+                :value="formatCurrency(resumo.valor_pendente)"
+                variant="amber"
+                sub="não entra no DRE enquanto pendente"
+              />
+            </div>
+          </div>
 
           <div class="row q-col-gutter-md q-mb-lg">
             <div class="col-12 col-sm-4">
@@ -309,15 +411,62 @@
             </div>
           </div>
 
+          <!-- BARRA DE CLASSIFICAÇÃO EM LOTE -->
+          <q-banner v-if="selecionadas.length" rounded class="bg-teal-1 text-teal-10 q-mb-md">
+            <template #avatar><q-icon name="playlist_add_check" size="28px" /></template>
+            <div class="row items-center q-col-gutter-md">
+              <div class="col-12 col-md-4 text-body2">
+                <strong>{{ selecionadas.length }}</strong> transação(ões) selecionada(s). Escolha a
+                categoria e aplique em todas de uma vez.
+              </div>
+              <div class="col-12 col-md-4">
+                <SbCategoriaSelect
+                  v-model="classificacaoLote"
+                  :grupos="gruposCategorias"
+                  :loading="loadingCategorias"
+                  dense
+                  outlined
+                  bg-color="white"
+                  label="Categoria para as selecionadas"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="row items-center q-gutter-sm">
+                  <q-btn
+                    unelevated
+                    no-caps
+                    color="teal-8"
+                    text-color="white"
+                    icon="done_all"
+                    label="Classificar selecionadas"
+                    :loading="classificandoLote"
+                    :disable="!classificacaoLote"
+                    @click="classificarSelecionadas"
+                  />
+                  <q-btn
+                    flat
+                    dense
+                    no-caps
+                    color="grey-8"
+                    label="Limpar seleção"
+                    @click="selecionadas = []"
+                  />
+                </div>
+              </div>
+            </div>
+          </q-banner>
+
           <SbCard>
             <q-table
+              v-model:selected="selecionadas"
               :rows="transacoes"
               :columns="transacaoColumns"
               row-key="id"
+              selection="multiple"
               :loading="loadingTransacoes"
               flat
               :pagination="{ rowsPerPage: 25 }"
-              :no-data-label="'Nenhuma transação no período. Sincronize a conta ou importe um arquivo OFX/CSV.'"
+              :no-data-label="'Nenhuma transação encontrada com os filtros atuais. Sincronize a conta, importe um arquivo OFX/CSV ou ajuste o filtro de classificação.'"
             >
               <template #body-cell-data="props">
                 <q-td :props="props">{{ formatDate(props.row.data) }}</q-td>
@@ -348,21 +497,62 @@
               </template>
 
               <template #body-cell-classificacao="props">
-                <q-td :props="props">
-                  <q-input
-                    v-model="props.row.classificacao"
-                    dense
-                    borderless
-                    placeholder="Sem classificação"
-                    :loading="savingTransacoes.has(props.row.id)"
-                    @blur="saveTransacao(props.row)"
-                    @keyup.enter="saveTransacao(props.row)"
-                  />
+                <q-td :props="props" @click.stop>
+                  <div class="row items-center no-wrap q-gutter-xs">
+                    <SbCategoriaSelect
+                      v-model="props.row.classificacao"
+                      :grupos="gruposCategorias"
+                      dense
+                      borderless
+                      hide-bottom-space
+                      class="col classificacao-select"
+                      placeholder="Sem classificação"
+                      :loading="savingTransacoes.has(props.row.id)"
+                      :disable="loadingCategorias"
+                      @update:model-value="saveTransacao(props.row)"
+                    />
+
+                    <!-- DE ONDE VEIO A CLASSIFICAÇÃO -->
+                    <q-badge
+                      v-if="props.row.classificacao && origemInfo(props.row.origem_classificacao)"
+                      :color="origemInfo(props.row.origem_classificacao).color"
+                      :text-color="origemInfo(props.row.origem_classificacao).textColor"
+                      class="text-bold origem-badge"
+                    >
+                      <q-icon
+                        :name="origemInfo(props.row.origem_classificacao).icon"
+                        size="11px"
+                        class="q-mr-xs"
+                      />
+                      {{ origemInfo(props.row.origem_classificacao).label }}
+                      <q-tooltip max-width="280px">{{ origemInfo(props.row.origem_classificacao).ajuda }}</q-tooltip>
+                    </q-badge>
+                  </div>
+
+                  <div
+                    v-if="props.row.mc || props.row.fora_do_resultado || ajudaDaCategoria(props.row.classificacao)"
+                    class="row items-center q-gutter-xs q-mt-xs"
+                  >
+                    <q-badge v-if="props.row.mc" color="teal-1" text-color="teal-9" class="text-bold">
+                      custo variável
+                    </q-badge>
+                    <q-badge
+                      v-if="props.row.fora_do_resultado"
+                      color="purple-1"
+                      text-color="purple-9"
+                      class="text-bold"
+                    >
+                      fora do DRE
+                    </q-badge>
+                    <q-icon v-if="ajudaDaCategoria(props.row.classificacao)" name="info" size="14px" color="grey-6">
+                      <q-tooltip max-width="280px">{{ ajudaDaCategoria(props.row.classificacao) }}</q-tooltip>
+                    </q-icon>
+                  </div>
                 </q-td>
               </template>
 
               <template #body-cell-conciliado="props">
-                <q-td :props="props" class="text-center">
+                <q-td :props="props" class="text-center" @click.stop>
                   <q-toggle
                     v-model="props.row.conciliado"
                     color="teal-8"
@@ -615,6 +805,95 @@
         </q-card>
       </q-dialog>
 
+      <!-- ══════════════════════════════════════════ DIÁLOGO: PENDENTES POR CONTRAPARTE -->
+      <q-dialog v-model="showContrapartes">
+        <q-card style="width: 860px; max-width: 96vw;" class="rounded-borders">
+          <q-card-section class="row items-center justify-between border-bottom bg-grey-1">
+            <div>
+              <div class="text-h6 text-weight-bold text-grey-9">Resolver pendentes por contraparte</div>
+              <div class="text-caption text-grey-7">
+                Classificar uma linha ensina o sistema: as iguais do mesmo CNPJ entram
+                classificadas sozinhas na próxima importação.
+              </div>
+            </div>
+            <q-btn icon="close" flat round dense v-close-popup />
+          </q-card-section>
+
+          <q-card-section class="q-pa-md contrapartes-corpo">
+            <div v-if="carregandoContrapartes" class="column items-center q-pa-lg">
+              <q-spinner color="teal-8" size="32px" />
+              <div class="text-caption text-grey-7 q-mt-sm">Carregando contrapartes pendentes…</div>
+            </div>
+
+            <SbEmptyState
+              v-else-if="gruposPendentes.length === 0"
+              title="Nenhuma contraparte pendente"
+              message="Tudo que chegou neste período já está classificado."
+            />
+
+            <div v-else class="column q-gutter-sm">
+              <div
+                v-for="grupo in gruposPendentes"
+                :key="grupo.contraparte_chave"
+                class="contraparte-item q-pa-sm rounded-borders"
+              >
+                <div class="row items-center q-col-gutter-md">
+                  <div class="col-12 col-md-5">
+                    <div class="text-weight-medium text-grey-9">
+                      {{ grupo.contraparte_nome || '(sem contraparte identificada)' }}
+                    </div>
+                    <div class="text-caption text-grey-6 font-mono">
+                      {{ grupo.contraparte_cnpj ? formatCnpj(grupo.contraparte_cnpj) : grupo.contraparte_chave }}
+                    </div>
+                    <div class="text-caption text-grey-6">
+                      {{ grupo.linhas }} lançamento(s) · {{ descreverTipos(grupo.tipos) }} ·
+                      {{ formatDate(grupo.primeira_data) }} a {{ formatDate(grupo.ultima_data) }}
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-2 text-right">
+                    <div
+                      class="text-weight-bold"
+                      :class="(grupo.tipos || []).includes('D') ? 'text-red-9' : 'text-green-9'"
+                    >
+                      {{ formatCurrency(grupo.valor) }}
+                    </div>
+                  </div>
+                  <div class="col-12 col-md-5">
+                    <div class="row items-center q-gutter-sm no-wrap">
+                      <SbCategoriaSelect
+                        v-model="categoriasContraparte[grupo.contraparte_chave]"
+                        :grupos="gruposCategorias"
+                        :loading="loadingCategorias"
+                        dense
+                        outlined
+                        bg-color="white"
+                        label="Classificar como"
+                        class="col"
+                      />
+                      <q-btn
+                        unelevated
+                        no-caps
+                        color="teal-8"
+                        text-color="white"
+                        icon="done_all"
+                        label="Aplicar"
+                        :disable="!categoriasContraparte[grupo.contraparte_chave]"
+                        :loading="classificandoGrupo === grupo.contraparte_chave"
+                        @click="classificarGrupo(grupo)"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </q-card-section>
+
+          <q-card-actions align="right" class="q-pa-md border-top">
+            <q-btn flat no-caps label="Fechar" color="grey-8" v-close-popup />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+
       <!-- ══════════════════════════════════════════ DIÁLOGO: SINCRONIZAR -->
       <q-dialog v-model="showSincronizar">
         <q-card style="width: 460px; max-width: 95vw;" class="rounded-borders">
@@ -673,6 +952,7 @@ import SbPageHeader from "src/components/common/SbPageHeader.vue";
 import SbCard from "src/components/common/SbCard.vue";
 import SbKpiCard from "src/components/common/SbKpiCard.vue";
 import SbEmptyState from "src/components/common/SbEmptyState.vue";
+import SbCategoriaSelect from "src/components/common/SbCategoriaSelect.vue";
 import FinanceiroService from "src/services/FinanceiroService";
 import FiscalService from "src/services/FiscalService";
 
@@ -741,7 +1021,80 @@ const extratoFilters = ref({
   conta: null,
   dataInicio: toIsoDate(primeiroDiaMes),
   dataFim: toIsoDate(hoje),
+  // "" = todas | "nao_classificadas" | "classificadas"
+  classificacao: "",
 });
+
+// Termômetro: quanto do escopo (conta/período) ainda está sem classificação.
+const resumoVazio = {
+  total: 0,
+  classificadas: 0,
+  pendentes: 0,
+  percentual_pendente: 0,
+  percentual_classificado: 0,
+  saidas_pendentes: 0,
+  entradas_pendentes: 0,
+  completo: false,
+  valor_pendente: "0.00",
+};
+const resumo = ref({ ...resumoVazio });
+
+// Classificação em lote: as linhas marcadas na tabela.
+const selecionadas = ref([]);
+const classificacaoLote = ref(null);
+const classificandoLote = ref(false);
+const reclassificando = ref(false);
+
+// Catálogo do plano de contas (vem do backend).
+const categorias = ref([]);
+const gruposCategorias = ref([]);
+const loadingCategorias = ref(false);
+
+// Pendentes agrupados por contraparte: resolver o grupo inteiro de uma escolha só.
+const showContrapartes = ref(false);
+const carregandoContrapartes = ref(false);
+const gruposPendentes = ref([]);
+const contrapartesPendentes = ref(0);
+const categoriasContraparte = ref({});
+const classificandoGrupo = ref(null);
+
+// Origem da classificação: diz ao dono em que confiar.
+const ORIGENS_CLASSIFICACAO = {
+  banco: {
+    label: "banco",
+    color: "blue-grey-1",
+    textColor: "blue-grey-9",
+    icon: "account_balance",
+    ajuda: "O próprio banco já informou a classificação no título da transação.",
+  },
+  historico: {
+    label: "histórico",
+    color: "teal-1",
+    textColor: "teal-9",
+    icon: "history",
+    ajuda: "Copiada de uma despesa igual, deste mesmo CNPJ, que já estava classificada.",
+  },
+  regra: {
+    label: "regra",
+    color: "indigo-1",
+    textColor: "indigo-9",
+    icon: "rule",
+    ajuda: "Contraparte reconhecida automaticamente (concessionária, fornecedor ou transferência entre contas).",
+  },
+  usuario: {
+    label: "usuário",
+    color: "amber-2",
+    textColor: "amber-10",
+    icon: "person",
+    ajuda: "Classificação feita por você. A reclassificação automática não sobrescreve esta escolha.",
+  },
+};
+
+const filtroClassificacaoOptions = [
+  { label: "Todas", value: "" },
+  { label: "Só pendentes", value: "nao_classificadas" },
+  { label: "Só classificadas", value: "classificadas" },
+];
 
 const transacaoColumns = [
   { name: "data", label: "Data", align: "left", sortable: true },
@@ -750,6 +1103,97 @@ const transacaoColumns = [
   { name: "classificacao", label: "Classificação", align: "left" },
   { name: "conciliado", label: "Conciliado", align: "center" },
 ];
+
+// ────────────────────────────────────────── TERMÔMETRO DA CLASSIFICAÇÃO
+const percentualPendente = computed(() => Number(resumo.value.percentual_pendente) || 0);
+const percentualPendenteTexto = computed(() =>
+  `${percentualPendente.value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`,
+);
+
+const termometroCor = computed(() => {
+  if (!resumo.value.total) return "grey-5";
+  if (resumo.value.completo || resumo.value.pendentes === 0) return "green";
+  if (percentualPendente.value < 30) return "amber";
+  if (percentualPendente.value < 70) return "orange";
+  return "red";
+});
+
+// SbKpiCard só tem variantes teal/green/amber/red/sky/indigo/slate — o laranja fica na barra.
+const termometroVariante = computed(() => {
+  const cor = termometroCor.value;
+  if (cor === "orange") return "amber";
+  if (cor === "grey-5") return "slate";
+  return cor;
+});
+
+const termometroMensagem = computed(() => {
+  if (!resumo.value.total) return "Nenhuma transação no período para classificar.";
+  if (resumo.value.completo) return "Tudo classificado neste período. O DRE já consegue ler o extrato.";
+  return `${resumo.value.pendentes} transação(ões) ainda sem classificação contábil.`;
+});
+
+function aplicarResumo(novo) {
+  if (!novo) return;
+  resumo.value = { ...resumo.value, ...novo };
+}
+
+// ────────────────────────────────────────── CATEGORIAS DO PLANO DE CONTAS
+const categoriasPorCodigo = computed(() => {
+  const mapa = {};
+  categorias.value.forEach((c) => {
+    mapa[c.codigo] = c;
+  });
+  return mapa;
+});
+
+function ajudaDaCategoria(codigo) {
+  return categoriasPorCodigo.value[codigo]?.ajuda || "";
+}
+
+function origemInfo(origem) {
+  return ORIGENS_CLASSIFICACAO[origem] || null;
+}
+
+/** "Saídas", "Entradas" ou "Entradas e saídas" — o tipo das linhas de um grupo. */
+function descreverTipos(tipos) {
+  const lista = tipos || [];
+  if (lista.length > 1) return "Entradas e saídas";
+  if (lista[0] === "D") return "Saídas";
+  if (lista[0] === "C") return "Entradas";
+  return "—";
+}
+
+function agruparCategoriasLocalmente(lista) {
+  const ordem = [];
+  const porGrupo = new Map();
+  lista.forEach((cat) => {
+    const nome = cat.grupo || "Outras";
+    if (!porGrupo.has(nome)) {
+      porGrupo.set(nome, []);
+      ordem.push(nome);
+    }
+    porGrupo.get(nome).push(cat);
+  });
+  return ordem.map((nome) => ({ nome, categorias: porGrupo.get(nome) }));
+}
+
+async function loadCategorias() {
+  loadingCategorias.value = true;
+  try {
+    const res = await FinanceiroService.getCategorias();
+    const data = res.data || {};
+    categorias.value = data.categorias || [];
+    const grupos = (data.grupos || []).filter((g) => (g.categorias || []).length > 0);
+    gruposCategorias.value = grupos.length ? grupos : agruparCategoriasLocalmente(categorias.value);
+  } catch (err) {
+    $q.notify({
+      type: "negative",
+      message: `Erro ao carregar o plano de contas: ${apiErrorMessage(err)}`,
+    });
+  } finally {
+    loadingCategorias.value = false;
+  }
+}
 
 // ────────────────────────────────────────── ESTADO: SINCRONIZAÇÃO
 const showSincronizar = ref(false);
@@ -982,21 +1426,83 @@ function verExtrato(conexao, conta) {
 }
 
 // ────────────────────────────────────────── AÇÕES: EXTRATO
+/** Filtros do escopo (conta/período). O termômetro ignora o recorte de classificação. */
+function paramsEscopo() {
+  return {
+    conta: extratoFilters.value.conta,
+    data_inicio: extratoFilters.value.dataInicio || undefined,
+    data_fim: extratoFilters.value.dataFim || undefined,
+  };
+}
+
+/** Filtros da lista, incluindo o recorte de classificação. */
+function paramsLista() {
+  return {
+    ...paramsEscopo(),
+    classificacao: extratoFilters.value.classificacao || undefined,
+  };
+}
+
 async function loadTransacoes() {
   if (!extratoFilters.value.conta) return;
   loadingTransacoes.value = true;
+  selecionadas.value = [];
   try {
-    const res = await FinanceiroService.getTransacoes({
-      conta: extratoFilters.value.conta,
-      data_inicio: extratoFilters.value.dataInicio || undefined,
-      data_fim: extratoFilters.value.dataFim || undefined,
-    });
-    transacoes.value = (res.data?.transacoes || []).map((t) => ({ ...t }));
+    const res = await FinanceiroService.getTransacoes(paramsLista());
+    transacoes.value = (res.data?.transacoes || []).map((t) => ({
+      ...t,
+      // Guarda o valor vindo da API: só mandamos `classificacao` no PATCH quando ela muda,
+      // senão marcar "conciliado" sozinho reescreveria a origem como "usuário".
+      _classificacaoOriginal: t.classificacao || "",
+    }));
     totais.value = res.data?.totais || { entradas: 0, saidas: 0, liquido: 0 };
+    aplicarResumo(res.data?.resumo);
+    await carregarGruposPendentes();
   } catch (err) {
     $q.notify({ type: "negative", message: `Erro ao carregar transações: ${apiErrorMessage(err)}` });
   } finally {
     loadingTransacoes.value = false;
+  }
+}
+
+/** Busca só os grupos de pendentes por contraparte (a lista do diálogo e a contagem do card). */
+async function carregarGruposPendentes() {
+  if (!extratoFilters.value.conta) return;
+  carregandoContrapartes.value = true;
+  try {
+    const res = await FinanceiroService.getPendentesPorContraparte(paramsEscopo());
+    const data = res.data || {};
+    gruposPendentes.value = data.grupos || [];
+    contrapartesPendentes.value = data.contrapartes ?? gruposPendentes.value.length;
+    aplicarResumo(data.resumo);
+  } catch {
+    // Informativo: sem ele a classificação continua funcionando.
+  } finally {
+    carregandoContrapartes.value = false;
+  }
+}
+
+/** Recalcula só o termômetro, sem recarregar as linhas. */
+async function carregarResumo() {
+  if (!extratoFilters.value.conta) return;
+  try {
+    const res = await FinanceiroService.getResumoTransacoes(paramsEscopo());
+    aplicarResumo(res.data);
+    await carregarGruposPendentes();
+  } catch {
+    // O termômetro é informativo; uma falha aqui não deve interromper a classificação.
+  }
+}
+
+/** Some com a linha quando ela deixa de casar com o filtro "só pendentes"/"só classificadas". */
+function removerSeSaiuDoFiltro(row) {
+  const filtro = extratoFilters.value.classificacao;
+  const classificado = !!row.classificacao;
+  if (
+    (filtro === "nao_classificadas" && classificado) ||
+    (filtro === "classificadas" && !classificado)
+  ) {
+    transacoes.value = transacoes.value.filter((t) => t.id !== row.id);
   }
 }
 
@@ -1006,16 +1512,156 @@ async function saveTransacao(row) {
   proximo.add(row.id);
   savingTransacoes.value = proximo;
   try {
-    await FinanceiroService.atualizarTransacao(row.id, {
-      classificacao: row.classificacao || "",
-      conciliado: !!row.conciliado,
+    const classificacao = row.classificacao || "";
+    const payload = { conciliado: !!row.conciliado };
+    if (classificacao !== (row._classificacaoOriginal || "")) {
+      payload.classificacao = classificacao;
+    }
+    const res = await FinanceiroService.atualizarTransacao(row.id, payload);
+    const atual = res.data || {};
+    Object.assign(row, {
+      classificacao: atual.classificacao ?? classificacao,
+      classificacao_rotulo: atual.classificacao_rotulo || "",
+      classificacao_grupo: atual.classificacao_grupo || "",
+      origem_classificacao: atual.origem_classificacao || "",
+      mc: atual.mc,
+      fora_do_resultado: atual.fora_do_resultado,
+      conciliado: atual.conciliado ?? row.conciliado,
+      _classificacaoOriginal: atual.classificacao ?? classificacao,
     });
+    removerSeSaiuDoFiltro(row);
+    await carregarResumo();
   } catch (err) {
     $q.notify({ type: "negative", message: `Erro ao salvar transação: ${apiErrorMessage(err)}` });
   } finally {
     const fim = new Set(savingTransacoes.value);
     fim.delete(row.id);
     savingTransacoes.value = fim;
+  }
+}
+
+/** Atalho do termômetro: abre a lista só com o que falta classificar. */
+function verPendentes() {
+  extratoFilters.value.classificacao = "nao_classificadas";
+  loadTransacoes();
+}
+
+// ────────────────────────────────────────── AÇÕES: PENDENTES POR CONTRAPARTE
+function abrirContrapartes() {
+  categoriasContraparte.value = {};
+  showContrapartes.value = true;
+  carregarGruposPendentes();
+}
+
+/** Classifica TODAS as linhas pendentes de uma contraparte com uma escolha só. */
+async function classificarGrupo(grupo) {
+  const codigo = categoriasContraparte.value[grupo.contraparte_chave];
+  if (!codigo) return;
+  classificandoGrupo.value = grupo.contraparte_chave;
+  try {
+    const res = await FinanceiroService.classificarLote(grupo.ids, codigo);
+    const data = res.data || {};
+    aplicarResumo(data.resumo);
+    $q.notify({
+      type: "positive",
+      message:
+        `${data.atualizadas ?? 0} lançamento(s) de ` +
+        `${grupo.contraparte_nome || grupo.contraparte_chave} classificados.`,
+    });
+    categoriasContraparte.value = {
+      ...categoriasContraparte.value,
+      [grupo.contraparte_chave]: null,
+    };
+    await loadTransacoes();
+  } catch (err) {
+    $q.notify({
+      type: "negative",
+      message: `Erro ao classificar a contraparte: ${apiErrorMessage(err)}`,
+    });
+  } finally {
+    classificandoGrupo.value = null;
+  }
+}
+
+/** Aplica uma categoria a todas as linhas marcadas na tabela. */
+async function classificarSelecionadas() {
+  if (!selecionadas.value.length || !classificacaoLote.value) return;
+  classificandoLote.value = true;
+  try {
+    const res = await FinanceiroService.classificarLote(
+      selecionadas.value.map((row) => row.id),
+      classificacaoLote.value,
+    );
+    const data = res.data || {};
+    aplicarResumo(data.resumo);
+    $q.notify({
+      type: "positive",
+      message: `${data.atualizadas ?? 0} transação(ões) classificada(s) de uma vez.`,
+    });
+    selecionadas.value = [];
+    classificacaoLote.value = null;
+    await loadTransacoes();
+  } catch (err) {
+    $q.notify({
+      type: "negative",
+      message: `Erro ao classificar selecionadas: ${apiErrorMessage(err)}`,
+    });
+  } finally {
+    classificandoLote.value = false;
+  }
+}
+
+/** Pergunta ao dono se a reclassificação pode mexer no que ele classificou à mão. */
+function confirmarReclassificacao() {
+  $q.dialog({
+    title: "Reclassificar automaticamente",
+    message:
+      "O sistema vai tentar classificar o que ainda está pendente usando o título do banco, " +
+      "despesas iguais do mesmo CNPJ já classificadas e contrapartes reconhecidas. " +
+      "O que você classificou à mão pode ser preservado ou refeito:",
+    options: {
+      type: "radio",
+      model: "preservar",
+      items: [
+        {
+          label: "Preservar o que eu classifiquei à mão (recomendado)",
+          value: "preservar",
+          color: "teal-8",
+        },
+        {
+          label: "Refazer tudo, inclusive o que eu classifiquei à mão",
+          value: "refazer",
+          color: "amber-9",
+        },
+      ],
+    },
+    cancel: { label: "Cancelar", flat: true, noCaps: true },
+    ok: { label: "Reclassificar", color: "teal-8", unelevated: true, noCaps: true },
+    persistent: true,
+  }).onOk((escolha) => reclassificarAutomaticamente(escolha === "refazer"));
+}
+
+async function reclassificarAutomaticamente(incluirUsuario) {
+  reclassificando.value = true;
+  try {
+    const res = await FinanceiroService.reclassificar(incluirUsuario);
+    const data = res.data || {};
+    aplicarResumo(data.resumo);
+    $q.notify({
+      type: "positive",
+      message:
+        `Reclassificação concluída: ${data.classificadas ?? 0} de ${data.avaliadas ?? 0} ` +
+        `transação(ões) classificada(s). ${data.pendentes ?? 0} continuam pendentes.`,
+      timeout: 6000,
+    });
+    await loadTransacoes();
+  } catch (err) {
+    $q.notify({
+      type: "negative",
+      message: `Erro ao reclassificar: ${apiErrorMessage(err)}`,
+    });
+  } finally {
+    reclassificando.value = false;
   }
 }
 
@@ -1126,7 +1772,7 @@ function formatCnpj(cnpj) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadBancos(), loadConexoes(), loadCnpjs()]);
+  await Promise.all([loadBancos(), loadConexoes(), loadCnpjs(), loadCategorias()]);
 });
 </script>
 
@@ -1161,5 +1807,27 @@ onMounted(async () => {
 
 .font-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.termometro-barra {
+  width: 100%;
+}
+
+.classificacao-select {
+  min-width: 220px;
+}
+
+.origem-badge {
+  flex-shrink: 0;
+}
+
+.contrapartes-corpo {
+  max-height: 62vh;
+  overflow-y: auto;
+}
+
+.contraparte-item {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 </style>

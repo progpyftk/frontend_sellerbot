@@ -73,10 +73,61 @@ export default {
 
   /**
    * Lista as transações importadas de uma conta no período.
-   * @param {Object} params { conta, data_inicio, data_fim }
+   * @param {Object} params { conta, data_inicio, data_fim, classificacao, ... }
+   *   `classificacao` aceita "nao_classificadas", "classificadas" ou um código do plano.
+   *   O `resumo` da resposta sempre mede o escopo (conta/período), não o recorte aplicado.
    */
   getTransacoes(params = {}) {
     return api.get("/api/financeiro/transacoes/", { params });
+  },
+
+  /**
+   * Só o termômetro do extrato (quanto falta classificar), sem carregar as linhas.
+   * Aceita os mesmos filtros de `getTransacoes`.
+   * @param {Object} params { conta, data_inicio, data_fim, ... }
+   */
+  getResumoTransacoes(params = {}) {
+    return api.get("/api/financeiro/transacoes/resumo/", { params });
+  },
+
+  /**
+   * O que falta classificar, agrupado pela contraparte — com os `ids` de cada grupo.
+   * É o caminho para resolver várias linhas iguais com uma escolha só.
+   * Resposta: { grupos: [{ contraparte_*, linhas, valor, tipos, ids, ... }],
+   *             contrapartes, linhas, resumo }.
+   * @param {Object} params { conta, data_inicio, data_fim, cnpj, busca }
+   */
+  getPendentesPorContraparte(params = {}) {
+    return api.get("/api/financeiro/transacoes/pendentes-por-contraparte/", { params });
+  },
+
+  /**
+   * Catálogo de categorias do plano de contas, a fonte da lista de classificação.
+   * A lista vem do backend para ser a mesma que o motor de classificação usa.
+   * Resposta: { categorias: [...], grupos: [{ nome, categorias }] }.
+   */
+  getCategorias() {
+    return api.get("/api/financeiro/categorias/");
+  },
+
+  /**
+   * Aplica uma mesma categoria a várias transações de uma vez.
+   * @param {number[]} ids
+   * @param {string} classificacao código do plano ("" limpa a classificação)
+   */
+  classificarLote(ids, classificacao) {
+    return api.post("/api/financeiro/transacoes/classificar-lote/", { ids, classificacao });
+  },
+
+  /**
+   * Roda a classificação automática sobre as transações já gravadas.
+   * @param {boolean} incluirUsuario true também refaz o que o usuário classificou à mão;
+   *   false (padrão) preserva a decisão do dono.
+   */
+  reclassificar(incluirUsuario = false) {
+    return api.post("/api/financeiro/transacoes/reclassificar/", {
+      incluir_usuario: !!incluirUsuario,
+    });
   },
 
   /**
