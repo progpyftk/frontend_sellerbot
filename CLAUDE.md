@@ -13,10 +13,10 @@ Pontos especificos deste repositorio:
 
 - Um ticket que atravessa backend e frontend tem **um worktree em cada repo**, com o mesmo ID de
   ticket no branch (ex.: `feat/PROMO-IA-22-redesign` nos dois).
-- Gerenciador de pacotes: **ambiguo, confirme antes de mexer em dependencia.** Existem
-  `pnpm-lock.yaml` (mais recente, 07/09/2026) e `package-lock.json` (29/08/2026), e o `Dockerfile` do
-  deploy roda `npm install --legacy-peer-deps`. Nao troque de gerenciador nem regenere lock sem
-  decidir isso com o dono e alinhar com o `Dockerfile`.
+- Gerenciador de pacotes: **npm**. `package-lock.json` e o unico lock versionado e o `Dockerfile` do
+  deploy roda `npm install --legacy-peer-deps`. Pode existir um `pnpm-lock.yaml` local na sua maquina
+  (nao versionado, nao ignorado): e experimento de quem mexeu, nao a fonte. Nao commite lock de outro
+  gerenciador nem troque de gerenciador sem decidir com o dono e alinhar o `Dockerfile`.
 - Testes: Vitest (`pnpm test`) e Playwright (`playwright.config.js`).
 - Nunca abra a sessao na pasta container que agrupa os repositorios. Abra na raiz deste repo ou
   no worktree: `cd .worktrees/frontend_sellerbot-<ticket>-<slug> && opencode`
