@@ -211,6 +211,63 @@
         </div>
       </div>
 
+      <!-- ═══ SPRINTS (ROT-6) ══════════════════════════════════════════════════ -->
+      <div class="section-title" style="margin-top: 24px;">
+        Andamento das sprints ({{ data.sprints?.length ?? 0 }} ativas)
+      </div>
+
+      <div v-if="!data.sprints || !data.sprints.length" class="tiny-empty">
+        Nenhuma sprint ativa. O detalhe histórico continua nos sprint.md.
+      </div>
+
+      <div v-else class="routines-table">
+        <div v-for="s in data.sprints" :key="s.slug" class="rt-row">
+          <div class="rt-main">
+            <span class="col-name">{{ s.tema || s.slug }}</span>
+            <span class="col-status">
+              <span class="badge badge--none">
+                {{ s.contagem.done }} feitos · {{ s.contagem.todo }} a fazer
+              </span>
+            </span>
+            <span class="col-time">{{ s.slug }}</span>
+            <span class="col-dur">
+              <span v-if="s.ativos.length" class="hist-pill pill--partial">
+                {{ s.ativos.length }} em andamento
+              </span>
+              <span v-else class="hist-none">—</span>
+            </span>
+            <span class="col-items"></span>
+            <span class="col-errs"></span>
+            <span class="col-hist"></span>
+          </div>
+          <div v-if="s.ativos.length" class="rt-detail">
+            <div class="detail-title">O que está andando / travado (com data de início)</div>
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th>Ticket</th>
+                  <th>Tarefa</th>
+                  <th>Estado</th>
+                  <th>Início</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="t in s.ativos" :key="t.ticket">
+                  <td>{{ t.ticket }}</td>
+                  <td>{{ t.titulo }}</td>
+                  <td>
+                    <span :class="['badge', t.status === 'blocked' ? 'badge--error' : 'badge--partial']">
+                      {{ t.status === 'blocked' ? 'Travado' : 'Andando' }}
+                    </span>
+                  </td>
+                  <td>{{ t.started || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ TINY ERP ══════════════════════════════════════════════════════ -->
       <div class="section-title" style="margin-top: 24px;">Contas Tiny ERP</div>
 
