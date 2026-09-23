@@ -73,10 +73,12 @@ export function poucasVendas(row) {
  */
 export const RESULT_META = {
   confirmado: { label: 'Confirmado', variant: 'green', icon: 'check_circle' },
-  aguardando: { label: 'Aguardando confirmação', variant: 'amber', icon: 'hourglass_top' },
+  aguardando: { label: 'Aguardando', variant: 'amber', icon: 'hourglass_top' },
   recusado: { label: 'Recusado', variant: 'red', icon: 'cancel' },
   sem_confirmacao: { label: 'Sem confirmação', variant: 'amber', icon: 'help_outline' },
-  bloqueado: { label: 'Bloqueado', variant: 'slate', icon: 'block' },
+  // "Bloqueado" sozinho soava como o ML ter bloqueado o ANÚNCIO — na verdade a
+  // proteção do robô segurou a ESCRITA (nada foi ao ML). (PROMO-IA-49.)
+  bloqueado: { label: 'Bloqueado (proteção)', variant: 'slate', icon: 'shield' },
   nada: { label: 'Sem escrita', variant: 'slate', icon: 'remove_circle_outline' },
 };
 
@@ -90,6 +92,23 @@ const RESULTADO_POR_ESTADO = {
   blocked: 'bloqueado',
 };
 
+/** Motivo do bloqueio em linguagem de negócio (o `blocked_code` é do sistema). */
+const MOTIVO_BLOQUEIO = {
+  SMART_READ_ONLY: 'anúncio SMART: o preço é definido pelo ML — o robô só sinaliza, nunca escreve',
+  ALREADY_WRITTEN_TODAY_ITEM: 'já houve escrita hoje neste anúncio (o robô escreve 1 vez por dia)',
+  ALREADY_WRITTEN_TODAY: 'já houve escrita hoje nesta decisão (1 vez por dia)',
+  WRITE_DISABLED: 'a escrita automática estava desligada',
+  HIGH_TURNOVER_MARGIN_REQUIRED: 'vendas altas exigem margem ≥ 40% para mexer no desconto',
+  VARIATION_NOT_SUPPORTED: 'anúncio com variação fica fora da escrita automática',
+  READ_ERROR: 'falha ao ler o anúncio no ML — nada foi enviado',
+  SKIP_ALREADY_AT_TARGET: 'o preço já estava no alvo',
+  EXCEPTION: 'erro interno do robô — nada foi enviado',
+  MIN_PROFIT: 'cairia abaixo do seu lucro mínimo',
+  PROMOTION_BLOCKED: 'o ML marca o anúncio como não-editável',
+  SELLER_COUPON: 'cupom ativo: a simulação ignoraria o desconto',
+  COMPETING_PROMOTION_LIVE: 'há outra promoção viva no anúncio',
+};
+
 export function resultOf(row) {
   const last = row?.last_result;
   if (!last || !last.state) {
@@ -99,14 +118,20 @@ export function resultOf(row) {
     };
   }
   const key = RESULTADO_POR_ESTADO[last.state] || 'sem_confirmacao';
-  return {
-    key,
-    ...RESULT_META[key],
-    at: last.at || null,
-    detail: last.blocked_code
-      ? `Última escrita: ${last.state} — motivo: ${last.blocked_code}.`
-      : `Última escrita do robô: ${last.state}.`,
-  };
+  let detail;
+  if (key === 'bloqueado') {
+    const motivo = last.blocked_code ? (MOTIVO_BLOQUEIO[last.blocked_code] || last.blocked_code) : 'regra de proteção';
+    detail = `Nada foi enviado ao Mercado Livre — a proteção do robô segurou a escrita. Motivo: ${motivo}.`;
+  } else if (key === 'recusado') {
+    detail = 'O Mercado Livre recusou a alteração; o preço ficou como estava.';
+  } else if (key === 'confirmado') {
+    detail = 'Escrita confirmada no Mercado Livre.';
+  } else if (key === 'aguardando') {
+    detail = 'Enviado ao Mercado Livre; a confirmação ainda não chegou.';
+  } else {
+    detail = 'Enviado mas sem confirmação até agora — o robô reconfere depois.';
+  }
+  return { key, ...RESULT_META[key], at: last.at || null, detail };
 }
 
 export const INPUT_LABELS = {

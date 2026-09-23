@@ -138,10 +138,14 @@ describe('advisorDecision · sugestão da régua', () => {
 describe('advisorDecision · resultado da última escrita (PROMO-IA-48)', () => {
   it('mapeia o estado real do ledger para a linguagem do dono', () => {
     expect(resultOf({ last_result: { state: 'executed_verified', at: 'x' } }).label).toBe('Confirmado')
-    expect(resultOf({ last_result: { state: 'accepted_unverified' } }).label).toBe('Aguardando confirmação')
+    expect(resultOf({ last_result: { state: 'accepted_unverified' } }).label).toBe('Aguardando')
     expect(resultOf({ last_result: { state: 'failed' } }).label).toBe('Recusado')
     expect(resultOf({ last_result: { state: 'unknown' } }).label).toBe('Sem confirmação')
-    expect(resultOf({ last_result: { state: 'blocked', blocked_code: 'GATE' } }).key).toBe('bloqueado')
+    // "Bloqueado (proteção)" deixa claro que o ML NÃO bloqueou o anúncio — a
+    // proteção segurou a escrita, com o motivo traduzido (PROMO-IA-49).
+    const b = resultOf({ last_result: { state: 'blocked', blocked_code: 'SMART_READ_ONLY' } })
+    expect(b.label).toBe('Bloqueado (proteção)')
+    expect(b.detail).toContain('só sinaliza, nunca escreve')
   })
 
   it('sem escrita no ledger não mente: vira "Sem escrita"', () => {

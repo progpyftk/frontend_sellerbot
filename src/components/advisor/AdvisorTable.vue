@@ -117,7 +117,7 @@ const ariaSort = (col) => {
       text-transform: uppercase;
       letter-spacing: .04em;
       color: $text-muted;
-      white-space: nowrap;
+      white-space: normal;   // cabeçalho longo quebra — a tabela fica mais estreita (PROMO-IA-49)
       background: $surface-2;
       position: sticky;
       top: 0;
@@ -142,6 +142,7 @@ const ariaSort = (col) => {
     font: inherit;
     color: inherit;
     cursor: pointer;
+    white-space: normal;
   }
 
   /* Cartões: só no mobile. */

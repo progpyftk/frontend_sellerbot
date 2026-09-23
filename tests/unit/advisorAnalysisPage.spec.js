@@ -135,14 +135,19 @@ describe('AdvisorAnalysisPage', () => {
     expect(cabecalhos).toContain('Situação da venda');
     expect(cabecalhos).toContain('Decisão do agente');
     expect(cabecalhos).toContain('Resultado');
-    expect(cabecalhos).toContain('SKU');
-    expect(cabecalhos).toContain('Status');
     expect(cabecalhos).toContain('Estoque');
-    // "Análises 40" sumiu do título — a contagem virou meta à direita do cartão
+    // PROMO-IA-49: Status virou badge no título e o SKU foi para a linha de apoio
+    // (colunas próprias saíram para a tabela caber na tela)
+    expect(wrapper.texto()).toContain('Ativo');
+    expect(wrapper.texto()).toContain('U-25');
+    expect(cabecalhos).not.toContain('Status');
+    expect(cabecalhos).not.toContain('SKU');
+    // "Análises 40" sumiu — título novo + contagem como meta à direita
+    expect(wrapper.texto()).toContain('Análises realizadas pelo agente');
     expect(wrapper.texto()).toContain('2 nesta página · 2 no catálogo');
-    // classificação = UMA coisa (saúde) + a data da classificação
+    // classificação = UMA coisa (saúde) + a data compacta
     expect(wrapper.texto()).toContain('Médio');
-    expect(wrapper.texto()).toContain('classificado em');
+    expect(wrapper.texto()).toContain('23/09');
     // vocabulário autoexplicativo do mínimo
     expect(wrapper.texto()).toContain('Só abaixo do mínimo de margem ou lucro');
   });
@@ -174,11 +179,10 @@ describe('AdvisorAnalysisPage', () => {
     };
     const wrapper = await montar({ ...PAYLOAD, total: 1, results: [duplaRow] }, { item: 'MLB3' });
     const texto = wrapper.texto();
-    // decisão desmascarada: preço E revisão (antes "Revisar" sumia sob o alerta)
-    expect(texto).toContain('Corrigir custo ou preço-base + Revisar anúncio');
-    // os mínimos são os da CONTA da linha (cada conta tem o seu)
-    expect(texto).toContain('mínimos da conta: margem 25,0%');
-    expect(texto).toContain('lucro R$ 15,00');
+    // decisão desmascarada em rótulo curto (PROMO-IA-49) — o texto completo vai no tooltip
+    expect(texto).toContain('Preço + revisão');
+    // os mínimos são os da CONTA da linha, em formato compacto
+    expect(texto).toContain('mín. 25% · R$ 15');
 
     // o botão do drawer segue portando o encaminhamento à fila de revisão
     enqueueForReview.mockResolvedValue({ data: { success: true, enqueued: [{ item_id: 'MLB3' }] } });

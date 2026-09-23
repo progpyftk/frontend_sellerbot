@@ -68,7 +68,7 @@
         </span>
       </div>
 
-      <AdvisorSection title="Análises" :lead="leadLista" :tight="true">
+      <AdvisorSection title="Análises realizadas pelo agente" :lead="leadLista" :tight="true">
         <template #action>
           <span class="an__meta">{{ linhasVisiveis.length }} nesta página · {{ total }} no catálogo</span>
         </template>
@@ -93,23 +93,18 @@
           <template #card-title="{ row }">
             <span class="an__mlb">{{ row.item_id }}</span>
             <strong class="an__titulo">{{ row.title }}</strong>
-            <span class="an__conta">{{ row.account_nickname }}</span>
+            <span class="an__conta">{{ row.sku || '—' }} · {{ row.account_nickname }}</span>
           </template>
 
+          <!-- Anúncio: badge de Status na frente do título + MLB·SKU·conta na linha de apoio. -->
           <template #cell-anuncio="{ row }">
-            <span class="an__mlb">{{ row.item_id }}</span>
-            <span class="an__titulo">{{ row.title }}</span>
-            <span class="an__conta">{{ row.account_nickname }}</span>
-          </template>
-
-          <template #cell-sku="{ row }">
-            <span class="an__sku">{{ row.sku || '—' }}</span>
-          </template>
-
-          <template #cell-status="{ row }">
-            <AdvisorStatusPill :status="STATUS_PILL[row.status] || 'neutral'">
-              {{ statusLabel(row.status) }}
-            </AdvisorStatusPill>
+            <div class="an__anuncioTopo">
+              <AdvisorStatusPill :status="STATUS_PILL[row.status] || 'neutral'">
+                {{ statusLabel(row.status) }}
+              </AdvisorStatusPill>
+              <strong class="an__titulo">{{ row.title }}</strong>
+            </div>
+            <span class="an__conta">{{ row.item_id }} · {{ row.sku || '—' }} · {{ row.account_nickname }}</span>
           </template>
 
           <!-- 1. CLASSIFICAÇÃO: uma coisa só — como o anúncio foi classificado. -->
@@ -118,7 +113,7 @@
               <AdvisorStatusPill :status="SAUDE_PILL[row.health] || 'neutral'">
                 {{ HEALTH_META[row.health]?.label || '—' }}
               </AdvisorStatusPill>
-              <span class="an__data">classificado em {{ dataCurta(row.computed_at) }}</span>
+              <span class="an__data">{{ dataCurta(row.computed_at) }}</span>
             </div>
           </template>
 
@@ -127,19 +122,19 @@
             <div class="an__pipeline">
               <AdvisorStatusPill :status="SITUACAO_PILL[situationOf(row)?.key] || 'neutral'"
                                  :title="situationOf(row)?.reason">
-                {{ situationOf(row)?.label || '—' }}
+                {{ SITUACAO_CURTA[situationOf(row)?.key] || situationOf(row)?.label || '—' }}
               </AdvisorStatusPill>
-              <span v-if="isBelowMin(row)" class="an__data">
-                mínimos da conta: margem {{ pct(floorMarginOf(row)) }} · lucro {{ brl(floorProfitOf(row)) }}
+              <span v-if="isBelowMin(row)" class="an__data" :title="situationOf(row)?.reason">
+                mín. {{ Math.round(floorMarginOf(row)) }}% · R$ {{ Math.round(floorProfitOf(row)) }}
               </span>
             </div>
           </template>
 
-          <!-- 3. DECISÃO DO AGENTE: a ação gerada (tooltip: regra + última ação). -->
+          <!-- 3. DECISÃO DO AGENTE: rótulo curto (tooltip: regra + última ação). -->
           <template #cell-decisao="{ row }">
             <AdvisorStatusPill :status="DECISAO_PILL[suggestionOf(row)?.key] || 'neutral'"
                                :title="decisaoTitle(row)">
-              {{ suggestionOf(row)?.label || '—' }}
+              {{ DECISAO_CURTA[suggestionOf(row)?.key] || suggestionOf(row)?.label || '—' }}
             </AdvisorStatusPill>
           </template>
 
@@ -159,7 +154,7 @@
           <template #cell-preco="{ row }">{{ brl(row.price) }}</template>
           <template #cell-ritmo="{ row }">
             <span :title="row.sales_30d == null ? '' : `${row.sales_30d} vendas em 30 dias`">
-              {{ row.health_info?.units_per_week == null ? '—' : `${String(row.health_info.units_per_week).replace('.', ',')} un./sem.` }}
+              {{ row.health_info?.units_per_week == null ? '—' : `${String(row.health_info.units_per_week).replace('.', ',')}/sem.` }}
             </span>
           </template>
           <template #cell-margemBase="{ row }">
@@ -178,7 +173,10 @@
             <span class="an__badge" :class="{ 'is-on': (row.candidates_count ?? 0) > 0 }">{{ row.candidates_count ?? 0 }}</span>
           </template>
           <template #cell-promoAtiva="{ row }">
-            {{ row.active_promo?.promotion_name || (row.has_active_promo ? row.active_promo?.promotion_type : '—') }}
+            <div class="an__pipeline">
+              <span>{{ row.active_promo?.promotion_name || (row.has_active_promo ? row.active_promo?.promotion_type : '—') }}</span>
+              <span v-if="row.active_promo?.start_date" class="an__data">desde {{ dataCurta(row.active_promo.start_date) }}</span>
+            </div>
           </template>
           <template #cell-desconto="{ row }">{{ row.discount_pct == null ? '—' : pct(row.discount_pct) }}</template>
           <template #cell-lucro="{ row }">
@@ -198,7 +196,6 @@
               {{ row.available_quantity ?? '—' }}
             </span>
           </template>
-          <template #cell-inicio="{ row }">{{ dataCurta(row.active_promo?.start_date) }}</template>
         </AdvisorTable>
 
         <footer v-if="total > porPagina" class="an__paginacao">
@@ -252,35 +249,33 @@ const route = useRoute();
 const router = useRouter();
 
 /**
- * Colunas da tabela Análises (PROMO-IA-48): o pipeline do dono vira coluna —
+ * Colunas da tabela Análises (PROMO-IA-48/49): o pipeline do dono vora coluna —
  * Classificação (1 valor) → Situação da venda → Decisão do agente → Resultado —
- * seguido do retrato financeiro/operacional. `Última atualização` morreu como
- * coluna: a data vive dentro da Classificação ("classificado em …").
+ * seguido do retrato financeiro/operacional. Para CABER na tela (PROMO-IA-49):
+ * Status virou badge no título do anúncio, SKU/MLB/conta na linha de apoio e o
+ * início da promoção entrou dentro de "Promoção ativa" ("desde …").
  */
 const COLUNAS = [
-  { key: 'anuncio', label: 'Anúncio', minWidth: 220 },
-  { key: 'sku', label: 'SKU', sortable: true, sortKey: 'sku', minWidth: 110 },
-  { key: 'status', label: 'Status', sortable: true, sortKey: 'status', minWidth: 95 },
-  { key: 'classificacao', label: 'Classificação', sortable: true, sortKey: 'computed', minWidth: 160 },
-  { key: 'situacao', label: 'Situação da venda', minWidth: 165 },
-  { key: 'decisao', label: 'Decisão do agente', minWidth: 185 },
-  { key: 'resultado', label: 'Resultado', minWidth: 150 },
-  { key: 'preco', label: 'Preço-base', numeric: true, sortable: true, sortKey: 'price', minWidth: 100 },
-  { key: 'ritmo', label: 'Ritmo de vendas', numeric: true, sortable: true, sortKey: 'ritmo', minWidth: 110 },
-  { key: 'margemBase', label: 'Margem-base', numeric: true, sortable: true, sortKey: 'base_margin', minWidth: 105 },
-  { key: 'margem', label: 'Margem em promo', numeric: true, sortable: true, sortKey: 'margin', minWidth: 115 },
-  { key: 'ofertadas', label: 'Ofertadas (nº)', numeric: true, sortable: true, sortKey: 'ofertadas', minWidth: 100 },
-  { key: 'promoAtiva', label: 'Promoção ativa', minWidth: 150 },
-  { key: 'desconto', label: 'Desconto ativo', numeric: true, sortable: true, sortKey: 'discount', minWidth: 105 },
-  { key: 'lucro', label: 'Lucro estimado', numeric: true, minWidth: 110 },
-  { key: 'frete', label: 'Frete estimado', numeric: true, minWidth: 105 },
-  { key: 'estoque', label: 'Estoque', numeric: true, sortable: true, sortKey: 'stock', minWidth: 90 },
-  { key: 'inicio', label: 'Início da promoção', minWidth: 115 },
+  { key: 'anuncio', label: 'Anúncio', minWidth: 190 },
+  { key: 'classificacao', label: 'Classificação', sortable: true, sortKey: 'computed', minWidth: 78 },
+  { key: 'situacao', label: 'Situação da venda', minWidth: 88 },
+  { key: 'decisao', label: 'Decisão do agente', minWidth: 88 },
+  { key: 'resultado', label: 'Resultado', minWidth: 88 },
+  { key: 'preco', label: 'Preço-base', numeric: true, sortable: true, sortKey: 'price', minWidth: 74 },
+  { key: 'ritmo', label: 'Ritmo de vendas', numeric: true, sortable: true, sortKey: 'ritmo', minWidth: 68 },
+  { key: 'margemBase', label: 'Margem-base', numeric: true, sortable: true, sortKey: 'base_margin', minWidth: 68 },
+  { key: 'margem', label: 'Margem em promo', numeric: true, sortable: true, sortKey: 'margin', minWidth: 74 },
+  { key: 'ofertadas', label: 'Ofertadas (nº)', numeric: true, sortable: true, sortKey: 'ofertadas', minWidth: 52 },
+  { key: 'promoAtiva', label: 'Promoção ativa', minWidth: 96 },
+  { key: 'desconto', label: 'Desconto ativo', numeric: true, sortable: true, sortKey: 'discount', minWidth: 62 },
+  { key: 'lucro', label: 'Lucro estimado', numeric: true, minWidth: 74 },
+  { key: 'frete', label: 'Frete estimado', numeric: true, minWidth: 68 },
+  { key: 'estoque', label: 'Estoque', numeric: true, sortable: true, sortKey: 'stock', minWidth: 54 },
 ];
 
 /** Cartão do mobile: o pipeline primeiro, depois o essencial financeiro. */
 const CAMPOS_CARTAO = COLUNAS.filter((c) => (
-  ['classificacao', 'situacao', 'decisao', 'resultado', 'margem', 'ofertadas'].includes(c.key)
+  ['classificacao', 'situacao', 'decisao', 'resultado', 'preco', 'margem'].includes(c.key)
 ));
 
 /* ------------------------------------------------- pílulas e traduções -- */
@@ -299,6 +294,25 @@ const DECISAO_PILL = {
 const RESULT_PILL = {
   confirmado: 'verificado', aguardando: 'aguardando', recusado: 'recusado',
   sem_confirmacao: 'bloqueado', bloqueado: 'bloqueado', nada: 'neutral',
+};
+
+// PROMO-IA-49: rótulos CURTOS para a tabela (tooltip traz o texto completo).
+const DECISAO_CURTA = {
+  corrigir_e_revisar: 'Preço + revisão',
+  bloqueado: 'Corrigir preço',
+  rebase: 'Reprecificar',
+  revisar: 'Revisar',
+  reduzir: 'Reduzir desconto',
+  manter: 'Não mexer',
+  sem_dados: 'Sem dados',
+  aguardando: 'Aguardando',
+};
+const SITUACAO_CURTA = {
+  bloqueado_piso: 'Abaixo do mínimo',
+  sem_dados: 'Sem cálculo',
+  baixo_giro: 'Poucas vendas',
+  promo_ativa: 'Com promoção',
+  sem_promo: 'Sem promoção',
 };
 
 function statusLabel(s) {
@@ -422,9 +436,10 @@ function dataCurta(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
+  // compacto: "23/09 10:22" (sem a vírgula) — a tabela precisa caber na tela
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
-  }).format(d);
+  }).format(d).replace(', ', ' ');
 }
 
 onMounted(() => {
@@ -507,7 +522,14 @@ onMounted(() => {
   }
   &__titulo { display: block; font-weight: $font-medium; line-height: 1.3; }
   &__conta { display: block; font-size: $text-xs-size; color: $text-muted; }
-  &__sku { font-variant-numeric: tabular-nums; color: $text-body; }
+
+  // PROMO-IA-49: badge de Status na frente do título + identificadores numa linha só
+  &__anuncioTopo {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $space-2;
+  }
 
   // células do pipeline: pílula + linha de apoio pequena
   &__pipeline {
@@ -551,6 +573,13 @@ onMounted(() => {
     div { display: flex; align-items: center; gap: $space-2; }
   }
   &__paginaAtual { font-variant-numeric: tabular-nums; }
+
+  // PROMO-IA-49: apertar a tabela para CABER na tela — padding horizontal menor,
+  // altura da linha preservada (o dono gostou do tamanho de linha).
+  :deep(.adv-table__table th),
+  :deep(.adv-table__table td) {
+    padding: $space-2 8px;
+  }
 }
 
 @media (max-width: 640px) {
