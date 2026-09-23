@@ -226,6 +226,7 @@ const menuSections = [
     sectionIcon: "account_balance_wallet",
     items: [
       { label: "Bancos e Extratos", icon: "account_balance_wallet", route: "financeiro-bancos" },
+      { label: "Margem de Contribuição", icon: "calculate", route: "financeiro-margens" },
     ],
   },
   {
