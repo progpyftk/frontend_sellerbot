@@ -43,6 +43,29 @@ export function targetMedioOf(row) {
   return v === null || v === undefined ? TARGET_MARGIN_PCT.medio : Number(v);
 }
 
+/**
+ * PROMO-IA-47: venda abaixo do mínimo da conta COM ou SEM promo ativa.
+ * O `below_floor` da API exige promo ativa; o caso sem promo (sugestão `rebase`)
+ * também é coorte da fila de revisão. Linha sem o campo novo `below_min` cai no
+ * cálculo pela margem/lucro da própria linha.
+ */
+export function isBelowMin(row) {
+  if (!row) return false;
+  if (row.below_min !== undefined && row.below_min !== null) return Boolean(row.below_min);
+  if (row.below_floor) return true;
+  if (!row.estimable) return false;
+  const margemRuim = row.margin_pct !== null && row.margin_pct !== undefined
+    && row.margin_pct < floorMarginOf(row);
+  const lucroRuim = row.profit_unit !== null && row.profit_unit !== undefined
+    && row.profit_unit < floorProfitOf(row);
+  return margemRuim || lucroRuim;
+}
+
+/** PROMO-IA-47: baixa velocidade de vendas (parado/fraco) — a outra metade da coorte. */
+export function poucasVendas(row) {
+  return row?.health === 'parado' || row?.health === 'fraco';
+}
+
 export const INPUT_LABELS = {
   cmv: 'CMV',
   fee: 'tarifa',
@@ -81,6 +104,7 @@ export const SITUATION_META = {
 };
 
 export const SUGGESTION_META = {
+  corrigir_e_revisar: { label: 'Corrigir custo ou preço-base + Revisar anúncio', variant: 'indigo', icon: 'rule' },
   bloqueado: { label: 'Corrigir custo ou preço-base', variant: 'slate', icon: 'block' },
   rebase: { label: 'Reprecificar', variant: 'indigo', icon: 'straighten' },
   revisar: { label: 'Revisar anúncio', variant: 'indigo', icon: 'search' },
@@ -105,6 +129,7 @@ export const REGRA_SITUACOES = {
 };
 
 export const REGRA_ACOES = {
+  corrigir_e_revisar: 'Poucas vendas E venda abaixo do mínimo: desconto não resolve e preço sozinho também não. Dois caminhos ao mesmo tempo — corrigir custo ou preço-base E revisar o anúncio (descrição, SEO, fotos e atributos). Revisão de anúncio é regra do dono para quem vende pouco, mesmo quando o problema parece só preço.',
   bloqueado: 'Sem escrita até o preço-base mudar: qualquer desconto aqui cairia abaixo do mínimo. O caminho é corrigir o custo ou refazer o preço-base, não dar mais desconto.',
   rebase: 'Margem abaixo do mínimo sem promoção ativa: o problema é o preço-base, então o caso vai para o assistente de preços — o robô de promoção não escreve.',
   revisar: 'Regra do dono: anúncio parado ou fraco SEMPRE passa por revisão de anúncio, mesmo sem retrato financeiro — a revisão não depende de margem.',
@@ -236,6 +261,17 @@ export function suggestionOf(row) {
       source: 'regua',
     };
   }
+  // PROMO-IA-47: a dupla (abaixo do mínimo E poucas vendas) ganha o caminho
+  // composto — antes "Revisar anúncio" ficava mascarado pelo alerta de piso,
+  // escondendo a regra do dono de que parado/fraco SEMPRE vai para revisão.
+  if (isBelowMin(row) && poucasVendas(row)) {
+    return {
+      key: 'corrigir_e_revisar',
+      ...SUGGESTION_META.corrigir_e_revisar,
+      detail: `Venda abaixo do mínimo desta conta (margem mínima de ${pct(floorMarginOf(row))} e lucro mínimo de ${brl(floorProfitOf(row))}) e poucas vendas — corrija o preço-base E envie para revisão.`,
+      source: 'regua',
+    };
+  }
   if (row.below_floor) {
     return {
       key: 'bloqueado',
@@ -321,4 +357,4 @@ export function decisionSummary(rows = []) {
 }
 
 /** Ordem de exibição dos chips de sugestão (mais acionável primeiro). */
-export const SUGGESTION_ORDER = ['bloqueado', 'rebase', 'revisar', 'reduzir', 'sem_dados', 'manter', 'aguardando'];
+export const SUGGESTION_ORDER = ['corrigir_e_revisar', 'bloqueado', 'rebase', 'revisar', 'reduzir', 'sem_dados', 'manter', 'aguardando'];

@@ -37,6 +37,7 @@ export function useAdvisorCatalog() {
     saude: null,
     soAbaixoDoPiso: false,
     soComPromocao: false,
+    soDupla: false,
   });
 
   const ordenacao = ref('-sales');
@@ -60,6 +61,12 @@ export function useAdvisorCatalog() {
     if (filtros.saude) p.health = filtros.saude;
     if (filtros.soAbaixoDoPiso) p.below_floor = 'true';
     if (filtros.soComPromocao) p.has_promo = 'true';
+    // PROMO-IA-47: chip da dupla (abaixo do mínimo E poucas vendas) — por último
+    // para vencer qualquer resto de saúde/abaixo do piso (eles são excluídos abaixo).
+    if (filtros.soDupla) {
+      p.below_min = 'true';
+      p.health = 'parado,fraco';
+    }
     return p;
   }
 
@@ -109,6 +116,19 @@ export function useAdvisorCatalog() {
 
   watch(pagina, () => { if (!debounce) carregar(); });
 
+  // PROMO-IA-47: o chip da dupla usa below_min+health=parado,fraco — mutuamente
+  // exclusivo com "Saúde" e "Só abaixo do piso" para não mandar params conflitantes.
+  // Quem é acionado por último fica.
+  watch(() => filtros.soDupla, (v) => {
+    if (v) {
+      filtros.saude = null;
+      filtros.soAbaixoDoPiso = false;
+    }
+  });
+  watch(() => [filtros.saude, filtros.soAbaixoDoPiso], ([saude, abaixo]) => {
+    if (saude || abaixo) filtros.soDupla = false;
+  });
+
   const contasOpcoes = computed(() => contas.value.map((c) => ({
     label: c.account_nickname || c.account_id,
     value: c.account_id,
@@ -135,7 +155,8 @@ export function useAdvisorCatalog() {
   });
 
   const temFiltroDeEscopo = computed(() => Boolean(
-    filtros.conta || filtros.status || filtros.saude || filtros.soAbaixoDoPiso || filtros.soComPromocao,
+    filtros.conta || filtros.status || filtros.saude || filtros.soAbaixoDoPiso
+    || filtros.soComPromocao || filtros.soDupla,
   ));
 
   const decisao = computed(() => decisionSummary(linhas.value));
@@ -150,6 +171,7 @@ export function useAdvisorCatalog() {
     filtros.saude = null;
     filtros.soAbaixoDoPiso = false;
     filtros.soComPromocao = false;
+    filtros.soDupla = false;
   }
 
   function ordenarPor(coluna) {

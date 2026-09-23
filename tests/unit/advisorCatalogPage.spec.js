@@ -15,9 +15,13 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getCatalog = vi.fn();
+const enqueueForReview = vi.fn();
 
 vi.mock('src/services/AdvisorService', () => ({
-  default: { getCatalog: (...a) => getCatalog(...a) },
+  default: {
+    getCatalog: (...a) => getCatalog(...a),
+    enqueueForReview: (...a) => enqueueForReview(...a),
+  },
 }));
 
 import AdvisorCatalogPage from 'src/pages/advisor/AdvisorCatalogPage.vue';
@@ -77,6 +81,7 @@ const aposDebounce = () => new Promise((resolve) => setTimeout(resolve, 360));
 describe('AdvisorCatalogPage', () => {
   beforeEach(() => {
     getCatalog.mockReset();
+    enqueueForReview.mockReset();
   });
 
   it('pede a página padrão com ordem e preset default', async () => {
@@ -168,6 +173,65 @@ describe('AdvisorCatalogPage', () => {
     expect(detalhe.text()).toContain('Lucro por venda');
     expect(detalhe.text()).toContain('Última ação do robô');
     expect(detalhe.text()).toContain('U-25');
+  });
+
+  it('chip da dupla manda below_min + health=parado,fraco e limpa filtros conflitantes (PROMO-IA-47)', async () => {
+    const wrapper = await montar();
+    wrapper.vm.filtros.saude = 'medio';
+    await aposDebounce();
+    getCatalog.mockClear();
+
+    wrapper.vm.filtros.soDupla = true;
+    await aposDebounce();
+    await flushPromises();
+
+    expect(wrapper.vm.filtros.saude).toBeNull();   // o chip da dupla exclui "Saúde"
+    expect(getCatalog).toHaveBeenCalledWith(expect.objectContaining({
+      below_min: 'true', health: 'parado,fraco',
+    }));
+  });
+
+  it('a dupla mostra selo "Poucas vendas" e o botão manda para a fila de revisão (PROMO-IA-47)', async () => {
+    const duplaRow = {
+      account_id: 'ACC1', account_nickname: 'MOGIVITTA',
+      item_id: 'MLB3', title: 'Perlita 5L', sku: 'P-5', status: 'active',
+      price: 30, buyer_price: null, discount_pct: null, sales_30d: 0,
+      health: 'parado', cmv_unit: 20, missing_inputs: [], has_active_promo: false,
+      origem: null, margin_pct: 10, profit_unit: 4, estimable: true,
+      below_floor: false, below_min: true,
+      agent_last: null, permalink: 'https://produto.mercadolivre.com.br/MLB-3',
+    };
+    const wrapper = await montar({ ...PAYLOAD, total: 1, results: [duplaRow] });
+
+    // o selo extra e a sugestão composta desmascaram "Revisar anúncio"
+    expect(wrapper.texto()).toContain('Poucas vendas');
+    expect(wrapper.texto()).toContain('Corrigir custo ou preço-base + Revisar anúncio');
+
+    await wrapper.findAll('.adv-table__table tbody tr')[0].trigger('click');
+    await flushPromises();
+    enqueueForReview.mockResolvedValue({ data: { success: true, enqueued: [{ item_id: 'MLB3' }] } });
+    const botao = wrapper.findAll('button').find((b) => b.text().includes('Enviar para revisão'));
+    expect(botao).toBeTruthy();
+    await botao.trigger('click');
+    await flushPromises();
+
+    expect(enqueueForReview).toHaveBeenCalledWith({
+      item_ids: ['MLB3'], reason: 'abaixo do mínimo + poucas vendas',
+    });
+    expect(wrapper.texto()).toContain('Anúncios · Revisão SEO');
+  });
+
+  it('erro ao enfileirar aparece no detalhe e não vira sucesso (PROMO-IA-47)', async () => {
+    const wrapper = await montar();
+    await wrapper.findAll('.adv-table__table tbody tr')[0].trigger('click');
+    await flushPromises();
+    enqueueForReview.mockRejectedValue({ response: { data: { detail: 'Fila indisponível' } } });
+    const botao = wrapper.findAll('button').find((b) => b.text().includes('Enviar para revisão'));
+    await botao.trigger('click');
+    await flushPromises();
+
+    expect(wrapper.texto()).toContain('Fila indisponível');
+    expect(wrapper.texto()).not.toContain('Enfileirado para revisão');
   });
 
   it('o preset "Completo" traz as colunas financeiras', async () => {

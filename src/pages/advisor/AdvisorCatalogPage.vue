@@ -41,6 +41,7 @@
 
         <q-toggle v-model="filtros.soAbaixoDoPiso" dense label="Só abaixo do mínimo" />
         <q-toggle v-model="filtros.soComPromocao" dense label="Só com promoção" />
+        <q-toggle v-model="filtros.soDupla" dense label="Abaixo do mínimo e poucas vendas" />
 
         <q-btn v-if="filtrosAtivos" flat dense no-caps icon="filter_alt_off" label="Limpar filtros" @click="limparFiltros" />
       </div>
@@ -53,7 +54,7 @@
       <!-- Números do catálogo: o que o dono usa para decidir onde olhar primeiro -->
       <div class="cat__metricas">
         <AdvisorMetric :value="resumo.ads ?? '—'" label="anúncios no catálogo" :hint="retratoTexto" />
-        <AdvisorMetric :value="resumo.below_floor ?? 0" label="abaixo do mínimo" variant="warn" hint="margem ou lucro fora do mínimo" />
+        <AdvisorMetric :value="resumo.below_min ?? resumo.below_floor ?? 0" label="abaixo do mínimo" variant="warn" hint="margem ou lucro fora do mínimo (com ou sem promo)" />
         <AdvisorMetric :value="resumo.with_active_promo ?? 0" label="com promoção ativa" hint="o robô não precisa agir" />
         <AdvisorMetric :value="resumo.assistente ?? 0" label="com sugestão do robô" hint="aprofundar, reduzir ou reprecificar" />
         <AdvisorMetric :value="resumo.agent_history ?? 0" label="já mexidos pelo robô" hint="histórico de acionamento" />
@@ -98,9 +99,17 @@
           </template>
 
           <template #cell-situacao="{ row }">
-            <AdvisorStatusPill :status="situacao(row).status" :title="situacao(row).regra">
-              {{ situacao(row).label }}
-            </AdvisorStatusPill>
+            <div class="cat__selos">
+              <AdvisorStatusPill :status="situacao(row).status" :title="situacao(row).regra">
+                {{ situacao(row).label }}
+              </AdvisorStatusPill>
+              <!-- PROMO-IA-47: a dupla (abaixo do mínimo + poucas vendas) ganha selo extra —
+                   antes "Revisar anúncio" sumia sob o alerta de piso. -->
+              <AdvisorStatusPill v-if="dupla(row)" status="recusado"
+                                 title="Poucas vendas E abaixo do mínimo: além do preço, este anúncio precisa de revisão (descrição, SEO, fotos e atributos).">
+                Poucas vendas
+              </AdvisorStatusPill>
+            </div>
           </template>
 
           <template #cell-sugestao="{ row }">
@@ -157,6 +166,17 @@
             margem-alvo por saúde de vendas, com margem mínima de {{ pct(floorMarginOf(linhaExpandida)) }} e
             lucro mínimo de {{ brl(floorProfitOf(linhaExpandida)) }} por venda.
           </p>
+          <!-- PROMO-IA-47: entrada manual na fila de revisão (decisão continua com o dono) -->
+          <div class="cat__detalheAcoes">
+            <q-btn unelevated no-caps color="primary" icon="playlist_add"
+                   label="Enviar para revisão" :loading="enviandoRevisao"
+                   :disable="revisaoEnviada" @click="enviarParaRevisao(linhaExpandida)" />
+            <p v-if="revisaoErro" class="cat__detalheErro" role="alert">{{ revisaoErro }}</p>
+            <p v-if="revisaoEnviada" class="cat__detalheOk" role="status">
+              Enfileirado para revisão — você decide o que aplicar em
+              <router-link :to="{ name: 'items-seo-review' }">Anúncios · Revisão SEO</router-link>.
+            </p>
+          </div>
         </div>
 
         <footer v-if="total > porPagina" class="cat__paginacao">
@@ -227,7 +247,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import AdvisorEmptyState from 'src/components/advisor/AdvisorEmptyState.vue';
 import AdvisorMetric from 'src/components/advisor/AdvisorMetric.vue';
@@ -236,10 +256,12 @@ import AdvisorShell from 'src/components/advisor/AdvisorShell.vue';
 import AdvisorStatusPill from 'src/components/advisor/AdvisorStatusPill.vue';
 import AdvisorTable from 'src/components/advisor/AdvisorTable.vue';
 import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
+import AdvisorService from 'src/services/AdvisorService';
 import {
   FLOOR_MARGIN_PCT, FLOOR_PROFIT_BRL, HEALTH_META, LEGENDARIO_ACOES, LEGENDARIO_SAUDE,
   LEGENDARIO_SITUACOES, REGRA_ACOES, REGRA_SITUACOES, TARGET_MARGIN_PCT,
-  brl, emptyCellReason, floorMarginOf, floorProfitOf, logisticLabel, pct, situationOf, suggestionOf,
+  brl, emptyCellReason, floorMarginOf, floorProfitOf, isBelowMin, logisticLabel, pct,
+  poucasVendas, situationOf, suggestionOf,
 } from 'src/utils/advisorDecision';
 
 const {
@@ -287,6 +309,42 @@ const camposCartao = computed(() => colunas.value
   .slice(0, 6));
 
 const linhaExpandida = computed(() => linhas.value.find((l) => l.item_id === expandido.value) || null);
+
+/** PROMO-IA-47: a coorte da fila de revisão — abaixo do mínimo E poucas vendas. */
+function dupla(row) {
+  return isBelowMin(row) && poucasVendas(row);
+}
+
+const enviandoRevisao = ref(false);
+const revisaoEnviada = ref(false);
+const revisaoErro = ref('');
+watch(expandido, () => {
+  revisaoEnviada.value = false;
+  revisaoErro.value = '';
+});
+
+/**
+ * PROMO-IA-47: manda o anúncio para a fila de revisão (entrada manual). Não escreve
+ * no Mercado Livre — a decisão de aplicar continua na página "Anúncios · Revisão SEO".
+ */
+async function enviarParaRevisao(linha) {
+  if (!linha) return;
+  enviandoRevisao.value = true;
+  revisaoErro.value = '';
+  try {
+    await AdvisorService.enqueueForReview({
+      item_ids: [linha.item_id],
+      reason: 'abaixo do mínimo + poucas vendas',
+    });
+    revisaoEnviada.value = true;
+  } catch (err) {
+    revisaoErro.value = err?.response?.data?.detail
+      || err?.response?.data?.error
+      || 'Não foi possível enfileirar para revisão.';
+  } finally {
+    enviandoRevisao.value = false;
+  }
+}
 
 const detalheCampos = computed(() => {
   const l = linhaExpandida.value;
@@ -463,6 +521,30 @@ onMounted(carregar);
     margin: $space-3 0 0;
     font-size: $text-xs-size;
     color: $text-muted;
+  }
+  &__selos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space-1;
+  }
+  &__detalheAcoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $space-3;
+    margin-top: $space-3;
+  }
+  &__detalheErro {
+    margin: 0;
+    font-size: $text-xs-size;
+    color: $negative;
+  }
+  &__detalheOk {
+    margin: 0;
+    font-size: $text-xs-size;
+    color: $text-muted;
+
+    a { color: $primary; }
   }
 
   &__legenda {

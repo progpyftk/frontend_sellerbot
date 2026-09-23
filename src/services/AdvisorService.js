@@ -27,4 +27,9 @@ export default {
   getCatalog(params = {}) {
     return api.get('/mercadolivre/advisor/catalog/', { params });
   },
+
+  /** PROMO-IA-47: enfileira anúncios para revisão (fila SEO) — a decisão é em items/revisao. */
+  enqueueForReview(payload) {
+    return api.post('/mercadolivre/seo-review/enqueue/', payload);
+  },
 };

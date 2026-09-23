@@ -80,6 +80,22 @@ describe('advisorDecision · sugestão da régua', () => {
     expect(s.source).toBe('regua')
   })
 
+  it('dupla (abaixo do mínimo + poucas vendas) pede preço E revisão (PROMO-IA-47)', () => {
+    // antes "Revisar anúncio" ficava mascarado pelo alerta de piso
+    const s = suggestionOf(baseRow({ below_floor: true, margin_pct: 21, health: 'parado' }))
+    expect(s.key).toBe('corrigir_e_revisar')
+    expect(s.label).toContain('Revisar anúncio')
+    // sem promo ativa também é coorte (o caso que era só "rebase")
+    expect(suggestionOf(baseRow({ has_active_promo: false, margin_pct: 24.5, health: 'fraco' })).key)
+      .toBe('corrigir_e_revisar')
+    // o campo novo `below_min` do backend decide sem recalcular
+    expect(suggestionOf(baseRow({
+      below_floor: false, below_min: true, has_active_promo: false, margin_pct: 40, health: 'fraco',
+    })).key).toBe('corrigir_e_revisar')
+    // acima do mínimo, parado/fraco continua indo só para revisão
+    expect(suggestionOf(baseRow({ health: 'parado' })).key).toBe('revisar')
+  })
+
   it('margem < 30% sem promo → rebase para o precificador', () => {
     const s = suggestionOf(baseRow({ has_active_promo: false, margin_pct: 24.5 }))
     expect(s.key).toBe('rebase')
