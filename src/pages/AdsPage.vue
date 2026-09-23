@@ -136,6 +136,14 @@
               <thead>
                 <tr>
                   <th class="th-name">Campanha</th>
+                  <th class="th-diag">
+                    <button class="diag-sort" :class="ordenarPorRisco && 'diag-sort--on'"
+                      @click="ordenarPorRisco = !ordenarPorRisco">
+                      Diagnóstico
+                      <q-icon :name="ordenarPorRisco ? 'arrow_downward' : 'swap_vert'" size="12px" />
+                      <q-tooltip>Ordenar por dinheiro em risco — o maior gasto acima da meta primeiro</q-tooltip>
+                    </button>
+                  </th>
                   <th>Status</th>
                   <th>Estratégia</th>
                   <th class="th-num">Investido</th>
@@ -148,10 +156,22 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="camp in acc.campaigns" :key="camp.id"
+                <tr v-for="camp in campanhasOrdenadas(acc)" :key="camp.id"
                   :class="['camp-row', selectedCampaign === camp.id && 'camp-row--selected']"
                   @click="selectCampaign(camp, acc)">
                   <td class="td-name"><div class="camp-name">{{ camp.name }}</div></td>
+                  <td class="td-diag">
+                    <template v-if="diag(camp.id)">
+                      <span :class="['diag-pill', `diag-pill--${diag(camp.id).severidade}`]">
+                        <q-icon :name="iconeSeveridade(diag(camp.id).severidade)" size="12px" />
+                        {{ rotuloSeveridade(diag(camp.id)) }}
+                      </span>
+                      <div v-if="diag(camp.id).dinheiro_em_risco > 0" class="diag-risco">
+                        {{ formatCurrency(diag(camp.id).dinheiro_em_risco) }} acima da meta
+                      </div>
+                    </template>
+                    <span v-else class="td-muted">—</span>
+                  </td>
                   <td><span :class="['status-badge', `status-badge--${camp.status}`]">{{ statusLabel(camp.status) }}</span></td>
                   <td><span class="strategy-badge">{{ STRATEGY_LABELS[camp.strategy] || camp.strategy || '—' }}</span></td>
                   <td class="td-num">{{ formatCurrency(camp.cost) }}</td>
@@ -404,6 +424,51 @@
             </div>
           </div>
 
+          <!-- Diagnóstico (ADSA-7) -->
+          <template v-if="diagAberto">
+            <div class="detail-section-title" style="margin-top:4px">
+              O que este diagnóstico aponta
+              <span class="header-count q-ml-xs">{{ diagAberto.achados.length }}</span>
+            </div>
+
+            <div v-if="diagAberto.leitura_cega" class="diag-cega">
+              <q-icon name="visibility_off" size="14px" />
+              Campanha com {{ diagAberto.anuncios.length }} anúncios: a leitura de disputa do
+              leilão vira média do grupo e foi descartada. Isole a Curva A para ler anúncio a anúncio.
+            </div>
+
+            <div v-if="!diagAberto.achados.length" class="diag-ok">
+              <q-icon name="check_circle" size="14px" />
+              Nenhum desvio da régua no período.
+            </div>
+
+            <div v-for="a in diagAberto.achados" :key="a.codigo"
+              :class="['diag-achado', `diag-achado--${a.severidade}`]">
+              <div class="diag-achado-titulo">{{ a.titulo }}</div>
+              <div class="diag-achado-acao">{{ a.acao }}</div>
+              <div class="diag-achado-fonte">{{ a.fonte.regra }} · {{ a.fonte.horario || a.fonte.decisao }}</div>
+            </div>
+
+            <template v-if="diagAberto.passo_roas">
+              <div class="detail-section-title" style="margin-top:20px">Ajuste de ROAS</div>
+              <div class="diag-passo">
+                <div class="diag-passo-linha">
+                  <span>de <strong>{{ diagAberto.passo_roas.roas_atual.toFixed(2) }}</strong></span>
+                  <span class="diag-seta">→</span>
+                  <span>até <strong>{{ diagAberto.passo_roas.roas_maximo.toFixed(2) }}</strong></span>
+                </div>
+                <div class="diag-passo-acos">
+                  ACoS de {{ diagAberto.passo_roas.acos_atual.toFixed(1) }}% para
+                  {{ diagAberto.passo_roas.acos_no_maximo.toFixed(1) }}% — no máximo 2 pontos por ajuste
+                </div>
+                <div :class="['diag-passo-cadencia', !diagAberto.passo_roas.pode_ajustar && 'diag-passo-cadencia--bloqueada']">
+                  <q-icon :name="diagAberto.passo_roas.pode_ajustar ? 'check_circle' : 'schedule'" size="13px" />
+                  {{ diagAberto.passo_roas.motivo }}
+                </div>
+              </div>
+            </template>
+          </template>
+
           <!-- Configuração -->
           <div class="detail-section-title">Configuração</div>
           <div class="detail-config-rows">
@@ -573,6 +638,11 @@ const dateTo   = ref('')
 
 const overview  = ref(null)
 const dailyData = ref([])
+
+// Diagnóstico por campanha (ADSA-7). Vem de endpoint próprio para não engordar o
+// overview, que é a leitura que a página já fazia. A junção é por campanha_id.
+const diagnostico    = ref(null)
+const ordenarPorRisco = ref(false)
 const itemsData = ref([])
 const itemsSearch = ref('')
 
@@ -617,6 +687,38 @@ const avgTacos = computed(() => {
   const denom = Math.max(totalOrdersRev, totalAdsRev)
   return denom > 0 ? (totalCost / denom) * 100 : 0
 })
+
+// ── Diagnóstico ───────────────────────────────────────────────────────────────
+const diagPorCampanha = computed(() => {
+  const mapa = {}
+  for (const c of diagnostico.value?.campanhas || []) mapa[c.campanha_id] = c
+  return mapa
+})
+
+const diag = (campaignId) => diagPorCampanha.value[campaignId] || null
+
+const ROTULO_SEVERIDADE = { violacao: 'crítico', atencao: 'atenção', observacao: 'observar', ok: 'ok' }
+const ICONE_SEVERIDADE  = { violacao: 'error', atencao: 'warning', observacao: 'info', ok: 'check_circle' }
+
+const iconeSeveridade  = (s) => ICONE_SEVERIDADE[s] || 'help'
+const rotuloSeveridade = (d) => {
+  if (d.severidade === 'ok') return d.achados.length ? 'pronta p/ escalar' : 'ok'
+  const n = d.achados.length
+  return `${ROTULO_SEVERIDADE[d.severidade] || d.severidade}${n > 1 ? ` (${n})` : ''}`
+}
+
+// Ordenar por dinheiro em risco é o que o mentor fez na tela: atacar o maior gasto
+// acima da meta primeiro, não a pior métrica (12:26:34).
+function campanhasOrdenadas(acc) {
+  if (!ordenarPorRisco.value) return acc.campaigns
+  return [...acc.campaigns].sort((a, b) => {
+    const ra = diag(a.id)?.dinheiro_em_risco ?? -1
+    const rb = diag(b.id)?.dinheiro_em_risco ?? -1
+    return rb - ra
+  })
+}
+
+const diagAberto = computed(() => (campDetail.value ? diag(campDetail.value.id) : null))
 
 const maxBarVal = computed(() => {
   if (!dailyData.value.length) return 1
@@ -671,12 +773,15 @@ async function load() {
   dailyLoading.value = true
   try {
     const params = { date_from: dateFrom.value, date_to: dateTo.value }
-    const [ovRes, dailyRes] = await Promise.all([
+    const [ovRes, dailyRes, diagRes] = await Promise.all([
       api.get('/mercadolivre/ads/overview/', { params }),
       api.get('/mercadolivre/ads/daily/',    { params }),
+      // O diagnóstico não pode derrubar a página: se ele falhar, os números continuam.
+      api.get('/mercadolivre/ads/advisor/diagnostico/', { params }).catch(() => null),
     ])
     overview.value  = ovRes.data
     dailyData.value = dailyRes.data.daily || []
+    diagnostico.value = diagRes?.data || null
   } catch (e) {
     console.error(e)
   } finally {
@@ -929,6 +1034,59 @@ watch(activeTab, (tab) => {
 /* ─── CAMPAIGN TABLE ─────────────────────────────────────────────────────── */
 .camp-table-wrap  { overflow-x: auto; border-radius: 10px; border: 1.5px solid #e8edf3; background: #fff; }
 .items-table-wrap { overflow-x: auto; border-radius: 10px; border: 1.5px solid #e8edf3; background: #fff; }
+/* ── Diagnóstico (ADSA-7) ─────────────────────────────────────────────── */
+.th-diag { width: 170px; }
+.td-diag { white-space: nowrap; }
+
+.diag-sort {
+  border: 0; background: transparent; cursor: pointer; padding: 0;
+  font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.diag-sort--on { color: #0d9488; }
+
+.diag-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+}
+.diag-pill--violacao   { background: #fee2e2; color: #991b1b; }
+.diag-pill--atencao    { background: #fef3c7; color: #92400e; }
+.diag-pill--observacao { background: #e0f2fe; color: #075985; }
+.diag-pill--ok         { background: #dcfce7; color: #166534; }
+
+.diag-risco { font-size: 11px; color: #9aa0ac; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+.diag-cega, .diag-ok {
+  display: flex; gap: 8px; align-items: flex-start;
+  border-radius: 8px; padding: 10px 12px; font-size: 12px; margin-bottom: 10px;
+}
+.diag-cega { background: #fef3c7; color: #92400e; }
+.diag-ok   { background: #dcfce7; color: #166534; }
+
+.diag-achado {
+  border-left: 3px solid #e8edf3; padding: 8px 0 8px 12px; margin-bottom: 10px;
+}
+.diag-achado--violacao { border-left-color: #dc2626; }
+.diag-achado--atencao  { border-left-color: #f59e0b; }
+.diag-achado--ok       { border-left-color: #16a34a; }
+.diag-achado-titulo { font-size: 13px; font-weight: 600; color: #1a1f36; }
+.diag-achado-acao   { font-size: 12px; color: #374151; margin-top: 2px; }
+.diag-achado-fonte  { font-size: 11px; color: #9aa0ac; margin-top: 3px; }
+
+.diag-passo { background: #f8f9fa; border-radius: 10px; padding: 12px 14px; }
+.diag-passo-linha {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 15px; color: #1a1f36; font-variant-numeric: tabular-nums;
+}
+.diag-seta { color: #9aa0ac; }
+.diag-passo-acos { font-size: 12px; color: #374151; margin-top: 4px; }
+.diag-passo-cadencia {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: #166534; margin-top: 8px;
+}
+.diag-passo-cadencia--bloqueada { color: #92400e; }
+
 .camp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .camp-table thead tr { background: #f8f9fa; }
 .camp-table th {
