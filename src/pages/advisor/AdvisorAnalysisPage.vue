@@ -1,5 +1,6 @@
 <template>
-  <!-- PROMO-IA-45: aba Análises — tabela de análises, 1 linha por anúncio. -->
+  <!-- PROMO-IA-45/48: aba Análises — tabela de análises, 1 linha por anúncio.
+       O pipeline do dono vira coluna: Classificação → Situação → Decisão → Resultado. -->
   <AdvisorShell
     active="analises"
     pergunta="Como está cada anúncio e o que o robô decidiu?"
@@ -17,33 +18,41 @@
     <AdvisorEmptyState v-else-if="carregando && !linhas.length" variant="carregando" />
 
     <template v-else>
-      <div class="an__filtros">
-        <q-input
-          v-model="filtros.q" dense outlined clearable debounce="0"
-          placeholder="Buscar por título, SKU ou MLB" aria-label="Buscar anúncio"
-          class="an__busca"
-        >
-          <template #prepend><q-icon name="search" /></template>
-        </q-input>
-        <q-select
-          v-model="filtros.conta" :options="contasOpcoes" dense outlined clearable emit-value map-options
-          label="Conta" aria-label="Conta" class="an__select"
-        />
-        <q-select
-          v-model="filtros.saude" :options="saudeOpcoes" dense outlined clearable emit-value map-options
-          label="Saúde" aria-label="Saúde de vendas" class="an__select"
-        />
-        <q-select
-          v-model="filtros.status" :options="statusOpcoes" dense outlined clearable emit-value map-options
-          label="Situação" aria-label="Situação do anúncio" class="an__select"
-        />
-        <q-toggle v-model="filtros.soAbaixoDoPiso" dense label="Só abaixo do mínimo" />
-        <q-toggle v-model="filtros.soComPromocao" dense label="Só com promoção" />
-        <q-toggle v-model="filtros.soDupla" dense label="Abaixo do mínimo e poucas vendas" />
-        <q-btn v-if="filtrosAtivos" flat dense no-caps icon="filter_alt_off" label="Limpar filtros" @click="limparFiltros" />
+      <!-- Filtros: cartão próprio, separado da tabela (PROMO-IA-48). -->
+      <div class="an__filtrosCard">
+        <span class="an__filtrosTitulo">Filtros</span>
+        <div class="an__filtros">
+          <q-input
+            v-model="filtros.q" dense outlined clearable debounce="0"
+            placeholder="Buscar por título, SKU ou MLB" aria-label="Buscar anúncio"
+            class="an__busca"
+          >
+            <template #prepend><q-icon name="search" /></template>
+          </q-input>
+          <q-select
+            v-model="filtros.conta" :options="contasOpcoes" dense outlined clearable emit-value map-options
+            label="Conta" aria-label="Conta" class="an__select"
+          />
+          <q-select
+            v-model="filtros.status" :options="statusOpcoes" dense outlined clearable emit-value map-options
+            label="Status" aria-label="Status do anúncio no Mercado Livre" class="an__select"
+          />
+          <q-select
+            v-model="filtros.saude" :options="saudeOpcoes" dense outlined clearable emit-value map-options
+            label="Saúde" aria-label="Saúde de vendas" class="an__select"
+          />
+          <q-toggle v-model="filtros.soAbaixoDoPiso" dense
+                    label="Só abaixo do mínimo de margem ou lucro"
+                    title="O mínimo é o seu: a menor margem e o menor lucro por venda que você aceita (Automação → Limites desta conta) — padrão: margem 30% e lucro R$ 20 por venda." />
+          <q-toggle v-model="filtros.soComPromocao" dense label="Só com promoção" />
+          <q-toggle v-model="filtros.soDupla" dense
+                    label="Abaixo do mínimo e poucas vendas"
+                    title="Anúncios com venda abaixo do mínimo de margem ou lucro E poucas vendas (parado/fraco) — os que precisam de preço E de revisão." />
+          <q-btn v-if="filtrosAtivos" flat dense no-caps icon="filter_alt_off" label="Limpar filtros" @click="limparFiltros" />
+        </div>
       </div>
 
-      <!-- Chips de recorte (PROMO-IA-45): contagens por situação — clicar recorta a tabela. -->
+      <!-- Chips de recorte por situação (contagens da página carregada). -->
       <div class="an__chips" role="status">
         <button
           v-for="chip in chips" :key="chip.key" type="button"
@@ -59,7 +68,11 @@
         </span>
       </div>
 
-      <AdvisorSection title="Análises" :count="linhasVisiveis.length" :lead="leadLista" :tight="true">
+      <AdvisorSection title="Análises" :lead="leadLista" :tight="true">
+        <template #action>
+          <span class="an__meta">{{ linhasVisiveis.length }} nesta página · {{ total }} no catálogo</span>
+        </template>
+
         <AdvisorEmptyState
           v-if="!linhasVisiveis.length" variant="vazio"
           :title="temFiltroDeEscopo || recorte ? 'Nenhum anúncio com esse recorte' : 'Nenhum anúncio no catálogo'"
@@ -89,15 +102,58 @@
             <span class="an__conta">{{ row.account_nickname }}</span>
           </template>
 
-          <template #cell-classificacao="{ row }">
-            <span class="an__saude">{{ HEALTH_META[row.health]?.label || '—' }}</span>
-            <span class="an__situacao">{{ situationOf(row)?.label || '—' }}</span>
-            <!-- PROMO-IA-47 (portado): a dupla ganha selo extra — antes "Revisar anúncio"
-                 sumia sob o alerta de mínimo. -->
-            <AdvisorStatusPill v-if="dupla(row)" status="recusado"
-                               title="Poucas vendas E abaixo do mínimo: além do preço, este anúncio precisa de revisão (descrição, SEO, fotos e atributos).">
-              Poucas vendas
+          <template #cell-sku="{ row }">
+            <span class="an__sku">{{ row.sku || '—' }}</span>
+          </template>
+
+          <template #cell-status="{ row }">
+            <AdvisorStatusPill :status="STATUS_PILL[row.status] || 'neutral'">
+              {{ statusLabel(row.status) }}
             </AdvisorStatusPill>
+          </template>
+
+          <!-- 1. CLASSIFICAÇÃO: uma coisa só — como o anúncio foi classificado. -->
+          <template #cell-classificacao="{ row }">
+            <div class="an__pipeline">
+              <AdvisorStatusPill :status="SAUDE_PILL[row.health] || 'neutral'">
+                {{ HEALTH_META[row.health]?.label || '—' }}
+              </AdvisorStatusPill>
+              <span class="an__data">classificado em {{ dataCurta(row.computed_at) }}</span>
+            </div>
+          </template>
+
+          <!-- 2. SITUAÇÃO DA VENDA: o estado financeiro/promocional. -->
+          <template #cell-situacao="{ row }">
+            <div class="an__pipeline">
+              <AdvisorStatusPill :status="SITUACAO_PILL[situationOf(row)?.key] || 'neutral'"
+                                 :title="situationOf(row)?.reason">
+                {{ situationOf(row)?.label || '—' }}
+              </AdvisorStatusPill>
+              <span v-if="isBelowMin(row)" class="an__data">
+                mínimos da conta: margem {{ pct(floorMarginOf(row)) }} · lucro {{ brl(floorProfitOf(row)) }}
+              </span>
+            </div>
+          </template>
+
+          <!-- 3. DECISÃO DO AGENTE: a ação gerada (tooltip: regra + última ação). -->
+          <template #cell-decisao="{ row }">
+            <AdvisorStatusPill :status="DECISAO_PILL[suggestionOf(row)?.key] || 'neutral'"
+                               :title="decisaoTitle(row)">
+              {{ suggestionOf(row)?.label || '—' }}
+            </AdvisorStatusPill>
+          </template>
+
+          <!-- 4. RESULTADO: o desfecho real (ou não) da última ação. -->
+          <template #cell-resultado="{ row }">
+            <div class="an__pipeline">
+              <AdvisorStatusPill v-if="resultOf(row).key !== 'nada'"
+                                 :status="RESULT_PILL[resultOf(row).key] || 'neutral'"
+                                 :title="resultOf(row).detail">
+                {{ resultOf(row).label }}
+              </AdvisorStatusPill>
+              <span v-else class="an__data" :title="resultOf(row).detail">—</span>
+              <span v-if="resultOf(row).at" class="an__data">{{ dataCurta(resultOf(row).at) }}</span>
+            </div>
           </template>
 
           <template #cell-preco="{ row }">{{ brl(row.price) }}</template>
@@ -107,23 +163,39 @@
             </span>
           </template>
           <template #cell-margemBase="{ row }">
-            <span :title="row.base_margin_pct == null ? emptyCellReason(row) : ''">{{ pct(row.base_margin_pct) }}</span>
+            <span :class="{ 'an__ruim': abaixoMinimoMargem(row.base_margin_pct, row) }"
+                  :title="row.base_margin_pct == null ? emptyCellReason(row) : ''">
+              {{ pct(row.base_margin_pct) }}
+            </span>
           </template>
           <template #cell-margem="{ row }">
-            <span :title="row.margin_pct == null ? emptyCellReason(row) : ''">{{ pct(row.margin_pct) }}</span>
+            <span :class="{ 'an__ruim': abaixoMinimoMargem(row.margin_pct, row) }"
+                  :title="row.margin_pct == null ? emptyCellReason(row) : ''">
+              {{ pct(row.margin_pct) }}
+            </span>
           </template>
-          <template #cell-ultimaAnalise="{ row }">{{ dataCurta(row.computed_at) }}</template>
-          <template #cell-ofertadas="{ row }">{{ row.candidates_count ?? 0 }}</template>
+          <template #cell-ofertadas="{ row }">
+            <span class="an__badge" :class="{ 'is-on': (row.candidates_count ?? 0) > 0 }">{{ row.candidates_count ?? 0 }}</span>
+          </template>
           <template #cell-promoAtiva="{ row }">
             {{ row.active_promo?.promotion_name || (row.has_active_promo ? row.active_promo?.promotion_type : '—') }}
           </template>
           <template #cell-desconto="{ row }">{{ row.discount_pct == null ? '—' : pct(row.discount_pct) }}</template>
           <template #cell-lucro="{ row }">
-            <span :title="row.profit_unit == null ? emptyCellReason(row) : ''">{{ brl(row.profit_unit) }}</span>
+            <span :class="{ 'an__ruim': abaixoMinimoLucro(row.profit_unit, row) }"
+                  :title="row.profit_unit == null ? emptyCellReason(row) : ''">
+              {{ brl(row.profit_unit) }}
+            </span>
           </template>
           <template #cell-frete="{ row }">
             <span :title="row.shipping_cost == null ? 'Sem dado: sem histórico de frete nem cotação para este anúncio.' : ''">
               {{ brl(row.shipping_cost) }}
+            </span>
+          </template>
+          <template #cell-estoque="{ row }">
+            <span :class="{ 'an__ruim': (row.available_quantity ?? 0) === 0 }"
+                  :title="`Vendidos: ${row.sold_quantity ?? 0}`">
+              {{ row.available_quantity ?? '—' }}
             </span>
           </template>
           <template #cell-inicio="{ row }">{{ dataCurta(row.active_promo?.start_date) }}</template>
@@ -164,12 +236,13 @@ import AdvisorTable from 'src/components/advisor/AdvisorTable.vue';
 import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import AdvisorService from 'src/services/AdvisorService';
 import {
-  HEALTH_META, LEGENDARIO_SITUACOES, SITUATION_META,
-  brl, emptyCellReason, isBelowMin, pct, poucasVendas, situationOf,
+  HEALTH_META, SITUATION_META,
+  brl, emptyCellReason, floorMarginOf, floorProfitOf, isBelowMin, pct,
+  resultOf, situationOf, suggestionOf,
 } from 'src/utils/advisorDecision';
 
 const {
-  linhas, total, retrato, carregando, erro, filtros, ordenacao, pagina, porPagina, expandido,
+  linhas, total, carregando, erro, filtros, ordenacao, pagina, porPagina, expandido,
   contasOpcoes, saudeOpcoes, statusOpcoes, filtrosAtivos, temFiltroDeEscopo,
   totalPaginas, primeira, ultima, decisao,
   carregar, limparFiltros, ordenarPor,
@@ -178,28 +251,88 @@ const {
 const route = useRoute();
 const router = useRouter();
 
-/** Colunas da tabela Análises (PROMO-IA-45): o retrato completo por anúncio. */
+/**
+ * Colunas da tabela Análises (PROMO-IA-48): o pipeline do dono vira coluna —
+ * Classificação (1 valor) → Situação da venda → Decisão do agente → Resultado —
+ * seguido do retrato financeiro/operacional. `Última atualização` morreu como
+ * coluna: a data vive dentro da Classificação ("classificado em …").
+ */
 const COLUNAS = [
   { key: 'anuncio', label: 'Anúncio', minWidth: 220 },
-  { key: 'classificacao', label: 'Classificação', minWidth: 150 },
+  { key: 'sku', label: 'SKU', sortable: true, sortKey: 'sku', minWidth: 110 },
+  { key: 'status', label: 'Status', sortable: true, sortKey: 'status', minWidth: 95 },
+  { key: 'classificacao', label: 'Classificação', sortable: true, sortKey: 'computed', minWidth: 160 },
+  { key: 'situacao', label: 'Situação da venda', minWidth: 165 },
+  { key: 'decisao', label: 'Decisão do agente', minWidth: 185 },
+  { key: 'resultado', label: 'Resultado', minWidth: 150 },
   { key: 'preco', label: 'Preço-base', numeric: true, sortable: true, sortKey: 'price', minWidth: 100 },
-  { key: 'ritmo', label: 'Ritmo de vendas', numeric: true, sortable: true, sortKey: 'sales', minWidth: 110 },
+  { key: 'ritmo', label: 'Ritmo de vendas', numeric: true, sortable: true, sortKey: 'ritmo', minWidth: 110 },
   { key: 'margemBase', label: 'Margem-base', numeric: true, sortable: true, sortKey: 'base_margin', minWidth: 105 },
   { key: 'margem', label: 'Margem em promo', numeric: true, sortable: true, sortKey: 'margin', minWidth: 115 },
-  { key: 'ultimaAnalise', label: 'Última atualização', sortable: true, sortKey: 'computed', minWidth: 120 },
   { key: 'ofertadas', label: 'Ofertadas (nº)', numeric: true, sortable: true, sortKey: 'ofertadas', minWidth: 100 },
   { key: 'promoAtiva', label: 'Promoção ativa', minWidth: 150 },
   { key: 'desconto', label: 'Desconto ativo', numeric: true, sortable: true, sortKey: 'discount', minWidth: 105 },
   { key: 'lucro', label: 'Lucro estimado', numeric: true, minWidth: 110 },
   { key: 'frete', label: 'Frete estimado', numeric: true, minWidth: 105 },
+  { key: 'estoque', label: 'Estoque', numeric: true, sortable: true, sortKey: 'stock', minWidth: 90 },
   { key: 'inicio', label: 'Início da promoção', minWidth: 115 },
 ];
 
+/** Cartão do mobile: o pipeline primeiro, depois o essencial financeiro. */
 const CAMPOS_CARTAO = COLUNAS.filter((c) => (
-  ['classificacao', 'preco', 'margemBase', 'margem', 'ofertadas', 'promoAtiva'].includes(c.key)
+  ['classificacao', 'situacao', 'decisao', 'resultado', 'margem', 'ofertadas'].includes(c.key)
 ));
 
-/** Chips de recorte por situação (contagens sobre as linhas carregadas). */
+/* ------------------------------------------------- pílulas e traduções -- */
+
+const STATUS_PILL = { active: 'verificado', paused: 'pausado', closed: 'neutral' };
+const SAUDE_PILL = { parado: 'divergente', fraco: 'recusado', medio: 'aplicado', alto: 'verificado' };
+const SITUACAO_PILL = {
+  bloqueado_piso: 'divergente', sem_dados: 'bloqueado', baixo_giro: 'recusado',
+  promo_ativa: 'verificado', sem_promo: 'neutral',
+};
+const DECISAO_PILL = {
+  corrigir_e_revisar: 'divergente', bloqueado: 'bloqueado', rebase: 'recusado',
+  revisar: 'aguardando', reduzir: 'aguardando', manter: 'verificado',
+  sem_dados: 'bloqueado', aguardando: 'neutral',
+};
+const RESULT_PILL = {
+  confirmado: 'verificado', aguardando: 'aguardando', recusado: 'recusado',
+  sem_confirmacao: 'bloqueado', bloqueado: 'bloqueado', nada: 'neutral',
+};
+
+function statusLabel(s) {
+  return { active: 'Ativo', paused: 'Pausado', closed: 'Fechado' }[s] || s || '—';
+}
+
+const ACAO_LABEL = {
+  aprofundar: 'aprofunda', reduzir: 'reduz', rebase: 'reprecifica',
+  manter: 'não mexe', capturar: 'captura', sem_oferta: 'sem oferta',
+};
+
+function ultimaAcaoTexto(row) {
+  const acao = row?.agent_last;
+  if (!acao) return 'nunca executou ação';
+  const rotulo = ACAO_LABEL[acao.acao] || acao.acao || 'agiu';
+  return `${rotulo} em ${dataCurta(acao.created_at)}`;
+}
+
+function decisaoTitle(row) {
+  const s = suggestionOf(row);
+  return `${s?.detail || ''} Última ação: ${ultimaAcaoTexto(row)}.`;
+}
+
+/* -------------------------------------------------- cores e formatação -- */
+
+function abaixoMinimoMargem(v, row) {
+  return v != null && v < floorMarginOf(row);
+}
+function abaixoMinimoLucro(v, row) {
+  return v != null && v < floorProfitOf(row);
+}
+
+/* -------------------------------------------------------------- chips -- */
+
 const recorte = ref(null);
 const chips = computed(() => (decisao.value?.situacoes
   ? Object.entries(decisao.value.situacoes).map(([key, totalKey]) => ({
@@ -216,45 +349,18 @@ function alternarRecorte(key) {
   recorte.value = recorte.value === key ? null : key;
 }
 
-const legendaTabela = 'Uma linha por anúncio — clique para ver ofertadas, ativas, programadas, dados e histórico.';
+const legendaTabela = 'Uma linha por anúncio — o pipeline: classificação, situação da venda, decisão do agente e resultado. Clique para ver o processo completo.';
 const leadLista = computed(() => (recorte.value
-  ? `${linhasVisiveis.value.length} anúncios com "${SITUATION_META[recorte.value]?.label || recorte.value}" nesta página — clique de novo no chip para ver todos.`
-  : `${total.value} anúncios no catálogo — clique numa linha para ver o processo completo.`));
+  ? `Recorte "${SITUATION_META[recorte.value]?.label || recorte.value}" — clique de novo no chip para ver todos.`
+  : 'Clique numa linha para ver ofertadas, ativas, programadas, dados e histórico.'));
 
-/* ---------------------------------------------------------------- drawer -- */
+/* --------------------------------------------------------------- drawer -- */
 
 const detalhe = ref(null);
 const detalheCarregando = ref(false);
 const detalheErro = ref('');
 const revisaoEstado = ref('');     // '' | enviando | enviado | erro
 const revisaoMensagem = ref('');
-
-/** PROMO-IA-47 (portado): a dupla — abaixo do mínimo E poucas vendas. */
-function dupla(row) {
-  return isBelowMin(row) && poucasVendas(row);
-}
-
-/**
- * PROMO-IA-47 (portado): manda o anúncio para a fila de revisão (entrada manual).
- * Não escreve no Mercado Livre — a decisão de aplicar fica em "Anúncios · Revisão SEO".
- */
-async function enviarParaRevisao() {
-  if (!expandido.value) return;
-  revisaoEstado.value = 'enviando';
-  revisaoMensagem.value = '';
-  try {
-    await AdvisorService.enqueueForReview({
-      item_ids: [expandido.value],
-      reason: 'abaixo do mínimo + poucas vendas',
-    });
-    revisaoEstado.value = 'enviado';
-  } catch (err) {
-    revisaoEstado.value = 'erro';
-    revisaoMensagem.value = err?.response?.data?.detail
-      || err?.response?.data?.error
-      || 'Não foi possível enfileirar para revisão.';
-  }
-}
 
 function abrirDetalhe(row) {
   const id = row?.item_id;
@@ -289,7 +395,25 @@ function fecharDetalhe() {
   router.replace({ query });
 }
 
-// Deep-link: /promotions/advisor/analises?item=MLB… abre o drawer direto (o Hoje já emite isso).
+async function enviarParaRevisao() {
+  if (!expandido.value) return;
+  revisaoEstado.value = 'enviando';
+  revisaoMensagem.value = '';
+  try {
+    await AdvisorService.enqueueForReview({
+      item_ids: [expandido.value],
+      reason: 'abaixo do mínimo + poucas vendas',
+    });
+    revisaoEstado.value = 'enviado';
+  } catch (err) {
+    revisaoEstado.value = 'erro';
+    revisaoMensagem.value = err?.response?.data?.detail
+      || err?.response?.data?.error
+      || 'Não foi possível enfileirar para revisão.';
+  }
+}
+
+// Deep-link: /promotions/advisor?item=MLB… abre o drawer direto (o Hoje já emite isso).
 watch(() => route.query.item, (id) => {
   if (id && id !== expandido.value) abrirDetalhe({ item_id: id });
 });
@@ -313,12 +437,28 @@ onMounted(() => {
 @import 'src/css/tokens.scss';
 
 .an {
+  &__filtrosCard {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+    padding: $space-3 $space-4;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    margin-bottom: $space-3;
+  }
+  &__filtrosTitulo {
+    font-size: $text-xs-size;
+    font-weight: $font-semibold;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: $text-muted;
+  }
   &__filtros {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: $space-3;
-    margin-bottom: $space-3;
   }
   &__busca { flex: 1 1 260px; max-width: 380px; }
   &__select { min-width: 150px; }
@@ -352,6 +492,13 @@ onMounted(() => {
     color: $text-muted;
   }
 
+  &__meta {
+    font-size: $text-xs-size;
+    color: $text-muted;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
   &__mlb {
     display: block;
     font-size: $text-xs-size;
@@ -360,8 +507,35 @@ onMounted(() => {
   }
   &__titulo { display: block; font-weight: $font-medium; line-height: 1.3; }
   &__conta { display: block; font-size: $text-xs-size; color: $text-muted; }
-  &__saude { display: block; font-size: $text-xs-size; color: $text-muted; }
-  &__situacao { display: block; font-weight: $font-medium; }
+  &__sku { font-variant-numeric: tabular-nums; color: $text-body; }
+
+  // células do pipeline: pílula + linha de apoio pequena
+  &__pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+  }
+  &__data {
+    font-size: $text-xs-size;
+    color: $text-muted;
+    white-space: nowrap;
+  }
+
+  // abaixo do mínimo da conta (margem/lucro) → vermelho
+  &__ruim { color: $negative; font-weight: $font-semibold; }
+
+  &__badge {
+    display: inline-block;
+    min-width: 22px;
+    text-align: center;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: $text-xs-size;
+    color: $text-muted;
+
+    &.is-on { background: $tint-amber-bg; color: $tint-amber-text; font-weight: $font-semibold; }
+  }
 
   &__paginacao {
     display: flex;

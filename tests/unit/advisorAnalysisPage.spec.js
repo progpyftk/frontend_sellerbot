@@ -45,8 +45,11 @@ const LINHA = {
   health: 'medio', health_info: { units_per_week: 1.2 },
   cmv_unit: 40, shipping_cost: 12.5, missing_inputs: [], has_active_promo: true,
   origem: 'assistente', margin_pct: 18.4, profit_unit: 8, estimable: true,
-  below_floor: true, base_margin_pct: 55, computed_at: '2026-09-22T10:00:00Z',
+  below_floor: true, below_min: true, base_margin_pct: 55, computed_at: '2026-09-22T10:00:00Z',
   candidates_count: 3, scheduled_count: 1,
+  available_quantity: 12, sold_quantity: 5,
+  last_result: { state: 'executed_verified', at: '2026-09-06T21:53:00Z', blocked_code: null },
+  floor_margin_pct: 30, floor_profit_brl: 20,
   active_promo: {
     promotion_type: 'PRICE_DISCOUNT', promotion_name: 'Oferta do dia', promotion_id: 'P1',
     buyer_price: 70, discount_pct: 30,
@@ -94,7 +97,10 @@ const stubs = {
   'q-btn': { template: '<button @click="$emit(\'click\')"><slot />{{ label }}</button>', props: ['label'] },
   'q-input': { template: '<input />', props: ['modelValue'] },
   'q-select': { template: '<select />', props: ['modelValue'] },
-  'q-toggle': { template: '<input type="checkbox" />', props: ['modelValue'] },
+  'q-toggle': {
+    template: '<label><input type="checkbox" :title="title" />{{ label }}</label>',
+    props: ['modelValue', 'label', 'title'],
+  },
   'router-link': { template: '<a><slot /></a>' },
   'q-page': { template: '<div><slot /></div>' },
 };
@@ -122,16 +128,70 @@ describe('AdvisorAnalysisPage', () => {
     replace.mockReset();
   });
 
-  it('mostra as colunas novas da análise: margem-base, última atualização e ofertadas', async () => {
-    const texto = (await montar()).texto();
-    const cabecalhos = (await montar()).findAll('.adv-table__table thead th').map((th) => th.text());
-    expect(cabecalhos).toContain('Margem-base');
-    expect(cabecalhos).toContain('Última atualização');
-    expect(cabecalhos).toContain('Ofertadas (nº)');
-    expect(texto).toContain('55,0%');    // margem-base
-    expect(texto).toContain('18,4%');    // margem em promo
-    expect(texto).toContain('Oferta do dia');
-    expect(texto).toContain('22/09');    // última atualização
+  it('o pipeline do dono vira coluna: Classificação · Situação · Decisão · Resultado (PROMO-IA-48)', async () => {
+    const wrapper = await montar();
+    const cabecalhos = wrapper.findAll('.adv-table__table thead th').map((th) => th.text());
+    expect(cabecalhos).toContain('Classificação');
+    expect(cabecalhos).toContain('Situação da venda');
+    expect(cabecalhos).toContain('Decisão do agente');
+    expect(cabecalhos).toContain('Resultado');
+    expect(cabecalhos).toContain('SKU');
+    expect(cabecalhos).toContain('Status');
+    expect(cabecalhos).toContain('Estoque');
+    // "Análises 40" sumiu do título — a contagem virou meta à direita do cartão
+    expect(wrapper.texto()).toContain('2 nesta página · 2 no catálogo');
+    // classificação = UMA coisa (saúde) + a data da classificação
+    expect(wrapper.texto()).toContain('Médio');
+    expect(wrapper.texto()).toContain('classificado em');
+    // vocabulário autoexplicativo do mínimo
+    expect(wrapper.texto()).toContain('Só abaixo do mínimo de margem ou lucro');
+  });
+
+  it('a coluna Resultado mostra o desfecho real da última escrita (PROMO-IA-48)', async () => {
+    const recusado = {
+      ...LINHA, item_id: 'MLB2', title: 'Adubo 1kg',
+      last_result: { state: 'failed', at: null, blocked_code: 'WRITE_REJECTED' },
+    };
+    const semEscrita = { ...LINHA, item_id: 'MLB3', title: 'Perlita 5L', last_result: null };
+    const wrapper = await montar({ ...PAYLOAD, total: 3, results: [LINHA, recusado, semEscrita] });
+    const texto = wrapper.texto();
+    expect(texto).toContain('Confirmado');   // executed_verified
+    expect(texto).toContain('Recusado');     // failed
+  });
+
+  it('estoque zerado fica vermelho e o tooltip mostra os vendidos (PROMO-IA-48)', async () => {
+    const zerado = { ...LINHA, available_quantity: 0, sold_quantity: 9 };
+    const wrapper = await montar({ ...PAYLOAD, total: 1, results: [zerado] });
+    expect(wrapper.find('[title="Vendidos: 9"]').exists()).toBe(true);
+    expect(wrapper.find('.an__ruim').exists()).toBe(true);
+  });
+
+  it('a dupla decide preço E revisão e a Situação traz os mínimos da CONTA (PROMO-IA-48)', async () => {
+    const duplaRow = {
+      ...LINHA, item_id: 'MLB3', title: 'Perlita 5L', health: 'parado',
+      health_info: { units_per_week: 0 }, margin_pct: 10, profit_unit: 4,
+      below_floor: true, below_min: true, floor_margin_pct: 25, floor_profit_brl: 15,
+    };
+    const wrapper = await montar({ ...PAYLOAD, total: 1, results: [duplaRow] }, { item: 'MLB3' });
+    const texto = wrapper.texto();
+    // decisão desmascarada: preço E revisão (antes "Revisar" sumia sob o alerta)
+    expect(texto).toContain('Corrigir custo ou preço-base + Revisar anúncio');
+    // os mínimos são os da CONTA da linha (cada conta tem o seu)
+    expect(texto).toContain('mínimos da conta: margem 25,0%');
+    expect(texto).toContain('lucro R$ 15,00');
+
+    // o botão do drawer segue portando o encaminhamento à fila de revisão
+    enqueueForReview.mockResolvedValue({ data: { success: true, enqueued: [{ item_id: 'MLB3' }] } });
+    const botao = wrapper.find('.adv-drawer').findAll('button')
+      .find((b) => b.text().includes('Enviar para revisão'));
+    expect(botao).toBeTruthy();
+    await botao.trigger('click');
+    await flushPromises();
+
+    expect(enqueueForReview).toHaveBeenCalledWith({
+      item_ids: ['MLB3'], reason: 'abaixo do mínimo + poucas vendas',
+    });
+    expect(wrapper.texto()).toContain('Anúncios · Revisão SEO');
   });
 
   it('uma linha por anúncio — 2 anúncios, 2 linhas', async () => {
@@ -185,32 +245,40 @@ describe('AdvisorAnalysisPage', () => {
     expect(replace).toHaveBeenLastCalledWith({ query: {} });
   });
 
+  it('clique no cabeçalho ordenável refaz o pedido com sort (PROMO-IA-48)', async () => {
+    // regressão: o clique vive na CÉLULA do cabeçalho (o dono reportou que as ordenações
+    // "não funcionavam" — o handler antigo só pegava o clique exato no rótulo do botão).
+    const wrapper = await montar();
+    getCatalog.mockClear();
+
+    const thPreco = wrapper.findAll('.adv-table__table thead th')
+      .find((th) => th.text().includes('Preço-base'));
+    expect(thPreco, 'cabeçalho de Preço-base deveria existir').toBeTruthy();
+    await thPreco.trigger('click');
+    await aposDebounce();
+    await flushPromises();
+
+    expect(getCatalog).toHaveBeenCalledWith(expect.objectContaining({ sort: 'price', page: 1 }));
+
+    getCatalog.mockClear();
+    await thPreco.trigger('click');
+    await aposDebounce();
+    await flushPromises();
+    expect(getCatalog).toHaveBeenCalledWith(expect.objectContaining({ sort: '-price' }));
+
+    // o clique no botão interno também ordena (sem duplo emit)
+    getCatalog.mockClear();
+    await thPreco.find('button.adv-table__sort').trigger('click');
+    await aposDebounce();
+    await flushPromises();
+    expect(getCatalog).toHaveBeenCalledTimes(1);
+  });
+
   it('a barra de estado do robô aparece junto da tabela (kill/escrita/próxima execução)', async () => {
     const texto = (await montar()).texto();
     expect(texto).toContain('Escrevendo agora: MOGIVITTA');
     expect(texto).toContain('próxima execução');
     expect(texto).toContain('Pausar toda a escrita');
-  });
-
-  it('a dupla mostra selo "Poucas vendas" e o drawer envia para revisão (PROMO-IA-47, portado)', async () => {
-    const duplaRow = {
-      ...LINHA, item_id: 'MLB3', health: 'parado', below_min: true,
-      health_info: { units_per_week: 0 }, title: 'Perlita 5L',
-    };
-    const wrapper = await montar({ ...PAYLOAD, total: 1, results: [duplaRow] }, { item: 'MLB3' });
-    expect(wrapper.texto()).toContain('Poucas vendas');
-
-    enqueueForReview.mockResolvedValue({ data: { success: true, enqueued: [{ item_id: 'MLB3' }] } });
-    const botao = wrapper.find('.adv-drawer').findAll('button')
-      .find((b) => b.text().includes('Enviar para revisão'));
-    expect(botao).toBeTruthy();
-    await botao.trigger('click');
-    await flushPromises();
-
-    expect(enqueueForReview).toHaveBeenCalledWith({
-      item_ids: ['MLB3'], reason: 'abaixo do mínimo + poucas vendas',
-    });
-    expect(wrapper.texto()).toContain('Anúncios · Revisão SEO');
   });
 
   it('o filtro "Abaixo do mínimo e poucas vendas" manda below_min + health=parado,fraco (PROMO-IA-47, portado)', async () => {

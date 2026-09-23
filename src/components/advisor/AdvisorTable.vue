@@ -11,8 +11,11 @@
               :class="{ 'is-numeric': col.numeric, 'is-sortable': col.sortable, 'is-active': ativo(col) }"
               :style="{ width: col.width, minWidth: col.minWidth ? `${col.minWidth}px` : null }"
               :aria-sort="ariaSort(col)"
+              @click="col.sortable ? $emit('sort', col) : undefined"
             >
-              <button v-if="col.sortable" type="button" class="adv-table__sort" @click="$emit('sort', col)">
+              <!-- PROMO-IA-48: o clique vive na CÉLULA inteira (o dono clica no espaço do
+                   cabeçalho, não só no rótulo); o botão .stop evita o duplo emit. -->
+              <button v-if="col.sortable" type="button" class="adv-table__sort" @click.stop="$emit('sort', col)">
                 {{ col.label }}
                 <q-icon :name="iconeOrdem(col)" size="14px" aria-hidden="true" />
               </button>

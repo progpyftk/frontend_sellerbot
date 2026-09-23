@@ -174,12 +174,14 @@ function dataHora(iso) {
 @import 'src/css/tokens.scss';
 
 .adv-drawer {
+  /* PROMO-IA-48: deslocado do q-header do MainLayout (56px — ver .app-toolbar),
+     senão o MLB/título do anúncio fica escondido atrás dele. */
   position: fixed;
-  top: 0;
+  top: 56px;
   right: 0;
   z-index: 30;
   width: min(440px, 94vw);
-  height: 100vh;
+  height: calc(100vh - 56px);
   overflow-y: auto;
   padding: $space-5;
   background: $surface;
@@ -187,11 +189,17 @@ function dataHora(iso) {
   box-shadow: $shadow-md;
 
   &__header {
+    position: sticky;
+    top: -$space-5;      // cola no topo do scroll do drawer
+    z-index: 2;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: $space-3;
-    margin-bottom: $space-4;
+    margin: #{-$space-5} 0 $space-4;
+    padding: $space-5 $space-5 $space-3;
+    background: $surface;
+    border-bottom: 1px solid $border;
 
     strong { font-variant-numeric: tabular-nums; }
   }

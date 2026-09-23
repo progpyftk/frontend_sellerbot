@@ -63,7 +63,6 @@ const tabs = [
     flex-wrap: wrap;
     align-items: center;
     gap: $space-4;
-    padding-bottom: $space-3;
     border-bottom: 1px solid $border;
   }
 
@@ -84,14 +83,23 @@ const tabs = [
     line-height: 1.2;
   }
 
-  &__tabs { display: flex; gap: $space-1; flex: 1 1 auto; }
+  /* PROMO-IA-48: abas de VERDADE — sentam na régua do header, com indicador
+     primário de 2px na ativa (antes pareciam chips soltos). */
+  &__tabs {
+    display: flex;
+    gap: $space-1;
+    flex: 1 1 auto;
+    align-self: stretch;
+    align-items: flex-end;
+  }
 
   &__tab {
     display: inline-flex;
     align-items: center;
     gap: $space-2;
-    padding: $space-2 $space-4;
-    border-radius: $radius-md;
+    padding: $space-3 $space-5;
+    border-bottom: 2px solid transparent;
+    border-radius: $radius-md $radius-md 0 0;
     font-size: $text-small-size;
     font-weight: $font-medium;
     color: $text-muted;
@@ -101,9 +109,11 @@ const tabs = [
     &:hover { background: $surface-2; color: $text-body; }
 
     &--on {
-      background: $primary;
-      color: #fff;
-      &:hover { background: $primary; color: #fff; }
+      background: transparent;
+      color: $primary;
+      font-weight: $font-semibold;
+      border-bottom-color: $primary;
+      &:hover { background: transparent; color: $primary; }
     }
 
     &:focus-visible { outline: 2px solid $primary; outline-offset: 2px; }

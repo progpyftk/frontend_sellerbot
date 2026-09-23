@@ -66,6 +66,49 @@ export function poucasVendas(row) {
   return row?.health === 'parado' || row?.health === 'fraco';
 }
 
+/**
+ * PROMO-IA-48: coluna Resultado — o desfecho REAL da última escrita do robô
+ * (ledger de tentativas). É a 3ª etapa do pipeline do dono: a classificação gera
+ * uma ação; o resultado (ou não) dessa ação gera a próxima coisa.
+ */
+export const RESULT_META = {
+  confirmado: { label: 'Confirmado', variant: 'green', icon: 'check_circle' },
+  aguardando: { label: 'Aguardando confirmação', variant: 'amber', icon: 'hourglass_top' },
+  recusado: { label: 'Recusado', variant: 'red', icon: 'cancel' },
+  sem_confirmacao: { label: 'Sem confirmação', variant: 'amber', icon: 'help_outline' },
+  bloqueado: { label: 'Bloqueado', variant: 'slate', icon: 'block' },
+  nada: { label: 'Sem escrita', variant: 'slate', icon: 'remove_circle_outline' },
+};
+
+const RESULTADO_POR_ESTADO = {
+  executed_verified: 'confirmado',
+  accepted_unverified: 'aguardando',
+  sending: 'aguardando',
+  intent: 'aguardando',
+  failed: 'recusado',
+  unknown: 'sem_confirmacao',
+  blocked: 'bloqueado',
+};
+
+export function resultOf(row) {
+  const last = row?.last_result;
+  if (!last || !last.state) {
+    return {
+      key: 'nada', ...RESULT_META.nada, at: null,
+      detail: 'O robô ainda não executou nenhuma escrita neste anúncio.',
+    };
+  }
+  const key = RESULTADO_POR_ESTADO[last.state] || 'sem_confirmacao';
+  return {
+    key,
+    ...RESULT_META[key],
+    at: last.at || null,
+    detail: last.blocked_code
+      ? `Última escrita: ${last.state} — motivo: ${last.blocked_code}.`
+      : `Última escrita do robô: ${last.state}.`,
+  };
+}
+
 export const INPUT_LABELS = {
   cmv: 'CMV',
   fee: 'tarifa',

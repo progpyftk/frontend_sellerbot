@@ -8,6 +8,7 @@ import {
   decisionSummary,
   missingLabels,
   pct,
+  resultOf,
   situationOf,
   suggestionOf,
 } from 'src/utils/advisorDecision'
@@ -131,6 +132,23 @@ describe('advisorDecision · sugestão da régua', () => {
     expect(s.key).toBe('aprofundar')
     expect(s.label).toBe('Aprofundar desconto')
     expect(s.source).toBe('backend')
+  })
+})
+
+describe('advisorDecision · resultado da última escrita (PROMO-IA-48)', () => {
+  it('mapeia o estado real do ledger para a linguagem do dono', () => {
+    expect(resultOf({ last_result: { state: 'executed_verified', at: 'x' } }).label).toBe('Confirmado')
+    expect(resultOf({ last_result: { state: 'accepted_unverified' } }).label).toBe('Aguardando confirmação')
+    expect(resultOf({ last_result: { state: 'failed' } }).label).toBe('Recusado')
+    expect(resultOf({ last_result: { state: 'unknown' } }).label).toBe('Sem confirmação')
+    expect(resultOf({ last_result: { state: 'blocked', blocked_code: 'GATE' } }).key).toBe('bloqueado')
+  })
+
+  it('sem escrita no ledger não mente: vira "Sem escrita"', () => {
+    expect(resultOf({ last_result: null }).key).toBe('nada')
+    expect(resultOf({}).key).toBe('nada')
+    // estado desconhecido do ledger não pode virar confirmação
+    expect(resultOf({ last_result: { state: 'qualquer_coisa' } }).key).toBe('sem_confirmacao')
   })
 })
 
