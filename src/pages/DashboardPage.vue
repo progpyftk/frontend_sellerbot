@@ -880,25 +880,6 @@
                       <td class="right">{{ pct(a.gross_profit, a.gmv) }}</td>
                   </tr>
               </template>
-              <!-- TikTok Shop accounts -->
-              <template v-if="activeMarketplace !== 'ml' && activeMarketplace !== 'shopee' && tiktokData?.by_account">
-                <tr v-for="a in tiktokData.by_account.filter(a => selectedAccountKeys.includes('tiktokshop:' + a.account_id))" :key="'tk-' + a.account_id">
-                  <td><span class="mkt-badge mkt-badge--tiktokshop">TikTok</span></td>
-                  <td class="bold">{{ a.shop_name }}</td>
-                  <td class="muted">—</td>
-                  <td class="right">{{ fmt(a.gmv) }}</td>
-                  <td class="right">{{ fmt(a.net_revenue) }}</td>
-                  <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
-                  <td class="right warn">—</td>
-                  <td class="right">{{ a.orders_count }}</td>
-                  <td class="right">
-                    <div class="inline-bar-wrap">
-                      <div class="inline-bar-fill" :style="{ width: combinedGmvShare('tiktokshop', a.gmv) + '%' }"></div>
-                      <span>{{ combinedGmvShare('tiktokshop', a.gmv) }}%</span>
-                    </div>
-                  </td>
-                </tr>
-              </template>
             </tbody>
                 <tfoot>
                   <tr class="total-row">
@@ -1886,7 +1867,7 @@ const filteredMlOp = computed(() => {
     orders_count: orders, units_sold: units,
     avg_ticket: averageTicket(gmv, orders),
     total_fees: +(gmv - net).toFixed(2), cmv_total: s('cmv_total'),
-    lucro_liquido_pct: calculateNetMarginPct(gmv, gp, ads, 2),
+    lucro_liquido_pct: calculateNetMarginPct(net, gp, ads, 2),
     gross_margin_pct: net ? +(gp / net * 100).toFixed(2) : null,
     roas: ads ? +(gmv / ads).toFixed(2) : null,
     acos: gmv ? +(ads / gmv * 100).toFixed(2) : null,
@@ -2633,11 +2614,22 @@ function tiktokToMLFormat(tk) {
   }
 }
 
+// CMV do canal para o total combinado (defeito B1): o `cmv_total` só existe explícito no
+// Mercado Livre. Shopee e TikTok expõem o lucro após CMV (`gross_profit`), e nesses canais
+// `gross_profit = net_revenue − CMV` — a mesma derivação que o breakdown do DRE já usa para a
+// Shopee. Somar apenas o CMV do ML inflava a margem combinada.
+function cmvDoCanal(canal) {
+  if (!canal) return 0
+  if (canal.cmv_total != null) return canal.cmv_total
+  if (canal.gross_profit != null && canal.net_revenue != null) return canal.net_revenue - canal.gross_profit
+  return 0
+}
+
 // KPIs mesclados: quando preset=hoje usa combinedToday, senão usa ML + shopeeData somados
 const combinedOp = computed(() => {
   if (activeDatePreset.value === 'hoje' && combinedToday.value) {
     const d = combinedToday.value
-    const ll_pct = calculateNetMarginPct(d.gmv, d.gross_profit, d.ads_cost, 2)
+    const ll_pct = calculateNetMarginPct(d.net_revenue, d.gross_profit, d.ads_cost, 2)
     const gm_pct = d.net_revenue ? +(d.gross_profit / d.net_revenue * 100).toFixed(2) : null
     return { ...d, lucro_liquido_pct: ll_pct, gross_margin_pct: gm_pct, roas: null, acos: null, catalog_orders_count: 0, flex_orders_count: 0, canceled_count: null, vs_prev: null }
   }
@@ -2659,8 +2651,8 @@ const combinedOp = computed(() => {
     ads_cost:     sh.ads_cost || 0,
     affiliate_cost: sh.affiliate_cost || 0,
     total_fees:   sh.marketplace_fees || 0,
-    cmv_total:    0,
-    lucro_liquido_pct: calculateNetMarginPct(sh.gmv, sh.gross_profit, sh.ads_cost, 2),
+    cmv_total:    cmvDoCanal(sh),
+    lucro_liquido_pct: calculateNetMarginPct(sh.net_revenue, sh.gross_profit, sh.ads_cost, 2),
     gross_margin_pct:  null,
     vs_prev: null,
   }
@@ -2673,8 +2665,8 @@ const combinedOp = computed(() => {
     avg_ticket:   tk.avg_ticket,
     units_sold:   tk.units_sold,
     ads_cost:     tk.ads_cost || 0,
-    cmv_total:    0,
-    lucro_liquido_pct: calculateNetMarginPct(tk.gmv, tk.gross_profit, tk.ads_cost, 2),
+    cmv_total:    cmvDoCanal(tk),
+    lucro_liquido_pct: calculateNetMarginPct(tk.net_revenue, tk.gross_profit, tk.ads_cost, 2),
     gross_margin_pct:  null,
     vs_prev: null,
   }
@@ -2696,8 +2688,8 @@ const combinedOp = computed(() => {
     ads_cost:      adsCost,
     affiliate_cost: sh?.affiliate_cost || 0,
     total_fees:    (ml?.total_fees || 0) + (sh?.marketplace_fees || 0),
-    cmv_total:     ml?.cmv_total || 0,
-    lucro_liquido_pct: calculateNetMarginPct(gmv, grossProfit, adsCost, 2),
+    cmv_total:     cmvDoCanal(ml) + cmvDoCanal(sh) + cmvDoCanal(tk),
+    lucro_liquido_pct: calculateNetMarginPct(netRevenue, grossProfit, adsCost, 2),
     gross_margin_pct:  netRevenue ? +(grossProfit / netRevenue * 100).toFixed(2) : null,
     roas: ml?.roas, acos: ml?.acos, tacos: ml?.tacos,
     canceled_count: ml?.canceled_count,
@@ -2711,9 +2703,11 @@ const combinedOp = computed(() => {
 const op = combinedOp
 
 function combinedGmvShare(marketplace, gmv) {
-  const mlGmv     = data.value?.operation?.gmv || 0
-  const shopeeGmv = filteredShopeeOp.value?.gmv || 0
-  const total     = mlGmv + shopeeGmv
+  const mlGmv      = data.value?.operation?.gmv || 0
+  const shopeeGmv  = filteredShopeeOp.value?.gmv || 0
+  // O TikTok entra no denominador: sem ele a fatia "do GMV total" não fechava 100% (B4).
+  const tiktokGmv  = filteredTiktokOp.value?.gmv || 0
+  const total      = mlGmv + shopeeGmv + tiktokGmv
   if (!total || !gmv) return 0
   return Math.min(100, Math.round((gmv / total) * 100))
 }
@@ -3504,7 +3498,7 @@ const rankingRows = computed(() => {
       ads_cost: ads,
       tacos: gmv ? +(ads / gmv * 100).toFixed(1) : null,
       lucro_liquido: ll,
-      lucro_liquido_pct: calculateNetMarginPct(gmv, gp, ads, 1),
+      lucro_liquido_pct: calculateNetMarginPct(net, gp, ads, 1),
       roas: a.roas || null,
       orders_count: a.orders_count || 0,
     })
@@ -3530,7 +3524,7 @@ const rankingRows = computed(() => {
       ads_cost: ads,
       tacos: gmv ? +(ads / gmv * 100).toFixed(1) : null,
       lucro_liquido: ll,
-      lucro_liquido_pct: calculateNetMarginPct(gmv, gp, ads, 1),
+      lucro_liquido_pct: calculateNetMarginPct(net, gp, ads, 1),
       roas: null,
       orders_count: a.orders_count || 0,
     })
@@ -3554,7 +3548,7 @@ const rankingRows = computed(() => {
       ads_cost: null,
       tacos: null,
       lucro_liquido: gp,
-      lucro_liquido_pct: calculateNetMarginPct(gmv, gp, 0, 1),
+      lucro_liquido_pct: calculateNetMarginPct(net, gp, 0, 1),
       roas: null,
       orders_count: a.orders_count || 0,
     })
