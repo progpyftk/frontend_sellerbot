@@ -352,6 +352,11 @@
       </div>
     </div>
 
+    <!-- ══════════════════════════════════════════════════════ TAB: ORGANIZADOR -->
+    <div v-if="activeTab === 'organizador'" class="tab-body">
+      <OrganizadorTab :date-from="dateFrom" :date-to="dateTo" />
+    </div>
+
     <!-- ══════════════════════════════════════════════════════ CAMPAIGN DETAIL PANEL -->
     <q-dialog v-model="campDetailOpen" position="right" full-height maximized>
       <q-card class="camp-detail-card" v-if="campDetail">
@@ -505,6 +510,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { api } from 'src/boot/axios'
+import OrganizadorTab from 'components/ads/OrganizadorTab.vue'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const STRATEGY_LABELS = {
@@ -530,9 +536,10 @@ const LISTING_TYPE_LABELS = {
 }
 
 const tabs = [
-  { key: 'accounts', label: 'Por Campanha',  icon: 'business'    },
-  { key: 'trend',    label: 'Tendência',     icon: 'show_chart'  },
-  { key: 'items',    label: 'Por Anúncio',   icon: 'inventory_2' },
+  { key: 'accounts',    label: 'Por Campanha', icon: 'business'      },
+  { key: 'trend',       label: 'Tendência',    icon: 'show_chart'    },
+  { key: 'items',       label: 'Por Anúncio',  icon: 'inventory_2'   },
+  { key: 'organizador', label: 'Organizador',  icon: 'account_tree'  },
 ]
 
 const datePresets = [
