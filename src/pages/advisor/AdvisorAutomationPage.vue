@@ -1,7 +1,7 @@
 <template>
   <AdvisorShell
     active="automacao"
-    pergunta="Quem está autorizado a escrever, qual é a régua — e como eu paro tudo?"
+    pergunta="Quem está autorizado a escrever, quais são os limites — e como eu paro tudo?"
   >
     <template #actions>
       <q-btn flat dense no-caps icon="refresh" label="Atualizar" :loading="carregando" @click="recarregar" />
@@ -64,55 +64,55 @@
               />
               <q-input
                 v-model="levas[conta.account_id]" type="number" dense outlined
-                label="Leva (anúncios por onda)" class="aut__leva"
+                label="Rodada (anúncios por vez)" class="aut__leva"
                 :disable="salvando === conta.account_id || !conta.auto_write"
                 @blur="salvarLeva(conta)"
               >
-                <template #hint>Quantos anúncios o robô altera por onda antes de parar no portão.</template>
+                <template #hint>Quantos anúncios o robô altera por vez antes de esperar o próximo aval.</template>
               </q-input>
             </div>
 
             <details class="aut__regua-conta">
               <summary>
-                Régua desta conta
+                Limites desta conta
                 <span class="aut__regua-resumo">
-                  piso {{ pct(Number(conta.regua?.margin_pct)) }} de margem · {{ brl(Number(conta.regua?.profit_brl)) }} de lucro
+                  mínimo de {{ pct(Number(conta.regua?.margin_pct)) }} de margem · {{ brl(Number(conta.regua?.profit_brl)) }} de lucro
                 </span>
               </summary>
               <div class="aut__regua-corpo">
                 <q-select
                   dense outlined emit-value map-options
                   :model-value="null" :options="presetOpcoes"
-                  label="Aplicar um preset (preenche os 4 campos abaixo)"
+                  label="Aplicar um modelo pronto (preenche os 4 campos abaixo)"
                   :disable="salvando === conta.account_id"
                   @update:model-value="(v) => v && aplicarPreset(conta, v)"
                 />
                 <div class="aut__regua-campos">
                   <q-input
                     v-model.number="reguas[conta.account_id].floor_margin_pct" type="number" dense outlined
-                    suffix="%" label="Piso de margem" :disable="salvando === conta.account_id"
+                    suffix="%" label="Margem mínima" :disable="salvando === conta.account_id"
                     @blur="salvarReguaCampo(conta, 'floor_margin_pct')"
                   >
                     <template #hint>Nenhuma escrita passa por baixo — nem o robô, nem uma ativação manual.</template>
                   </q-input>
                   <q-input
                     v-model.number="reguas[conta.account_id].floor_profit_brl" type="number" dense outlined
-                    prefix="R$" label="Piso de lucro por venda" :disable="salvando === conta.account_id"
+                    prefix="R$" label="Lucro mínimo por venda" :disable="salvando === conta.account_id"
                     @blur="salvarReguaCampo(conta, 'floor_profit_brl')"
                   />
                   <q-input
                     v-model.number="reguas[conta.account_id].target_margin_parado_pct" type="number" dense outlined
-                    suffix="%" label="Alvo — parado/fraco" :disable="salvando === conta.account_id"
+                    suffix="%" label="Alvo de margem — parado/fraco" :disable="salvando === conta.account_id"
                     @blur="salvarReguaCampo(conta, 'target_margin_parado_pct')"
                   >
                     <template #hint>Até onde o robô pode aprofundar desconto para destravar a venda.</template>
                   </q-input>
                   <q-input
                     v-model.number="reguas[conta.account_id].target_margin_medio_pct" type="number" dense outlined
-                    suffix="%" label="Alvo — giro médio" :disable="salvando === conta.account_id"
+                    suffix="%" label="Alvo de margem — vendas médias" :disable="salvando === conta.account_id"
                     @blur="salvarReguaCampo(conta, 'target_margin_medio_pct')"
                   >
-                    <template #hint>Abaixo disso com giro médio, o robô reduz o desconto.</template>
+                    <template #hint>Abaixo disso com vendas médias, o robô reduz o desconto.</template>
                   </q-input>
                 </div>
                 <details class="aut__regua-avancado">
@@ -120,14 +120,14 @@
                   <div class="aut__regua-campos">
                     <q-input
                       v-model.number="reguas[conta.account_id].high_turnover_margin_pct" type="number" dense outlined
-                      suffix="%" label="Teto — giro alto" :disable="salvando === conta.account_id"
+                      suffix="%" label="Teto de margem — vendas altas" :disable="salvando === conta.account_id"
                       @blur="salvarReguaCampo(conta, 'high_turnover_margin_pct')"
                     >
-                      <template #hint>Margem mínima para considerar giro alto "sem necessidade de agir".</template>
+                      <template #hint>Margem mínima para considerar vendas altas "sem necessidade de agir".</template>
                     </q-input>
                     <q-input
                       v-model.number="reguas[conta.account_id].smart_signal_margin_pct" type="number" dense outlined
-                      suffix="%" label="Sinal SMART" :disable="salvando === conta.account_id"
+                      suffix="%" label="Margem mínima para sinalizar (SMART)" :disable="salvando === conta.account_id"
                       @blur="salvarReguaCampo(conta, 'smart_signal_margin_pct')"
                     >
                       <template #hint>Abaixo disso num anúncio SMART, o robô sinaliza (nunca escreve — preço é do ML).</template>
@@ -146,8 +146,8 @@
 
             <p v-if="conta.canary_pending && conta.auto_write" class="aut__canario">
               <q-icon name="verified_user" size="14px" aria-hidden="true" />
-              Primeira leva esperando o seu aval: até sair, o robô não escreve por essa conta.
-              <q-btn unelevated dense no-caps color="primary" label="Aprovar a primeira leva"
+              Primeira rodada esperando o seu aval: até sair, o robô não escreve por essa conta.
+              <q-btn unelevated dense no-caps color="primary" label="Aprovar a primeira rodada"
                      :loading="salvando === conta.account_id" @click="aprovarLeva(conta)" />
             </p>
 
@@ -168,12 +168,12 @@
         <dl class="aut__legenda">
           <div>
             <dt><AdvisorStatusPill status="ligado">Escrevendo</AdvisorStatusPill></dt>
-            <dd>Escrita ligada, sem trava — o robô pode alterar preço nesta conta no próximo ciclo.</dd>
+            <dd>Escrita ligada, sem trava — o robô pode alterar preço nesta conta na próxima execução.</dd>
           </div>
           <div>
             <dt><AdvisorStatusPill status="aguardando">Esperando seu aval</AdvisorStatusPill></dt>
-            <dd>Conta em primeira leva (canário): escrita ligada, mas o robô para no portão até você
-              aprovar a próxima leva — veja "Esperando você" na aba Hoje.</dd>
+            <dd>Conta na primeira rodada: escrita ligada, mas o robô só altera uma rodada e espera
+              você aprovar a próxima — veja "Esperando você" na aba Hoje.</dd>
           </div>
           <div>
             <dt><AdvisorStatusPill status="bloqueado">Autorizada, mas travada</AdvisorStatusPill></dt>
@@ -193,7 +193,7 @@
         </dl>
       </AdvisorSection>
 
-      <!-- 3. Como funciona: a régua ao lado do controle, não em outra página -->
+      <!-- 3. Como funciona: os limites ao lado do controle, não em outra página -->
       <AdvisorSection title="Como o robô decide" tight>
         <div class="aut__regua">
           <div>
@@ -205,16 +205,16 @@
             </ul>
           </div>
           <div>
-            <h4>Pisos que nunca são cruzados</h4>
+            <h4>Mínimos que nunca são ultrapassados</h4>
             <ul>
               <li>
                 Margem mínima de <strong>{{ pct(reguaComum.margin_pct) }}</strong> e lucro mínimo de
                 <strong>{{ brl(reguaComum.profit_brl) }} por venda</strong>. Se o preço oferecido não
                 fecha os dois, o robô não escreve.
-                <template v-if="reguaComum.divergente"> Suas contas têm pisos diferentes — veja o valor
-                  real de cada uma em "Régua desta conta", acima.</template>
+                <template v-if="reguaComum.divergente"> Suas contas têm mínimos diferentes — veja o valor
+                  real de cada uma em "Limites desta conta", acima.</template>
               </li>
-              <li>Se a margem atual já está <strong>abaixo do piso de margem-alvo (parado/fraco)</strong>, o caminho é <strong>rebase de preço</strong> no precificador — não mais desconto.</li>
+              <li>Se a margem atual já está <strong>abaixo do alvo (parado/fraco)</strong>, o caminho é <strong>reprecificar</strong> no assistente de preços — não mais desconto.</li>
               <li>Frete estimado com pouca amostra (&gt; R$ 25 ou &gt; 20% do preço): marcado como <strong>sem certeza</strong> e não é auto-ativado.</li>
             </ul>
           </div>
@@ -227,10 +227,10 @@
             </ul>
           </div>
           <div>
-            <h4>O ciclo do dia</h4>
+            <h4>A execução do dia</h4>
             <ul>
               <li>Roda todo dia às <strong>09:00 (Brasília)</strong>; a próxima execução aparece no rodapé da aba <strong>Hoje</strong>.</li>
-              <li>Cada escrita é conferida no Mercado Livre; o que não confirma é relido no dia seguinte.</li>
+              <li>Cada escrita é conferida no Mercado Livre; o que não confirma é conferido de novo no dia seguinte.</li>
               <li>O ciclo nunca passa do orçamento de tempo: o que não coube entra no próximo.</li>
             </ul>
           </div>
@@ -287,17 +287,17 @@ const reguaComum = computed(() => {
 });
 
 const GLOSSARIO = computed(() => [
-  { nome: 'Leva', texto: 'Quantos anúncios o robô altera numa onda antes de parar no portão.' },
+  { nome: 'Rodada', texto: 'Quantos anúncios o robô altera por vez antes de esperar o próximo aval.' },
   {
-    nome: 'Piso',
-    texto: `Margem mínima e lucro mínimo por venda — configurável por conta em "Régua desta conta",
+    nome: 'Mínimo',
+    texto: `Margem mínima e lucro mínimo por venda — configurável por conta em "Limites desta conta",
       acima (padrão da plataforma: ${FLOOR_MARGIN_PCT}% e ${brl(FLOOR_PROFIT_BRL)}). Nenhuma escrita
       passa por baixo, nem o robô nem uma ativação manual.`,
   },
-  { nome: 'Portão', texto: 'Trava que segura a próxima onda: pode ser o seu aval (primeira leva) ou o teto do dia.' },
-  { nome: 'Ciclo', texto: 'A execução diária das 09:00 (Brasília) que lê o mercado e decide.' },
+  { nome: 'Aval', texto: 'Sua aprovação para a próxima rodada: a primeira sempre espera você; depois disso o robô segue sozinho até o fim do dia.' },
+  { nome: 'Execução diária', texto: 'A rotina das 09:00 (Brasília) que lê o mercado e decide.' },
   { nome: 'Confirmada', texto: 'Escrita conferida no Mercado Livre — o preço realmente mudou.' },
-  { nome: 'Aguardando confirmação', texto: 'O robô enviou e o Mercado Livre ainda não confirmou; ele relê no próximo ciclo.' },
+  { nome: 'Aguardando confirmação', texto: 'O robô enviou e o Mercado Livre ainda não confirmou; ele confere de novo depois.' },
   { nome: 'Recusada', texto: 'O Mercado Livre não aceitou a mudança; o preço ficou como estava.' },
   { nome: 'SMART', texto: 'Anúncio cujo preço é definido pelo Mercado Livre. O robô só sinaliza a margem.' },
   { nome: 'Saúde de vendas', texto: 'Parado (0 venda em 14 dias sob promoção), fraco (até 1/semana), médio (1 a 3) ou alto (3+).' },
@@ -327,8 +327,8 @@ const detalheEstado = computed(() => {
   const aval = esperandoAval.value.length
     ? ` Outra(s) ${esperandoAval.value.length} conta(s) esperam o seu aval abaixo.`
     : '';
-  return `O robô altera no máximo uma leva por onda (a menor leva entre elas é de ${leva}) e para `
-    + `no próximo portão.${aval}`;
+  return `O robô altera no máximo uma rodada por vez (a menor rodada entre elas é de ${leva}) e espera `
+    + `o próximo aval.${aval}`;
 });
 
 const classeEstado = computed(() => ({

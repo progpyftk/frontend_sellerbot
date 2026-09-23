@@ -46,7 +46,7 @@ describe('advisorDecision · situação (estado honesto)', () => {
     expect(s.key).toBe('bloqueado_piso')
     expect(s.variant).toBe('red')
     expect(s.icon).toBe('block')
-    expect(s.reason).toContain(`margem ≥ ${pct(FLOOR_MARGIN_PCT)}`)
+    expect(s.reason).toContain(`margem mínima de ${pct(FLOOR_MARGIN_PCT)}`)
     expect(s.reason).toContain('28,1%')
     expect(s.reason).toContain('11,89')
   })
@@ -76,7 +76,7 @@ describe('advisorDecision · sugestão da régua', () => {
     expect(s.key).toBe('bloqueado')
     // O vermelho fica na coluna Situação; a sugestão não repete o alerta.
     expect(s.variant).toBe('slate')
-    expect(s.detail).toContain(`lucro ≥ ${brl(FLOOR_PROFIT_BRL)}`)
+    expect(s.detail).toContain(`lucro mínimo de ${brl(FLOOR_PROFIT_BRL)}`)
     expect(s.source).toBe('regua')
   })
 

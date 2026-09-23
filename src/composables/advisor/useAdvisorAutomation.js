@@ -85,11 +85,11 @@ export function useAdvisorAutomation() {
   watch(contas, () => sincronizarReguas(), { immediate: true, flush: 'pre' });
 
   const REGUA_ROTULOS = {
-    floor_margin_pct: 'piso de margem',
-    floor_profit_brl: 'piso de lucro',
+    floor_margin_pct: 'margem mínima',
+    floor_profit_brl: 'lucro mínimo',
     target_margin_parado_pct: 'alvo de margem (parado/fraco)',
-    target_margin_medio_pct: 'alvo de margem (giro médio)',
-    high_turnover_margin_pct: 'teto de margem (giro alto)',
+    target_margin_medio_pct: 'alvo de margem (vendas médias)',
+    high_turnover_margin_pct: 'teto de margem (vendas altas)',
     smart_signal_margin_pct: 'margem mínima de sinalização SMART',
   };
 
@@ -146,7 +146,7 @@ export function useAdvisorAutomation() {
       target_margin_medio_pct: preset.target_margin_medio_pct,
     };
     await gravar(conta.account_id, payload,
-      `${conta.account_nickname}: régua "${preset.label}" aplicada.`);
+      `${conta.account_nickname}: limites "${preset.label}" aplicados.`);
     sincronizarReguas();
   }
 
@@ -155,7 +155,7 @@ export function useAdvisorAutomation() {
       conta.account_id,
       { auto_write: ligar === true },
       ligar === true
-        ? `${conta.account_nickname}: o robô vai escrever sozinho no próximo ciclo.`
+        ? `${conta.account_nickname}: o robô vai escrever sozinho na próxima execução.`
         : `${conta.account_nickname}: o robô parou de escrever. Nada foi desfeito no Mercado Livre.`,
     );
   }
@@ -164,17 +164,17 @@ export function useAdvisorAutomation() {
     const bruto = Number(levas[conta.account_id]);
     if (!Number.isInteger(bruto) || bruto < 1 || bruto > 200) {
       levas[conta.account_id] = conta.wave_size;   // volta ao valor válido do servidor
-      erro.value = 'A leva precisa ser um número inteiro entre 1 e 200.';
+      erro.value = 'A rodada precisa ser um número inteiro entre 1 e 200.';
       return;
     }
     if (bruto === conta.wave_size) return;          // nada mudou: não gasta uma gravação
     await gravar(conta.account_id, { wave_size: bruto },
-      `${conta.account_nickname}: leva de ${bruto} anúncios por onda.`);
+      `${conta.account_nickname}: rodada de ${bruto} anúncios.`);
   }
 
   async function aprovarLeva(conta) {
     await gravar(conta.account_id, { canary_approved: true },
-      `${conta.account_nickname}: primeira leva aprovada — o robô pode escrever no próximo ciclo.`);
+      `${conta.account_nickname}: primeira rodada aprovada — o robô pode escrever na próxima execução.`);
   }
 
   async function retomar(conta) {

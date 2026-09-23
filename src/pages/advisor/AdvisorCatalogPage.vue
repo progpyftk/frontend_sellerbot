@@ -39,7 +39,7 @@
           label="Situação" aria-label="Situação do anúncio" class="cat__select"
         />
 
-        <q-toggle v-model="filtros.soAbaixoDoPiso" dense label="Só abaixo do piso" />
+        <q-toggle v-model="filtros.soAbaixoDoPiso" dense label="Só abaixo do mínimo" />
         <q-toggle v-model="filtros.soComPromocao" dense label="Só com promoção" />
 
         <q-btn v-if="filtrosAtivos" flat dense no-caps icon="filter_alt_off" label="Limpar filtros" @click="limparFiltros" />
@@ -53,9 +53,9 @@
       <!-- Números do catálogo: o que o dono usa para decidir onde olhar primeiro -->
       <div class="cat__metricas">
         <AdvisorMetric :value="resumo.ads ?? '—'" label="anúncios no catálogo" :hint="retratoTexto" />
-        <AdvisorMetric :value="resumo.below_floor ?? 0" label="abaixo do piso" variant="warn" hint="margem ou lucro fora do mínimo" />
+        <AdvisorMetric :value="resumo.below_floor ?? 0" label="abaixo do mínimo" variant="warn" hint="margem ou lucro fora do mínimo" />
         <AdvisorMetric :value="resumo.with_active_promo ?? 0" label="com promoção ativa" hint="o robô não precisa agir" />
-        <AdvisorMetric :value="resumo.assistente ?? 0" label="com sugestão do robô" hint="aprofundar, reduzir ou rebaser" />
+        <AdvisorMetric :value="resumo.assistente ?? 0" label="com sugestão do robô" hint="aprofundar, reduzir ou reprecificar" />
         <AdvisorMetric :value="resumo.agent_history ?? 0" label="já mexidos pelo robô" hint="histórico de acionamento" />
       </div>
 
@@ -153,9 +153,9 @@
             </div>
           </dl>
           <p class="cat__detalheNota">
-            A situação e a sugestão saem da mesma régua que o robô usa para escrever nesta conta:
-            margem-alvo por saúde de vendas, com piso de {{ pct(floorMarginOf(linhaExpandida)) }} de
-            margem e {{ brl(floorProfitOf(linhaExpandida)) }} de lucro por venda.
+            A situação e a sugestão saem da mesma regra que o robô usa para escrever nesta conta:
+            margem-alvo por saúde de vendas, com margem mínima de {{ pct(floorMarginOf(linhaExpandida)) }} e
+            lucro mínimo de {{ brl(floorProfitOf(linhaExpandida)) }} por venda.
           </p>
         </div>
 
@@ -174,7 +174,7 @@
       <!-- Legenda: o rótulo sozinho não ensina nada a quem não escreveu a régua -->
       <AdvisorSection
         title="O que significa cada rótulo" tight
-        lead="A coluna Situação diz onde o anúncio está hoje; a coluna O que fazer diz o que a régua manda para ele. Os critérios:"
+        lead="A coluna Situação diz onde o anúncio está hoje; a coluna O que fazer diz o que a regra manda para ele. Os critérios:"
       >
         <div class="cat__legenda">
           <div class="cat__legendaCol">
@@ -203,19 +203,19 @@
                 <dd>{{ item.regra }}</dd>
               </div>
             </dl>
-            <h4 class="cat__legendaSub">Piso e alvo (padrão da plataforma)</h4>
+            <h4 class="cat__legendaSub">Mínimo e alvo (padrão da plataforma)</h4>
             <dl>
               <div>
-                <dt>Piso</dt>
+                <dt>Mínimo</dt>
                 <dd>Margem mínima de {{ FLOOR_MARGIN_PCT }}% e lucro mínimo de {{ brl(FLOOR_PROFIT_BRL) }} por venda. Nem o robô escreve abaixo disso.</dd>
               </div>
               <div>
-                <dt>Alvo do giro médio</dt>
+                <dt>Alvo para vendas médias</dt>
                 <dd>{{ TARGET_MARGIN_PCT.medio }}% de margem. Abaixo disso, o robô reduz o desconto.</dd>
               </div>
               <div>
-                <dt>Sua conta configurou um piso diferente?</dt>
-                <dd>Cada linha usa a régua da PRÓPRIA conta — estes números são só o padrão de quem
+                <dt>Sua conta configurou um mínimo diferente?</dt>
+                <dd>Cada linha usa a regra da PRÓPRIA conta — estes números são só o padrão de quem
                   não configurou nada. Ajuste em <strong>Automação</strong>.</dd>
               </div>
             </dl>
@@ -259,10 +259,10 @@ const COLUNAS = [
   { key: 'situacao', label: 'Situação', grupo: 'always', minWidth: 140 },
   { key: 'sugestao', label: 'O que fazer', grupo: 'assistente', minWidth: 170 },
   { key: 'preco', label: 'Preço-base', grupo: 'assistente', numeric: true, sortable: true, sortKey: 'price', minWidth: 104 },
-  { key: 'promo', label: 'Preço promo', grupo: 'assistente', numeric: true, minWidth: 104 },
+  { key: 'promo', label: 'Preço na promoção', grupo: 'assistente', numeric: true, minWidth: 104 },
   { key: 'margem', label: 'Margem', grupo: 'assistente', numeric: true, sortable: true, sortKey: 'margin', minWidth: 90 },
-  { key: 'lucro', label: 'Lucro/un.', grupo: 'assistente', numeric: true, minWidth: 96 },
-  { key: 'vendas', label: 'Vendas 30d', grupo: 'assistente', numeric: true, sortable: true, sortKey: 'sales', minWidth: 96 },
+  { key: 'lucro', label: 'Lucro por venda', grupo: 'assistente', numeric: true, minWidth: 96 },
+  { key: 'vendas', label: 'Vendas 30 dias', grupo: 'assistente', numeric: true, sortable: true, sortKey: 'sales', minWidth: 96 },
   { key: 'ultimaAcao', label: 'Última ação', grupo: 'assistente', sortable: true, sortKey: 'activation', minWidth: 130 },
   { key: 'cmv', label: 'CMV', grupo: 'financeiro', numeric: true, minWidth: 96 },
   { key: 'frete', label: 'Frete', grupo: 'financeiro', numeric: true, minWidth: 96 },
@@ -297,7 +297,7 @@ const detalheCampos = computed(() => {
     { label: 'Situação', valor: `${situacao(l).label}` },
     { label: 'O que fazer', valor: sugestao(l).label },
     { label: 'Preço-base', valor: brl(l.price) },
-    { label: 'Preço promo', valor: brl(l.buyer_price) },
+    { label: 'Preço na promoção', valor: brl(l.buyer_price) },
     { label: 'CMV', valor: brl(l.cmv_unit) },
     { label: 'Frete', valor: brl(l.shipping_cost) },
     { label: 'Logística', valor: logisticLabel(l.logistic_type) },
@@ -359,7 +359,7 @@ function sugestao(row) {
 const ACAO_LABEL = {
   aprofundar: 'aprofunda',
   reduzir: 'reduz',
-  rebase: 'rebase',
+  rebase: 'reprecifica',
   manter: 'não mexe',
   capturar: 'captura',
   sem_oferta: 'sem oferta',

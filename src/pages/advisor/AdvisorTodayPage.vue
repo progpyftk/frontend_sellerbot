@@ -1,7 +1,7 @@
 <template>
   <AdvisorShell
     active="hoje"
-    pergunta="O que o robô fez hoje, o que espera por você e está tudo dentro do piso?"
+    pergunta="O que o robô fez hoje, o que espera por você e está tudo dentro do mínimo?"
   >
     <template #actions>
       <q-btn flat dense no-caps icon="refresh" label="Atualizar" :loading="carregando" @click="carregar" />
@@ -58,7 +58,7 @@
       <p v-else-if="errosDoCiclo" class="today__confirm" role="alert">
         <q-icon name="error_outline" size="16px" aria-hidden="true" />
         <strong>O ciclo de hoje terminou com {{ ciclo.errors_count }} erro(s).</strong>
-        As escritas confirmadas continuam valendo; o que ficou sem confirmação o robô relê no próximo ciclo.
+        As escritas confirmadas continuam valendo; o que ficou sem confirmação o robô confere de novo na próxima execução.
       </p>
 
       <p v-if="escrita.bloqueadaPorKillSwitch" class="today__confirm" role="alert">
@@ -78,9 +78,9 @@
       <!-- Números do dia: o que importa primeiro, cada um com unidade -->
       <div class="today__metrics">
         <AdvisorMetric :value="total.alterados" label="anúncios alterados hoje" :variant="total.alterados ? 'ok' : 'neutral'"
-                       :hint="`${escrita.nomes || 'nenhuma conta ligada'} · leva de ${escrita.leva}`" />
+                       :hint="`${escrita.nomes || 'nenhuma conta ligada'} · rodadas de ${escrita.leva}`" />
         <AdvisorMetric :value="total.ja_no_alvo" label="já estavam no preço-alvo" hint="nada a fazer" />
-        <AdvisorMetric :value="total.nao_confirmados" label="aguardando confirmação do ML" hint="o robô relê no ciclo seguinte" />
+        <AdvisorMetric :value="total.nao_confirmados" label="aguardando confirmação do ML" hint="o robô confere de novo depois" />
         <AdvisorMetric :value="total.recusados" label="recusados pelo Mercado Livre" hint="o preço não mudou" />
         <AdvisorMetric :value="naoMexidosQueAvaliou" label="não mexeu (avaliados)" hint="por regra de proteção" />
       </div>
@@ -96,7 +96,7 @@
             <thead>
               <tr>
                 <th scope="col">Anúncio</th><th scope="col">Antes</th><th scope="col">Depois</th>
-                <th scope="col">Margem</th><th scope="col">Lucro/un.</th><th scope="col">Estado</th>
+                <th scope="col">Margem</th><th scope="col">Lucro por venda</th><th scope="col">Estado</th>
                 <th scope="col">Hora</th><th scope="col"><span class="today__sr">Abrir</span></th>
               </tr>
             </thead>
@@ -113,14 +113,14 @@
                 <td data-label="Margem" :title="w.margin_pct ? '' : 'Sem dado: não calculado no momento desta escrita.'">
                   {{ w.margin_pct ? pct(Number(w.margin_pct)) : '—' }}
                 </td>
-                <td data-label="Lucro/un." :title="w.profit_unit ? '' : 'Sem dado: não calculado no momento desta escrita.'">
+                <td data-label="Lucro por venda" :title="w.profit_unit ? '' : 'Sem dado: não calculado no momento desta escrita.'">
                   {{ w.profit_unit ? brl(w.profit_unit) : '—' }}
                 </td>
                 <td data-label="Estado">
                   <AdvisorStatusPill :status="w.origin === 'reconcile' ? 'aguardando' : 'verificado'"
                                      :title="w.origin === 'reconcile'
-                                       ? 'O robô mandou a escrita e o Mercado Livre só confirmou depois, num ciclo seguinte.'
-                                       : 'O robô mandou a escrita e o Mercado Livre confirmou no mesmo ciclo.'">
+                                       ? 'O robô mandou a escrita e o Mercado Livre só confirmou depois, numa conferência seguinte.'
+                                       : 'O robô mandou a escrita e o Mercado Livre confirmou na mesma execução.'">
                     {{ w.origin === 'reconcile' ? 'confirmado depois' : 'robô' }}
                   </AdvisorStatusPill>
                 </td>
@@ -144,7 +144,7 @@
 
       <!-- Espera de aval (só aparece quando existe) -->
       <AdvisorSection v-if="contaCanario" title="Esperando você" :count="aguardandoAval || undefined" :lead="leadAval">
-        <q-btn unelevated no-caps color="primary" icon="check_circle" label="Aprovar a próxima leva"
+        <q-btn unelevated no-caps color="primary" icon="check_circle" label="Aprovar a próxima rodada"
                :loading="aprovando" @click="aprovarLeva" />
       </AdvisorSection>
 
@@ -156,7 +156,7 @@
           <li v-for="motivo in motivos" :key="motivo.codigo">
             <strong>{{ motivo.anuncios }}</strong> {{ motivo.label }}
           </li>
-          <li v-if="!total.ja_no_alvo && !motivos.length">Nenhum bloqueio registrado hoje.</li>
+          <li v-if="!total.ja_no_alvo && !motivos.length">Nenhum impedimento registrado hoje.</li>
         </ul>
         <p v-if="naoAvaliados" class="today__hint">
           Outros {{ naoAvaliados }} anúncios <strong>nem foram avaliados</strong>: a escrita automática
@@ -174,7 +174,7 @@
           <div>
             <dt><AdvisorStatusPill status="aguardando">confirmado depois</AdvisorStatusPill></dt>
             <dd>O robô mandou a escrita, o Mercado Livre não confirmou na hora — a confirmação veio
-              num ciclo seguinte. O preço já estava certo; só a leitura demorou.</dd>
+              numa conferência seguinte. O preço já estava certo; só a leitura demorou.</dd>
           </div>
           <div>
             <dt>Célula com "—"</dt>
@@ -240,23 +240,23 @@ const confirmarPausa = ref(false);
 const algumSemAntes = computed(() => escritas.value.some((w) => !w.price_before));
 
 /**
- * Conta que está de fato esperando o aval: a que tem ANÚNCIOS parados no portão.
+ * Conta que está de fato esperando o aval: a que tem ANÚNCIOS parados esperando aprovação.
  *
- * Não serve `canary_pending`: conta recém-conectada nasce com canário pendente mesmo com a escrita
- * desligada (produção, 11/09: AGF e CASADOS pendentes com zero anúncios no portão, e a MOGIVITTA
- * — que escreve — com 17 anúncios esperando). Gatear por `canary_pending` esconderia o botão de
- * aprovar justamente de quem precisa dele.
+ * Não serve `canary_pending`: conta recém-conectada nasce com a primeira leva pendente mesmo com a
+ * escrita desligada (produção, 11/09: AGF e CASADOS pendentes com zero anúncios esperando, e a
+ * MOGIVITTA — que escreve — com 17 anúncios esperando). Gatear por `canary_pending` esconderia o
+ * botão de aprovar justamente de quem precisa dele.
  */
 const contaCanario = computed(() => {
   const escreveAgora = (c) => c.auto_write && modoGlobal.value && !killSwitch.value;
-  // 1) conta em modo de primeira leva que de fato escreve: é ela que precisa do aval;
-  // 2) senão, quem tem anúncio parado no portão hoje (a fonte mais concreta).
+  // 1) conta na primeira leva que de fato escreve: é ela que precisa do aval;
+  // 2) senão, quem tem anúncio esperando aprovação hoje (a fonte mais concreta).
   return contas.value.find((c) => c.canary_pending && escreveAgora(c))
     || contas.value.find((c) => Number(c.today?.aguardando_aval || 0) > 0)
     || null;
 });
 
-/** Anúncios parados no portão DAQUELA conta (o total global mentiria sobre o que o botão resolve). */
+/** Anúncios esperando aprovação DAQUELA conta (o total global mentiria sobre o que o botão resolve). */
 const aguardandoAval = computed(() => Number(contaCanario.value?.today?.aguardando_aval || 0));
 
 const leadAval = computed(() => {
@@ -264,13 +264,13 @@ const leadAval = computed(() => {
   const leva = contaCanario.value.wave_size || escrita.value.leva;
   const conta = contaCanario.value.account_nickname;
   if (!aguardandoAval.value) {
-    return `A conta ${conta} está em modo de primeira leva (canário) esperando o seu aval. `
-      + `Nenhum anúncio ficou parado no portão hoje; ao aprovar, o robô pode escrever uma leva de `
-      + `até ${leva} anúncios e para no próximo portão.`;
+    return `A conta ${conta} está na primeira rodada, esperando o seu aval. `
+      + `Nenhum anúncio ficou parado hoje; ao aprovar, o robô pode escrever uma rodada de `
+      + `até ${leva} anúncios e espera o próximo aval.`;
   }
-  return `${aguardandoAval.value} anúncios da conta ${conta} estão prontos e parados no portão da `
-    + `primeira leva. Enquanto você não aprovar, o robô escreve no máximo uma leva de ${leva} `
-    + `anúncios e para no próximo portão.`;
+  return `${aguardandoAval.value} anúncios da conta ${conta} estão prontos e esperando o seu aval `
+    + `para a primeira rodada. Enquanto você não aprovar, o robô escreve no máximo uma rodada de ${leva} `
+    + `anúncios e espera o próximo aval.`;
 });
 
 /**
@@ -278,7 +278,7 @@ const leadAval = computed(() => {
  *
  * REGRA INEGOCIÁVEL: esta faixa só afirma segurança quando existe escrita para proteger. Sem dado
  * (erro de agregação, nenhuma conta, nenhum anúncio escrito) ela diz o que NÃO foi verificado —
- * nunca "nenhum preço saiu abaixo do piso", que soaria como um atestado de que nada pode dar errado.
+ * nunca "nenhum preço saiu abaixo do mínimo", que soaria como um atestado de que nada pode dar errado.
  */
 const temEscrita = computed(() => Number(protecao.value.aplicadas || 0) > 0);
 
@@ -304,9 +304,9 @@ const tituloEscudo = computed(() => {
   if (!contas.value.length) return 'Nenhum anúncio foi avaliado hoje';
   if (!temEscrita.value) return 'Nenhum preço foi alterado hoje';
   if (protecao.value.abaixo_do_piso > 0) {
-    return `${protecao.value.abaixo_do_piso} anúncio(s) aplicado(s) abaixo do piso hoje`;
+    return `${protecao.value.abaixo_do_piso} anúncio(s) aplicado(s) abaixo do mínimo hoje`;
   }
-  return `Nenhum preço saiu abaixo do piso nos ${protecao.value.aplicadas} anúncios escritos hoje`;
+  return `Nenhum preço saiu abaixo do mínimo nos ${protecao.value.aplicadas} anúncios escritos hoje`;
 });
 
 const detalheEscudo = computed(() => {

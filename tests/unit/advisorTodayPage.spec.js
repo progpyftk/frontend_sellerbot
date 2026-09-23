@@ -90,7 +90,7 @@ describe('AdvisorTodayPage', () => {
 
   it('responde primeiro se algo saiu do piso, com margem e lucro mínimos', async () => {
     const texto = (await montar()).text();
-    expect(texto).toContain('Nenhum preço saiu abaixo do piso');
+    expect(texto).toContain('Nenhum preço saiu abaixo do mínimo');
     expect(texto).toContain('30,2%');
     expect(texto).toContain('R$ 12,32');
   });
@@ -100,7 +100,7 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('anúncios alterados hoje');
     expect(texto).toContain('já estavam no preço-alvo');
     expect(texto).toContain('aguardando confirmação do ML');
-    expect(texto).toContain('MOGIVITTA · leva de 10');
+    expect(texto).toContain('MOGIVITTA · rodadas de 10');
   });
 
   it('não soma contas com escrita desligada em "não mexeu"', async () => {
@@ -143,7 +143,7 @@ describe('AdvisorTodayPage', () => {
     const texto = (await montar(payload)).text();
     expect(texto).toContain('Nenhum anúncio foi avaliado hoje');
     expect(texto).toContain('Nenhuma conta do Mercado Livre entrou no ciclo de hoje');
-    expect(texto).not.toContain('Nenhum preço saiu abaixo do piso');
+    expect(texto).not.toContain('Nenhum preço saiu abaixo do mínimo');
     expect(texto).not.toContain('Pausar toda a escrita');   // sem conta, não há o que pausar
   });
 
@@ -158,7 +158,7 @@ describe('AdvisorTodayPage', () => {
     const texto = (await montar(payload)).text();
     expect(texto).toContain('Não foi possível ler o trabalho de hoje');
     expect(texto).toContain('NÃO são confiáveis');
-    expect(texto).not.toContain('Nenhum preço saiu abaixo do piso');
+    expect(texto).not.toContain('Nenhum preço saiu abaixo do mínimo');
   });
 
   it('sem escrita hoje não atesta proteção (nada foi aplicado)', async () => {
@@ -171,7 +171,7 @@ describe('AdvisorTodayPage', () => {
     const texto = (await montar(payload)).text();
     expect(texto).toContain('Nenhum preço foi alterado hoje');
     expect(texto).toContain('sem escrita hoje, não há preço para proteger');
-    expect(texto).not.toContain('Nenhum preço saiu abaixo do piso');
+    expect(texto).not.toContain('Nenhum preço saiu abaixo do mínimo');
   });
 
   it('mostra o kill switch ligado, mesmo com conta autorizada', async () => {
@@ -182,7 +182,7 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('interruptor de emergência');
     // com o kill switch ligado o robô NÃO está autorizado: o card não pode anunciar a conta ativa
     expect(texto).toContain('nenhuma conta ligada');
-    expect(texto).not.toContain('MOGIVITTA · leva de 10');
+    expect(texto).not.toContain('MOGIVITTA · rodadas de 10');
   });
 
   it('não mostra o ciclo de ontem como se fosse o de hoje', async () => {
@@ -241,7 +241,7 @@ describe('AdvisorTodayPage', () => {
     const wrapper = await montar(payload);
     expect(wrapper.text()).toContain('Esperando você');
     expect(wrapper.text()).toContain('da conta MOGIVITTA');
-    expect(wrapper.text()).toContain('leva de 10');
+    expect(wrapper.text()).toContain('rodadas de 10');
 
     await wrapper.vm.aprovarLeva();
     expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', canary_approved: true });
@@ -253,7 +253,7 @@ describe('AdvisorTodayPage', () => {
 
     const texto = (await montar(payload)).text();
     expect(texto).toContain('Esperando você');
-    expect(texto).toContain('está em modo de primeira leva (canário) esperando o seu aval');
+    expect(texto).toContain('está na primeira rodada, esperando o seu aval');
   });
 
   it('diz QUAL erro o ciclo teve, não só quantos', async () => {

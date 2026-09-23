@@ -105,7 +105,7 @@ test.describe('PROMO-IA-22 · superfície Anúncios', () => {
     // Números do catálogo (escopo inteiro), não da página paginada.
     const metrica = (rotulo) => page.locator('.adv-metric').filter({ hasText: rotulo })
     await expect(metrica('anúncios no catálogo')).toContainText('753')
-    await expect(metrica('abaixo do piso')).toContainText('56')
+    await expect(metrica('abaixo do mínimo')).toContainText('56')
     await expect(metrica('com promoção ativa')).toContainText('512')
 
     // Hierarquia do preset padrão ("Assistente"): o que fazer vem antes de quanto custou.
@@ -118,7 +118,7 @@ test.describe('PROMO-IA-22 · superfície Anúncios', () => {
 
     // Linha com dado real e estado explicado (cor nunca é a única informação).
     await expect(primeiraLinha(page)).toContainText('Ureia 25kg')
-    await expect(primeiraLinha(page)).toContainText('Bloqueado: piso')
+    await expect(primeiraLinha(page)).toContainText('Venda abaixo do mínimo')
     await expect(primeiraLinha(page)).toContainText('Sem ação')
   })
 
@@ -229,7 +229,7 @@ test.describe('PROMO-IA-22 · superfície Hoje', () => {
     await expect(page.getByRole('link', { name: 'Automação' })).toBeVisible()
 
     // a resposta que dá paz vem antes de tudo
-    await expect(page.getByText('Nenhum preço saiu abaixo do piso').first()).toBeVisible()
+    await expect(page.getByText('Nenhum preço saiu abaixo do mínimo').first()).toBeVisible()
     await expect(page.getByText(/R\$\s*12,32/).first()).toBeVisible()
 
     // métricas com unidade
@@ -323,7 +323,7 @@ test.describe('PROMO-IA-22 · superfície Automação', () => {
     await expect(page.locator('.aut__contas')).toContainText('MOGIVITTA')
     await expect(page.locator('.aut__contas')).toContainText('AGF_ORGANICS')
     // conta em canário: o dono vê o portão e o botão de aprovar
-    await expect(page.locator('.aut__canario')).toContainText('Primeira leva esperando o seu aval')
+    await expect(page.locator('.aut__canario')).toContainText('Primeira rodada esperando o seu aval')
     // alerta SMART é sinalização, não escrita
     await expect(page.locator('.aut__alertas')).toContainText('abaixo do limite de 25,0%')
 
@@ -333,7 +333,7 @@ test.describe('PROMO-IA-22 · superfície Automação', () => {
     await expect(corpo).toContainText('Uma escrita por anúncio por dia')
     await expect(corpo).toContainText('09:00 (Brasília)')
     await expect(corpo).toContainText('Glossário')
-    await expect(corpo).toContainText('Portão')
+    await expect(corpo).toContainText('Aval')
   })
 
   test('a pausa de emergência pede confirmação antes de agir', async ({ page }) => {

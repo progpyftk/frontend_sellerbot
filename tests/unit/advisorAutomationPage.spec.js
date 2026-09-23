@@ -104,7 +104,7 @@ describe('AdvisorAutomationPage', () => {
     expect(texto).toContain('R$ 20,00 por venda');   // piso vigente (PROMO-IA-23)
     expect(texto).toContain('Uma escrita por anúncio por dia');
     expect(texto).toContain('Glossário');
-    expect(texto).toContain('Portão');
+    expect(texto).toContain('Aval');
   });
 
   it('desligar uma conta grava só aquela conta e relê o estado', async () => {
@@ -142,7 +142,7 @@ describe('AdvisorAutomationPage', () => {
     await flushPromises();
 
     expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', wave_size: 20 });
-    expect(wrapper.text()).toContain('leva de 20 anúncios');
+    expect(wrapper.text()).toContain('rodada de 20 anúncios');
   });
 
   it('piso de margem igual ao já resolvido não gasta gravação', async () => {
@@ -171,7 +171,7 @@ describe('AdvisorAutomationPage', () => {
     await flushPromises();
 
     expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', floor_margin_pct: 35 });
-    expect(wrapper.text()).toContain('piso de margem agora é 35%');
+    expect(wrapper.text()).toContain('margem mínima agora é 35%');
   });
 
   it('um preset preenche os 4 campos principais numa única gravação', async () => {
@@ -206,7 +206,7 @@ describe('AdvisorAutomationPage', () => {
       },
     };
     const wrapper = await montar(payload);
-    expect(wrapper.text()).toContain('Suas contas têm pisos diferentes');
+    expect(wrapper.text()).toContain('Suas contas têm mínimos diferentes');
   });
 
   it('a pausa de emergência exige confirmação e diz que nada foi desfeito', async () => {

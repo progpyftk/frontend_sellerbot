@@ -90,7 +90,7 @@ describe('AdvisorCatalogPage', () => {
     const texto = (await montar()).texto();
     expect(texto).toContain('anúncios no catálogo');
     expect(texto).toContain('753');
-    expect(texto).toContain('abaixo do piso');
+    expect(texto).toContain('abaixo do mínimo');
     expect(texto).toContain('56');
     expect(texto).toContain('com promoção ativa');
     expect(texto).toContain('512');
@@ -101,7 +101,7 @@ describe('AdvisorCatalogPage', () => {
     expect(texto).toContain('Ureia 25kg');
     expect(texto).toContain('R$ 100,00');
     expect(texto).toContain('18,4%');
-    expect(texto).toContain('Bloqueado: piso');
+    expect(texto).toContain('Venda abaixo do mínimo');
   });
 
   it('traduz a última ação do robô (agent_last é objeto, não data)', async () => {
@@ -185,15 +185,15 @@ describe('AdvisorCatalogPage', () => {
   });
 
   it('explica cada rótulo da tabela com a regra', async () => {
-    // "Bloqueado: piso" e "Baixo giro" não dizem nada a quem não escreveu a régua.
+    // Rótulos em linguagem do negócio (PROMO-IA-46): o dono entende sem saber a regra.
     const texto = (await montar()).texto();
     expect(texto).toContain('O que significa cada rótulo');
-    expect(texto).toContain('Bloqueado: piso');
-    expect(texto).toContain('margem abaixo de 30% ou o lucro abaixo de R$ 20');
-    expect(texto).toContain('Giro baixo');   // rotulo vigente da situacao
-    expect(texto).toContain('revisar o anúncio (SEO, completude e fotos)');
-    expect(texto).toContain('Sem ação');
-    expect(texto).toContain('Alvo do giro médio');
+    expect(texto).toContain('Venda abaixo do mínimo');
+    expect(texto).toContain('margem ou o lucro abaixo do mínimo da sua conta');
+    expect(texto).toContain('Poucas vendas');   // rotulo vigente da situacao
+    expect(texto).toContain('revisar o anúncio (busca, descrição e fotos)');
+    expect(texto).toContain('Corrigir custo ou preço-base');
+    expect(texto).toContain('Alvo para vendas médias');
   });
 
   it('erro tem estado próprio e não parece lista vazia', async () => {
