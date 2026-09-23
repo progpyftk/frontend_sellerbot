@@ -128,7 +128,7 @@
                 <td>
                   <q-btn flat dense no-caps size="sm" icon="open_in_new" label="abrir"
                          :aria-label="`Abrir o anúncio ${w.item_id}`"
-                         @click="$router.push({ name: 'promotions-advisor-anuncios', query: { item: w.item_id } })" />
+                         @click="$router.push({ name: 'promotions-advisor', query: { item: w.item_id } })" />
                 </td>
               </tr>
             </tbody>

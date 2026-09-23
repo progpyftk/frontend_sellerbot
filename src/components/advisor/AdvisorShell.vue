@@ -27,19 +27,25 @@
 
     <p v-if="pergunta" class="adv-shell__question">{{ pergunta }}</p>
 
+    <!-- PROMO-IA-45: estado do robô sempre visível, em qualquer aba. -->
+    <AdvisorStatusStrip />
+
     <main class="adv-shell__body"><slot /></main>
   </q-page>
 </template>
 
 <script setup>
+import AdvisorStatusStrip from 'src/components/advisor/AdvisorStatusStrip.vue';
+
 defineProps({
-  active: { type: String, required: true },      // hoje | anuncios | automacao
+  active: { type: String, required: true },      // analises | hoje | automacao
   pergunta: { type: String, default: '' },       // a pergunta que esta superfície responde
 });
 
+// PROMO-IA-45: Análises vira a primeira aba (o retrato completo por anúncio).
 const tabs = [
-  { name: 'hoje', to: { name: 'promotions-advisor' }, label: 'Hoje', icon: 'today' },
-  { name: 'anuncios', to: { name: 'promotions-advisor-anuncios' }, label: 'Anúncios', icon: 'list_alt' },
+  { name: 'analises', to: { name: 'promotions-advisor' }, label: 'Análises', icon: 'analytics' },
+  { name: 'hoje', to: { name: 'promotions-advisor-hoje' }, label: 'Hoje', icon: 'today' },
   { name: 'automacao', to: { name: 'promotions-advisor-automacao' }, label: 'Automação', icon: 'settings_suggest' },
 ];
 </script>

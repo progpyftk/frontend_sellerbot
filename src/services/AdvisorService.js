@@ -32,4 +32,9 @@ export default {
   enqueueForReview(payload) {
     return api.post('/mercadolivre/seo-review/enqueue/', payload);
   },
+
+  /** PROMO-IA-45: detalhe do anúncio para o drawer (ofertadas/ativas/programadas/histórico). */
+  getItemDetail(itemId) {
+    return api.get(`/mercadolivre/promo-overview/${itemId}/`);
+  },
 };

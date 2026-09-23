@@ -60,7 +60,7 @@
             <div class="nav-children" :class="expandedSections.includes(si) && 'nav-children--open'">
               <router-link v-for="item in section.items" :key="item.route" :to="{ name: item.route }" custom
                 v-slot="{ isActive, navigate }">
-                <button :class="['nav-item', isActive && 'nav-item--active']" @click="navigate">
+                <button :class="['nav-item', (isActive || item.route === route.meta?.menu) && 'nav-item--active']" @click="navigate">
                   <span class="nav-icon-wrap">
                     <q-icon :name="item.icon" size="15px" />
                   </span>
@@ -249,8 +249,10 @@ const menuSections = [
 ]
 
 // A seção da rota ativa já abre expandida, para a função em uso não ficar escondida.
+// `meta.menu` (PROMO-IA-45): rotas irmãs do advisor marcam o item do sidebar pelo menu,
+// não pelo nome exato da rota — antes só a rota raiz ficava ativa.
 const activeSectionIndex = menuSections.findIndex((section) =>
-  section.items.some((item) => item.route === route.name),
+  section.items.some((item) => item.route === route.name || item.route === route.meta?.menu),
 )
 const expandedSections = ref([...new Set([0, 1, activeSectionIndex].filter((index) => index >= 0))])
 const toggleSection = (i) => {
