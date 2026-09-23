@@ -16,6 +16,7 @@ const getCatalog = vi.fn();
 const getItemDetail = vi.fn();
 const getAutomation = vi.fn();
 const patchAutomation = vi.fn();
+const enqueueForReview = vi.fn();
 const replace = vi.fn();
 
 vi.mock('src/services/AdvisorService', () => ({
@@ -24,6 +25,7 @@ vi.mock('src/services/AdvisorService', () => ({
     getItemDetail: (...a) => getItemDetail(...a),
     getAutomation: (...a) => getAutomation(...a),
     patchAutomation: (...a) => patchAutomation(...a),
+    enqueueForReview: (...a) => enqueueForReview(...a),
   },
 }));
 
@@ -108,6 +110,9 @@ async function montar(payload = PAYLOAD, query = {}) {
   return wrapper;
 }
 
+/** O debounce da busca é de 300 ms; esperar um pouco mais deixa a chamada sair. */
+const aposDebounce = () => new Promise((resolve) => setTimeout(resolve, 360));
+
 describe('AdvisorAnalysisPage', () => {
   beforeEach(() => {
     getCatalog.mockReset();
@@ -185,5 +190,39 @@ describe('AdvisorAnalysisPage', () => {
     expect(texto).toContain('Escrevendo agora: MOGIVITTA');
     expect(texto).toContain('próxima execução');
     expect(texto).toContain('Pausar toda a escrita');
+  });
+
+  it('a dupla mostra selo "Poucas vendas" e o drawer envia para revisão (PROMO-IA-47, portado)', async () => {
+    const duplaRow = {
+      ...LINHA, item_id: 'MLB3', health: 'parado', below_min: true,
+      health_info: { units_per_week: 0 }, title: 'Perlita 5L',
+    };
+    const wrapper = await montar({ ...PAYLOAD, total: 1, results: [duplaRow] }, { item: 'MLB3' });
+    expect(wrapper.texto()).toContain('Poucas vendas');
+
+    enqueueForReview.mockResolvedValue({ data: { success: true, enqueued: [{ item_id: 'MLB3' }] } });
+    const botao = wrapper.find('.adv-drawer').findAll('button')
+      .find((b) => b.text().includes('Enviar para revisão'));
+    expect(botao).toBeTruthy();
+    await botao.trigger('click');
+    await flushPromises();
+
+    expect(enqueueForReview).toHaveBeenCalledWith({
+      item_ids: ['MLB3'], reason: 'abaixo do mínimo + poucas vendas',
+    });
+    expect(wrapper.texto()).toContain('Anúncios · Revisão SEO');
+  });
+
+  it('o filtro "Abaixo do mínimo e poucas vendas" manda below_min + health=parado,fraco (PROMO-IA-47, portado)', async () => {
+    const wrapper = await montar();
+    getCatalog.mockClear();
+
+    wrapper.vm.filtros.soDupla = true;
+    await aposDebounce();
+    await flushPromises();
+
+    expect(getCatalog).toHaveBeenCalledWith(expect.objectContaining({
+      below_min: 'true', health: 'parado,fraco',
+    }));
   });
 });

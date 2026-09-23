@@ -50,6 +50,7 @@ const DETALHE = {
 const stubs = {
   'q-icon': true,
   'q-btn': { template: '<button @click="$emit(\'click\')"><slot />{{ label }}</button>', props: ['label'] },
+  'router-link': { template: '<a><slot /></a>' },
 };
 
 const montar = (props = {}) => mount(AdvisorItemDrawer, {
@@ -91,5 +92,13 @@ describe('AdvisorItemDrawer', () => {
     const comErro = montar({ detalhe: null, erro: 'Fila indisponível' });
     expect(comErro.text()).toContain('Fila indisponível');
     expect(comErro.text()).not.toContain('Dados do anúncio');
+  });
+
+  it('tem o botão de enviar para revisão e mostra o estado enviado (PROMO-IA-47, portado)', () => {
+    const emviado = montar({ revisaoEstado: 'enviado' });
+    expect(emviado.text()).toContain('Enviar para revisão');
+    expect(emviado.text()).toContain('Anúncios · Revisão SEO');
+    const comErro = montar({ revisaoEstado: 'erro', revisaoMensagem: 'Fila cheia' });
+    expect(comErro.text()).toContain('Fila cheia');
   });
 });

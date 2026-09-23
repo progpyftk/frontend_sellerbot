@@ -10,6 +10,19 @@
       <q-btn flat dense no-caps icon="close" label="fechar" @click="$emit('fechar')" />
     </header>
 
+    <!-- PROMO-IA-47 (portado): entrada manual na fila de revisão — a decisão continua
+         com o dono em "Anúncios · Revisão SEO". -->
+    <div v-if="detalhe" class="adv-drawer__acoes">
+      <q-btn unelevated no-caps color="primary" icon="playlist_add"
+             label="Enviar para revisão" :loading="revisaoEstado === 'enviando'"
+             :disable="revisaoEstado === 'enviado'" @click="$emit('enviar-revisao')" />
+      <p v-if="revisaoEstado === 'erro'" class="adv-drawer__erro" role="alert">{{ revisaoMensagem }}</p>
+      <p v-if="revisaoEstado === 'enviado'" class="adv-drawer__nota" role="status">
+        Enfileirado para revisão — você decide o que aplicar em
+        <router-link :to="{ name: 'items-seo-review' }">Anúncios · Revisão SEO</router-link>.
+      </p>
+    </div>
+
     <p v-if="erro" class="adv-drawer__erro" role="alert">{{ erro }}</p>
     <p v-else-if="carregando" class="adv-drawer__nota" role="status">Carregando o retrato do anúncio…</p>
 
@@ -121,8 +134,10 @@ const props = defineProps({
   detalhe: { type: Object, default: null },
   carregando: { type: Boolean, default: false },
   erro: { type: String, default: '' },
+  revisaoEstado: { type: String, default: '' },   // '' | enviando | enviado | erro
+  revisaoMensagem: { type: String, default: '' },
 });
-defineEmits(['fechar']);
+defineEmits(['fechar', 'enviar-revisao']);
 
 const item = computed(() => props.detalhe?.item || null);
 const promos = computed(() => props.detalhe?.promotions || {});
@@ -250,5 +265,15 @@ function dataHora(iso) {
 
   &__nota { margin: 0; font-size: $text-xs-size; color: $text-muted; }
   &__erro { margin: 0; font-size: $text-small-size; color: $negative; }
+
+  &__acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $space-3;
+    margin-bottom: $space-4;
+
+    a { color: $primary; }
+  }
 }
 </style>

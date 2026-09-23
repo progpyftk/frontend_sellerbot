@@ -39,6 +39,7 @@
         />
         <q-toggle v-model="filtros.soAbaixoDoPiso" dense label="Só abaixo do mínimo" />
         <q-toggle v-model="filtros.soComPromocao" dense label="Só com promoção" />
+        <q-toggle v-model="filtros.soDupla" dense label="Abaixo do mínimo e poucas vendas" />
         <q-btn v-if="filtrosAtivos" flat dense no-caps icon="filter_alt_off" label="Limpar filtros" @click="limparFiltros" />
       </div>
 
@@ -91,6 +92,12 @@
           <template #cell-classificacao="{ row }">
             <span class="an__saude">{{ HEALTH_META[row.health]?.label || '—' }}</span>
             <span class="an__situacao">{{ situationOf(row)?.label || '—' }}</span>
+            <!-- PROMO-IA-47 (portado): a dupla ganha selo extra — antes "Revisar anúncio"
+                 sumia sob o alerta de mínimo. -->
+            <AdvisorStatusPill v-if="dupla(row)" status="recusado"
+                               title="Poucas vendas E abaixo do mínimo: além do preço, este anúncio precisa de revisão (descrição, SEO, fotos e atributos).">
+              Poucas vendas
+            </AdvisorStatusPill>
           </template>
 
           <template #cell-preco="{ row }">{{ brl(row.price) }}</template>
@@ -138,7 +145,8 @@
     <AdvisorItemDrawer
       v-if="expandido"
       :detalhe="detalhe" :carregando="detalheCarregando" :erro="detalheErro"
-      @fechar="fecharDetalhe"
+      :revisao-estado="revisaoEstado" :revisao-mensagem="revisaoMensagem"
+      @fechar="fecharDetalhe" @enviar-revisao="enviarParaRevisao"
     />
   </AdvisorShell>
 </template>
@@ -151,12 +159,13 @@ import AdvisorEmptyState from 'src/components/advisor/AdvisorEmptyState.vue';
 import AdvisorItemDrawer from 'src/components/advisor/AdvisorItemDrawer.vue';
 import AdvisorSection from 'src/components/advisor/AdvisorSection.vue';
 import AdvisorShell from 'src/components/advisor/AdvisorShell.vue';
+import AdvisorStatusPill from 'src/components/advisor/AdvisorStatusPill.vue';
 import AdvisorTable from 'src/components/advisor/AdvisorTable.vue';
 import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import AdvisorService from 'src/services/AdvisorService';
 import {
   HEALTH_META, LEGENDARIO_SITUACOES, SITUATION_META,
-  brl, emptyCellReason, pct, situationOf,
+  brl, emptyCellReason, isBelowMin, pct, poucasVendas, situationOf,
 } from 'src/utils/advisorDecision';
 
 const {
@@ -217,6 +226,35 @@ const leadLista = computed(() => (recorte.value
 const detalhe = ref(null);
 const detalheCarregando = ref(false);
 const detalheErro = ref('');
+const revisaoEstado = ref('');     // '' | enviando | enviado | erro
+const revisaoMensagem = ref('');
+
+/** PROMO-IA-47 (portado): a dupla — abaixo do mínimo E poucas vendas. */
+function dupla(row) {
+  return isBelowMin(row) && poucasVendas(row);
+}
+
+/**
+ * PROMO-IA-47 (portado): manda o anúncio para a fila de revisão (entrada manual).
+ * Não escreve no Mercado Livre — a decisão de aplicar fica em "Anúncios · Revisão SEO".
+ */
+async function enviarParaRevisao() {
+  if (!expandido.value) return;
+  revisaoEstado.value = 'enviando';
+  revisaoMensagem.value = '';
+  try {
+    await AdvisorService.enqueueForReview({
+      item_ids: [expandido.value],
+      reason: 'abaixo do mínimo + poucas vendas',
+    });
+    revisaoEstado.value = 'enviado';
+  } catch (err) {
+    revisaoEstado.value = 'erro';
+    revisaoMensagem.value = err?.response?.data?.detail
+      || err?.response?.data?.error
+      || 'Não foi possível enfileirar para revisão.';
+  }
+}
 
 function abrirDetalhe(row) {
   const id = row?.item_id;
@@ -229,6 +267,8 @@ function abrirDetalhe(row) {
   router.replace({ query: { ...route.query, item: id } });
   detalhe.value = null;
   detalheErro.value = '';
+  revisaoEstado.value = '';
+  revisaoMensagem.value = '';
   detalheCarregando.value = true;
   AdvisorService.getItemDetail(id)
     .then(({ data }) => { detalhe.value = data; })
@@ -242,6 +282,8 @@ function fecharDetalhe() {
   expandido.value = null;
   detalhe.value = null;
   detalheErro.value = '';
+  revisaoEstado.value = '';
+  revisaoMensagem.value = '';
   const query = { ...route.query };
   delete query.item;
   router.replace({ query });
