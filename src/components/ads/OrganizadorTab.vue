@@ -47,7 +47,17 @@
             :status="tomDoTacos(conta.termometro_tacos)"
             :label="`TACOS ${fmtPct(conta.termometro_tacos.valor_pct)}`"
           />
+          <button
+            class="org__btn org__btn--sync"
+            :disabled="sincronizando"
+            @click="sincronizar(conta.conta)"
+          >
+            <q-icon :name="sincronizando ? 'hourglass_empty' : 'sync'" size="14px" />
+            {{ sincronizando ? 'sincronizando…' : 'Sincronizar Ads' }}
+          </button>
         </header>
+
+        <p v-if="sincMensagem[conta.conta]" class="org__sincMsg">{{ sincMensagem[conta.conta] }}</p>
 
         <!-- Bloco 1 — diagnóstico estrutural -->
         <AdvisorSection title="Como está hoje" :lead="leadDoDiagnostico(conta)">
@@ -75,10 +85,10 @@
               hint="Pareto de venda 80/15/5"
             />
             <AdvisorMetric
-              :value="`${aplicadas(conta)} de ${conta.campanhas_sugeridas.length}`"
-              label="campanhas já aplicadas"
-              hint="o alvo é chegar em 100%"
-              :variant="aplicadas(conta) === conta.campanhas_sugeridas.length ? 'ok' : 'neutral'"
+              :value="`${feitas(conta)} de ${conta.campanhas_sugeridas.length}`"
+              label="campanhas já criadas"
+              :hint="dicaDoProgresso(conta)"
+              :variant="feitas(conta) === conta.campanhas_sugeridas.length ? 'ok' : 'neutral'"
             />
           </div>
         </AdvisorSection>
@@ -91,6 +101,10 @@
         >
           <template #action>
             <div class="org__acoes">
+              <label class="org__filtro">
+                <input type="checkbox" v-model="soFaltam" />
+                só as que faltam
+              </label>
               <button class="org__btn" @click="baixarCsv(conta)">Baixar CSV</button>
               <button class="org__btn" @click="baixarMarkdown(conta)">Baixar checklist</button>
             </div>
@@ -109,7 +123,7 @@
           <AdvisorTable
             v-else
             :columns="colunas"
-            :rows="conta.campanhas_sugeridas"
+            :rows="linhasVisiveis(conta)"
             :campos-cartao="camposCartao"
             row-key="nome"
             :legenda="`${conta.conta} — período de ${periodoBr}`"
@@ -119,12 +133,20 @@
 
             <template #cell-nome="{ row }">
               <div class="org__celNome">
+                <input
+                  v-if="!row.ja_existe"
+                  type="checkbox"
+                  class="org__check"
+                  :checked="marcada(conta.conta, row.nome)"
+                  :title="marcada(conta.conta, row.nome) ? 'Desmarcar' : 'Marcar como criada'"
+                  @click.stop="alternarMarca(conta.conta, row.nome)"
+                />
                 <AdvisorStatusPill
                   v-if="row.ja_existe"
                   status="aplicado"
                   label="aplicada"
                 />
-                <span class="org__nome">{{ row.nome }}</span>
+                <span class="org__nome" :class="{ 'org__nome--feita': marcada(conta.conta, row.nome) }">{{ row.nome }}</span>
                 <button class="org__copy" :title="`Copiar ${row.nome}`" @click.stop="copiar(row.nome)">
                   <q-icon name="content_copy" size="13px" />
                 </button>
@@ -304,6 +326,45 @@ const camposCartao = colunas.filter((c) => c.key !== 'nome');
 
 const carregando = ref(false);
 const erro = ref('');
+const sincronizando = ref(false);
+const sincMensagem = ref({});
+const soFaltam = ref(false);
+
+// Marcação manual de "já criei esta campanha no painel do ML".
+//
+// Existe porque o sync de Ads roda de 4 em 4 horas: sem isto, o dono cria trinta
+// campanhas numa sessão e o contador fica em zero o tempo todo. A marca é conveniência
+// local, guardada no navegador — o dado real sempre vence: assim que o sync confirma,
+// a linha passa a mostrar "aplicada" e a marca deixa de importar.
+const CHAVE_MARCAS = 'sellerbot.organizador.criadas';
+const marcas = ref(carregarMarcas());
+
+function carregarMarcas() {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE_MARCAS) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function salvarMarcas() {
+  try {
+    localStorage.setItem(CHAVE_MARCAS, JSON.stringify(marcas.value));
+  } catch {
+    // Navegador em modo privado ou storage bloqueado: a marcação some ao recarregar,
+    // e a tela continua funcionando com o que vem do servidor.
+  }
+}
+
+const marcada = (conta, nome) => Boolean(marcas.value[`${conta}|${nome}`]);
+
+function alternarMarca(conta, nome) {
+  const chave = `${conta}|${nome}`;
+  if (marcas.value[chave]) delete marcas.value[chave];
+  else marcas.value[chave] = true;
+  marcas.value = { ...marcas.value };
+  salvarMarcas();
+}
 const payload = ref(null);
 const detalhe = ref(null);
 const detalheAberto = ref(false);
@@ -348,6 +409,82 @@ carregar();
 // ── Apresentação ──────────────────────────────────────────────────────────
 function aplicadas(conta) {
   return conta.campanhas_sugeridas.filter((c) => c.ja_existe).length;
+}
+
+// "Feita" é confirmada pelo sync OU marcada à mão. As duas contam para o progresso,
+// mas a dica separa as duas coisas, para o dono nunca confundir marca com confirmação.
+function feitas(conta) {
+  return conta.campanhas_sugeridas.filter(
+    (c) => c.ja_existe || marcada(conta.conta, c.nome),
+  ).length;
+}
+
+function dicaDoProgresso(conta) {
+  const confirmadas = aplicadas(conta);
+  const manuais = feitas(conta) - confirmadas;
+  if (!manuais) return 'confirmadas pelo sync';
+  return `${confirmadas} confirmadas pelo sync + ${manuais} marcadas à mão`;
+}
+
+function linhasVisiveis(conta) {
+  if (!soFaltam.value) return conta.campanhas_sugeridas;
+  return conta.campanhas_sugeridas.filter(
+    (c) => !c.ja_existe && !marcada(conta.conta, c.nome),
+  );
+}
+
+async function sincronizar(nickname) {
+  sincronizando.value = true;
+  sincMensagem.value = { ...sincMensagem.value, [nickname]: '' };
+  try {
+    const { data } = await api.post('/mercadolivre/ads/advisor/sincronizar/', {
+      accounts: [nickname],
+    });
+    if (data.enfileiradas) {
+      sincMensagem.value = {
+        ...sincMensagem.value,
+        [nickname]:
+          'Sincronização enfileirada. Leva alguns minutos; a tela se atualiza sozinha quando terminar.',
+      };
+      aguardarSync(nickname);
+    } else {
+      const motivo = data.ignoradas?.[0]?.motivo || 'nada a sincronizar';
+      sincMensagem.value = { ...sincMensagem.value, [nickname]: `Não enfileirado: ${motivo}.` };
+      sincronizando.value = false;
+    }
+  } catch (e) {
+    sincMensagem.value = {
+      ...sincMensagem.value,
+      [nickname]: 'Não foi possível pedir a sincronização agora.',
+    };
+    sincronizando.value = false;
+  }
+}
+
+// O sync é assíncrono (Cloud Tasks). Em vez de mandar o dono ficar apertando F5, a tela
+// acompanha o `vinculo_sincronizado_em`: quando ele muda, o worker terminou.
+function aguardarSync(nickname) {
+  const marcoInicial = payload.value?.confianca?.vinculo_sincronizado_em;
+  let tentativas = 0;
+  const timer = setInterval(async () => {
+    tentativas += 1;
+    await carregar();
+    const agora = payload.value?.confianca?.vinculo_sincronizado_em;
+    if (agora && agora !== marcoInicial) {
+      clearInterval(timer);
+      sincronizando.value = false;
+      sincMensagem.value = { ...sincMensagem.value, [nickname]: 'Sincronizado agora.' };
+    } else if (tentativas >= 20) {
+      // ~5 minutos. Desistir de esperar não é desistir do sync: ele pode terminar
+      // depois, e o próximo carregamento da tela vai pegar.
+      clearInterval(timer);
+      sincronizando.value = false;
+      sincMensagem.value = {
+        ...sincMensagem.value,
+        [nickname]: 'A sincronização está demorando. Recarregue daqui a pouco.',
+      };
+    }
+  }, 15000);
 }
 
 function leadDoDiagnostico(conta) {
@@ -525,7 +662,34 @@ const dataBr = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
     font-size: $text-small-size;
   }
 
+  &__btn--sync {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-1;
+
+    &:disabled { opacity: .55; cursor: default; }
+  }
+
+  &__sincMsg {
+    margin: 0 0 $space-3;
+    font-size: $text-xs-size;
+    color: $text-muted;
+  }
+
+  &__filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-1;
+    font-size: $text-xs-size;
+    color: $text-muted;
+    cursor: pointer;
+  }
+
+  &__check { cursor: pointer; accent-color: $primary; }
+
   &__celNome { display: flex; align-items: center; gap: $space-2; }
+
+  &__nome--feita { text-decoration: line-through; color: $text-muted; }
   &__nome { font-weight: $font-medium; color: $text-primary; }
 
   &__mlbs { display: flex; flex-direction: column; gap: 2px; }
