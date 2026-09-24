@@ -107,7 +107,7 @@
             />
           </td>
           <td class="c-type">
-            {{ p.typeLabel || p.promotion_type }}
+            <span :title="p.typeTooltip || undefined">{{ p.typeLabel || p.promotion_type }}</span>
             <span v-if="entry(ad.row, p) && entry(ad.row, p)._touched" class="pa-sim" title="Valores simulados no navegador com o % que você digitou. O servidor revalida na ativação.">simulado</span>
           </td>
           <td class="c-disc">

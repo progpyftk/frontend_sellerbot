@@ -107,6 +107,14 @@ describe('AdvisorAutomationPage', () => {
     expect(texto).toContain('Aval');
   });
 
+  it('explica o preço automático do ML no glossário (PROMO-IA-58)', async () => {
+    // decisão do dono 24/09: manter intocáveis e deixar explicado no frontend
+    const texto = (await montar()).texto();
+    expect(texto).toContain('Preço automático do ML');
+    expect(texto).toContain('não escreve e não remove');
+    expect(texto).toContain('impede reajuste');
+  });
+
   it('desligar uma conta grava só aquela conta e relê o estado', async () => {
     const wrapper = await montar();
     getAutomation.mockClear();

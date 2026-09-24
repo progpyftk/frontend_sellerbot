@@ -6,9 +6,22 @@ const TYPE_META = {
   LIGHTNING: { label: 'Oferta relâmpago', color: 'red-1', textColor: 'red-9' },
   PRE_NEGOTIATED: { label: 'Desconto pré-acordado', color: 'blue-1', textColor: 'blue-9' },
   UNHEALTHY_STOCK: { label: 'Liquidação Full', color: 'brown-1', textColor: 'brown-9' },
-  SMART: { label: 'Campanha Smart', color: 'cyan-1', textColor: 'cyan-9' },
-  PRICE_MATCHING: { label: 'Preço competitivo', color: 'teal-1', textColor: 'teal-9' },
-  PRICE_MATCHING_MELI_ALL: { label: 'Preço competitivo ML', color: 'green-1', textColor: 'green-9' },
+  SMART: {
+    label: 'Campanha Smart', color: 'cyan-1', textColor: 'cyan-9',
+    tooltip: 'Preço automático do ML: o algoritmo do Mercado Livre define o preço/desconto. '
+      + 'O robô não escreve nem remove — mexer é brigar com o algoritmo — e só sinaliza margem '
+      + 'abaixo de 25%. É este preço automático que impede reajuste (decisão do dono).',
+  },
+  PRICE_MATCHING: {
+    label: 'Preço competitivo', color: 'teal-1', textColor: 'teal-9',
+    tooltip: 'Preço automático do ML (igualar o menor preço do mercado). O robô não escreve '
+      + 'nem remove — só sinaliza. Também impede reajuste.',
+  },
+  PRICE_MATCHING_MELI_ALL: {
+    label: 'Preço competitivo ML', color: 'green-1', textColor: 'green-9',
+    tooltip: 'Preço automático 100% financiado e gerenciado pelo ML. O robô não escreve nem '
+      + 'remove; o próprio ML pode reverter qualquer remoção.',
+  },
   SELLER_CAMPAIGN: { label: 'Campanha do seller', color: 'indigo-1', textColor: 'indigo-9' },
   SELLER_COUPON_CAMPAIGN: { label: 'Cupom do seller', color: 'pink-1', textColor: 'pink-9' },
   VOLUME: { label: 'Desconto por quantidade', color: 'blue-grey-1', textColor: 'blue-grey-9' },

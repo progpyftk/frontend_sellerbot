@@ -250,7 +250,7 @@ const GLOSSARIO = computed(() => [
   { nome: 'Confirmada', texto: 'Escrita conferida no Mercado Livre — o preço realmente mudou.' },
   { nome: 'Aguardando confirmação', texto: 'O robô enviou e o Mercado Livre ainda não confirmou; ele confere de novo depois.' },
   { nome: 'Recusada', texto: 'O Mercado Livre não aceitou a mudança; o preço ficou como estava.' },
-  { nome: 'SMART', texto: 'Anúncio cujo preço é definido pelo Mercado Livre. O robô só sinaliza a margem.' },
+  { nome: 'Preço automático do ML (SMART e PRICE_MATCHING)', texto: 'O preço destes anúncios é definido pelo algoritmo do Mercado Livre (desconto automático / igualar o menor preço). O robô não escreve e não remove essas campanhas — mexer é brigar com o algoritmo — e só sinaliza quando a margem cai abaixo de 25%. É este preço automático que impede reajuste.' },
   { nome: 'Saúde de vendas', texto: 'Parado (0 venda em 14 dias sob promoção), fraco (até 1/semana), médio (1 a 3) ou alto (3+).' },
 ]);
 

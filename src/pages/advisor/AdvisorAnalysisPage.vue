@@ -244,7 +244,7 @@
            já gerou dúvida do dono (a proteção segurou a escrita; o ML não bloqueou). -->
       <AdvisorSection
         title="O que significa cada resultado" tight
-        lead="A coluna Resultado mostra o que aconteceu de verdade com a última ação do robô no anúncio. Os critérios:"
+        lead="A coluna Resultado mostra o que aconteceu de verdade com a última ação do robô no anúncio. Bloqueios por preço automático do ML (SMART) não são erro: o robô sinaliza e não escreve, por decisão — o preço é do algoritmo dele, e é esse preço automático que impede reajuste. Os critérios:"
       >
         <dl class="an__legenda">
           <div v-for="item in LEGENDARIO_RESULTADOS" :key="item.key" class="an__legendaItem">

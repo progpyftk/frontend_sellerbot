@@ -316,6 +316,12 @@ describe('AdvisorAnalysisPage', () => {
     expect(texto).toContain('Sem escrita');
   });
 
+  it('a legenda explica o preço automático do ML (PROMO-IA-58)', async () => {
+    const texto = (await montar()).texto();
+    expect(texto).toContain('preço automático');
+    expect(texto).toContain('sinaliza e não escreve');
+  });
+
   it('o tooltip do ritmo traz a janela de 30 dias (PROMO-IA-52)', async () => {
     const wrapper = await montar();
     const titulos = wrapper.findAll('[title]').map((el) => el.attributes('title'));

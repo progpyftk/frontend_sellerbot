@@ -138,6 +138,7 @@ function normalizePromotion (raw) {
     promotion_type: type,
     name: raw.name || getPromotionTypeMeta(type).label,
     typeLabel: getPromotionTypeMeta(type).label,
+    typeTooltip: getPromotionTypeMeta(type).tooltip || '',
     status: raw.status || null,
     discount_pct: numberOrNull(raw.discount_pct ?? fin.discount_pct),
     price: numberOrNull(raw.price ?? fin.proposed_price),

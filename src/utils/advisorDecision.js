@@ -124,7 +124,7 @@ const RESULTADO_POR_ESTADO = {
 
 /** Motivo do bloqueio em linguagem de negócio (o `blocked_code` é do sistema). */
 const MOTIVO_BLOQUEIO = {
-  SMART_READ_ONLY: 'anúncio SMART: o preço é definido pelo ML — o robô só sinaliza, nunca escreve',
+  SMART_READ_ONLY: 'é preço automático do ML (SMART/PRICE_MATCHING): o preço é definido pelo algoritmo — o robô só sinaliza, nunca escreve nem remove (decisão do dono; mexer é brigar com o algoritmo)',
   ALREADY_WRITTEN_TODAY_ITEM: 'já houve escrita hoje neste anúncio (o robô escreve 1 vez por dia)',
   ALREADY_WRITTEN_TODAY: 'já houve escrita hoje nesta decisão (1 vez por dia)',
   WRITE_DISABLED: 'a escrita automática estava desligada',
