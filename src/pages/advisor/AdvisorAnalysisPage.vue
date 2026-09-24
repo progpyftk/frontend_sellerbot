@@ -186,7 +186,7 @@
             </span>
           </template>
           <template #cell-frete="{ row }">
-            <span :title="row.shipping_cost == null ? 'Sem dado: sem histórico de frete nem cotação para este anúncio.' : ''">
+            <span :title="row.shipping_cost == null ? 'Sem dado: sem histórico de frete nem cotação para este anúncio.' : 'Frete estimado por faixa de preço — em desconto profundo pode sair otimista; antes de escrever, o sistema cota o frete ao vivo.'">
               {{ brl(row.shipping_cost) }}
             </span>
           </template>
@@ -390,7 +390,7 @@ function alternarRecorte(key) {
   recorte.value = recorte.value === key ? null : key;
 }
 
-const legendaTabela = 'Uma linha por anúncio — o pipeline: classificação, situação da venda, decisão do agente e resultado. Clique para ver o processo completo.';
+const legendaTabela = 'Uma linha por anúncio — o pipeline: classificação, situação da venda, decisão do agente e resultado. Clique para ver o processo completo. Frete e margem são estimados por faixa de preço: em desconto profundo podem sair otimistas — a escrita cota o frete ao vivo e o mínimo é conferido antes de confirmar.';
 const leadLista = computed(() => (recorte.value
   ? `Recorte "${SITUATION_META[recorte.value]?.label || recorte.value}" — clique de novo no chip para ver todos.`
   : 'Clique numa linha para ver ofertadas, ativas, programadas, dados e histórico.'));
