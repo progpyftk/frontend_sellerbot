@@ -876,8 +876,10 @@
                       <td class="right warn">—</td>
                       <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
                       <td class="right warn">—</td>
-                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
-                      <td class="right">{{ pct(a.gross_profit, a.gmv) }}</td>
+                      <!-- B2 (FIN-32): "Após Ads" do TikTok = margem antes do Ads − Ads, o mesmo
+                           critério do ML/Shopee (que recebem `lucro_liquido` já líquido do backend). -->
+                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit - (a.ads_cost || 0)) : '—' }}</td>
+                      <td class="right">{{ pct(a.gross_profit != null ? a.gross_profit - (a.ads_cost || 0) : null, a.gmv) }}</td>
                   </tr>
               </template>
             </tbody>
@@ -2660,7 +2662,9 @@ const combinedOp = computed(() => {
     gmv:          tk.gmv,
     net_revenue:  tk.net_revenue,
     gross_profit: tk.gross_profit || 0,
-    lucro_liquido: tk.gross_profit || 0,
+    // B2 (FIN-32): desconta o Ads do TikTok, como o ML entrega em `lucro_liquido` e como
+    // `lucro_liquido_pct` abaixo já calculava — antes o número e o percentual discordavam.
+    lucro_liquido: (tk.gross_profit || 0) - (tk.ads_cost || 0),
     orders_count: tk.orders_count,
     avg_ticket:   tk.avg_ticket,
     units_sold:   tk.units_sold,
@@ -2676,7 +2680,8 @@ const combinedOp = computed(() => {
   const netRevenue = (ml?.net_revenue || 0) + (sh?.net_revenue || 0) + (tk?.net_revenue || 0)
   const grossProfit = (ml?.gross_profit || 0) + (sh?.gross_profit || 0) + (tk?.gross_profit || 0)
   const adsCost = (ml?.ads_cost || 0) + (sh?.ads_cost || 0) + (tk?.ads_cost || 0)
-  const lucroLiquido = (ml?.lucro_liquido || 0) + (sh?.lucro_liquido ?? sh?.gross_profit ?? 0) + (tk?.gross_profit || 0)
+  // B2 (FIN-32): o TikTok entra pelo lucro após Ads (gross_profit − ads_cost), como ML/Shopee.
+  const lucroLiquido = (ml?.lucro_liquido || 0) + (sh?.lucro_liquido ?? sh?.gross_profit ?? 0) + ((tk?.gross_profit || 0) - (tk?.ads_cost || 0))
   return {
     gmv,
     net_revenue:   netRevenue,
