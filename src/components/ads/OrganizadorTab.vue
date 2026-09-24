@@ -146,6 +146,8 @@
                   status="aplicado"
                   label="aplicada"
                 />
+                <span class="org__curva" :class="`org__curva--${row.curva.toLowerCase()}`"
+                  :title="`Curva ${row.curva}`">{{ row.curva }}</span>
                 <span class="org__nome" :class="{ 'org__nome--feita': marcada(conta.conta, row.nome) }">{{ row.nome }}</span>
                 <button class="org__copy" :title="`Copiar ${row.nome}`" @click.stop="copiar(row.nome)">
                   <q-icon name="content_copy" size="13px" />
@@ -688,6 +690,20 @@ const dataBr = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
   &__check { cursor: pointer; accent-color: $primary; }
 
   &__celNome { display: flex; align-items: center; gap: $space-2; }
+
+  // O nome da campanha deixou de carregar o prefixo A/B/C (ADSA-31, decisão do dono:
+  // nome é do produto). A curva vira selo: continua visível ao varrer a tabela, mas
+  // fica FORA do que o botão de copiar leva para o painel do Mercado Livre.
+  &__curva {
+    flex: 0 0 auto;
+    width: 18px; height: 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: $radius-sm;
+    font-size: 11px; font-weight: $font-bold;
+  }
+  &__curva--a { background: $tint-teal-bg;  color: $tint-teal-text; }
+  &__curva--b { background: $tint-sky-bg;   color: $tint-sky-text; }
+  &__curva--c { background: $tint-slate-bg; color: $tint-slate-text; }
 
   &__nome--feita { text-decoration: line-through; color: $text-muted; }
   &__nome { font-weight: $font-medium; color: $text-primary; }
