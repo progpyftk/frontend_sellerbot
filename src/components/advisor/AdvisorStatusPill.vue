@@ -20,6 +20,7 @@ const MAPA = {
   aguardando: { tone: 'neutral', icon: 'schedule' },
   divergente: { tone: 'danger', icon: 'error' },
   recusado: { tone: 'warn', icon: 'block' },
+  alerta: { tone: 'warn', icon: 'warning' },
   bloqueado: { tone: 'muted', icon: 'shield' },
   pausado: { tone: 'warn', icon: 'pause_circle' },
   ligado: { tone: 'ok', icon: 'smart_toy' },

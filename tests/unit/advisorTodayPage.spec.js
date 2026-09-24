@@ -34,6 +34,27 @@ const PAYLOAD = {
     started_at: '2026-09-11T12:00:00Z', status: 'partial', duration_seconds: 513,
     items_processed: 3, errors_count: 0, reconciled: 23, unreconciled: 2,
   },
+  historico: {
+    dias: [
+      { date: '2026-09-10', alterados: 0, ja_no_alvo: 0, nao_confirmados: 0, recusados: 0, bloqueados: 0 },
+      { date: '2026-09-11', alterados: 5, ja_no_alvo: 2, nao_confirmados: 1, recusados: 1, bloqueados: 3 },
+    ],
+    ontem: { date: '2026-09-11', alterados: 5, ja_no_alvo: 2, nao_confirmados: 1, recusados: 1, bloqueados: 3 },
+    janela_dias: 7,
+    alterados_janela: 5,
+  },
+  efeito_vendas: {
+    linhas: [
+      { item_id: 'MLB-EF1', acao: 'aprofundar', checkpoint_days: 7, margin_planned_pct: '41.0',
+        profit_planned_brl: '32.00', margin_pct: '37.5', profit_per_unit: '30.00', units: 3,
+        revenue: '240.00', below_floor: false, reason: '3 pedidos pagos', measured_at: '2026-09-18T10:00:00Z' },
+      { item_id: 'MLB-EF2', acao: 'reduzir', checkpoint_days: 7, margin_planned_pct: '30.5',
+        profit_planned_brl: '13.00', margin_pct: '22.1', profit_per_unit: '8.90', units: 1,
+        revenue: '40.00', below_floor: true, reason: '1 pedido pago', measured_at: '2026-09-18T10:00:00Z' },
+    ],
+    medidas: 2,
+    abaixo_do_piso: 1,
+  },
   by_account: {
     ACC1: {
       account_nickname: 'MOGIVITTA', auto_write: true, wave_size: 10, paused: false,
@@ -101,6 +122,33 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('já estavam no preço-alvo');
     expect(texto).toContain('aguardando confirmação do ML');
     expect(texto).toContain('MOGIVITTA · rodadas de 10');
+  });
+
+  it('PROMO-IA-35: mostra o histórico de ontem e dos 7 dias', async () => {
+    const texto = (await montar()).text();
+    expect(texto).toContain('Ontem e nos últimos 7 dias');
+    expect(texto).toContain('Ontem:');
+    // a barra do dia com escrita traz o valor; o dia zerado não mente (0)
+    expect(texto).toContain('11/09');
+    expect(texto).toContain('5');
+  });
+
+  it('PROMO-IA-35: mostra o efeito nas vendas com plano × realizado e marca abaixo do mínimo', async () => {
+    const texto = (await montar()).text();
+    expect(texto).toContain('Efeito nas vendas');
+    expect(texto).toContain('MLB-EF1');
+    expect(texto).toContain('MLB-EF2');
+    expect(texto).toContain('abaixo do mínimo');
+    expect(texto).toContain('ok');
+  });
+
+  it('PROMO-IA-35: sem medição o bloco de efeito não aparece (pendência não é efeito)', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.efeito_vendas = { linhas: [], medidas: 0, abaixo_do_piso: 0 };
+    payload.historico = { dias: [], ontem: null, janela_dias: 7, alterados_janela: 0 };
+    const texto = (await montar(payload)).text();
+    expect(texto).not.toContain('Efeito nas vendas');
+    expect(texto).not.toContain('Ontem e nos últimos 7 dias');
   });
 
   it('não soma contas com escrita desligada em "não mexeu"', async () => {

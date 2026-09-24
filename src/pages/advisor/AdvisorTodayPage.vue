@@ -142,6 +142,71 @@
         </p>
       </AdvisorSection>
 
+      <!-- PROMO-IA-35: histórico ontem/7 dias — o dono pergunta "o que ele fez na semana?" -->
+      <AdvisorSection v-if="historico.dias.length" title="Ontem e nos últimos 7 dias"
+                      :count="historico.alterados_janela || undefined"
+                      lead="Anúncios alterados por dia (dias do negócio). Dias sem barra não tiveram escrita.">
+        <div class="today__hist">
+          <div v-for="d in historico.dias" :key="d.date" class="today__histDia"
+               :title="`${d.alterados} alterados · ${d.bloqueados} bloqueados · ${d.recusados} recusados`">
+            <span class="today__histBarra" :style="{ height: `${alturaBarra(d)}%` }" />
+            <span class="today__histData">{{ diaCurto(d.date) }}</span>
+            <span class="today__histValor">{{ d.alterados }}</span>
+          </div>
+        </div>
+        <p v-if="historico.ontem" class="today__hint">
+          Ontem: <strong>{{ historico.ontem.alterados }}</strong> alterados ·
+          {{ historico.ontem.bloqueados }} bloqueados ·
+          {{ historico.ontem.recusados }} recusados ·
+          {{ historico.ontem.nao_confirmados }} sem confirmação.
+        </p>
+      </AdvisorSection>
+
+      <!-- PROMO-IA-35: efeito nas vendas — o que o gate prometeu contra o que os pedidos pagaram -->
+      <AdvisorSection v-if="efeitoVendas.medidas" title="Efeito nas vendas"
+                      :count="efeitoVendas.medidas || undefined"
+                      lead="O que o robô prometeu (margem/lucro do gate) contra o que os pedidos pagos realizaram, 7 e 14 dias depois da escrita.">
+        <div class="today__tableWrap">
+          <table class="today__table">
+            <caption class="today__caption">Plano versus realizado das ações medidas</caption>
+            <thead>
+              <tr>
+                <th scope="col">Anúncio</th><th scope="col">D+</th>
+                <th scope="col">Margem planejada</th><th scope="col">Margem realizada</th>
+                <th scope="col">Lucro planejado</th><th scope="col">Lucro realizado</th>
+                <th scope="col">Vendidos</th><th scope="col">Situação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="linha in efeitoVendas.linhas" :key="`${linha.item_id}-${linha.checkpoint_days}`">
+                <th scope="row" class="today__item">
+                  <span class="today__mlb">{{ linha.item_id }}</span>
+                  <span class="today__title">{{ linha.acao || '—' }}</span>
+                </th>
+                <td data-label="D+">{{ linha.checkpoint_days }}</td>
+                <td data-label="Margem planejada">{{ linha.margin_planned_pct ? pct(Number(linha.margin_planned_pct)) : '—' }}</td>
+                <td data-label="Margem realizada">{{ linha.margin_pct ? pct(Number(linha.margin_pct)) : '—' }}</td>
+                <td data-label="Lucro planejado">{{ linha.profit_planned_brl ? brl(linha.profit_planned_brl) : '—' }}</td>
+                <td data-label="Lucro realizado">{{ linha.profit_per_unit ? brl(linha.profit_per_unit) : '—' }}</td>
+                <td data-label="Vendidos">{{ linha.units }}</td>
+                <td data-label="Situação">
+                  <AdvisorStatusPill :status="linha.below_floor ? 'alerta' : 'verificado'"
+                                     :title="linha.below_floor
+                                       ? 'A margem realizada ficou abaixo do mínimo da conta — é alerta de medição, não é pausa.'
+                                       : 'A margem realizada ficou acima do mínimo da conta.'">
+                    {{ linha.below_floor ? 'abaixo do mínimo' : 'ok' }}
+                  </AdvisorStatusPill>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-if="efeitoVendas.abaixo_do_piso" class="today__hint">
+          <strong>{{ efeitoVendas.abaixo_do_piso }}</strong> medições ficaram abaixo do mínimo —
+          é alerta de medição (a conta não é pausada; decisão do dono de 09/09).
+        </p>
+      </AdvisorSection>
+
       <!-- Espera de aval (só aparece quando existe) -->
       <AdvisorSection v-if="contaCanario" title="Esperando você" :count="aguardandoAval || undefined" :lead="leadAval">
         <q-btn unelevated no-caps color="primary" icon="check_circle" label="Aprovar a próxima rodada"
@@ -229,9 +294,22 @@ const {
   data, carregando, erro, carregar, contas, total, motivos, naoAvaliados,
   naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
   factsError, killSwitch, modoGlobal, contasQueEscrevem, noPlanoEscrita,
-  falhas, totalFalhas, totalComAcao,
+  falhas, totalFalhas, totalComAcao, historico, efeitoVendas,
   brl, pct, STATUS_LABEL,
 } = useAdvisorToday();
+
+/** Altura da barra do histórico (0–100%) relativa ao maior dia da janela. */
+function alturaBarra(dia) {
+  const max = Math.max(...historico.value.dias.map((d) => d.alterados), 1);
+  return Math.round((Number(dia.alterados || 0) / max) * 100);
+}
+
+/** `2026-09-24` → `24/09` — rótulo curto para a barra do histórico. */
+function diaCurto(iso) {
+  if (!iso) return '';
+  const [, mes, dia] = String(iso).split('-');
+  return `${dia}/${mes}`;
+}
 
 const pausando = ref(false);
 const aprovando = ref(false);
@@ -457,6 +535,33 @@ onMounted(carregar);
   &__mlb { font-weight: $font-semibold; color: $text-primary; }
   &__title { font-size: $text-xs-size; color: $text-muted; white-space: normal; max-width: 260px; }
   &__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  // PROMO-IA-35: barras do histórico (ontem/7 dias) — altura proporcional ao maior dia.
+  &__hist {
+    display: flex;
+    align-items: flex-end;
+    gap: $space-3;
+    min-height: 96px;
+    padding-top: $space-2;
+  }
+  &__histDia {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $space-1;
+    flex: 1;
+    min-width: 0;
+  }
+  &__histBarra {
+    width: 100%;
+    max-width: 36px;
+    min-height: 2px;
+    border-radius: 3px 3px 0 0;
+    background: $primary;
+  }
+  &__histData { font-size: $text-xs-size; color: $text-muted; }
+  &__histValor { font-size: $text-xs-size; font-variant-numeric: tabular-nums; color: $text-primary; }
 
   &__motivos {
     margin: 0;

@@ -134,10 +134,26 @@ export function useAdvisorToday() {
   const ciclo = computed(() => data.value?.last_cycle || null);
   const cicloHoje = computed(() => Boolean(data.value?.cycle_today));
 
+  /**
+   * PROMO-IA-35: o que o robô fez ontem e nos últimos 7 dias (dias do negócio, zerados quando
+   * não houve escrita — a ausência de barra é informação). O backend já manda os baldes com a
+   * mesma semântica do dia corrente; aqui só se lê.
+   */
+  const historico = computed(() => data.value?.historico
+    || { dias: [], ontem: null, janela_dias: 7, alterados_janela: 0 });
+
+  /**
+   * PROMO-IA-35: plano × realizado das ações já medidas (D+7/D+14) — o "efeito nas vendas".
+   * `abaixo_do_piso` é o alerta (medição, não pausa; decisão do dono de 09/09).
+   */
+  const efeitoVendas = computed(() => data.value?.efeito_vendas
+    || { linhas: [], medidas: 0, abaixo_do_piso: 0 });
+
   return {
     data, carregando, erro, carregar,
     contas, total, motivos, naoAvaliados, naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
     factsError, killSwitch, modoGlobal, falhas, falhasComAcao, falhasDeEspera, totalFalhas, totalComAcao, contasQueEscrevem, noPlanoEscrita,
+    historico, efeitoVendas,
     brl, pct, STATUS_LABEL,
   };
 }
