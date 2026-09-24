@@ -136,7 +136,7 @@ const MOTIVO_BLOQUEIO = {
   MIN_PROFIT: 'cairia abaixo do seu lucro mínimo',
   PROMOTION_BLOCKED: 'o ML marca o anúncio como não-editável',
   SELLER_COUPON: 'cupom ativo: a simulação ignoraria o desconto',
-  COMPETING_PROMOTION_LIVE: 'há outra promoção viva no anúncio',
+  COMPETING_PROMOTION_LIVE: 'há outra promoção viva que o robô não substitui (não é removível, já entrega preço melhor ou a remoção automática está desligada)',
 };
 
 export function resultOf(row) {
