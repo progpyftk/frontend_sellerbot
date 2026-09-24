@@ -101,7 +101,7 @@ describe('AdvisorAutomationPage', () => {
   it('mostra a régua e o glossário na própria tela', async () => {
     const texto = (await montar()).texto();
     expect(texto).toContain('Margem-alvo por saúde de vendas');
-    expect(texto).toContain('R$ 20,00 por venda');   // piso vigente (PROMO-IA-23)
+    expect(texto).toContain('R$ 13,00 por venda');   // piso vigente (PROMO-IA-53, 23/09)
     expect(texto).toContain('Uma escrita por anúncio por dia');
     expect(texto).toContain('Glossário');
     expect(texto).toContain('Aval');
@@ -153,7 +153,7 @@ describe('AdvisorAutomationPage', () => {
         ACC1: {
           ...PAYLOAD.by_account.ACC1,
           regua: {
-            margin_pct: '30.00', profit_brl: '20.00', target_parado_pct: '30.00',
+            margin_pct: '30.00', profit_brl: '13.00', target_parado_pct: '30.00',
             target_medio_pct: '40.00', high_turnover_pct: '40.00', smart_signal_pct: '25.00',
           },
         },
@@ -192,7 +192,7 @@ describe('AdvisorAutomationPage', () => {
         ACC1: {
           ...PAYLOAD.by_account.ACC1,
           regua: {
-            margin_pct: '30.00', profit_brl: '20.00', target_parado_pct: '30.00',
+            margin_pct: '30.00', profit_brl: '13.00', target_parado_pct: '30.00',
             target_medio_pct: '40.00', high_turnover_pct: '40.00', smart_signal_pct: '25.00',
           },
         },

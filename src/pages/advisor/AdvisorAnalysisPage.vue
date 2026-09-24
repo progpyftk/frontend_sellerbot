@@ -43,7 +43,7 @@
           />
           <q-toggle v-model="filtros.soAbaixoDoPiso" dense
                     label="Só abaixo do mínimo de margem ou lucro"
-                    title="O mínimo é o seu: a menor margem e o menor lucro por venda que você aceita (Automação → Limites desta conta) — padrão: margem 30% e lucro R$ 20 por venda." />
+                    title="O mínimo é o seu: a menor margem e o menor lucro por venda que você aceita (Automação → Limites desta conta) — padrão: margem 30% e lucro R$ 13 por venda." />
           <q-toggle v-model="filtros.soComPromocao" dense label="Só com promoção" />
           <q-toggle v-model="filtros.soDupla" dense
                     label="Abaixo do mínimo e poucas vendas"

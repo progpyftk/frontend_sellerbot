@@ -13,7 +13,8 @@
  * - A sugestão é a **regra vigente** aplicada ao retrato do anúncio, exibida com
  *   o rótulo "sugestão da regra — nada é alterado no Mercado Livre". Ela não é
  *   uma ordem de execução nem uma promessa de escrita.
- * - Mínimo (piso): margem ≥ 30% E lucro ≥ R$ 20 por venda (regra do dono; subiu de R$ 12 em 12/09).
+ * - Mínimo (piso): margem ≥ 30% E lucro ≥ R$ 13 por venda (regra do dono; R$ 12 → R$ 20 em 12/09
+ *   → R$ 13 em 23/09, PROMO-IA-53 — foco na margem %).
  */
 
 // Default da PLATAFORMA — só usado quando a linha não veio com a régua da própria conta
@@ -21,7 +22,7 @@
 // `target_parado_pct`/`target_medio_pct` já resolvidos por linha desde então; contas mais
 // antigas em cache ou uma resposta de um endpoint que ainda não manda o campo caem aqui).
 export const FLOOR_MARGIN_PCT = 30;
-export const FLOOR_PROFIT_BRL = 20;
+export const FLOOR_PROFIT_BRL = 13;
 export const TARGET_MARGIN_PCT = { parado: 30, fraco: 30, medio: 40, alto: null };
 
 /** Mínimo/alvo da regra da CONTA dona da linha — nunca a constante da plataforma quando a API
@@ -218,7 +219,7 @@ export const SUGGESTION_META = {
  * o critério e o que fazer, para quem não escreveu as regras entender de primeira.
  */
 export const REGRA_SITUACOES = {
-  bloqueado_piso: 'O preço com a promoção deixa a margem ou o lucro abaixo do mínimo da sua conta (padrão: 30% de margem e R$ 20,00 por venda). Nenhuma escrita pode ficar abaixo disso — nem a do robô.',
+  bloqueado_piso: 'O preço com a promoção deixa a margem ou o lucro abaixo do mínimo da sua conta (padrão: 30% de margem e R$ 13,00 por venda). Nenhuma escrita pode ficar abaixo disso — nem a do robô.',
   sem_dados: 'Não dá para calcular a margem: falta custo (CMV), frete ou tarifa confiável, ou o SKU não resolve no Tiny. Sem margem calculável, o robô não escreve.',
   baixo_giro: 'Venda fraca: Parado = zero vendas em 14 dias com promoção ativa; Fraco = menos de 1 unidade por semana na média de 30 dias. Poucas vendas quase nunca é só preço — a regra manda revisar o anúncio (busca, descrição e fotos) antes de aprofundar o desconto.',
   promo_ativa: 'Tem promoção ativa e a margem está acima do mínimo. O robô não precisa agir: se vende, está bom.',

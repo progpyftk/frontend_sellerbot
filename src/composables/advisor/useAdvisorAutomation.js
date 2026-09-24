@@ -125,7 +125,7 @@ export function useAdvisorAutomation() {
       target_margin_parado_pct: 35, target_margin_medio_pct: 45,
     },
     equilibrado: {
-      label: 'Equilibrado (recomendado — padrão da plataforma)', floor_margin_pct: 30, floor_profit_brl: 20,
+      label: 'Equilibrado (recomendado — padrão da plataforma)', floor_margin_pct: 30, floor_profit_brl: 13,
       target_margin_parado_pct: 30, target_margin_medio_pct: 40,
     },
     agressivo: {
