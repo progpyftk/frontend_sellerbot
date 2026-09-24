@@ -214,6 +214,20 @@ export const REGRA_SAUDE = {
   alto: '3 ou mais unidades por semana. Não mexer enquanto a margem estiver acima do mínimo.',
 };
 
+/**
+ * PROMO-IA-51: a regra por trás de cada resultado da coluna Resultado — o
+ * desfecho REAL da última ação do robô. O dono perguntou "o que significa que
+ * foi bloqueado??": a resposta vive aqui e no tooltip da célula.
+ */
+export const REGRA_RESULTADOS = {
+  confirmado: 'O robô alterou a promoção/preço no Mercado Livre e a mudança foi confirmada — o novo preço está no ar.',
+  aguardando: 'O robô enviou a alteração e o Mercado Livre ainda não confirmou. Ele confere de novo sozinho nas próximas execuções.',
+  recusado: 'O Mercado Livre recusou a alteração. O preço ficou como estava — nada mudou no anúncio.',
+  sem_confirmacao: 'A alteração foi enviada, mas até agora não veio nem confirmação nem recusa. O robô reconfere depois e fecha o resultado.',
+  bloqueado: 'O robô protegeu a escrita: nada foi enviado ao Mercado Livre. O anúncio NÃO foi bloqueado pelo ML — é uma proteção interna (ex.: já houve escrita hoje neste anúncio, o preço é gerado pelo ML em anúncio SMART, há outra promoção viva, ou as vendas altas exigem margem maior). O motivo exato está no tooltip da célula.',
+  nada: 'O robô ainda não executou nenhuma escrita neste anúncio — não há resultado para mostrar.',
+};
+
 /** Lista pronta para a tela: rótulo (com a mesma cor da tabela) + a regra. */
 export const LEGENDARIO_SITUACOES = Object.entries(SITUATION_META)
   .map(([key, meta]) => ({ key, ...meta, regra: REGRA_SITUACOES[key] || '' }));
@@ -221,6 +235,8 @@ export const LEGENDARIO_ACOES = Object.entries(SUGGESTION_META)
   .map(([key, meta]) => ({ key, ...meta, regra: REGRA_ACOES[key] || '' }));
 export const LEGENDARIO_SAUDE = Object.entries(HEALTH_META)
   .map(([key, meta]) => ({ key, ...meta, regra: REGRA_SAUDE[key] || '' }));
+export const LEGENDARIO_RESULTADOS = Object.entries(RESULT_META)
+  .map(([key, meta]) => ({ key, ...meta, regra: REGRA_RESULTADOS[key] || '' }));
 
 export function brl(value) {
   if (value === null || value === undefined) return '—';

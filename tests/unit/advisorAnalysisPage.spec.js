@@ -297,4 +297,14 @@ describe('AdvisorAnalysisPage', () => {
       below_min: 'true', health: 'parado,fraco',
     }));
   });
+
+  it('a legenda explica cada resultado — inclusive o "Bloqueado (proteção)" (PROMO-IA-51)', async () => {
+    const texto = (await montar()).texto();
+    expect(texto).toContain('O que significa cada resultado');
+    expect(texto).toContain('Bloqueado (proteção)');
+    // a explicação central: a proteção segurou a escrita, o ML NÃO bloqueou o anúncio
+    expect(texto).toContain('NÃO foi bloqueado pelo ML');
+    expect(texto).toContain('nada foi enviado ao Mercado Livre');
+    expect(texto).toContain('Sem escrita');
+  });
 });

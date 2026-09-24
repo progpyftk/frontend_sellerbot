@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 import {
   FLOOR_MARGIN_PCT,
   FLOOR_PROFIT_BRL,
+  LEGENDARIO_RESULTADOS,
+  REGRA_RESULTADOS,
   brl,
   decisionSummary,
   missingLabels,
@@ -209,5 +211,26 @@ describe('advisorDecision · régua por conta (PROMO-CFG-3)', () => {
     expect(s.reason).toContain('15,0%')
     expect(s.reason).toContain('R$')
     expect(s.reason).toContain('8,00')
+  })
+})
+
+describe('advisorDecision · legenda do resultado (PROMO-IA-51)', () => {
+  it('explica os 6 desfechos — e o "Bloqueado (proteção)" deixa claro que o ML não bloqueou', () => {
+    expect(Object.keys(REGRA_RESULTADOS).sort()).toEqual(
+      ['aguardando', 'bloqueado', 'confirmado', 'nada', 'recusado', 'sem_confirmacao'].sort(),
+    )
+    for (const [key, regra] of Object.entries(REGRA_RESULTADOS)) {
+      expect(regra, `regra vazia para ${key}`).toBeTruthy()
+    }
+    // A dúvida do dono ("o que significa que foi bloqueado??"):
+    expect(REGRA_RESULTADOS.bloqueado).toContain('NÃO foi bloqueado pelo ML')
+    expect(REGRA_RESULTADOS.bloqueado).toContain('proteção interna')
+    expect(REGRA_RESULTADOS.bloqueado).toContain('nada foi enviado ao Mercado Livre')
+    // O legendarário sai pronto para a tela, com o mesmo rótulo da tabela.
+    expect(LEGENDARIO_RESULTADOS).toHaveLength(6)
+    expect(LEGENDARIO_RESULTADOS.map((i) => i.label)).toContain('Bloqueado (proteção)')
+    for (const item of LEGENDARIO_RESULTADOS) {
+      expect(item.regra, `legenda sem regra para ${item.key}`).toBeTruthy()
+    }
   })
 })

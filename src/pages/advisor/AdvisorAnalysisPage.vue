@@ -209,6 +209,20 @@
           </div>
         </footer>
       </AdvisorSection>
+
+      <!-- PROMO-IA-51: o resultado não se explica sozinho — "Bloqueado (proteção)"
+           já gerou dúvida do dono (a proteção segurou a escrita; o ML não bloqueou). -->
+      <AdvisorSection
+        title="O que significa cada resultado" tight
+        lead="A coluna Resultado mostra o que aconteceu de verdade com a última ação do robô no anúncio. Os critérios:"
+      >
+        <dl class="an__legenda">
+          <div v-for="item in LEGENDARIO_RESULTADOS" :key="item.key" class="an__legendaItem">
+            <dt><AdvisorStatusPill :status="RESULT_PILL[item.key] || 'neutral'">{{ item.label }}</AdvisorStatusPill></dt>
+            <dd>{{ item.regra }}</dd>
+          </div>
+        </dl>
+      </AdvisorSection>
     </template>
 
     <AdvisorItemDrawer
@@ -233,7 +247,7 @@ import AdvisorTable from 'src/components/advisor/AdvisorTable.vue';
 import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import AdvisorService from 'src/services/AdvisorService';
 import {
-  HEALTH_META, SITUATION_META,
+  HEALTH_META, LEGENDARIO_RESULTADOS, SITUATION_META,
   brl, emptyCellReason, floorMarginOf, floorProfitOf, isBelowMin, pct,
   resultOf, situationOf, suggestionOf,
 } from 'src/utils/advisorDecision';
@@ -579,6 +593,18 @@ onMounted(() => {
   :deep(.adv-table__table th),
   :deep(.adv-table__table td) {
     padding: $space-2 8px;
+  }
+
+  // PROMO-IA-51: legenda do resultado — os 6 desfechos reais do ledger.
+  &__legenda {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: $space-5;
+    margin: 0;
+  }
+  &__legendaItem {
+    dt { margin-bottom: 2px; }
+    dd { margin: 2px 0 0; font-size: $text-xs-size; color: $text-muted; line-height: 1.5; }
   }
 }
 
