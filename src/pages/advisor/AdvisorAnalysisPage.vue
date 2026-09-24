@@ -153,7 +153,7 @@
 
           <template #cell-preco="{ row }">{{ brl(row.price) }}</template>
           <template #cell-ritmo="{ row }">
-            <span :title="row.sales_30d == null ? '' : `${row.sales_30d} vendas em 30 dias`">
+            <span :title="tituloRitmo(row)">
               {{ row.health_info?.units_per_week == null ? '—' : `${String(row.health_info.units_per_week).replace('.', ',')}/sem.` }}
             </span>
           </template>
@@ -248,7 +248,7 @@ import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import AdvisorService from 'src/services/AdvisorService';
 import {
   HEALTH_META, LEGENDARIO_RESULTADOS, SITUATION_META,
-  brl, emptyCellReason, floorMarginOf, floorProfitOf, isBelowMin, pct,
+  brl, emptyCellReason, floorMarginOf, floorProfitOf, isBelowMin, janelasRitmo, pct,
   resultOf, situationOf, suggestionOf,
 } from 'src/utils/advisorDecision';
 
@@ -348,6 +348,19 @@ function ultimaAcaoTexto(row) {
 function decisaoTitle(row) {
   const s = suggestionOf(row);
   return `${s?.detail || ''} Última ação: ${ultimaAcaoTexto(row)}.`;
+}
+
+/** PROMO-IA-52: tooltip do ritmo com as DUAS janelas — a célula mostra a média de
+ *  30 dias ("X/sem."); o tooltip traz as vendas em 14 dias e a última venda, que
+ *  são o que o "Parado" olha. Antes "Parado" com "5,6/sem." parecia bug. */
+function tituloRitmo(row) {
+  const janelas = janelasRitmo(row.health_info);
+  const base = row.sales_30d == null ? '' : `${row.sales_30d} vendas em 30 dias`;
+  if (!janelas) return base;
+  if (!base) return janelas;
+  // contagem absoluta + as janelas: "5 vendas em 30 dias · 0 vendas em 14 dias ·
+  // última venda em 06/09 · média de 30 dias: 5,6 un./semana"
+  return `${base} · ${janelas}`;
 }
 
 /* -------------------------------------------------- cores e formatação -- */

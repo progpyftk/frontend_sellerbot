@@ -307,4 +307,10 @@ describe('AdvisorAnalysisPage', () => {
     expect(texto).toContain('nada foi enviado ao Mercado Livre');
     expect(texto).toContain('Sem escrita');
   });
+
+  it('o tooltip do ritmo traz a janela de 30 dias (PROMO-IA-52)', async () => {
+    const wrapper = await montar();
+    const titulos = wrapper.findAll('[title]').map((el) => el.attributes('title'));
+    expect(titulos.some((t) => t && t.includes('vendas em 30 dias'))).toBe(true);
+  });
 });

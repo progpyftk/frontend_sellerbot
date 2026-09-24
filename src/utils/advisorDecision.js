@@ -66,6 +66,35 @@ export function poucasVendas(row) {
   return row?.health === 'parado' || row?.health === 'fraco';
 }
 
+function dataCurtaBR(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  // Leitura em UTC: `last_sale_date` chega como data (meia-noite Z) e em
+  // UTC-3 o getDate() devolveria o dia anterior.
+  return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * PROMO-IA-52: as duas janelas do ritmo, por extenso. "Parado" olha 14 dias; o
+ * "X/sem." da tabela é a média de 30 dias — lado a lado, nunca mais parecem
+ * contraditórios (caso MLB5860339562: "Parado" com "5,6/sem." de agosto).
+ */
+export function janelasRitmo(info) {
+  if (!info) return '';
+  const partes = [];
+  if (info.units14 != null) {
+    const u = Number(info.units14);
+    partes.push(`${u} venda${u === 1 ? '' : 's'} em 14 dias`);
+  }
+  const ultima = dataCurtaBR(info.last_sale_date);
+  if (ultima) partes.push(`última venda em ${ultima}`);
+  if (info.units_per_week != null) {
+    partes.push(`média de 30 dias: ${String(info.units_per_week).replace('.', ',')} un./semana`);
+  }
+  return partes.join(' · ');
+}
+
 /**
  * PROMO-IA-48: coluna Resultado — o desfecho REAL da última escrita do robô
  * (ledger de tentativas). É a 3ª etapa do pipeline do dono: a classificação gera
@@ -191,7 +220,7 @@ export const SUGGESTION_META = {
 export const REGRA_SITUACOES = {
   bloqueado_piso: 'O preço com a promoção deixa a margem ou o lucro abaixo do mínimo da sua conta (padrão: 30% de margem e R$ 20,00 por venda). Nenhuma escrita pode ficar abaixo disso — nem a do robô.',
   sem_dados: 'Não dá para calcular a margem: falta custo (CMV), frete ou tarifa confiável, ou o SKU não resolve no Tiny. Sem margem calculável, o robô não escreve.',
-  baixo_giro: 'Vende até 1 unidade por semana. Poucas vendas quase nunca é só preço — a regra manda revisar o anúncio (busca, descrição e fotos) antes de aprofundar o desconto.',
+  baixo_giro: 'Venda fraca: Parado = zero vendas em 14 dias com promoção ativa; Fraco = menos de 1 unidade por semana na média de 30 dias. Poucas vendas quase nunca é só preço — a regra manda revisar o anúncio (busca, descrição e fotos) antes de aprofundar o desconto.',
   promo_ativa: 'Tem promoção ativa e a margem está acima do mínimo. O robô não precisa agir: se vende, está bom.',
   sem_promo: 'Não há promoção ativa agora. Se as regras pedirem desconto, não existe oferta disponível para ativar no momento.',
 };
@@ -208,10 +237,10 @@ export const REGRA_ACOES = {
 };
 
 export const REGRA_SAUDE = {
-  parado: 'Zero venda em 14 dias sob promoção. Prioridade máxima: destravar a venda.',
-  fraco: 'Menos de 1 unidade por semana. Candidato a aprofundar o desconto e a revisar o anúncio.',
-  medio: 'De 1 a 3 unidades por semana. Alvo de margem de 40% — abaixo disso o robô reduz o desconto.',
-  alto: '3 ou mais unidades por semana. Não mexer enquanto a margem estiver acima do mínimo.',
+  parado: 'Zero venda em 14 dias sob promoção (olha as 2 últimas semanas) — mesmo que a média de 30 dias ainda mostre ritmo antigo na coluna "X/sem.". Prioridade máxima: destravar a venda.',
+  fraco: 'Menos de 1 unidade por semana na média de 30 dias. Candidato a aprofundar o desconto e a revisar o anúncio.',
+  medio: 'De 1 a 3 unidades por semana na média de 30 dias. Alvo de margem de 40% — abaixo disso o robô reduz o desconto.',
+  alto: '3 ou mais unidades por semana na média de 30 dias. Não mexer enquanto a margem estiver acima do mínimo.',
 };
 
 /**
@@ -292,10 +321,13 @@ export function situationOf(row) {
   }
   if (row.health === 'parado' || row.health === 'fraco') {
     const giro = row.health_info?.units_per_week;
+    // PROMO-IA-52: as duas janelas por extenso — "Parado (0 vendas em 14 dias ·
+    // última venda em 06/09 · média de 30 dias: 5,6 un./semana)".
+    const janelas = janelasRitmo(row.health_info);
     return {
       key: 'baixo_giro',
       ...SITUATION_META.baixo_giro,
-      reason: `${HEALTH_META[row.health].label}${giro != null ? ` (${giro} un./semana)` : ''} — baixo rendimento exige revisão do anúncio, não só desconto.`,
+      reason: `${HEALTH_META[row.health].label}${janelas ? ` (${janelas})` : giro != null ? ` (${giro} un./semana)` : ''} — baixo rendimento exige revisão do anúncio, não só desconto.`,
     };
   }
   if (row.has_active_promo) {

@@ -8,6 +8,7 @@ import {
   REGRA_RESULTADOS,
   brl,
   decisionSummary,
+  janelasRitmo,
   missingLabels,
   pct,
   resultOf,
@@ -211,6 +212,31 @@ describe('advisorDecision · régua por conta (PROMO-CFG-3)', () => {
     expect(s.reason).toContain('15,0%')
     expect(s.reason).toContain('R$')
     expect(s.reason).toContain('8,00')
+  })
+})
+
+describe('advisorDecision · janelas do ritmo (PROMO-IA-52)', () => {
+  it('"Parado" × "5,6/sem." deixa de parecer contraditório (caso MLB5860339562)', () => {
+    const s = situationOf(baseRow({
+      health: 'parado',
+      health_info: {
+        units_per_week: 5.6, units14: 0, units30: 24,
+        last_sale_date: '2026-09-06T00:00:00Z', parado_sob_promocao: true,
+      },
+    }))
+    expect(s.key).toBe('baixo_giro')
+    expect(s.reason).toContain('Parado')
+    expect(s.reason).toContain('0 vendas em 14 dias')
+    expect(s.reason).toContain('última venda em 06/09')
+    expect(s.reason).toContain('média de 30 dias: 5,6 un./semana')
+  })
+
+  it('sem os campos novos mantém o rótulo simples (compatibilidade)', () => {
+    const s = situationOf(baseRow({ health: 'fraco', health_info: { units_per_week: 0.4 } }))
+    expect(s.reason).toContain('Fraco')
+    expect(s.reason).toContain('0,4 un./semana')
+    expect(janelasRitmo(null)).toBe('')
+    expect(janelasRitmo({ units14: 1 })).toBe('1 venda em 14 dias')
   })
 })
 
