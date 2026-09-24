@@ -68,6 +68,12 @@
               :hint="`${conta.diagnostico.total_anuncios} anúncios`"
             />
             <AdvisorMetric
+              :value="conta.anuncios_parados?.total ?? 0"
+              label="anúncios parados"
+              :hint="hintParados(conta.anuncios_parados)"
+              :variant="(conta.anuncios_parados?.total ?? 0) ? 'warn' : 'ok'"
+            />
+            <AdvisorMetric
               :value="conta.diagnostico.curva_a_misturados"
               label="Curva A misturada"
               hint="deveriam estar isolados"
@@ -315,6 +321,21 @@ const props = defineProps({
 });
 
 const $q = useQuasar();
+
+// Anúncios que estão em campanha mas não patrocinam (idle/hold/deleted) — o seletor
+// do ML mostra "Anúncio patrocinado desativado". Fora da estrutura por definição:
+// sugerir campanha para eles seria sugerir campanha que não entrega (ADSA-34).
+const ORDEM_STATUS = ['idle', 'hold', 'deleted'];
+
+function hintParados(parados) {
+  const porStatus = parados?.por_status || {};
+  const chaves = [
+    ...ORDEM_STATUS.filter((s) => porStatus[s]),
+    ...Object.keys(porStatus).filter((s) => !ORDEM_STATUS.includes(s)).sort(),
+  ];
+  if (!chaves.length) return 'todos os anúncios em campanha patrocinam';
+  return chaves.map((s) => `${porStatus[s]} ${s}`).join(' · ');
+}
 
 // As quatro colunas que o dono pediu, nesta ordem (D13).
 const colunas = [
