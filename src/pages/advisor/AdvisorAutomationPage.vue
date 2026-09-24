@@ -79,62 +79,14 @@
                   mínimo de {{ pct(Number(conta.regua?.margin_pct)) }} de margem · {{ brl(Number(conta.regua?.profit_brl)) }} de lucro
                 </span>
               </summary>
-              <div class="aut__regua-corpo">
-                <q-select
-                  dense outlined emit-value map-options
-                  :model-value="null" :options="presetOpcoes"
-                  label="Aplicar um modelo pronto (preenche os 4 campos abaixo)"
-                  :disable="salvando === conta.account_id"
-                  @update:model-value="(v) => v && aplicarPreset(conta, v)"
-                />
-                <div class="aut__regua-campos">
-                  <q-input
-                    v-model.number="reguas[conta.account_id].floor_margin_pct" type="number" dense outlined
-                    suffix="%" label="Margem mínima" :disable="salvando === conta.account_id"
-                    @blur="salvarReguaCampo(conta, 'floor_margin_pct')"
-                  >
-                    <template #hint>Nenhuma escrita passa por baixo — nem o robô, nem uma ativação manual.</template>
-                  </q-input>
-                  <q-input
-                    v-model.number="reguas[conta.account_id].floor_profit_brl" type="number" dense outlined
-                    prefix="R$" label="Lucro mínimo por venda" :disable="salvando === conta.account_id"
-                    @blur="salvarReguaCampo(conta, 'floor_profit_brl')"
-                  />
-                  <q-input
-                    v-model.number="reguas[conta.account_id].target_margin_parado_pct" type="number" dense outlined
-                    suffix="%" label="Alvo de margem — parado/fraco" :disable="salvando === conta.account_id"
-                    @blur="salvarReguaCampo(conta, 'target_margin_parado_pct')"
-                  >
-                    <template #hint>Até onde o robô pode aprofundar desconto para destravar a venda.</template>
-                  </q-input>
-                  <q-input
-                    v-model.number="reguas[conta.account_id].target_margin_medio_pct" type="number" dense outlined
-                    suffix="%" label="Alvo de margem — vendas médias" :disable="salvando === conta.account_id"
-                    @blur="salvarReguaCampo(conta, 'target_margin_medio_pct')"
-                  >
-                    <template #hint>Abaixo disso com vendas médias, o robô reduz o desconto.</template>
-                  </q-input>
-                </div>
-                <details class="aut__regua-avancado">
-                  <summary>Avançado</summary>
-                  <div class="aut__regua-campos">
-                    <q-input
-                      v-model.number="reguas[conta.account_id].high_turnover_margin_pct" type="number" dense outlined
-                      suffix="%" label="Teto de margem — vendas altas" :disable="salvando === conta.account_id"
-                      @blur="salvarReguaCampo(conta, 'high_turnover_margin_pct')"
-                    >
-                      <template #hint>Margem mínima para considerar vendas altas "sem necessidade de agir".</template>
-                    </q-input>
-                    <q-input
-                      v-model.number="reguas[conta.account_id].smart_signal_margin_pct" type="number" dense outlined
-                      suffix="%" label="Margem mínima para sinalizar (SMART)" :disable="salvando === conta.account_id"
-                      @blur="salvarReguaCampo(conta, 'smart_signal_margin_pct')"
-                    >
-                      <template #hint>Abaixo disso num anúncio SMART, o robô sinaliza (nunca escreve — preço é do ML).</template>
-                    </q-input>
-                  </div>
-                </details>
-              </div>
+              <AdvisorReguaConta
+                :conta="conta"
+                :reguas="reguas"
+                :salvando="salvando === conta.account_id"
+                :presets="PRESETS_REGUA"
+                :salvar-campo="salvarReguaCampo"
+                :aplicar-preset="aplicarPreset"
+              />
             </details>
 
             <p v-if="conta.paused" class="aut__pausada">
@@ -252,6 +204,7 @@
 import { computed, onMounted, ref } from 'vue';
 
 import AdvisorEmptyState from 'src/components/advisor/AdvisorEmptyState.vue';
+import AdvisorReguaConta from 'src/components/advisor/AdvisorReguaConta.vue';
 import AdvisorSection from 'src/components/advisor/AdvisorSection.vue';
 import AdvisorShell from 'src/components/advisor/AdvisorShell.vue';
 import AdvisorStatusPill from 'src/components/advisor/AdvisorStatusPill.vue';
@@ -266,8 +219,6 @@ const {
 } = useAdvisorAutomation();
 
 const confirmarPausa = ref(false);
-
-const presetOpcoes = Object.entries(PRESETS_REGUA).map(([value, p]) => ({ value, label: p.label }));
 
 /** Régua "representativa" para o card explicativo e o glossário: quando todas as contas
  * concordam (o caso comum — ninguém configurou nada ainda), mostra o valor real de todo mundo;
@@ -449,30 +400,6 @@ onMounted(async () => {
     &[open] summary::before { content: '▾ '; }
   }
   &__regua-resumo { margin-left: $space-2; color: $text-muted; }
-  &__regua-corpo {
-    display: flex;
-    flex-direction: column;
-    gap: $space-3;
-    margin-top: $space-2;
-    max-width: 640px;
-  }
-  &__regua-campos {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: $space-3;
-  }
-  &__regua-avancado {
-    summary {
-      cursor: pointer;
-      color: $text-muted;
-      font-size: $text-xs-size;
-      list-style: none;
-      &::-webkit-details-marker { display: none; }
-      &::before { content: '▸ '; }
-    }
-    &[open] summary::before { content: '▾ '; }
-    .aut__regua-campos { margin-top: $space-2; }
-  }
 
   &__pausada, &__canario {
     display: flex;

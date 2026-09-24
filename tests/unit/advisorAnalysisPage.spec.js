@@ -36,6 +36,7 @@ vi.mock('vue-router', () => ({
 }));
 
 import AdvisorAnalysisPage from 'src/pages/advisor/AdvisorAnalysisPage.vue';
+import AdvisorReguaConta from 'src/components/advisor/AdvisorReguaConta.vue';
 import { SITUATION_META } from 'src/utils/advisorDecision';
 
 const LINHA = {
@@ -88,7 +89,14 @@ const DETALHE = {
 const AUTOMACAO = {
   write_mode_global: true, kill_switch: false, next_cycle_at: '2026-09-23T12:00:00Z',
   by_account: {
-    ACC1: { account_nickname: 'MOGIVITTA', auto_write: true, paused: false, canary_pending: false },
+    ACC1: {
+      account_nickname: 'MOGIVITTA', auto_write: true, paused: false, canary_pending: false,
+      regua: {
+        margin_pct: '30.00', profit_brl: '13.00', target_parado_pct: '30.00',
+        target_medio_pct: '40.00', high_turnover_pct: '40.00', smart_signal_pct: '25.00',
+      },
+      regua_overrides: [],
+    },
   },
 };
 
@@ -312,5 +320,32 @@ describe('AdvisorAnalysisPage', () => {
     const wrapper = await montar();
     const titulos = wrapper.findAll('[title]').map((el) => el.attributes('title'));
     expect(titulos.some((t) => t && t.includes('vendas em 30 dias'))).toBe(true);
+  });
+
+  it('abre o editor de limites pelo chip "mín." da conta da linha (PROMO-IA-56)', async () => {
+    const wrapper = await montar();
+    const botao = wrapper.findAll('button').find((b) => b.text().includes('mín.'));
+    expect(botao).toBeTruthy();
+    await botao.trigger('click');
+    await flushPromises();
+
+    const editor = wrapper.findComponent(AdvisorReguaConta);
+    expect(editor.exists()).toBe(true);
+    expect(editor.props('conta').account_id).toBe('ACC1');
+  });
+
+  it('o botão "Limites desta conta" abre o editor e o Fechar recarrega o catálogo (PROMO-IA-56)', async () => {
+    const wrapper = await montar();
+    const abrir = wrapper.findAll('button').find((b) => b.text().includes('Limites desta conta'));
+    await abrir.trigger('click');
+    await flushPromises();
+    expect(wrapper.findComponent(AdvisorReguaConta).exists()).toBe(true);
+    expect(wrapper.text()).toContain('padrão da plataforma');
+
+    getCatalog.mockClear();
+    const fechar = wrapper.findAll('button').find((b) => b.text().includes('Fechar'));
+    await fechar.trigger('click');
+    await flushPromises();
+    expect(getCatalog).toHaveBeenCalled();
   });
 });

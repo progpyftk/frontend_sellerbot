@@ -49,7 +49,32 @@
                     label="Abaixo do mínimo e poucas vendas"
                     title="Anúncios com venda abaixo do mínimo de margem ou lucro E poucas vendas (parado/fraco) — os que precisam de preço E de revisão." />
           <q-btn v-if="filtrosAtivos" flat dense no-caps icon="filter_alt_off" label="Limpar filtros" @click="limparFiltros" />
+          <q-btn flat dense no-caps icon="tune" label="Limites desta conta" @click="abrirRegua()" />
         </div>
+      </div>
+
+      <!-- PROMO-IA-56: os limites (margem e lucro por venda) se configuram nesta tela. -->
+      <div v-if="reguaAberta" class="an__reguaCard" role="dialog" aria-label="Limites desta conta">
+        <header class="an__reguaTopo">
+          <strong>Limites desta conta</strong>
+          <q-select
+            v-if="!filtros.conta" v-model="reguaContaId" :options="contasOpcoes"
+            dense outlined emit-value map-options label="Conta" class="an__select"
+          />
+          <q-btn flat dense no-caps icon="close" label="Fechar" @click="fecharRegua" />
+        </header>
+        <AdvisorReguaConta
+          v-if="contaDaRegua"
+          :conta="contaDaRegua" :reguas="reguas"
+          :salvando="salvando === contaDaRegua.account_id"
+          :presets="PRESETS_REGUA" :salvar-campo="salvarReguaCampo" :aplicar-preset="aplicarPreset"
+          :titulo="contaDaRegua.account_nickname"
+        />
+        <p v-else class="an__data">Carregando os limites desta conta…</p>
+        <p class="an__data">
+          Campos com "sua conta" têm ajuste próprio; "Restaurar padrão" volta ao valor padrão da
+          plataforma. O que mudar vale para a próxima análise e para as próximas escritas do robô.
+        </p>
       </div>
 
       <!-- Chips de recorte por situação (contagens da página carregada). -->
@@ -124,9 +149,14 @@
                                  :title="situationOf(row)?.reason">
                 {{ SITUACAO_CURTA[situationOf(row)?.key] || situationOf(row)?.label || '—' }}
               </AdvisorStatusPill>
-              <span v-if="isBelowMin(row)" class="an__data" :title="situationOf(row)?.reason">
+              <!-- PROMO-IA-56: o "mín." abre o editor de limites da conta da linha. -->
+              <button
+                v-if="isBelowMin(row)" type="button" class="an__data an__minBotao"
+                :title="`${situationOf(row)?.reason} Clique para ajustar os limites desta conta.`"
+                @click.stop="abrirRegua(row.account_id)"
+              >
                 mín. {{ Math.round(floorMarginOf(row)) }}% · R$ {{ Math.round(floorProfitOf(row)) }}
-              </span>
+              </button>
             </div>
           </template>
 
@@ -240,10 +270,12 @@ import { useRoute, useRouter } from 'vue-router';
 
 import AdvisorEmptyState from 'src/components/advisor/AdvisorEmptyState.vue';
 import AdvisorItemDrawer from 'src/components/advisor/AdvisorItemDrawer.vue';
+import AdvisorReguaConta from 'src/components/advisor/AdvisorReguaConta.vue';
 import AdvisorSection from 'src/components/advisor/AdvisorSection.vue';
 import AdvisorShell from 'src/components/advisor/AdvisorShell.vue';
 import AdvisorStatusPill from 'src/components/advisor/AdvisorStatusPill.vue';
 import AdvisorTable from 'src/components/advisor/AdvisorTable.vue';
+import { useAdvisorAutomation } from 'src/composables/advisor/useAdvisorAutomation';
 import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import AdvisorService from 'src/services/AdvisorService';
 import {
@@ -258,6 +290,35 @@ const {
   totalPaginas, primeira, ultima, decisao,
   carregar, limparFiltros, ordenarPor,
 } = useAdvisorCatalog();
+
+// PROMO-IA-56: régua de limites por conta configurável direto desta tela (popover do
+// "mín." e botão "Limites desta conta") — mesma lógica/gravação da Automação.
+const {
+  contas: contasAutom, reguas, salvando, PRESETS_REGUA,
+  carregar: carregarAutom, salvarReguaCampo, aplicarPreset,
+} = useAdvisorAutomation();
+
+const reguaAberta = ref(false);
+const reguaContaId = ref(null);
+const contaDaRegua = computed(() => (
+  contasAutom.value.find((c) => c.account_id === reguaContaId.value) || null
+));
+
+async function abrirRegua(accountId) {
+  reguaContaId.value = accountId || filtros.conta || null;
+  reguaAberta.value = true;
+  await carregarAutom(); // estado fresco da política sempre que abrir
+  // Sem filtro/linha: a lista de contas só existe depois do GET — escolher a primeira
+  // depois do carregamento (antes disso ela está vazia).
+  if (!reguaContaId.value && contasAutom.value.length) {
+    reguaContaId.value = contasAutom.value[0].account_id;
+  }
+}
+
+async function fecharRegua() {
+  reguaAberta.value = false;
+  await carregar(); // o "mín." da tabela reflete na hora, sem recarregar à mão
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -618,6 +679,32 @@ onMounted(() => {
   &__legendaItem {
     dt { margin-bottom: 2px; }
     dd { margin: 2px 0 0; font-size: $text-xs-size; color: $text-muted; line-height: 1.5; }
+  }
+
+  // PROMO-IA-56: editor da régua de limites por conta, embutido nesta tela.
+  &__reguaCard {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+    padding: $space-3 $space-4;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    margin-bottom: $space-3;
+  }
+  &__reguaTopo {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    font-size: $text-small-size;
+  }
+  &__minBotao {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
+    text-decoration: underline dotted;
   }
 }
 
