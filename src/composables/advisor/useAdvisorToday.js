@@ -149,11 +149,19 @@ export function useAdvisorToday() {
   const efeitoVendas = computed(() => data.value?.efeito_vendas
     || { linhas: [], medidas: 0, abaixo_do_piso: 0 });
 
+  /**
+   * PROMO-IA-32: parecer do agente revisor em MODO SOMBRA — o relatório nunca bloqueia
+   * nada (quem veta é o cálculo); o `vetar` aparece como "teria vetado". A graduação
+   * (falsos vetos × achados reais em ≥3 ciclos) é o que decide o veto real (F3).
+   */
+  const parecerAgente = computed(() => data.value?.parecer_agente
+    || { status: 'sem_parecer_do_dia', aprovados: 0, ressalvas: 0, teria_vetados: 0, itens: [] });
+
   return {
     data, carregando, erro, carregar,
     contas, total, motivos, naoAvaliados, naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
     factsError, killSwitch, modoGlobal, falhas, falhasComAcao, falhasDeEspera, totalFalhas, totalComAcao, contasQueEscrevem, noPlanoEscrita,
-    historico, efeitoVendas,
+    historico, efeitoVendas, parecerAgente,
     brl, pct, STATUS_LABEL,
   };
 }

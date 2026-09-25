@@ -151,6 +151,37 @@ describe('AdvisorTodayPage', () => {
     expect(texto).not.toContain('Ontem e nos últimos 7 dias');
   });
 
+  it('PROMO-IA-32: parecer do agente em modo sombra — "teria vetado" e a graduação', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.parecer_agente = {
+      status: 'ok', sombra: true, aprovados: 8, ressalvas: 1, teria_vetados: 1,
+      itens: [
+        { item_id: 'MLB-AG9', veredito: 'vetar', teria_vetado: true,
+          motivo: 'lucro R$ 4,00 abaixo do piso R$ 13,00' },
+      ],
+      graduacao: {
+        ciclos_com_marcacao: 3, falsos_vetos: [], achados_reais: [{ item_id: 'MLB-AG9' }],
+        pendentes: [], pronto_para_veto: true,
+      },
+    };
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('Parecer do agente revisor (modo sombra)');
+    expect(texto).toContain('teria vetado');
+    expect(texto).toContain('8');
+    expect(texto).toContain('pode vetar');
+  });
+
+  it('PROMO-IA-32: sombra avisa que o parecer não bloqueia e sem parecer é declarado', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.parecer_agente = {
+      status: 'sem_parecer', motivo: 'timeout do agente',
+      aprovados: 0, ressalvas: 0, teria_vetados: 0, itens: [],
+    };
+    const texto = (await montar(payload)).text();
+    expect(texto).toContain('quem impede a escrita é o cálculo');
+    expect(texto).toContain('timeout do agente');
+  });
+
   it('não soma contas com escrita desligada em "não mexeu"', async () => {
     const texto = (await montar()).text();
     // 217 bloqueados = 96 de proteção (SMART) + 121 de conta desligada.

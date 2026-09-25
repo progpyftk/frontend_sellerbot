@@ -207,6 +207,38 @@
         </p>
       </AdvisorSection>
 
+      <!-- PROMO-IA-32: parecer do agente revisor em MODO SOMBRA — relatório, nunca bloqueia -->
+      <AdvisorSection v-if="temParecer" title="Parecer do agente revisor (modo sombra)"
+                      :count="parecerAgente.teria_vetados + parecerAgente.ressalvas || undefined"
+                      lead="Um segundo olhar sobre o plano do dia. Em modo sombra ele só avisa — quem impede a escrita é o cálculo (preço mínimo, margem e frete conferido).">
+        <ul class="today__motivos">
+          <li><strong>{{ parecerAgente.aprovados }}</strong> aprovados pelo agente</li>
+          <li v-if="parecerAgente.ressalvas"><strong>{{ parecerAgente.ressalvas }}</strong> com ressalva (vale olhar)</li>
+          <li v-if="parecerAgente.teria_vetados"><strong>{{ parecerAgente.teria_vetados }}</strong> teria vetado (só avisou)</li>
+          <li v-if="parecerAgente.status === 'sem_parecer'">
+            Sem parecer neste ciclo: {{ parecerAgente.motivo || 'o agente não respondeu — a escrita seguiu só pelo cálculo.' }}
+          </li>
+        </ul>
+        <ul v-if="itensComRessalva.length" class="today__motivos">
+          <li v-for="item in itensComRessalva" :key="`${item.item_id}-${item.veredito}`">
+            <span class="today__mlb">{{ item.item_id }}</span>
+            <AdvisorStatusPill :status="item.teria_vetado ? 'alerta' : 'recusado'">
+              {{ item.teria_vetado ? 'teria vetado' : 'ressalva' }}
+            </AdvisorStatusPill>
+            — {{ item.motivo }}
+          </li>
+        </ul>
+        <p v-if="graduacao" class="today__hint">
+          Graduação para o veto real: {{ graduacao.ciclos_com_marcacao }} ciclo(s) medido(s),
+          {{ graduacao.falsos_vetos.length }} falso(s) veto(s),
+          {{ graduacao.achados_reais.length }} achado(s) real(is){{
+            graduacao.pronto_para_veto
+              ? ' — critério cumprido: o agente pode vetar.'
+              : ' — ainda sem critério para vetar (falsos vetos zerados + achado real em 3+ ciclos).'
+          }}
+        </p>
+      </AdvisorSection>
+
       <!-- Espera de aval (só aparece quando existe) -->
       <AdvisorSection v-if="contaCanario" title="Esperando você" :count="aguardandoAval || undefined" :lead="leadAval">
         <q-btn unelevated no-caps color="primary" icon="check_circle" label="Aprovar a próxima rodada"
@@ -294,7 +326,7 @@ const {
   data, carregando, erro, carregar, contas, total, motivos, naoAvaliados,
   naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
   factsError, killSwitch, modoGlobal, contasQueEscrevem, noPlanoEscrita,
-  falhas, totalFalhas, totalComAcao, historico, efeitoVendas,
+  falhas, totalFalhas, totalComAcao, historico, efeitoVendas, parecerAgente,
   brl, pct, STATUS_LABEL,
 } = useAdvisorToday();
 
@@ -316,6 +348,12 @@ const aprovando = ref(false);
 const confirmarPausa = ref(false);
 
 const algumSemAntes = computed(() => escritas.value.some((w) => !w.price_before));
+
+/** PROMO-IA-32: o bloco do agente só aparece quando houve parecer (ou falha declarada). */
+const temParecer = computed(() => ['ok', 'sem_parecer'].includes(parecerAgente.value.status));
+const itensComRessalva = computed(() => (parecerAgente.value.itens || [])
+  .filter((i) => i.veredito !== 'aprovar'));
+const graduacao = computed(() => parecerAgente.value.graduacao || null);
 
 /**
  * Conta que está de fato esperando o aval: a que tem ANÚNCIOS parados esperando aprovação.
