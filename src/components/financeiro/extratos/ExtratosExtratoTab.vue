@@ -196,7 +196,7 @@ categoria e aplique em todas de uma vez.
   dense
   outlined
   bg-color="white"
-  label="Categoria para as ctx.selecionadas"
+  label="Categoria para as selecionadas"
 />
       </div>
       <div class="col-12 col-md-4">
@@ -207,7 +207,7 @@ categoria e aplique em todas de uma vez.
     color="teal-8"
     text-color="white"
     icon="done_all"
-    label="Classificar ctx.selecionadas"
+    label="Classificar selecionadas"
     :loading="ctx.classificandoLote"
     :disable="!ctx.classificacaoLote"
     @click="ctx.classificarSelecionadas"
@@ -225,130 +225,184 @@ categoria e aplique em todas de uma vez.
     </div>
   </q-banner>
 
-  <SbCard>
-    <q-table
-      v-model:selected="ctx.selecionadas"
-      :rows="ctx.transacoes"
-      :columns="ctx.transacaoColumns"
-      row-key="id"
-      selection="multiple"
-      :loading="ctx.loadingTransacoes"
-      flat
-      :pagination="{ rowsPerPage: 25 }"
-      :no-data-label="'Nenhuma transação encontrada com os filtros atuais. Sincronize a conta, importe um arquivo OFX/CSV ou ajuste o filtro de classificação.'"
+  <SbCard :title="tituloTabela" eyebrow="Extrato do período">
+    <SbTabela
+      v-model:ordenacao="ordenacao"
+      :colunas="colunas"
+      :linhas="ctx.transacoes"
+      chave-linha="id"
+      rotulo="Transações do extrato bancário"
+      :carregando="ctx.loadingTransacoes"
+      :vazio="{
+        titulo: 'Nenhuma transação encontrada',
+        mensagem:
+          'Sincronize a conta, importe um arquivo OFX/CSV ou ajuste o filtro de classificação.',
+      }"
+      altura-maxima="620px"
     >
-      <template #body-cell-data="props">
-<q-td :props="props">{{ formatDate(props.row.data) }}</q-td>
+      <template #cabecalho-selecao>
+        <q-checkbox
+          :model-value="todasSelecionadas"
+          :indeterminate="algumaSelecionada && !todasSelecionadas"
+          dense
+          color="teal-8"
+          aria-label="Selecionar todas as transações"
+          @update:model-value="alternarTodas"
+        />
       </template>
 
-      <template #body-cell-descricao="props">
-<q-td :props="props">
-  <div class="text-weight-medium text-grey-9">{{ props.row.descricao || '—' }}</div>
-  <div class="text-caption text-grey-6">
-    <span v-if="props.row.contraparte_cnpj" class="font-mono">
-      {{ formatCnpj(props.row.contraparte_cnpj) }}
-    </span>
-    <span v-if="props.row.documento"> · Doc {{ props.row.documento }}</span>
-    <span v-if="props.row.identificador"> · {{ props.row.identificador }}</span>
-  </div>
-</q-td>
+      <template #celula-selecao="{ linha }">
+        <q-checkbox
+          :model-value="estaSelecionada(linha)"
+          dense
+          color="teal-8"
+          :aria-label="`Selecionar a transação ${linha.id}`"
+          @update:model-value="(marcado) => alternarLinha(linha, marcado)"
+        />
       </template>
 
-      <template #body-cell-valor="props">
-<q-td :props="props">
-  <span
-    class="text-weight-bold"
-    :class="Number(props.row.valor) < 0 ? 'text-red-9' : 'text-green-9'"
-  >
-    {{ formatCurrency(props.row.valor) }}
-  </span>
-</q-td>
+      <template #celula-data="{ valor }">{{ formatDate(valor) }}</template>
+
+      <template #celula-descricao="{ linha }">
+        <div class="text-weight-medium text-grey-9">{{ linha.descricao || '—' }}</div>
+        <div class="text-caption text-grey-6">
+          <span v-if="linha.contraparte_cnpj" class="font-mono">
+            {{ formatCnpj(linha.contraparte_cnpj) }}
+          </span>
+          <span v-if="linha.documento"> · Doc {{ linha.documento }}</span>
+          <span v-if="linha.identificador"> · {{ linha.identificador }}</span>
+        </div>
       </template>
 
-      <template #body-cell-classificacao="props">
-<q-td :props="props" @click.stop>
-  <div class="row items-center no-wrap q-gutter-xs">
-    <SbCategoriaSelect
-      v-model="props.row.classificacao"
-      :grupos="ctx.gruposCategorias"
-      dense
-      borderless
-      hide-bottom-space
-      class="col classificacao-select"
-      placeholder="Sem classificação"
-      :loading="ctx.savingTransacoes.has(props.row.id)"
-      :disable="ctx.loadingCategorias"
-      @update:model-value="ctx.saveTransacao(props.row)"
-    />
-
-    <!-- DE ONDE VEIO A CLASSIFICAÇÃO -->
-    <q-badge
-      v-if="props.row.classificacao && ctx.origemInfo(props.row.origem_classificacao)"
-      :color="ctx.origemInfo(props.row.origem_classificacao).color"
-      :text-color="ctx.origemInfo(props.row.origem_classificacao).textColor"
-      class="text-bold origem-badge"
-    >
-      <q-icon
-        :name="ctx.origemInfo(props.row.origem_classificacao).icon"
-        size="11px"
-        class="q-mr-xs"
-      />
-      {{ ctx.origemInfo(props.row.origem_classificacao).label }}
-      <q-tooltip max-width="280px">{{ ctx.origemInfo(props.row.origem_classificacao).ajuda }}</q-tooltip>
-    </q-badge>
-  </div>
-
-  <div
-    v-if="props.row.mc || props.row.fora_do_resultado || ctx.ajudaDaCategoria(props.row.classificacao)"
-    class="row items-center q-gutter-xs q-mt-xs"
-  >
-    <q-badge v-if="props.row.mc" color="teal-1" text-color="teal-9" class="text-bold">
-      custo variável
-    </q-badge>
-    <q-badge
-      v-if="props.row.fora_do_resultado"
-      color="purple-1"
-      text-color="purple-9"
-      class="text-bold"
-    >
-      fora do DRE
-    </q-badge>
-    <q-icon v-if="ctx.ajudaDaCategoria(props.row.classificacao)" name="info" size="14px" color="grey-6">
-      <q-tooltip max-width="280px">{{ ctx.ajudaDaCategoria(props.row.classificacao) }}</q-tooltip>
-    </q-icon>
-  </div>
-</q-td>
+      <template #celula-valor="{ valor }">
+        <span class="text-weight-bold" :class="Number(valor) < 0 ? 'text-red-9' : 'text-green-9'">
+          {{ formatCurrency(valor) }}
+        </span>
       </template>
 
-      <template #body-cell-conciliado="props">
-<q-td :props="props" class="text-center" @click.stop>
-  <q-toggle
-    v-model="props.row.conciliado"
-    color="teal-8"
-    :disable="ctx.savingTransacoes.has(props.row.id)"
-    @update:model-value="ctx.saveTransacao(props.row)"
-  />
-</q-td>
+      <template #celula-classificacao="{ linha }">
+        <div data-sem-clique>
+          <div class="row items-center no-wrap q-gutter-xs">
+            <SbCategoriaSelect
+              v-model="linha.classificacao"
+              :grupos="ctx.gruposCategorias"
+              dense
+              borderless
+              hide-bottom-space
+              class="col classificacao-select"
+              placeholder="Sem classificação"
+              :loading="ctx.savingTransacoes.has(linha.id)"
+              :disable="ctx.loadingCategorias"
+              @update:model-value="ctx.saveTransacao(linha)"
+            />
+
+            <!-- DE ONDE VEIO A CLASSIFICAÇÃO -->
+            <q-badge
+              v-if="linha.classificacao && ctx.origemInfo(linha.origem_classificacao)"
+              :color="ctx.origemInfo(linha.origem_classificacao).color"
+              :text-color="ctx.origemInfo(linha.origem_classificacao).textColor"
+              class="text-bold origem-badge"
+            >
+              <q-icon
+                :name="ctx.origemInfo(linha.origem_classificacao).icon"
+                size="11px"
+                class="q-mr-xs"
+              />
+              {{ ctx.origemInfo(linha.origem_classificacao).label }}
+              <q-tooltip max-width="280px">{{ ctx.origemInfo(linha.origem_classificacao).ajuda }}</q-tooltip>
+            </q-badge>
+          </div>
+
+          <div
+            v-if="linha.mc || linha.fora_do_resultado || ctx.ajudaDaCategoria(linha.classificacao)"
+            class="row items-center q-gutter-xs q-mt-xs"
+          >
+            <q-badge v-if="linha.mc" color="teal-1" text-color="teal-9" class="text-bold">
+              custo variável
+            </q-badge>
+            <q-badge
+              v-if="linha.fora_do_resultado"
+              color="purple-1"
+              text-color="purple-9"
+              class="text-bold"
+            >
+              fora do DRE
+            </q-badge>
+            <q-icon v-if="ctx.ajudaDaCategoria(linha.classificacao)" name="info" size="14px" color="grey-6">
+              <q-tooltip max-width="280px">{{ ctx.ajudaDaCategoria(linha.classificacao) }}</q-tooltip>
+            </q-icon>
+          </div>
+        </div>
       </template>
-    </q-table>
+
+      <template #celula-conciliado="{ linha }">
+        <div class="text-center" data-sem-clique>
+          <q-toggle
+            v-model="linha.conciliado"
+            color="teal-8"
+            :disable="ctx.savingTransacoes.has(linha.id)"
+            @update:model-value="ctx.saveTransacao(linha)"
+          />
+        </div>
+      </template>
+    </SbTabela>
   </SbCard>
 
   </div>
 </template>
 
 <script setup>
-// Aba "Extrato" do módulo de bancos/extratos (ticket FIN-23).
+// Aba "Extrato" do módulo de bancos/extratos (tickets FIN-23 e FINT-6).
 //
 // O estado e as ações continuam no `BancosExtratosPage` (que é o dono do fluxo de importação e
 // classificação); aqui eles chegam num **objeto reativo** (`ctx`), cujos `ref`s são desembrulhados no
-// acesso — por isso `v-model="ctx.extratoFilters.conta"` e `v-model="ctx.selecionadas"` escrevem de
-// volta no page. Os formatadores vêm de `utils/formato.js`.
+// acesso — por isso `v-model="ctx.extratoFilters.conta"` escreve de volta no page.
+//
+// A grade é a `SbTabela` (FINT-6). Duas coisas que a `q-table` fazia e aqui ficam explícitas: a
+// **seleção múltipla** vira a primeira coluna com checkbox (o estado continua sendo o
+// `ctx.selecionadas`, que é quem alimenta a classificação em lote) e a **paginação** virou altura
+// limitada com cabeçalho fixo — a lista de um período é para ler inteira, rolando.
+import { computed, ref } from 'vue'
+
 import SbCard from 'src/components/common/SbCard.vue'
 import SbCategoriaSelect from 'src/components/common/SbCategoriaSelect.vue'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
+import SbTabela from 'src/components/common/SbTabela.vue'
 import { formatCnpj, formatCurrency, formatDate } from 'src/utils/formato'
 
-defineProps({
+const props = defineProps({
   ctx: { type: Object, required: true },
 })
+
+const ctx = props.ctx
+
+// A coluna de seleção é **comportamento**, não campo da transação — por isso nasce aqui, e não na
+// definição de colunas do page (que é dona dos campos que vêm do backend).
+const COLUNA_SELECAO = { chave: 'selecao', rotulo: 'Seleção', largura: '52px', alinhamento: 'center' }
+
+// Ordenação ainda local; o `FINT-11` leva recorte e ordem para a URL.
+const ordenacao = ref({ chave: '', direcao: '' })
+
+const colunas = computed(() => [COLUNA_SELECAO, ...(ctx.transacaoColumns || [])])
+
+const tituloTabela = computed(() =>
+  ctx.transacoes?.length ? `Transações (${ctx.transacoes.length})` : 'Transações',
+)
+
+const selecionadas = computed(() => ctx.selecionadas || [])
+const algumaSelecionada = computed(() => selecionadas.value.length > 0)
+const todasSelecionadas = computed(
+  () => (ctx.transacoes?.length || 0) > 0 && selecionadas.value.length === ctx.transacoes.length,
+)
+
+const estaSelecionada = (linha) => selecionadas.value.some((item) => item.id === linha.id)
+
+function alternarLinha(linha, marcado) {
+  const atual = selecionadas.value
+  ctx.selecionadas = marcado ? [...atual, linha] : atual.filter((item) => item.id !== linha.id)
+}
+
+function alternarTodas(marcado) {
+  ctx.selecionadas = marcado ? [...(ctx.transacoes || [])] : []
+}
 </script>

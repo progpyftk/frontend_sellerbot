@@ -217,3 +217,18 @@ describe('SbTabela — classe da linha e detalhe por linha (FINT-7)', () => {
     wrapper.unmount()
   })
 })
+
+describe('SbTabela — slot de cabeçalho (FINT-6)', () => {
+  it('o slot #cabecalho-<chave> substitui o conteúdo daquela coluna', () => {
+    const wrapper = mount(SbTabela, {
+      props: { colunas: COLUNAS, linhas: LINHAS },
+      slots: { 'cabecalho-nome': '<span class="meu-cabecalho">Escolher</span>' },
+      global: { stubs },
+    })
+
+    expect(wrapper.findAll('thead .meu-cabecalho')).toHaveLength(1)
+    // A outra coluna ordenável continua com o botão de ordenar.
+    expect(wrapper.findAll('thead button')).toHaveLength(1)
+    expect(wrapper.find('thead').text()).toContain('Valor')
+  })
+})

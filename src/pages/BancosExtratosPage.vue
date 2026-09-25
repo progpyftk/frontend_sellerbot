@@ -124,9 +124,9 @@ const testes = ref({});
 const testandoId = ref(null);
 
 const contaColumns = [
-  { name: "apelido", label: "Conta", align: "left" },
-  { name: "saldo", label: "Saldo", align: "right" },
-  { name: "actions", label: "Ações", align: "center" },
+  { chave: "apelido", rotulo: "Conta", alinhamento: "left" },
+  { chave: "saldo", rotulo: "Saldo", alinhamento: "right", tipo: "moeda" },
+  { chave: "actions", rotulo: "Ações", alinhamento: "center", largura: "230px" },
 ];
 
 // ────────────────────────────────────────── ESTADO: NOVA CONEXÃO
@@ -252,12 +252,15 @@ const filtroClassificacaoOptions = [
   { label: "Só classificadas", value: "classificadas" },
 ];
 
+// Colunas da tabela minimalista (FINT-6). A `q-table` usava `name`/`label`/`align`/`sortable`;
+// aqui o `tipo` decide a **ordenação** (data, moeda ou texto) — ordenar "10" antes de "9" era o
+// comportamento antigo da coluna Valor, e é o que o `tipo: 'moeda'` corrige.
 const transacaoColumns = [
-  { name: "data", label: "Data", align: "left", sortable: true },
-  { name: "descricao", label: "Descrição", align: "left" },
-  { name: "valor", label: "Valor", align: "right", sortable: true },
-  { name: "classificacao", label: "Classificação", align: "left" },
-  { name: "conciliado", label: "Conciliado", align: "center" },
+  { chave: "data", rotulo: "Data", alinhamento: "left", tipo: "data", ordenavel: true, largura: "108px" },
+  { chave: "descricao", rotulo: "Descrição", alinhamento: "left", tipo: "texto", ordenavel: true },
+  { chave: "valor", rotulo: "Valor", alinhamento: "right", tipo: "moeda", ordenavel: true, largura: "140px" },
+  { chave: "classificacao", rotulo: "Classificação", alinhamento: "left" },
+  { chave: "conciliado", rotulo: "Conciliado", alinhamento: "center", tipo: "selo", largura: "112px" },
 ];
 
 // ────────────────────────────────────────── TERMÔMETRO DA CLASSIFICAÇÃO

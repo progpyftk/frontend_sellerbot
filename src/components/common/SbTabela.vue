@@ -21,21 +21,23 @@
               :style="estiloDaColuna(coluna)"
               :aria-sort="coluna.ordenavel ? estadoDaColuna(ordenacao, coluna.chave) : null"
             >
-              <button
-                v-if="coluna.ordenavel"
-                type="button"
-                class="sb-tabela__ordenar"
-                @click="ordenarPor(coluna)"
-              >
-                <span>{{ coluna.rotulo }}</span>
-                <q-icon
-                  :name="iconeDaOrdem(coluna)"
-                  :class="{ 'is-inativo': estadoDaColuna(ordenacao, coluna.chave) === 'none' }"
-                  size="14px"
-                  aria-hidden="true"
-                />
-              </button>
-              <template v-else>{{ coluna.rotulo }}</template>
+              <slot :name="`cabecalho-${coluna.chave}`" :coluna="coluna">
+                <button
+                  v-if="coluna.ordenavel"
+                  type="button"
+                  class="sb-tabela__ordenar"
+                  @click="ordenarPor(coluna)"
+                >
+                  <span>{{ coluna.rotulo }}</span>
+                  <q-icon
+                    :name="iconeDaOrdem(coluna)"
+                    :class="{ 'is-inativo': estadoDaColuna(ordenacao, coluna.chave) === 'none' }"
+                    size="14px"
+                    aria-hidden="true"
+                  />
+                </button>
+                <template v-else>{{ coluna.rotulo }}</template>
+              </slot>
             </th>
             <th v-if="mostrarAcao" scope="col" class="is-center sb-tabela__col-acao">
               <span class="sb-tabela__oculto">{{ rotuloAcao }}</span>

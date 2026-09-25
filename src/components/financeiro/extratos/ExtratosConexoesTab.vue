@@ -115,40 +115,35 @@
           </span>
         </q-banner>
 
-        <q-table
-          :rows="conexao.contas || []"
-          :columns="contaColumns"
-          row-key="id"
-          dense
-          flat
-          bordered
-          :pagination="{ rowsPerPage: 10 }"
-          :no-data-label="'Nenhuma conta retornada por esta conexão.'"
+        <SbTabela
+          :colunas="contaColumns"
+          :linhas="conexao.contas || []"
+          chave-linha="id"
+          rotulo="Contas vinculadas à conexão"
+          densidade="compacta"
+          :vazio="{
+            titulo: 'Nenhuma conta retornada por esta conexão',
+            mensagem: 'Teste a conexão ou sincronize para buscar as contas.',
+          }"
         >
-          <template #body-cell-apelido="props">
-            <q-td :props="props">
-              <div class="text-weight-medium text-grey-9">
-                {{ props.row.apelido || 'Conta' }}
-              </div>
-              <div class="text-caption text-grey-6 font-mono">
-                Ag {{ props.row.agencia || '—' }} / C {{ props.row.numero || '—' }}{{ props.row.digito ? '-' + props.row.digito : '' }}
-              </div>
-            </q-td>
+          <template #celula-apelido="{ linha }">
+            <div class="text-weight-medium text-grey-9">{{ linha.apelido || 'Conta' }}</div>
+            <div class="text-caption text-grey-6 font-mono">
+              Ag {{ linha.agencia || '—' }} / C {{ linha.numero || '—' }}{{ linha.digito ? '-' + linha.digito : '' }}
+            </div>
           </template>
 
-          <template #body-cell-saldo="props">
-            <q-td :props="props">
-              <span class="text-weight-bold" :class="Number(props.row.saldo) < 0 ? 'text-red-9' : 'text-teal-9'">
-                {{ formatCurrency(props.row.saldo) }}
-              </span>
-              <div v-if="props.row.saldo_em" class="text-caption text-grey-6">
-                em {{ formatDate(props.row.saldo_em) }}
-              </div>
-            </q-td>
+          <template #celula-saldo="{ linha }">
+            <span class="text-weight-bold" :class="Number(linha.saldo) < 0 ? 'text-red-9' : 'text-teal-9'">
+              {{ formatCurrency(linha.saldo) }}
+            </span>
+            <div v-if="linha.saldo_em" class="text-caption text-grey-6">
+              em {{ formatDate(linha.saldo_em) }}
+            </div>
           </template>
 
-          <template #body-cell-actions="props">
-            <q-td :props="props" class="text-center">
+          <template #celula-actions="{ linha }">
+            <div class="text-center" data-sem-clique>
               <q-btn
                 flat
                 dense
@@ -156,7 +151,7 @@
                 color="teal-8"
                 icon="sync"
                 label="Sincronizar"
-                @click="emit('sincronizar', conexao, props.row)"
+                @click="emit('sincronizar', conexao, linha)"
               />
               <q-btn
                 flat
@@ -165,24 +160,28 @@
                 color="grey-7"
                 icon="table_view"
                 label="Ver extrato"
-                @click="emit('ver-extrato', conexao, props.row)"
+                @click="emit('ver-extrato', conexao, linha)"
               />
-            </q-td>
+            </div>
           </template>
-        </q-table>
+        </SbTabela>
       </SbCard>
     </template>
   </div>
 </template>
 
 <script setup>
-// Aba "Conexões" do módulo de bancos/extratos (ticket FIN-23).
+// Aba "Conexões" do módulo de bancos/extratos (tickets FIN-23 e FINT-6).
 //
 // Apresentação: o estado (`conexoes`, `testes`, `loading`) e as ações continuam no
 // `BancosExtratosPage`; aqui só entram os dados e saem os eventos. Os formatadores vêm de
 // `utils/formato.js`, que é onde os quatro passaram a morar quando as abas viraram componentes.
+//
+// A grade de contas é a `SbTabela` (FINT-6), como as demais tabelas do módulo — a `q-table` saiu
+// daqui também, para o módulo não ficar com duas gramáticas.
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
+import SbTabela from 'src/components/common/SbTabela.vue'
 import { formatCnpj, formatCurrency, formatDate, formatDateTime } from 'src/utils/formato'
 
 defineProps({
