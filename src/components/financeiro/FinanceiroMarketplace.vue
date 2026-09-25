@@ -64,49 +64,46 @@
       </div>
 
       <SbCard title="Por canal e conta" eyebrow="Conferência de marketplace">
-        <q-markup-table flat dense>
-          <thead>
+        <SbTabela
+          v-model:ordenacao="ordenacao"
+          :colunas="COLUNAS"
+          :linhas="linhas"
+          :chave-linha="chaveDaLinha"
+          rotulo="Conferência de marketplace por canal e conta"
+          :vazio="{
+            titulo: 'Sem linha para este recorte',
+            mensagem: 'Escolha outra competência ou confira a sincronização das contas.',
+          }"
+        >
+          <template #celula-marketplace="{ linha }">
+            {{ ROTULOS_MARKETPLACE[linha.marketplace] || linha.marketplace }}
+          </template>
+          <template #celula-gmv="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-taxas="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-liquida="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-cmv="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-mcAntes="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-ads="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-mcDepois="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-mcPct="{ linha }">
+            {{ linha.mcPct != null ? `${linha.mcPct}%` : '—' }}
+          </template>
+
+          <!-- Rodapé de totais: o mesmo número do cartão "Total do recorte", linha a linha. -->
+          <template #rodape>
             <tr>
-              <th class="text-left">Marketplace</th>
-              <th class="text-left">Conta</th>
-              <th class="text-right">GMV</th>
-              <th class="text-right">Taxas</th>
-              <th class="text-right">Receita líquida</th>
-              <th class="text-right">CMV</th>
-              <th class="text-right">MC antes do Ads</th>
-              <th class="text-right">Ads</th>
-              <th class="text-right">MC após Ads</th>
-              <th class="text-right">MC % (s/ líquida)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(linha, i) in linhas" :key="`${linha.marketplace}-${linha.conta}-${i}`">
-              <td>{{ ROTULOS_MARKETPLACE[linha.marketplace] || linha.marketplace }}</td>
-              <td>{{ linha.conta }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.gmv) }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.taxas) }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.liquida) }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.cmv) }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.mcAntes) }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.ads) }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.mcDepois) }}</td>
-              <td class="text-right">{{ linha.mcPct != null ? `${linha.mcPct}%` : '—' }}</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="text-weight-bold">
               <td colspan="2">Total</td>
-              <td class="text-right">{{ formatarMoeda(totais.gmv) }}</td>
-              <td class="text-right">{{ formatarMoeda(totais.taxas) }}</td>
-              <td class="text-right">{{ formatarMoeda(totais.liquida) }}</td>
-              <td class="text-right">{{ formatarMoeda(totais.cmv) }}</td>
-              <td class="text-right">{{ formatarMoeda(totais.mcAntes) }}</td>
-              <td class="text-right">{{ formatarMoeda(totais.ads) }}</td>
-              <td class="text-right">{{ formatarMoeda(totais.mcDepois) }}</td>
-              <td class="text-right">{{ totais.mcPct != null ? `${totais.mcPct}%` : '—' }}</td>
+              <td class="is-right">{{ formatarMoeda(totais.gmv) }}</td>
+              <td class="is-right">{{ formatarMoeda(totais.taxas) }}</td>
+              <td class="is-right">{{ formatarMoeda(totais.liquida) }}</td>
+              <td class="is-right">{{ formatarMoeda(totais.cmv) }}</td>
+              <td class="is-right">{{ formatarMoeda(totais.mcAntes) }}</td>
+              <td class="is-right">{{ formatarMoeda(totais.ads) }}</td>
+              <td class="is-right">{{ formatarMoeda(totais.mcDepois) }}</td>
+              <td class="is-right">{{ totais.mcPct != null ? `${totais.mcPct}%` : '—' }}</td>
             </tr>
-          </tfoot>
-        </q-markup-table>
+          </template>
+        </SbTabela>
 
         <ul v-if="avisos.length" class="text-caption text-grey-7 q-mt-sm">
           <li v-for="(aviso, i) in avisos" :key="i">{{ aviso }}</li>
@@ -138,6 +135,7 @@ import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import SbInfoCallout from 'src/components/common/SbInfoCallout.vue'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbSeletorPeriodo from 'src/components/common/SbSeletorPeriodo.vue'
+import SbTabela from 'src/components/common/SbTabela.vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
 import TikTokShopService from 'src/services/TikTokShopService'
@@ -157,6 +155,27 @@ const periodo = ref({ de: competenciaAtual, ate: competenciaAtual })
 const linhas = ref([])
 const avisos = ref([])
 const loading = ref(false)
+
+// Ordenação local; o `FINT-11` leva recorte e ordem para a URL.
+const ordenacao = ref({ chave: '', direcao: '' })
+
+// A conferência tem duas chaves de texto (marketplace/conta) e oito valores — a coluna `tipo` decide
+// a comparação, então GMV ordena como número e não como texto.
+const COLUNAS = [
+  { chave: 'marketplace', rotulo: 'Marketplace', tipo: 'texto', ordenavel: true, largura: '132px' },
+  { chave: 'conta', rotulo: 'Conta', tipo: 'texto', ordenavel: true, largura: '160px' },
+  { chave: 'gmv', rotulo: 'GMV', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'taxas', rotulo: 'Taxas', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'liquida', rotulo: 'Receita líquida', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'cmv', rotulo: 'CMV', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'mcAntes', rotulo: 'MC antes do Ads', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'ads', rotulo: 'Ads', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'mcDepois', rotulo: 'MC após Ads', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'mcPct', rotulo: 'MC % (s/ líquida)', tipo: 'numero', alinhamento: 'right', ordenavel: true, largura: '142px' },
+]
+
+// O par marketplace+conta pode repetir entre recortes; o índice garante a chave estável.
+const chaveDaLinha = (linha, indice) => `${linha.marketplace}|${linha.conta}|${indice}`
 
 const porCanal = computed(() => totaisPorMarketplace(linhas.value))
 const totais = computed(() => totaisDaConferencia(linhas.value))

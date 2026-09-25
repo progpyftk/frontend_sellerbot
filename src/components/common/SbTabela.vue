@@ -80,6 +80,9 @@
             </td>
           </tr>
         </tbody>
+        <tfoot v-if="$slots.rodape">
+          <slot name="rodape" />
+        </tfoot>
       </table>
     </div>
 
@@ -241,7 +244,9 @@ watch(
 )
 
 function chaveDaLinha(linha, indice) {
-  const chave = typeof props.chaveLinha === 'function' ? props.chaveLinha(linha) : linha?.[props.chaveLinha]
+  // A função recebe o índice: quem monta a chave com campos que podem repetir precisa dele.
+  const chave =
+    typeof props.chaveLinha === 'function' ? props.chaveLinha(linha, indice) : linha?.[props.chaveLinha]
   return chave ?? indice
 }
 
@@ -330,6 +335,14 @@ function textoPadrao(linha, coluna) {
 
     tbody tr:last-child td {
       border-bottom: none;
+    }
+
+    /* Rodapé de totais (slot `#rodape`): existe para a linha de somatório da conferência. */
+    tfoot td {
+      background: $surface-2;
+      border-top: 1px solid $border;
+      font-weight: $font-semibold;
+      color: $text-primary;
     }
 
     .is-right {
