@@ -506,7 +506,15 @@ function feitas(conta) {
 function dicaDoProgresso(conta) {
   if (temEstado(conta)) {
     const c = contarEstados(conta);
-    return `${c.ok} prontas · ${c.ajustar + c.atencao} para ajustar · ${c.nao_criada} para criar`;
+    const partes = [
+      `${c.ok} prontas`,
+      `${c.nao_criada} para criar`,
+      `${c.ajustar} para completar`,
+      `${c.atencao} para ajustar`,
+    ];
+    if (c.fundida) partes.push(`${c.fundida} divididas`);
+    if (c.revisar) partes.push(`${c.revisar} para revisar`);
+    return partes.join(' · ');
   }
   const confirmadas = aplicadas(conta);
   const manuais = feitas(conta) - confirmadas;
@@ -515,10 +523,10 @@ function dicaDoProgresso(conta) {
 }
 
 function contarEstados(conta) {
-  const contagem = { ok: 0, ajustar: 0, atencao: 0, fundida: 0, nao_criada: 0 };
+  const contagem = { ok: 0, ajustar: 0, atencao: 0, fundida: 0, nao_criada: 0, revisar: 0 };
   for (const linha of conta.campanhas_sugeridas) {
-    if (contagem[linha.estado] === undefined) contagem.nao_criada += 1;
-    else contagem[linha.estado] += 1;
+    if (linha.estado in contagem) contagem[linha.estado] += 1;
+    else contagem.revisar += 1;
   }
   return contagem;
 }
@@ -528,7 +536,7 @@ function contarEstados(conta) {
 function contadorTopo(conta) {
   if (!temEstado(conta)) return `${feitas(conta)} de ${conta.campanhas_sugeridas.length}`;
   const c = contarEstados(conta);
-  const pendentes = c.nao_criada + c.ajustar + c.atencao + c.fundida;
+  const pendentes = c.nao_criada + c.ajustar + c.atencao + c.fundida + c.revisar;
   return pendentes
     ? `${pendentes} a resolver de ${conta.campanhas_sugeridas.length}`
     : `todas as ${conta.campanhas_sugeridas.length} no lugar`;
@@ -553,11 +561,19 @@ const ESTADOS = {
   fundida: { pill: 'divergente', label: 'dividida', oQueFazer: 'juntar o que está espalhado' },
 };
 const semEstado = { pill: 'aguardando', label: 'a criar', oQueFazer: 'criar a campanha no Mercado Livre' };
+// Estado que a tela não conhece não vira "a criar": isso seria mandar o dono criar
+// campanha que já existe. Fica marcado para revisão, que é a resposta honesta.
+const estadoDesconhecido = { pill: 'bloqueado', label: 'revisar', oQueFazer: 'revisar esta linha' };
 
 // Só liga o modo estado quando o backend diz que mandou. `!== false` aceitaria o payload
 // antigo (campo ausente) e a aba passaria a dizer "149 para criar" sem dado nenhum.
 const temEstado = (conta) => conta.estado_disponivel === true;
-const situacao = (conta, linha) => (temEstado(conta) ? ESTADOS[linha.estado] : null);
+
+function situacao(conta, linha) {
+  if (!temEstado(conta)) return null;
+  if (!linha.estado) return semEstado;
+  return ESTADOS[linha.estado] || estadoDesconhecido;
+}
 
 // "Falta" passa a ser o estado, não o `ja_existe`: campanha incompleta é campanha que
 // ainda falta (o dono completaria a que já existe, não criaria outra), e campanha que

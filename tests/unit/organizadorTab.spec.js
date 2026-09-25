@@ -301,4 +301,21 @@ describe('OrganizadorTab · situação de cada linha (ADSA-42)', () => {
     expect(w.text()).toContain('campanhas já criadas');
     expect(w.text()).not.toContain('a resolver de');
   });
+
+  it('estado que a tela não conhece vira "revisar", nunca "a criar"', async () => {
+    // Se o backend ganhar um estado novo e o frontend for atrás, o pior erro possível é
+    // dizer "criar": o dono criaria campanha que já existe.
+    const exotico = {
+      ...COM_ESTADO,
+      campanhas_sugeridas: [
+        { ...COM_ESTADO.campanhas_sugeridas[0], estado: 'reorganizando' },
+        ...COM_ESTADO.campanhas_sugeridas.slice(1),
+      ],
+    };
+    const w = await montar({ ...PAYLOAD, contas: [exotico] });
+    expect(w.text()).toContain('revisar');
+    expect(w.text()).toContain('1 para revisar');
+    // Não entrou na contagem de "para criar": 2 (não criada + completar), não 3.
+    expect(w.text()).toContain('só as que faltam (2)');
+  });
 });
