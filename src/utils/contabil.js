@@ -8,34 +8,59 @@
  * A cascata do DRE na ordem do contador. A ordem é a leitura do plano de contas do backend
  * (`app_financeiro/services/dre.py`), e a margem de contribuição é **linha de destaque**, como o dono
  * pediu: ela não é substituída por nada.
+ *
+ * **A ordem não é cosmética (correção do `DRE-22`, 25/09):**
+ *
+ * - o **resultado operacional (EBIT)** fecha o operacional e o **EBITDA** (`EBIT + depreciação e
+ *   amortização`) vem logo abaixo, **antes** do resultado financeiro;
+ * - as **outras receitas e despesas** entram no operacional, portanto **acima** do EBITDA (decisão do
+ *   dono em 25/09);
+ * - o **IRPJ/CSLL** só aparece **depois** do EBITDA e do resultado financeiro, e o
+ *   **resultado líquido do período** é a **última linha**;
+ * - a **depreciação/amortização não é linha da cascata**: ela já está dentro das despesas operacionais
+ *   e o EBITDA a soma de volta — mostrá-la como dedução própria fazia a cascata **não fechar** na tela.
+ *   O valor somado de volta aparece na observação da própria linha do EBITDA.
  */
 export const CASCATA_DRE = [
   { chave: 'receita_bruta', rotulo: 'Receita bruta', tipo: 'entrada' },
   { chave: 'deducoes', rotulo: '(−) Deduções da receita', tipo: 'saida' },
   {
     chave: 'impostos_sobre_a_receita',
-    rotulo: '(−) Impostos sobre a receita (DAS)',
+    rotulo: '(−) Impostos sobre vendas (DAS, ICMS, PIS, COFINS…)',
     tipo: 'saida',
     detalhe: true,
   },
   { chave: 'receita_liquida', rotulo: '= Receita líquida', tipo: 'subtotal' },
   { chave: 'cmv', rotulo: '(−) CMV', tipo: 'saida' },
-  { chave: 'resultado_bruto', rotulo: '= Resultado bruto', tipo: 'subtotal' },
+  { chave: 'resultado_bruto', rotulo: '= Lucro bruto', tipo: 'subtotal' },
   {
     chave: 'custos_variaveis',
     rotulo: '(−) Custos variáveis (taxas, frete, embalagem, Ads…)',
     tipo: 'saida',
   },
   { chave: 'margem_contribuicao', rotulo: '= Margem de contribuição', tipo: 'destaque' },
-  { chave: 'despesas_operacionais', rotulo: '(−) Despesas operacionais', tipo: 'saida' },
+  {
+    chave: 'despesas_operacionais',
+    rotulo: '(−) Despesas operacionais (inclui depreciação e amortização)',
+    tipo: 'saida',
+  },
+  { chave: 'outras_receitas_e_despesas', rotulo: '(+/-) Outras receitas e despesas', tipo: 'entrada' },
+  { chave: 'resultado_operacional', rotulo: '= Resultado operacional (EBIT)', tipo: 'subtotal' },
+  {
+    chave: 'ebitda',
+    rotulo: 'EBITDA (EBIT + depreciação e amortização)',
+    tipo: 'subtotal',
+    com_depreciacao: true,
+  },
   { chave: 'despesas_financeiras', rotulo: '(−) Despesas financeiras', tipo: 'saida' },
   { chave: 'receitas_financeiras', rotulo: '(+) Receitas financeiras', tipo: 'entrada' },
-  { chave: 'outras_receitas_e_despesas', rotulo: '(+/-) Outras receitas e despesas', tipo: 'entrada' },
-  { chave: 'depreciacao_e_amortizacao', rotulo: '(−) Depreciação e amortização', tipo: 'saida' },
-  { chave: 'resultado_antes_do_imposto', rotulo: '= Resultado antes do imposto', tipo: 'subtotal' },
-  { chave: 'imposto_sobre_o_lucro', rotulo: '(−) IRPJ/CSLL', tipo: 'saida' },
-  { chave: 'resultado_liquido', rotulo: '= Resultado líquido', tipo: 'destaque' },
-  { chave: 'ebitda', rotulo: 'EBITDA', tipo: 'subtotal' },
+  {
+    chave: 'resultado_antes_do_imposto',
+    rotulo: '= Resultado antes do IRPJ/CSLL',
+    tipo: 'subtotal',
+  },
+  { chave: 'imposto_sobre_o_lucro', rotulo: '(−) IRPJ e CSLL', tipo: 'saida' },
+  { chave: 'resultado_liquido', rotulo: '= Resultado líquido do período', tipo: 'destaque' },
 ];
 
 /** A cascata com o valor de cada linha (ou `null` quando o backend não devolveu a chave). */

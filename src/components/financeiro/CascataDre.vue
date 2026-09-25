@@ -18,8 +18,11 @@
         <span v-if="linha.chave === 'margem_contribuicao' && dre?.margem_contribuicao_pct" class="sb-text-muted">
           ({{ dre.margem_contribuicao_pct }}% da receita líquida)
         </span>
-        <span v-if="linha.chave === 'ebitda' && dre?.ebitda_pct" class="sb-text-muted">
-          ({{ dre.ebitda_pct }}% da receita líquida)
+        <span v-if="linha.chave === 'ebitda'" class="sb-text-muted">
+          <template v-if="dre?.ebitda_pct">({{ dre.ebitda_pct }}% da receita líquida)</template>
+          <template v-if="depreciacaoSomada">
+            · EBIT + {{ formatarMoeda(depreciacaoSomada) }} de depreciação/amortização somados de volta
+          </template>
         </span>
       </template>
 
@@ -74,6 +77,13 @@ const linhas = computed(() =>
 
 const classeDaLinha = (linha) => `cascata--${linha.tipo}`
 const temOrigem = (linha) => (linha.contas?.length ?? 0) > 0
+
+// A depreciação/amortização **não** é linha da cascata (ela já está nas despesas operacionais): o que a
+// tela mostra é quanto o EBITDA somou de volta. Sem valor, a observação simplesmente não aparece.
+const depreciacaoSomada = computed(() => {
+  const valor = props.dre?.subtotais?.depreciacao_e_amortizacao
+  return valor && Number(valor) !== 0 ? valor : null
+})
 </script>
 
 <style lang="scss" scoped>

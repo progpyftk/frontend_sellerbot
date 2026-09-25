@@ -68,6 +68,36 @@ describe('CASCATA_DRE', () => {
     const chaves = CASCATA_DRE.map((l) => l.chave)
     expect(new Set(chaves).size).toBe(chaves.length)
   })
+
+  it('o EBITDA vem ANTES do resultado financeiro e o IRPJ/CSLL depois dele (DRE-22)', () => {
+    const ordem = CASCATA_DRE.map((l) => l.chave)
+    expect(ordem.indexOf('resultado_operacional')).toBeGreaterThan(ordem.indexOf('despesas_operacionais'))
+    expect(ordem.indexOf('ebitda')).toBe(ordem.indexOf('resultado_operacional') + 1)
+    expect(ordem.indexOf('despesas_financeiras')).toBeGreaterThan(ordem.indexOf('ebitda'))
+    expect(ordem.indexOf('receitas_financeiras')).toBeGreaterThan(ordem.indexOf('ebitda'))
+    expect(ordem.indexOf('imposto_sobre_o_lucro')).toBeGreaterThan(ordem.indexOf('ebitda'))
+    expect(ordem.indexOf('imposto_sobre_o_lucro')).toBeGreaterThan(
+      ordem.indexOf('resultado_antes_do_imposto'),
+    )
+  })
+
+  it('o resultado líquido é a ÚLTIMA linha do DRE', () => {
+    const chaves = CASCATA_DRE.map((l) => l.chave)
+    expect(chaves[chaves.length - 1]).toBe('resultado_liquido')
+  })
+
+  it('as outras receitas e despesas entram no operacional, acima do EBITDA', () => {
+    const ordem = CASCATA_DRE.map((l) => l.chave)
+    expect(ordem.indexOf('outras_receitas_e_despesas')).toBeLessThan(
+      ordem.indexOf('resultado_operacional'),
+    )
+  })
+
+  it('a depreciação não é dedução própria: quem a soma de volta é o EBITDA', () => {
+    const chaves = CASCATA_DRE.map((l) => l.chave)
+    expect(chaves).not.toContain('depreciacao_e_amortizacao')
+    expect(CASCATA_DRE.find((l) => l.chave === 'ebitda').rotulo).toContain('depreciação')
+  })
 })
 
 describe('linhasDaCascata', () => {
