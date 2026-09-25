@@ -91,10 +91,10 @@
               hint="Pareto de venda 80/15/5"
             />
             <AdvisorMetric
-              :value="`${feitas(conta)} de ${conta.campanhas_sugeridas.length}`"
-              label="campanhas já criadas"
+              :value="contadorTopo(conta)"
+              :label="temEstado(conta) ? 'campanhas no estado' : 'campanhas já criadas'"
               :hint="dicaDoProgresso(conta)"
-              :variant="feitas(conta) === conta.campanhas_sugeridas.length ? 'ok' : 'neutral'"
+              :variant="contadorTopoOk(conta) ? 'ok' : 'neutral'"
             />
           </div>
         </AdvisorSection>
@@ -137,10 +137,19 @@
           >
             <template #card-title="{ row }">{{ row.nome }}</template>
 
+            <template #cell-estado="{ row }">
+              <AdvisorStatusPill
+                v-if="situacao(conta, row)"
+                :status="situacao(conta, row).pill"
+                :label="situacao(conta, row).label"
+              />
+              <span v-else class="org__soNome">{{ semEstado.label }}</span>
+            </template>
+
             <template #cell-nome="{ row }">
               <div class="org__celNome">
                 <input
-                  v-if="!row.ja_existe"
+                  v-if="faltaAinda(conta, row)"
                   type="checkbox"
                   class="org__check"
                   :checked="marcada(conta.conta, row.nome)"
@@ -148,7 +157,7 @@
                   @click.stop="alternarMarca(conta.conta, row.nome)"
                 />
                 <AdvisorStatusPill
-                  v-if="row.ja_existe"
+                  v-else-if="!situacao(conta, row)"
                   status="aplicado"
                   label="aplicada"
                 />
@@ -266,6 +275,22 @@
           <q-btn flat round dense icon="close" color="grey-6" @click="detalheAberto = false" />
         </header>
         <div class="org__painelCorpo">
+          <div v-if="situacao(detalhe.contaObj, detalhe.linha)" class="org__oQueFazer">
+            <AdvisorStatusPill
+              :status="situacao(detalhe.contaObj, detalhe.linha).pill"
+              :label="situacao(detalhe.contaObj, detalhe.linha).label"
+            />
+            <div>
+              <div class="org__oQueFazerTitulo">
+                {{ situacao(detalhe.contaObj, detalhe.linha).oQueFazer }}
+              </div>
+              <div v-if="detalhe.linha.campanha_real" class="org__oQueFazerSub">
+                hoje está como <strong>{{ detalhe.linha.campanha_real }}</strong
+                ><template v-if="soNomeDiferente(detalhe.linha)">, com os mesmos anúncios</template>
+              </div>
+            </div>
+          </div>
+
           <div class="org__metricas">
             <AdvisorMetric :value="fmtMoeda(detalhe.linha.venda)" label="venda no período" />
             <AdvisorMetric
@@ -278,6 +303,24 @@
               label="orçamento diário"
             />
           </div>
+
+          <template v-if="temEstado(detalhe.contaObj) && detalhe.linha.entra?.length">
+            <h3 class="org__painelSecao">Entra nesta campanha</h3>
+            <div v-for="mlb in detalhe.linha.entra" :key="`entra-${mlb}`" class="org__mov">
+              <span class="org__mlb">{{ mlb }}</span>
+              <span class="org__seta" aria-hidden="true">→</span>
+              <span>{{ detalhe.linha.nome }}</span>
+            </div>
+          </template>
+
+          <template v-if="temEstado(detalhe.contaObj) && detalhe.linha.sai?.length">
+            <h3 class="org__painelSecao">Sai desta campanha (vai para)</h3>
+            <div v-for="mlb in detalhe.linha.sai" :key="`sai-${mlb}`" class="org__mov">
+              <span class="org__mlb">{{ mlb }}</span>
+              <span class="org__seta" aria-hidden="true">→</span>
+              <span>{{ vaiPara(detalhe.contaObj, mlb) || 'fora do plano' }}</span>
+            </div>
+          </template>
 
           <h3 class="org__painelSecao">De onde vem cada anúncio</h3>
           <div v-for="mov in detalhe.movimentos" :key="mov.item_id" class="org__mov">
@@ -337,9 +380,11 @@ function hintParados(parados) {
   return chaves.map((s) => `${porStatus[s]} ${s}`).join(' · ');
 }
 
-// As quatro colunas que o dono pediu, nesta ordem (D13).
+// As quatro colunas que o dono pediu, nesta ordem (D13), mais a situação (ADSA-42) — que
+// fica na segunda coluna porque é a resposta que ele abre a tela para ver.
 const colunas = [
   { key: 'nome', label: 'Campanha', sortable: true, minWidth: 260 },
+  { key: 'estado', label: 'Situação', minWidth: 150, sortable: true },
   { key: 'anuncios', label: 'MLB(s)', minWidth: 160 },
   { key: 'roas_target', label: 'ROAS alvo', numeric: true, sortable: true },
   { key: 'orcamento_diario', label: 'Orçamento', numeric: true, sortable: true },
@@ -459,22 +504,85 @@ function feitas(conta) {
 }
 
 function dicaDoProgresso(conta) {
+  if (temEstado(conta)) {
+    const c = contarEstados(conta);
+    return `${c.ok} prontas · ${c.ajustar + c.atencao} para ajustar · ${c.nao_criada} para criar`;
+  }
   const confirmadas = aplicadas(conta);
   const manuais = feitas(conta) - confirmadas;
   if (!manuais) return 'confirmadas pelo sync';
   return `${confirmadas} confirmadas pelo sync + ${manuais} marcadas à mão`;
 }
 
-// Quantas linhas ainda faltam criar — o número que o filtro "só as que faltam" mostra.
+function contarEstados(conta) {
+  const contagem = { ok: 0, ajustar: 0, atencao: 0, fundida: 0, nao_criada: 0 };
+  for (const linha of conta.campanhas_sugeridas) {
+    if (contagem[linha.estado] === undefined) contagem.nao_criada += 1;
+    else contagem[linha.estado] += 1;
+  }
+  return contagem;
+}
+
+// Com o estado disponível o número do topo passa a ser o trabalho que sobra, não o
+// histórico: "26 de 149" não ajuda ninguém; "25 para criar + 22 para ajustar" ajuda.
+function contadorTopo(conta) {
+  if (!temEstado(conta)) return `${feitas(conta)} de ${conta.campanhas_sugeridas.length}`;
+  const c = contarEstados(conta);
+  const pendentes = c.nao_criada + c.ajustar + c.atencao + c.fundida;
+  return pendentes
+    ? `${pendentes} a resolver de ${conta.campanhas_sugeridas.length}`
+    : `todas as ${conta.campanhas_sugeridas.length} no lugar`;
+}
+
+function contadorTopoOk(conta) {
+  if (!temEstado(conta)) return feitas(conta) === conta.campanhas_sugeridas.length;
+  const c = contarEstados(conta);
+  return c.ok === conta.campanhas_sugeridas.length;
+}
+
+// ── Situação de cada linha (ADSA-42) ────────────────────────────────────────
+//
+// Enquanto a conta não sincroniza desde o ADSA-41, `estado_disponivel` vem falso e a
+// tela segue no "já aplicada" de sempre: é melhor mostrar menos do que inventar 149
+// "não criada" que o dono não criou.
+const ESTADOS = {
+  ok: { pill: 'aplicado', label: 'pronta', oQueFazer: 'nada a fazer — é a estrutura do plano' },
+  nao_criada: { pill: 'aguardando', label: 'criar', oQueFazer: 'criar a campanha no Mercado Livre' },
+  ajustar: { pill: 'alerta', label: 'completar', oQueFazer: 'completar a campanha já criada' },
+  atencao: { pill: 'alerta', label: 'ajustar', oQueFazer: 'ajustar o que já existe' },
+  fundida: { pill: 'divergente', label: 'dividida', oQueFazer: 'juntar o que está espalhado' },
+};
+const semEstado = { pill: 'aguardando', label: 'a criar', oQueFazer: 'criar a campanha no Mercado Livre' };
+
+// Só liga o modo estado quando o backend diz que mandou. `!== false` aceitaria o payload
+// antigo (campo ausente) e a aba passaria a dizer "149 para criar" sem dado nenhum.
+const temEstado = (conta) => conta.estado_disponivel === true;
+const situacao = (conta, linha) => (temEstado(conta) ? ESTADOS[linha.estado] : null);
+
+// "Falta" passa a ser o estado, não o `ja_existe`: campanha incompleta é campanha que
+// ainda falta (o dono completaria a que já existe, não criaria outra), e campanha que
+// existe mas diverge também é trabalho pendente.
+function faltaAinda(conta, linha) {
+  if (temEstado(conta)) return linha.estado === 'nao_criada' || linha.estado === 'ajustar';
+  return !linha.ja_existe && !marcada(conta.conta, linha.nome);
+}
+
 function faltam(conta) {
-  return conta.campanhas_sugeridas.length - feitas(conta);
+  return conta.campanhas_sugeridas.filter((c) => faltaAinda(conta, c)).length;
 }
 
 function linhasVisiveis(conta) {
   if (!soFaltam.value) return conta.campanhas_sugeridas;
-  return conta.campanhas_sugeridas.filter(
-    (c) => !c.ja_existe && !marcada(conta.conta, c.nome),
+  return conta.campanhas_sugeridas.filter((c) => faltaAinda(conta, c));
+}
+
+// Onde cada MLB que sai desta linha está planejado — é o "vai para" do painel. Vem das
+// próprias linhas do plano, sem precisar casar de novo: o MLB que sai está em outra linha.
+function vaiPara(conta, mlb) {
+  const destino = conta.campanhas_sugeridas.find(
+    (c) => c.nome && c.anuncios.includes(mlb),
   );
+  return destino ? destino.nome : null;
 }
 
 async function sincronizar(nickname) {
@@ -559,10 +667,20 @@ const tomDaSaida = (s) => TOM_SAIDA[s] || 'neutral';
 function abrirDetalhe(linha, conta) {
   detalhe.value = {
     conta: conta.conta,
+    // A conta inteira vai junto porque o "vai para" precisa das outras linhas do plano,
+    // e a situação precisa saber se o estado está disponível.
+    contaObj: conta,
     linha,
     movimentos: conta.estrutura_alvo.filter((m) => linha.anuncios.includes(m.item_id)),
   };
   detalheAberto.value = true;
+}
+
+// A diferença que mais aparece nas campanhas do dono: o conjunto de MLB está certo e o
+// nome não (o plano reescreve o nome com `·CAT` e trunca em 29 caracteres). Sem isso o
+// dono lê "ajustar" e não descobre que o ajuste é só um nome.
+function soNomeDiferente(linha) {
+  return Boolean(linha.campanha_real) && !linha.entra?.length && !linha.sai?.length;
 }
 
 async function copiar(texto) {
@@ -576,8 +694,10 @@ async function copiar(texto) {
 
 // ── Export (no cliente: sem endpoint, sem arquivo no servidor) ────────────
 function linhasParaExport(conta) {
+  const est = (c) => (situacao(conta, c) || semEstado).label;
   return conta.campanhas_sugeridas.map((c) => ({
     campanha: c.nome,
+    situacao: temEstado(conta) ? est(c) : '',
     mlbs: c.anuncios.join(' '),
     roas: c.roas_target == null ? '' : fmtRoas(c.roas_target),
     orcamento: c.orcamento_automatico ? 'Automático' : (c.orcamento_diario ?? '').toString(),
@@ -596,14 +716,20 @@ function baixar(nome, conteudo, tipo) {
 
 function baixarCsv(conta) {
   const linhas = linhasParaExport(conta);
-  const cabecalho = 'Campanha;MLBs;ROAS alvo;Orcamento;Ja aplicada';
-  const corpo = linhas.map((l) => [l.campanha, l.mlbs, l.roas, l.orcamento, l.aplicada].join(';'));
+  const cabecalho = 'Campanha;Situacao;MLBs;ROAS alvo;Orcamento;Ja aplicada';
+  const corpo = linhas.map((l) =>
+    [l.campanha, l.situacao, l.mlbs, l.roas, l.orcamento, l.aplicada].join(';'),
+  );
   baixar(`organizador-${slug(conta.conta)}.csv`, [cabecalho, ...corpo].join('\n'), 'text/csv');
 }
 
 function baixarMarkdown(conta) {
   const linhas = conta.campanhas_sugeridas.map((c) => {
-    const marca = c.ja_existe || marcada(conta.conta, c.nome) ? 'x' : ' ';
+    // Com o estado disponível, a marca do checklist passa a ser a situação: o dono
+    // trabalha o que falta, não o que ele mesmo escreveu.
+    const marca = temEstado(conta)
+      ? (situacao(conta, c) || semEstado).label
+      : (c.ja_existe || marcada(conta.conta, c.nome) ? 'x' : ' ');
     const orc = c.orcamento_automatico ? 'orçamento automático' : `orçamento ${fmtMoeda(c.orcamento_diario)}`;
     const roas = c.roas_target == null ? 'sem meta' : `ROAS ${fmtRoas(c.roas_target)}`;
     return `- [${marca}] **${c.nome}** — ${c.anuncios.join(', ')} · ${roas} · ${orc}`;
@@ -847,6 +973,24 @@ const dataBr = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
   &__painelTitulo { font-size: $text-h3-size; font-weight: $font-semibold; color: $text-primary; }
   &__painelSub { font-size: $text-xs-size; color: $text-muted; }
   &__painelCorpo { padding: $space-5; overflow-y: auto; }
+
+  // O bloco "o que fazer" fica acima das métricas: é a resposta que o dono abriu a
+  // tela para ver, e não um número.
+  &__oQueFazer {
+    display: flex;
+    gap: $space-3;
+    align-items: flex-start;
+    background: $surface-2;
+    border-radius: $radius-md;
+    padding: $space-3 $space-4;
+    margin-bottom: $space-4;
+    font-size: $text-small-size;
+  }
+
+  &__oQueFazerTitulo { color: $text-primary; font-weight: $font-semibold; }
+  &__oQueFazerSub { color: $text-muted; margin-top: $space-1; }
+
+  &__soNome { color: $text-muted; font-size: $text-small-size; }
 
   &__painelSecao {
     margin: $space-5 0 $space-3;
