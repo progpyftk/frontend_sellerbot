@@ -1,26 +1,5 @@
 <template>
-  <q-page class="margens-page q-pa-lg">
-    <div class="margens-container">
-
-      <!-- ══════════════════════════════════════════ CABEÇALHO -->
-      <SbPageHeader
-        title="Margem de Contribuição"
-        eyebrow="Financeiro & Resultado"
-        subtitle="GMV − impostos = faturamento líquido; menos taxas, frete, embalagem, ads e CPV = margem de contribuição"
-        icon="calculate"
-      >
-        <template #actions>
-          <q-btn
-            flat
-            dense
-            color="grey-8"
-            icon="refresh"
-            label="Atualizar"
-            :loading="loading"
-            @click="carregar"
-          />
-        </template>
-      </SbPageHeader>
+  <div class="financeiro-margem">
 
       <!-- ══════════════════════════════════════════ COMO LER -->
       <SbInfoCallout
@@ -68,7 +47,7 @@
               :options="opcoesCnpj"
               label="CNPJ / empresa"
               clearable
-              @update:model-value="carregar"
+              @update:model-value="recarregarTudo"
             />
           </div>
 
@@ -83,40 +62,61 @@
               clearable
               label="Marketplace"
               bg-color="white"
-              @update:model-value="carregar"
-            />
-          </div>
-
-          <div class="col-12 col-sm-6 col-md-3">
-            <q-input
-              v-model="filtros.sku"
-              dense
-              outlined
-              clearable
-              label="SKU"
-              placeholder="Ex.: SKU-A"
-              bg-color="white"
-              @keyup.enter="carregar"
-              @clear="carregar"
+              @update:model-value="recarregarTudo"
             />
           </div>
 
           <div class="col-12 col-sm-6 col-md-3">
             <q-select
-              v-model="filtros.nivel"
-              :options="NIVEIS_DE_MARGEM"
+              v-model="filtros.produto"
+              :options="opcoesProduto"
+              option-value="sku"
+              option-label="rotulo"
               emit-value
               map-options
               dense
               outlined
-              label="Nível do resumo"
+              clearable
+              use-input
+              input-debounce="200"
+              label="Produto (SKU)"
+              :hint="dicaProdutos"
+              :loading="carregandoProdutos"
               bg-color="white"
+              @filter="filtrarProdutos"
               @update:model-value="carregar"
             />
           </div>
 
           <div class="col-12 col-md-6">
-            <SbSeletorPeriodo v-model="periodoMargem" />
+            <div class="row q-col-gutter-md">
+              <div class="col-6">
+                <q-input
+                  v-model="filtros.de"
+                  type="date"
+                  dense
+                  outlined
+                  label="Data inicial"
+                  bg-color="white"
+                  @update:model-value="recarregarTudo"
+                />
+              </div>
+              <div class="col-6">
+                <q-input
+                  v-model="filtros.ate"
+                  type="date"
+                  dense
+                  outlined
+                  label="Data final"
+                  bg-color="white"
+                  @update:model-value="recarregarTudo"
+                />
+              </div>
+            </div>
+            <div class="text-caption text-grey-7 q-mt-xs">
+              A margem é apurada por <strong>mês</strong>: o intervalo soma as competências que ele
+              toca, e a primeira e a última entram por inteiro.
+            </div>
           </div>
 
           <div class="col-12 col-md-6">
@@ -326,120 +326,137 @@
             </div>
           </div>
           <div class="text-caption text-grey-6 q-mt-sm">
-            A embalagem do resumo é a soma das linhas exibidas (o backend não a inclui no total
-            do resumo porque ela é custo por SKU).
+            A embalagem do recorte vem do próprio resumo do backend — a cascata do dono a inclui. Quando
+            alguma linha do recorte não tem o custo cadastrado, o valor aparece marcado: somar só o que
+            existe faria a margem parecer maior do que é.
           </div>
         </SbCard>
 
         <!-- ══════════════════════════════════════════ LINHAS -->
+        <!-- A grade do módulo é a `SbTabela` (FINT-15): a mesma ordenação, o mesmo "sem valor" e a
+             mesma exportação das outras abas. -->
         <SbCard title="Detalhe por linha" :eyebrow="`${linhas.length} linha(s) no recorte`">
-          <SbTable>
-            <thead>
-              <tr>
-                <th>Competência</th>
-                <th>Nível</th>
-                <th>CNPJ / empresa</th>
-                <th>Marketplace</th>
-                <th>SKU</th>
-                <th class="text-right">GMV</th>
-                <th class="text-right">Impostos</th>
-                <th class="text-right">Fat. líquido</th>
-                <th class="text-right">Taxas</th>
-                <th class="text-right">Frete</th>
-                <th class="text-right">Embalagem</th>
-                <th class="text-right">Ads</th>
-                <th class="text-right">CPV</th>
-                <th class="text-right">MC</th>
-                <th class="text-right">MC %</th>
-                <th>Sinalizações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="linha in linhas" :key="linha.id">
-                <td class="row--bold">{{ rotuloCompetencia(linha.competencia) }}</td>
-                <td>
-                  <SbBadge :variant="varianteNivel(linha.nivel)">{{ rotuloNivel(linha.nivel) }}</SbBadge>
-                </td>
-                <td>
-                  <div class="row--bold">{{ formatarCnpj(linha.cnpj) }}</div>
-                  <div class="text-caption text-grey-6">{{ linha.razao_social || "—" }}</div>
-                </td>
-                <td>
-                  <SbBadge v-if="linha.marketplace" :variant="varianteMarketplace(linha.marketplace)">
-                    {{ rotuloMarketplace(linha.marketplace) }}
-                  </SbBadge>
-                  <span v-else class="row--muted">—</span>
-                </td>
-                <td>{{ linha.sku || "—" }}</td>
-                <td class="text-right">{{ formatarMoeda(linha.gmv) }}</td>
-                <td class="text-right" :class="{ 'row--warn': linha.impostos_informados === false }">
-                  {{ linha.impostos_informados === false ? "não informado" : formatarMoeda(linha.impostos) }}
-                </td>
-                <td class="text-right">{{ formatarMoeda(linha.faturamento_liquido) }}</td>
-                <td class="text-right">{{ formatarMoeda(linha.taxas) }}</td>
-                <td class="text-right">{{ formatarMoeda(linha.frete) }}</td>
-                <td class="text-right" :class="{ 'row--warn': linha.embalagem_informada === false }">
-                  {{ linha.embalagem_informada === false ? "não cadastrada" : formatarMoeda(linha.embalagem) }}
-                </td>
-                <td class="text-right">{{ formatarMoeda(linha.ads) }}</td>
-                <td class="text-right">{{ formatarMoeda(linha.cpv) }}</td>
-                <td class="text-right row--bold" :class="numero(linha.mc) >= 0 ? 'row--pos' : 'row--neg'">
-                  {{ formatarMoeda(linha.mc) }}
-                </td>
-                <td class="text-right" :class="numero(linha.mc_pct) >= 0 ? 'row--pos' : 'row--neg'">
-                  {{ formatarPct(linha.mc_pct) }}
-                </td>
-                <td>
-                  <div class="margens-flags">
-                    <SbBadge v-if="baseDe(linha).incompleta" variant="red" icon="warning">
-                      {{ rotuloDaBase(baseDe(linha)) }}
-                    </SbBadge>
-                    <SbBadge v-if="baseDe(linha).divergencia" variant="indigo" icon="science">
-                      Divergência de base (FIN-21b)
-                    </SbBadge>
-                    <SbBadge v-if="linha.embalagem_informada === false" variant="amber" icon="inventory_2">
-                      Embalagem não cadastrada
-                    </SbBadge>
-                    <SbBadge v-if="linha.impostos_informados === false" variant="red" icon="gavel">
-                      Impostos não informados
-                    </SbBadge>
-                    <span v-if="semSinalizacao(linha)" class="row--muted">—</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </SbTable>
+          <SbTabela
+            exportavel
+            nome-exportacao="margem-contribuicao"
+            :colunas="COLUNAS"
+            :linhas="linhas"
+            chave-linha="id"
+            rotulo="Linhas da margem de contribuição"
+            :carregando="loading"
+            :erro="erro"
+          >
+            <template #celula-competencia="{ linha }">
+              <span class="row--bold">{{ rotuloCompetencia(linha.competencia) }}</span>
+            </template>
+
+            <template #celula-nivel="{ linha }">
+              <SbBadge :variant="varianteNivel(linha.nivel)">{{ rotuloNivel(linha.nivel) }}</SbBadge>
+            </template>
+
+            <template #celula-cnpj="{ linha }">
+              <div class="row--bold">{{ formatarCnpj(linha.cnpj) }}</div>
+              <div class="text-caption text-grey-6">{{ linha.razao_social || "—" }}</div>
+            </template>
+
+            <template #celula-marketplace="{ linha }">
+              <SbBadge v-if="linha.marketplace" :variant="varianteMarketplace(linha.marketplace)">
+                {{ rotuloMarketplace(linha.marketplace) }}
+              </SbBadge>
+              <span v-else class="row--muted">—</span>
+            </template>
+
+            <template #celula-sku="{ linha }">
+              <template v-if="linha.sku">
+                <div>{{ nomeDoSku(linha.sku) }}</div>
+                <div class="text-caption text-grey-6">{{ linha.sku }}</div>
+              </template>
+              <span v-else class="row--muted">—</span>
+            </template>
+
+            <template #celula-gmv="{ linha }">{{ formatarMoeda(linha.gmv) }}</template>
+
+            <template #celula-impostos="{ linha }">
+              <span :class="{ 'row--warn': linha.impostos_informados === false }">
+                {{ linha.impostos_informados === false ? "não informado" : formatarMoeda(linha.impostos) }}
+              </span>
+            </template>
+
+            <template #celula-faturamento_liquido="{ linha }">
+              {{ formatarMoeda(linha.faturamento_liquido) }}
+            </template>
+
+            <template #celula-taxas="{ linha }">{{ formatarMoeda(linha.taxas) }}</template>
+            <template #celula-frete="{ linha }">{{ formatarMoeda(linha.frete) }}</template>
+
+            <template #celula-embalagem="{ linha }">
+              <span :class="{ 'row--warn': linha.embalagem_informada === false }">
+                {{ linha.embalagem_informada === false ? "não cadastrada" : formatarMoeda(linha.embalagem) }}
+              </span>
+            </template>
+
+            <template #celula-ads="{ linha }">{{ formatarMoeda(linha.ads) }}</template>
+            <template #celula-cpv="{ linha }">{{ formatarMoeda(linha.cpv) }}</template>
+
+            <template #celula-mc="{ linha }">
+              <span class="row--bold" :class="numero(linha.mc) >= 0 ? 'row--pos' : 'row--neg'">
+                {{ formatarMoeda(linha.mc) }}
+              </span>
+            </template>
+
+            <template #celula-mc_pct="{ linha }">
+              <span :class="numero(linha.mc_pct) >= 0 ? 'row--pos' : 'row--neg'">
+                {{ formatarPct(linha.mc_pct) }}
+              </span>
+            </template>
+
+            <template #celula-sinalizacoes="{ linha }">
+              <div class="margens-flags">
+                <SbBadge v-if="baseDe(linha).incompleta" variant="red" icon="warning">
+                  {{ rotuloDaBase(baseDe(linha)) }}
+                </SbBadge>
+                <SbBadge v-if="baseDe(linha).divergencia" variant="indigo" icon="science">
+                  Divergência de base (FIN-21b)
+                </SbBadge>
+                <SbBadge v-if="linha.embalagem_informada === false" variant="amber" icon="inventory_2">
+                  Embalagem não cadastrada
+                </SbBadge>
+                <SbBadge v-if="linha.impostos_informados === false" variant="red" icon="gavel">
+                  Impostos não informados
+                </SbBadge>
+                <span v-if="semSinalizacao(linha)" class="row--muted">—</span>
+              </div>
+            </template>
+          </SbTabela>
         </SbCard>
       </template>
-    </div>
-  </q-page>
+  </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useQuasar } from "quasar";
-import SbPageHeader from "src/components/common/SbPageHeader.vue";
 import SbCard from "src/components/common/SbCard.vue";
 import SbKpiCard from "src/components/common/SbKpiCard.vue";
 import SbKpiGrid from "src/components/common/SbKpiGrid.vue";
 import SbInfoCallout from "src/components/common/SbInfoCallout.vue";
 import SbBadge from "src/components/common/SbBadge.vue";
-import SbTable from "src/components/common/SbTable.vue";
+import SbTabela from "src/components/common/SbTabela.vue";
 import SbEmptyState from "src/components/common/SbEmptyState.vue";
 import SbSeletorEmpresa from "src/components/common/SbSeletorEmpresa.vue";
-import SbSeletorPeriodo from "src/components/common/SbSeletorPeriodo.vue";
 import { formatarCnpj, opcoesDeEmpresa } from "src/utils/seletores";
 import MargemService from "src/services/MargemService";
 import FiscalService from "src/services/FiscalService";
 import {
   MARKETPLACES_DE_MARGEM,
-  NIVEIS_DE_MARGEM,
   diagnosticoDaBase,
+  nivelDoRecorte,
   numero,
   parametrosDaMargem,
   ressalvasDaMargem,
   rotuloCompetencia,
   rotuloDaBase,
+  rotuloDoProduto,
   rotuloMarketplace,
   rotuloNivel,
   somaEmbalagem,
@@ -450,13 +467,48 @@ const $q = useQuasar();
 const filtros = ref({
   cnpj: null,
   marketplace: null,
-  sku: "",
+  produto: null,
   de: "",
   ate: "",
-  nivel: "marketplace",
 });
 
 const opcoesCnpj = ref([]);
+const produtos = ref([]);
+const carregandoProdutos = ref(false);
+
+/**
+ * As colunas do detalhe. A ordem é a leitura da cascata do dono (GMV → impostos → líquido → custos →
+ * MC), e as colunas de dinheiro são as mesmas do resumo — a linha e o total não podem discordar.
+ */
+const COLUNAS = [
+  { chave: "competencia", rotulo: "Competência", largura: "110px", ordenavel: true },
+  { chave: "nivel", rotulo: "Nível", largura: "110px" },
+  { chave: "cnpj", rotulo: "CNPJ / empresa" },
+  { chave: "marketplace", rotulo: "Marketplace", largura: "140px" },
+  { chave: "sku", rotulo: "Produto (SKU)" },
+  { chave: "gmv", rotulo: "GMV (R$)", tipo: "moeda", alinhamento: "right", ordenavel: true },
+  { chave: "impostos", rotulo: "Impostos (R$)", tipo: "moeda", alinhamento: "right" },
+  {
+    chave: "faturamento_liquido",
+    rotulo: "Faturamento líquido (R$)",
+    tipo: "moeda",
+    alinhamento: "right",
+  },
+  { chave: "taxas", rotulo: "Taxas (R$)", tipo: "moeda", alinhamento: "right" },
+  { chave: "frete", rotulo: "Frete (R$)", tipo: "moeda", alinhamento: "right" },
+  { chave: "embalagem", rotulo: "Embalagem (R$)", alinhamento: "right" },
+  { chave: "ads", rotulo: "Ads (R$)", tipo: "moeda", alinhamento: "right" },
+  { chave: "cpv", rotulo: "CPV (R$)", tipo: "moeda", alinhamento: "right" },
+  {
+    chave: "mc",
+    rotulo: "Margem de contribuição (R$)",
+    tipo: "moeda",
+    alinhamento: "right",
+    ordenavel: true,
+  },
+  { chave: "mc_pct", rotulo: "MC % do faturamento líquido", alinhamento: "right", ordenavel: true },
+  { chave: "sinalizacoes", rotulo: "Sinalizações" },
+];
 
 const linhas = ref([]);
 const resumo = ref({});
@@ -464,22 +516,49 @@ const loading = ref(false);
 const erro = ref("");
 
 const ressalvas = computed(() => ressalvasDaMargem(linhas.value));
-const embalagem = computed(() => somaEmbalagem(linhas.value));
+// A embalagem do resumo agora vem do backend (a cascata do dono a inclui). O fallback é a soma das
+// linhas exibidas, para o número não desaparecer se a resposta for de uma versão anterior.
+const embalagem = computed(() => {
+  if (resumo.value?.embalagem !== null && resumo.value?.embalagem !== undefined) {
+    return { total: numero(resumo.value.embalagem), semValor: resumo.value.linhas_sem_embalagem ?? 0 };
+  }
+  return somaEmbalagem(linhas.value);
+});
 const porNivel = computed(() => ({
   cnpj: resumo.value?.por_nivel?.cnpj ?? 0,
   marketplace: resumo.value?.por_nivel?.marketplace ?? 0,
   sku: resumo.value?.por_nivel?.sku ?? 0,
 }));
 
-// O seletor de período trabalha com `{ de, ate }`; aqui ele é um proxy do filtro da tela, e cada
-// mudança recarrega — mesmo efeito do `@change="carregar"` que os dois inputs tinham.
-const periodoMargem = computed({
-  get: () => ({ de: filtros.value.de, ate: filtros.value.ate }),
-  set: (valor) => {
-    filtros.value = { ...filtros.value, de: valor?.de || "", ate: valor?.ate || "" };
-    carregar();
-  },
+// O **nível** sai dos filtros, não de um select: com os quatro filtros do dono, o nível já está
+// determinado (nenhum filtro = grupo por CNPJ; empresa = canal; empresa + canal = SKU; produto = SKU).
+const nivel = computed(() =>
+  nivelDoRecorte({ cnpj: filtros.value.cnpj, marketplace: filtros.value.marketplace, sku: filtros.value.produto }),
+);
+
+// As opções do filtro de produto são as que **têm margem no recorte** — o backend as devolve com o
+// nome como o item foi vendido. A busca é **local** (a lista do recorte já veio inteira), então o
+// filtro não dispara requisição por tecla.
+const buscaProduto = ref("");
+const opcoesProduto = computed(() => {
+  const busca = buscaProduto.value.trim().toLowerCase();
+  if (!busca) return produtos.value;
+  return produtos.value.filter((produto) =>
+    `${produto.nome || ""} ${produto.sku || ""}`.toLowerCase().includes(busca),
+  );
 });
+const dicaProdutos = computed(() => {
+  if (carregandoProdutos.value) return "Buscando os produtos do recorte…";
+  if (!produtos.value.length) return "Nenhum produto com margem neste recorte";
+  const semNome = produtos.value.filter((p) => !p.nome).length;
+  const base = `${produtos.value.length} produto(s) com margem no recorte`;
+  return semNome ? `${base} · ${semNome} sem nome no pedido` : base;
+});
+
+function filtrarProdutos(termo, atualizar) {
+  buscaProduto.value = String(termo || "");
+  atualizar();
+}
 
 // Base de pedidos: `resumo.base_completa=false` é o veredito do backend (já por nível somado);
 // os contadores de linha são o fallback quando o resumo não traz os campos novos.
@@ -527,7 +606,17 @@ async function carregar() {
   loading.value = true;
   erro.value = "";
   try {
-    const resposta = await MargemService.getMargens(parametrosDaMargem(filtros.value));
+    // O `nivel` vai explícito: é ele que impede o resumo de somar CNPJ + canal + SKU (o mesmo
+    // dinheiro contado duas ou três vezes).
+    const params = parametrosDaMargem({
+      cnpj: filtros.value.cnpj,
+      marketplace: filtros.value.marketplace,
+      sku: filtros.value.produto,
+      de: filtros.value.de,
+      ate: filtros.value.ate,
+      nivel: nivel.value,
+    });
+    const resposta = await MargemService.getMargens(params);
     const dados = resposta.data || {};
     linhas.value = Array.isArray(dados.margens) ? dados.margens : [];
     resumo.value = dados.resumo || {};
@@ -541,6 +630,37 @@ async function carregar() {
   }
 }
 
+/**
+ * As opções do filtro de produto, do **mesmo recorte** das linhas (sem `sku` e sem `nivel`): um
+ * produto que não tem margem no período não pode aparecer na lista, e o produto já escolhido não
+ * pode sumir dela.
+ */
+async function carregarProdutos() {
+  carregandoProdutos.value = true;
+  try {
+    const resposta = await MargemService.getProdutos(
+      parametrosDaMargem({
+        cnpj: filtros.value.cnpj,
+        marketplace: filtros.value.marketplace,
+        de: filtros.value.de,
+        ate: filtros.value.ate,
+      }),
+    );
+    produtos.value = Array.isArray(resposta.data?.produtos) ? resposta.data.produtos : [];
+  } catch (e) {
+    // Sem a lista o filtro de produto fica vazio — a margem continua carregando e o erro já aparece.
+    produtos.value = [];
+  } finally {
+    carregandoProdutos.value = false;
+  }
+}
+
+/** Recarrega a margem **e** as opções de produto (o recorte mudou, a lista muda junto). */
+function recarregarTudo() {
+  carregarProdutos();
+  carregar();
+}
+
 function mensagemDeErro(e) {
   const dados = e?.response?.data;
   if (dados?.detail) return dados.detail;
@@ -551,11 +671,28 @@ function mensagemDeErro(e) {
 }
 
 function limparFiltros() {
-  filtros.value = { cnpj: null, marketplace: null, sku: "", de: "", ate: "", nivel: "marketplace" };
-  carregar();
+  filtros.value = { cnpj: null, marketplace: null, produto: null, de: "", ate: "" };
+  buscaProduto.value = "";
+  recarregarTudo();
 }
 
 // ────────────────────────────────────────── FORMATAÇÃO / RÓTULOS
+
+/**
+ * Nome do produto por SKU, da lista do próprio recorte (o nome como o item foi **vendido**).
+ * Sem nome, a célula mostra o SKU sozinho: nome inventado seria pior que nome ausente.
+ */
+const nomesPorSku = computed(() => {
+  const mapa = new Map();
+  for (const produto of produtos.value) {
+    if (produto?.sku && produto?.nome) mapa.set(produto.sku, produto.nome);
+  }
+  return mapa;
+});
+
+function nomeDoSku(sku) {
+  return nomesPorSku.value.get(sku) || sku;
+}
 
 function formatarMoeda(valor) {
   return numero(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -580,18 +717,11 @@ function varianteNivel(nivel) {
 
 onMounted(() => {
   carregarCnpjs();
-  carregar();
+  recarregarTudo();
 });
 </script>
 
 <style scoped>
-.margens-page {
-  background: #f8fafc;
-}
-.margens-container {
-  max-width: 1400px;
-  margin: 0 auto;
-}
 .margens-section-label {
   font-size: 13px;
   color: #475569;

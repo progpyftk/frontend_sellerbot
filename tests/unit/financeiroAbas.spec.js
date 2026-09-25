@@ -28,6 +28,7 @@ describe('ABAS_FINANCEIRO', () => {
     expect(abasDisponiveis()).toEqual([
       'visao-geral',
       'marketplace',
+      'margem',
       'dre',
       'balanco',
       'dfc',

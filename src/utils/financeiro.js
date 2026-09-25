@@ -28,6 +28,15 @@ export const ABAS_FINANCEIRO = [
     disponivel: true,
   },
   {
+    id: 'margem',
+    label: 'Margem de contribuição',
+    icone: 'calculate',
+    onda: 'DRE-23',
+    endpoint: '/api/financeiro/margens/',
+    descricao: 'A cascata da MC por data, CNPJ (um ou o grupo), marketplace e produto.',
+    disponivel: true,
+  },
+  {
     id: 'dre',
     label: 'DRE',
     icone: 'stacked_line_chart',

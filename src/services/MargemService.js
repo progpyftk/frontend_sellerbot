@@ -42,4 +42,19 @@ export default {
   getMargens(params = {}) {
     return api.get("/api/financeiro/margens/", { params });
   },
+
+  /**
+   * As opções do **filtro de produto** da aba de margem (`DRE-23`).
+   *
+   * Devolve os SKUs que **têm margem no recorte** (`de`/`ate`/`cnpj`/`marketplace`), cada um com o
+   * nome como o item foi **vendido** (`{ sku, nome, marketplaces }`) e as contagens de quantos
+   * ficaram sem nome. O `sku` já escolhido é ignorado de propósito: a lista precisa continuar
+   * permitindo trocar o produto.
+   *
+   * @param {Object} params mesmos filtros do `getMargens`, sem `sku` e sem `nivel`
+   * @returns {Promise<import('axios').AxiosResponse>} `{ produtos: [...], total, com_nome, sem_nome }`
+   */
+  getProdutos(params = {}) {
+    return api.get("/api/financeiro/margens/produtos/", { params });
+  },
 };

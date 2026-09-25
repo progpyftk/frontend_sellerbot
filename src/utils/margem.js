@@ -209,3 +209,83 @@ export function rotuloCompetencia(valor) {
   const nome = meses[Number(mes) - 1];
   return nome ? `${nome}/${ano}` : texto;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// Aba de Margem de Contribuição do módulo financeiro (ticket `DRE-23`).
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * O **nível** que o recorte deve mostrar e somar, derivado dos filtros escolhidos.
+ *
+ * A tabela guarda os três níveis juntos e **somar mais de um conta a mesma venda duas vezes** (o
+ * backend protege disso com `nivel_efetivo_do_resumo`). Aqui a regra é a mesma, só que derivada dos
+ * quatro filtros da aba: quanto mais específico o filtro, mais fino o nível.
+ *
+ * | Filtros escolhidos | Nível | O que a tabela mostra |
+ * |---|---|---|
+ * | nenhum | `cnpj` | uma linha por empresa (o grupo) |
+ * | empresa | `marketplace` | um canal por linha |
+ * | marketplace (sem empresa) | `marketplace` | cada empresa naquele canal |
+ * | empresa + marketplace | `sku` | um SKU por linha |
+ * | produto | `sku` | o SKU escolhido |
+ */
+export function nivelDoRecorte(filtros = {}) {
+  const temEmpresa = Boolean(filtros.cnpj || filtros.fiscal_account);
+  if (filtros.sku) return "sku";
+  if (filtros.marketplace) return temEmpresa ? "sku" : "marketplace";
+  return temEmpresa ? "marketplace" : "cnpj";
+}
+
+/** Nome legível do produto: `nome (SKU)` quando há nome, só o SKU quando não há — nunca inventado. */
+export function rotuloDoProduto(produto = {}) {
+  const sku = produto?.sku || "";
+  const nome = (produto?.nome || "").trim();
+  if (nome && sku) return `${nome} (${sku})`;
+  return nome || sku || "—";
+}
+
+/**
+ * A cascata da margem **do recorte somado**, na ordem do dono:
+ * `GMV − impostos = faturamento líquido − taxas − frete − embalagem − ads − CPV = MC`.
+ *
+ * `valor` é `null` quando o backend não devolveu a chave (campo ausente aparece como `—`, nunca
+ * zero) e a embalagem tem uma marca própria: sem custo cadastrado em alguma linha do recorte, o
+ * total de embalagem sai **incompleto** (`sem_custo`), porque somar o que existe faria a MC parecer
+ * maior do que é.
+ */
+export function cascataDoRecorte(resumo = {}) {
+  const valor = (chave) => (resumo?.[chave] ?? null);
+  const semEmbalagem = resumo?.linhas_sem_embalagem ?? null;
+  const embalagemIncompleta = resumo?.embalagem_informada === false;
+
+  return [
+    { chave: "gmv", rotulo: "Faturamento bruto (GMV)", valor: valor("gmv"), tipo: "entrada" },
+    { chave: "impostos", rotulo: "(−) Impostos (DAS)", valor: valor("impostos"), tipo: "saida" },
+    {
+      chave: "faturamento_liquido",
+      rotulo: "= Faturamento líquido (Net Sales)",
+      valor: valor("faturamento_liquido"),
+      tipo: "subtotal",
+    },
+    { chave: "taxas", rotulo: "(−) Taxas de marketplace", valor: valor("taxas"), tipo: "saida" },
+    { chave: "frete", rotulo: "(−) Frete", valor: valor("frete"), tipo: "saida" },
+    {
+      chave: "embalagem",
+      rotulo: embalagemIncompleta
+        ? "(−) Embalagem (custo não cadastrado em parte do recorte)"
+        : "(−) Embalagem",
+      valor: valor("embalagem"),
+      tipo: "saida",
+      sem_custo: embalagemIncompleta,
+      linhas_sem_custo: semEmbalagem,
+    },
+    { chave: "ads", rotulo: "(−) Ads", valor: valor("ads"), tipo: "saida" },
+    { chave: "cpv", rotulo: "(−) CPV (custo do produto)", valor: valor("cpv"), tipo: "saida" },
+    {
+      chave: "mc",
+      rotulo: "= Margem de contribuição",
+      valor: valor("mc"),
+      tipo: "destaque",
+    },
+  ];
+}

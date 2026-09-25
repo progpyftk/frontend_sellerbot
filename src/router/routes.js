@@ -195,9 +195,11 @@ const routes = [
         redirect: { name: 'financeiro', params: { aba: 'extratos' } },
       },
       {
+        // A tela de Margem de Contribuição virou **aba do módulo** (ticket `DRE-23`): o nome antigo
+        // continua valendo como **redirect**, então o menu e os links existentes não quebram.
         path: 'financeiro/margens',
         name: 'financeiro-margens',
-        component: () => import('pages/MargensPage.vue')
+        redirect: { name: 'financeiro', params: { aba: 'margem' } },
       },
       {
         path: 'financeiro/:aba?',

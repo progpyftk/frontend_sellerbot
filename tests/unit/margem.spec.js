@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  cascataDoRecorte,
   diagnosticoDaBase,
+  nivelDoRecorte,
   parametrosDaMargem,
   ressalvasDaMargem,
   rotuloCompetencia,
   rotuloDaBase,
+  rotuloDoProduto,
   rotuloMarketplace,
   rotuloNivel,
   somaEmbalagem,
@@ -156,5 +159,86 @@ describe('rótulos', () => {
       rotuloDaBase(diagnosticoDaBase({ base_completa: false, cobertura_da_base_pct: '4.9344' })),
     ).toBe('Base incompleta (4,93% da receita declarada)')
     expect(rotuloDaBase(diagnosticoDaBase({ base_completa: true }))).toBe('')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// Aba de Margem de Contribuição do módulo (ticket `DRE-23`).
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+describe('nivelDoRecorte', () => {
+  it('sem filtro soma o grupo por CNPJ; com empresa, o canal; com canal, o SKU', () => {
+    expect(nivelDoRecorte({})).toBe('cnpj')
+    expect(nivelDoRecorte({ cnpj: '41641514000103' })).toBe('marketplace')
+    expect(nivelDoRecorte({ marketplace: 'ml' })).toBe('marketplace')
+    expect(nivelDoRecorte({ cnpj: '41641514000103', marketplace: 'ml' })).toBe('sku')
+  })
+
+  it('o produto escolhido sempre resume no nível do SKU', () => {
+    expect(nivelDoRecorte({ sku: 'SKU-A' })).toBe('sku')
+    expect(nivelDoRecorte({ cnpj: 'x', marketplace: 'ml', sku: 'SKU-A' })).toBe('sku')
+  })
+
+  it('a conta da empresa por id vale como CNPJ escolhido', () => {
+    expect(nivelDoRecorte({ fiscal_account: 7 })).toBe('marketplace')
+  })
+})
+
+describe('rotuloDoProduto', () => {
+  it('mostra nome e SKU quando há nome, e só o SKU quando não há', () => {
+    expect(rotuloDoProduto({ sku: 'SKU-A', nome: 'Substrato 4kg' })).toBe('Substrato 4kg (SKU-A)')
+    expect(rotuloDoProduto({ sku: 'SKU-A', nome: '' })).toBe('SKU-A')
+    expect(rotuloDoProduto({ sku: 'SKU-A' })).toBe('SKU-A')
+    expect(rotuloDoProduto({})).toBe('—')
+  })
+})
+
+describe('cascataDoRecorte', () => {
+  const RESUMO = {
+    gmv: '10000.00',
+    impostos: '1000.00',
+    faturamento_liquido: '9000.00',
+    taxas: '1200.00',
+    frete: '300.00',
+    embalagem: '100.00',
+    ads: '200.00',
+    cpv: '4000.00',
+    mc: '3200.00',
+    embalagem_informada: true,
+    linhas_sem_embalagem: 0,
+  }
+
+  it('monta a cascata do dono na ordem, com a MC como destaque', () => {
+    const linhas = cascataDoRecorte(RESUMO)
+    expect(linhas.map((l) => l.chave)).toEqual([
+      'gmv',
+      'impostos',
+      'faturamento_liquido',
+      'taxas',
+      'frete',
+      'embalagem',
+      'ads',
+      'cpv',
+      'mc',
+    ])
+    expect(linhas.find((l) => l.chave === 'mc').tipo).toBe('destaque')
+    expect(linhas.find((l) => l.chave === 'faturamento_liquido').tipo).toBe('subtotal')
+    expect(linhas.find((l) => l.chave === 'embalagem').valor).toBe('100.00')
+  })
+
+  it('campo ausente vira null — a tela mostra — e nunca zero', () => {
+    const linhas = cascataDoRecorte({ gmv: '10.00' })
+    const porChave = Object.fromEntries(linhas.map((l) => [l.chave, l.valor]))
+    expect(porChave.gmv).toBe('10.00')
+    expect(porChave.embalagem).toBeNull()
+    expect(porChave.mc).toBeNull()
+  })
+
+  it('marca a embalagem quando parte do recorte está sem o custo', () => {
+    const linhas = cascataDoRecorte({ ...RESUMO, embalagem_informada: false, linhas_sem_embalagem: 3 })
+    const embalagem = linhas.find((l) => l.chave === 'embalagem')
+    expect(embalagem.sem_custo).toBe(true)
+    expect(embalagem.linhas_sem_custo).toBe(3)
+    expect(embalagem.rotulo).toContain('não cadastrado')
   })
 })
