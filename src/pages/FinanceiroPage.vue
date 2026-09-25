@@ -186,12 +186,14 @@ function recarregar() {
 </script>
 
 <style lang="scss" scoped>
+@import 'src/css/tokens.scss';
+
 .financeiro-container {
   max-width: 1400px;
   margin: 0 auto;
 }
 
 .financeiro-tabs {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid $border;
 }
 </style>

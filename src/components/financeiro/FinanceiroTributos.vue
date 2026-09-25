@@ -87,7 +87,7 @@
               </SbBadge>
               <span class="text-caption text-grey-7">{{ linha.competencia }}</span>
             </div>
-            <p class="text-body2 detalhe-texto">
+            <p class="text-body2 sb-text-detalhe">
               {{ linha.explicacao || 'Sem divergência a explicar: o declarado e a tabela coincidem.' }}
             </p>
           </template>
@@ -174,12 +174,6 @@ onMounted(carregar)
 
 <style lang="scss" scoped>
 @import 'src/css/tokens.scss';
-
-.detalhe-texto {
-  margin: 0;
-  color: $text-body;
-  line-height: 1.5;
-}
 
 :deep(.linha--alerta) {
   background: $tint-red-bg;

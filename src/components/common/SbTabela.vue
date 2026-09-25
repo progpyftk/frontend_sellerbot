@@ -367,7 +367,7 @@ function textoPadrao(linha, coluna) {
     }
 
     tbody td {
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid $surface-2;
       vertical-align: middle;
     }
 

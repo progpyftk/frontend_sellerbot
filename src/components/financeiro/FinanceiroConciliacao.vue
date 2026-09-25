@@ -25,7 +25,7 @@
         />
         <template v-else>
           <div v-for="bloco in item.demonstrativos" :key="bloco.demonstrativo" class="q-mb-md">
-            <div class="bloco-titulo">{{ bloco.demonstrativo }}</div>
+            <div class="sb-eyebrow">{{ bloco.demonstrativo }}</div>
             <div class="row items-center q-gutter-sm q-mb-sm">
               <SbBadge
                 v-for="linha in resumoDaConciliacao(bloco)"
@@ -71,7 +71,7 @@
                   </SbBadge>
                   <span class="text-caption text-grey-7 font-mono">{{ linha.chave }}</span>
                 </div>
-                <p class="text-body2 detalhe-texto">
+                <p class="text-body2 sb-text-detalhe">
                   {{ linha.explicacao || 'Diferença sem explicação registrada.' }}
                 </p>
               </template>
@@ -155,21 +155,6 @@ onMounted(carregar)
 
 <style lang="scss" scoped>
 @import 'src/css/tokens.scss';
-
-.bloco-titulo {
-  font-size: $text-xs-size;
-  font-weight: $font-semibold;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: $tint-teal-text;
-  margin-bottom: $space-2;
-}
-
-.detalhe-texto {
-  margin: 0;
-  color: $text-body;
-  line-height: 1.5;
-}
 
 :deep(.linha--alerta) {
   background: $tint-red-bg;

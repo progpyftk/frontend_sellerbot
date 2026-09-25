@@ -29,7 +29,7 @@
 
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
-            <div class="via-titulo">Método indireto</div>
+            <div class="sb-eyebrow">Método indireto</div>
             <SbTabela
               exportavel
               :nome-exportacao="'dfc-indireto'"
@@ -44,7 +44,7 @@
           </div>
 
           <div class="col-12 col-md-6">
-            <div class="via-titulo">Método direto</div>
+            <div class="sb-eyebrow">Método direto</div>
             <SbTabela
               exportavel
               :nome-exportacao="'dfc-direto'"
@@ -137,15 +137,6 @@ onMounted(carregar)
 
 <style lang="scss" scoped>
 @import 'src/css/tokens.scss';
-
-.via-titulo {
-  font-size: $text-xs-size;
-  font-weight: $font-semibold;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: $tint-teal-text;
-  margin-bottom: $space-2;
-}
 
 :deep(.via--total) {
   font-weight: 700;

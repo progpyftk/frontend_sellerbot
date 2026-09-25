@@ -95,14 +95,14 @@
           <template #rodape>
             <tr>
               <td colspan="2">Total</td>
-              <td class="is-right">{{ formatarMoeda(totais.gmv) }}</td>
-              <td class="is-right">{{ formatarMoeda(totais.taxas) }}</td>
-              <td class="is-right">{{ formatarMoeda(totais.liquida) }}</td>
-              <td class="is-right">{{ formatarMoeda(totais.cmv) }}</td>
-              <td class="is-right">{{ formatarMoeda(totais.mcAntes) }}</td>
-              <td class="is-right">{{ formatarMoeda(totais.ads) }}</td>
-              <td class="is-right">{{ formatarMoeda(totais.mcDepois) }}</td>
-              <td class="is-right">{{ totais.mcPct != null ? `${totais.mcPct}%` : '—' }}</td>
+              <td class="is-right is-numerico">{{ formatarMoeda(totais.gmv) }}</td>
+              <td class="is-right is-numerico">{{ formatarMoeda(totais.taxas) }}</td>
+              <td class="is-right is-numerico">{{ formatarMoeda(totais.liquida) }}</td>
+              <td class="is-right is-numerico">{{ formatarMoeda(totais.cmv) }}</td>
+              <td class="is-right is-numerico">{{ formatarMoeda(totais.mcAntes) }}</td>
+              <td class="is-right is-numerico">{{ formatarMoeda(totais.ads) }}</td>
+              <td class="is-right is-numerico">{{ formatarMoeda(totais.mcDepois) }}</td>
+              <td class="is-right is-numerico">{{ totais.mcPct != null ? `${totais.mcPct}%` : '—' }}</td>
             </tr>
           </template>
         </SbTabela>

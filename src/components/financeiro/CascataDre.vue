@@ -15,10 +15,10 @@
     >
       <template #celula-rotulo="{ linha }">
         {{ linha.rotulo }}
-        <span v-if="linha.chave === 'margem_contribuicao' && dre?.margem_contribuicao_pct" class="texto-apoio">
+        <span v-if="linha.chave === 'margem_contribuicao' && dre?.margem_contribuicao_pct" class="sb-text-muted">
           ({{ dre.margem_contribuicao_pct }}% da receita líquida)
         </span>
-        <span v-if="linha.chave === 'ebitda' && dre?.ebitda_pct" class="texto-apoio">
+        <span v-if="linha.chave === 'ebitda' && dre?.ebitda_pct" class="sb-text-muted">
           ({{ dre.ebitda_pct }}% da receita líquida)
         </span>
       </template>
@@ -88,9 +88,5 @@ const temOrigem = (linha) => (linha.contas?.length ?? 0) > 0
   :deep(.cascata--subtotal) {
     font-weight: 600;
   }
-}
-
-.texto-apoio {
-  color: $text-muted;
 }
 </style>

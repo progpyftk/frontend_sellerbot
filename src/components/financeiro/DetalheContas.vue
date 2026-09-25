@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="detalhe-contas__titulo">{{ titulo }}</div>
+    <div class="sb-eyebrow">{{ titulo }}</div>
     <SbTabela
       :colunas="COLUNAS"
       :linhas="linhas"
@@ -50,16 +50,3 @@ const linhas = computed(() =>
   })),
 )
 </script>
-
-<style lang="scss" scoped>
-@import 'src/css/tokens.scss';
-
-.detalhe-contas__titulo {
-  font-size: $text-xs-size;
-  font-weight: $font-semibold;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: $text-muted;
-  margin-bottom: $space-2;
-}
-</style>

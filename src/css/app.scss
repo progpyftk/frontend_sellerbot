@@ -68,6 +68,15 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 4px;
 }
 
+/* Parágrafo de detalhe (painel lateral): o corpo de texto sem a margem do navegador. */
+.sb-text-detalhe {
+  margin: 0;
+  font-size: $text-body-size;
+  font-weight: $font-regular;
+  line-height: 1.5;
+  color: $text-body;
+}
+
 .sb-page-title {
   font-size: 24px;
   font-weight: 700;

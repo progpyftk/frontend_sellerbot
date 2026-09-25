@@ -82,7 +82,7 @@
               {{ linha.equilibra ? 'débito = crédito' : 'não equilibra' }}
             </SbBadge>
           </div>
-          <p class="text-body2 detalhe-texto">{{ linha.historico }}</p>
+          <p class="text-body2 sb-text-detalhe">{{ linha.historico }}</p>
           <p v-if="linha.origem_ref" class="text-caption text-grey-7 lastro">
             Lastro: <span class="font-mono">{{ linha.origem_ref }}</span>
           </p>
@@ -156,7 +156,7 @@
         </template>
 
         <template #detalhe="{ linha }">
-          <p class="text-body2 detalhe-texto">
+          <p class="text-body2 sb-text-detalhe">
             <span class="font-mono">{{ linha.codigo }}</span> — {{ linha.nome }}
           </p>
           <dl class="mapeamento">
@@ -327,12 +327,6 @@ onMounted(carregar)
 
 .lastro {
   font-size: $text-xs-size;
-}
-
-.detalhe-texto {
-  margin: 0;
-  color: $text-body;
-  line-height: 1.5;
 }
 
 .detalhe-totais {
