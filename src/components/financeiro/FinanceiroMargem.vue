@@ -98,7 +98,7 @@
                   outlined
                   label="Data inicial"
                   bg-color="white"
-                  @update:model-value="recarregarTudo"
+                  @update:model-value="aoMudarData"
                 />
               </div>
               <div class="col-6">
@@ -109,17 +109,38 @@
                   outlined
                   label="Data final"
                   bg-color="white"
-                  @update:model-value="recarregarTudo"
+                  @update:model-value="aoMudarData"
                 />
               </div>
             </div>
             <div class="text-caption text-grey-7 q-mt-xs">
-              A margem é apurada por <strong>mês</strong>: o intervalo soma as competências que ele
-              toca, e a primeira e a última entram por inteiro.
+              <template v-if="ehDiario">
+                <strong>Um dia por linha.</strong> As parcelas são do próprio dia; o imposto é o
+                <strong>rateio da competência</strong> (o DAS é mensal) pela alíquota efetiva do mês, e o
+                último dia fecha o resíduo de centavo — a soma dos dias bate com o mês.
+              </template>
+              <template v-else>
+                A margem é apurada por <strong>mês</strong>: o intervalo soma as competências que ele
+                toca, e a primeira e a última entram por inteiro.
+              </template>
             </div>
           </div>
 
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select
+              v-model="filtros.granularidade"
+              :options="GRANULARIDADES_DE_MARGEM"
+              emit-value
+              map-options
+              dense
+              outlined
+              label="Granularidade"
+              bg-color="white"
+              @update:model-value="recarregarTudo"
+            />
+          </div>
+
+          <div class="col-12 col-md-3">
             <q-btn
               flat
               dense
@@ -132,6 +153,28 @@
           </div>
         </div>
       </SbCard>
+
+      <!-- ══════════════════════════════════════════ CONFERÊNCIA COM O MÊS -->
+      <SbInfoCallout
+        v-if="ehDiario && conferenciaDivergente && !loading"
+        titulo="O mês materializado difere da série calculada agora"
+        icon="rule"
+        variant="info"
+      >
+        <p class="q-mb-xs">
+          O dia é calculado <strong>na hora</strong>; o mês é o <strong>snapshot</strong> que a
+          materialização gravou. Pedido ressincronizado depois do snapshot aparece nos dias e não no
+          mês — por isso a diferença existe e está medida abaixo.
+        </p>
+        <ul class="margens-lista q-mb-none">
+          <li v-for="mes in conferencia" :key="mes.snapshot_em">
+            <strong>{{ mes.snapshot_em ? mes.snapshot_em.slice(0, 16).replace('T', ' ') : 'sem snapshot' }}</strong>
+            · GMV {{ formatarMoeda(mes.diferenca_de_gmv) }}
+            · impostos {{ formatarMoeda(mes.diferenca_de_impostos) }}
+            · MC {{ formatarMoeda(mes.diferenca_de_mc) }} (dias − mês)
+          </li>
+        </ul>
+      </SbInfoCallout>
 
       <!-- ══════════════════════════════════════════ BASE DE PEDIDOS -->
       <!--
@@ -238,41 +281,56 @@
       <template v-else>
         <!-- ══════════════════════════════════════════ RESUMO -->
         <div class="margens-section-label q-mb-sm">
-          Resumo do nível <strong>{{ rotuloNivel(resumo.nivel_do_resumo) }}</strong>
-          · {{ resumo.linhas || linhas.length }} linha(s)
+          <template v-if="ehDiario">
+            Total do intervalo <strong>{{ rotuloDia(filtros.de) }} a {{ rotuloDia(filtros.ate) }}</strong>
+            · {{ linhasDaGrade.length }} dia(s) com movimento
+            <template v-if="diasVazios"> · {{ diasVazios }} sem movimento</template>
+          </template>
+          <template v-else>
+            Resumo do nível <strong>{{ rotuloNivel(periodo.nivel_do_resumo) }}</strong>
+            · {{ periodo.linhas || linhas.length }} linha(s)
+          </template>
         </div>
 
         <SbKpiGrid :columns="5" class="q-mb-lg">
           <SbKpiCard
             label="GMV bruto"
-            :value="formatarMoeda(resumo.gmv)"
+            :value="formatarMoeda(periodo.gmv)"
             :sub="`${porNivel.cnpj} CNPJ · ${porNivel.marketplace} marketplace · ${porNivel.sku} SKU`"
             variant="slate"
           />
           <SbKpiCard
             label="Faturamento líquido"
-            :value="formatarMoeda(resumo.faturamento_liquido)"
+            :value="formatarMoeda(periodo.faturamento_liquido)"
             sub="GMV − impostos"
             variant="sky"
           />
           <SbKpiCard
             label="Margem de contribuição"
-            :value="formatarMoeda(resumo.mc)"
+            :value="formatarMoeda(periodo.mc)"
             sub="Após taxas, frete, embalagem, ads e CPV"
             variant="teal"
           />
           <SbKpiCard
             label="MC % do faturamento líquido"
-            :value="formatarPct(resumo.mc_pct)"
-            :sub="`Resumo por ${rotuloNivel(resumo.nivel_do_resumo).toLowerCase()}`"
+            :value="formatarPct(periodo.mc_pct)"
+            :sub="`Resumo por ${rotuloNivel(periodo.nivel_do_resumo).toLowerCase()}`"
             variant="green"
           />
           <SbKpiCard
+            v-if="!ehDiario"
             label="Receita declarada (PGDASD)"
-            :value="resumo.receita_declarada != null ? formatarMoeda(resumo.receita_declarada) : '—'"
-            :sub="resumo.receita_declarada != null
+            :value="periodo.receita_declarada != null ? formatarMoeda(periodo.receita_declarada) : '—'"
+            :sub="periodo.receita_declarada != null
               ? 'Régua oficial da cobertura da base'
               : 'Só existe no nível CNPJ'"
+            variant="indigo"
+          />
+          <SbKpiCard
+            v-else
+            label="Dias com movimento"
+            :value="String(linhasDaGrade.length)"
+            :sub="diasVazios ? `${diasVazios} dia(s) sem pedido e sem Ads no intervalo` : 'Todos os dias do intervalo têm movimento'"
             variant="indigo"
           />
         </SbKpiGrid>
@@ -282,23 +340,23 @@
           <div class="cascata">
             <div class="cascata-linha">
               <span class="cascata-rotulo">GMV bruto</span>
-              <span class="cascata-valor">{{ formatarMoeda(resumo.gmv) }}</span>
+              <span class="cascata-valor">{{ formatarMoeda(periodo.gmv) }}</span>
             </div>
             <div class="cascata-linha cascata-linha--deducao">
               <span class="cascata-rotulo">(−) Impostos</span>
-              <span class="cascata-valor">{{ formatarMoeda(resumo.impostos) }}</span>
+              <span class="cascata-valor">{{ formatarMoeda(periodo.impostos) }}</span>
             </div>
             <div class="cascata-linha cascata-linha--subtotal">
               <span class="cascata-rotulo">(=) Faturamento líquido</span>
-              <span class="cascata-valor">{{ formatarMoeda(resumo.faturamento_liquido) }}</span>
+              <span class="cascata-valor">{{ formatarMoeda(periodo.faturamento_liquido) }}</span>
             </div>
             <div class="cascata-linha cascata-linha--deducao">
               <span class="cascata-rotulo">(−) Taxas</span>
-              <span class="cascata-valor">{{ formatarMoeda(resumo.taxas) }}</span>
+              <span class="cascata-valor">{{ formatarMoeda(periodo.taxas) }}</span>
             </div>
             <div class="cascata-linha cascata-linha--deducao">
               <span class="cascata-rotulo">(−) Frete</span>
-              <span class="cascata-valor">{{ formatarMoeda(resumo.frete) }}</span>
+              <span class="cascata-valor">{{ formatarMoeda(periodo.frete) }}</span>
             </div>
             <div class="cascata-linha cascata-linha--deducao">
               <span class="cascata-rotulo">
@@ -311,44 +369,63 @@
             </div>
             <div class="cascata-linha cascata-linha--deducao">
               <span class="cascata-rotulo">(−) Ads</span>
-              <span class="cascata-valor">{{ formatarMoeda(resumo.ads) }}</span>
+              <span class="cascata-valor">{{ formatarMoeda(periodo.ads) }}</span>
             </div>
             <div class="cascata-linha cascata-linha--deducao">
               <span class="cascata-rotulo">(−) CPV (custo do produto vendido)</span>
-              <span class="cascata-valor">{{ formatarMoeda(resumo.cpv) }}</span>
+              <span class="cascata-valor">{{ formatarMoeda(periodo.cpv) }}</span>
             </div>
             <div class="cascata-linha cascata-linha--total">
               <span class="cascata-rotulo">(=) Margem de contribuição</span>
               <span class="cascata-valor">
-                {{ formatarMoeda(resumo.mc) }}
-                <span class="cascata-pct">{{ formatarPct(resumo.mc_pct) }}</span>
+                {{ formatarMoeda(periodo.mc) }}
+                <span class="cascata-pct">{{ formatarPct(periodo.mc_pct) }}</span>
               </span>
             </div>
           </div>
           <div class="text-caption text-grey-6 q-mt-sm">
-            A embalagem do recorte vem do próprio resumo do backend — a cascata do dono a inclui. Quando
-            alguma linha do recorte não tem o custo cadastrado, o valor aparece marcado: somar só o que
-            existe faria a margem parecer maior do que é.
+            <template v-if="ehDiario">
+              O total é a <strong>soma dos dias</strong>. O imposto de cada dia é o <strong>rateio da
+              competência</strong> (o DAS é mensal) pela alíquota efetiva do mês — e a linha diz isso.
+            </template>
+            <template v-else>
+              A embalagem do recorte vem do próprio resumo do backend — a cascata do dono a inclui.
+              Quando alguma linha do recorte não tem o custo cadastrado, o valor aparece marcado: somar
+              só o que existe faria a margem parecer maior do que é.
+            </template>
           </div>
         </SbCard>
 
         <!-- ══════════════════════════════════════════ LINHAS -->
         <!-- A grade do módulo é a `SbTabela` (FINT-15): a mesma ordenação, o mesmo "sem valor" e a
              mesma exportação das outras abas. -->
-        <SbCard title="Detalhe por linha" :eyebrow="`${linhas.length} linha(s) no recorte`">
+        <SbCard
+          :title="ehDiario ? 'Detalhe por dia' : 'Detalhe por linha'"
+          :eyebrow="
+            ehDiario
+              ? `${linhasDaGrade.length} dia(s) com movimento${diasVazios ? ` · ${diasVazios} sem movimento` : ''}`
+              : `${linhasDaGrade.length} linha(s) no recorte`
+          "
+        >
           <SbTabela
             exportavel
             nome-exportacao="margem-contribuicao"
-            :colunas="COLUNAS"
-            :linhas="linhas"
-            chave-linha="id"
+            :colunas="colunasDaGrade"
+            :linhas="linhasDaGrade"
+            :chave-linha="ehDiario ? 'dia' : 'id'"
             rotulo="Linhas da margem de contribuição"
             :carregando="loading"
             :erro="erro"
           >
+            <template #celula-dia="{ linha }">
+              <span class="row--bold">{{ rotuloDia(linha.dia) }}</span>
+            </template>
+
             <template #celula-competencia="{ linha }">
               <span class="row--bold">{{ rotuloCompetencia(linha.competencia) }}</span>
             </template>
+
+            <template #celula-pedidos="{ linha }">{{ linha.pedidos ?? "—" }}</template>
 
             <template #celula-nivel="{ linha }">
               <SbBadge :variant="varianteNivel(linha.nivel)">{{ rotuloNivel(linha.nivel) }}</SbBadge>
@@ -448,14 +525,18 @@ import { formatarCnpj, opcoesDeEmpresa } from "src/utils/seletores";
 import MargemService from "src/services/MargemService";
 import FiscalService from "src/services/FiscalService";
 import {
+  GRANULARIDADES_DE_MARGEM,
   MARKETPLACES_DE_MARGEM,
   diagnosticoDaBase,
+  diasSemMovimento,
+  granularidadePadrao,
   nivelDoRecorte,
   numero,
   parametrosDaMargem,
   ressalvasDaMargem,
   rotuloCompetencia,
   rotuloDaBase,
+  rotuloDia,
   rotuloDoProduto,
   rotuloMarketplace,
   rotuloNivel,
@@ -470,11 +551,14 @@ const filtros = ref({
   produto: null,
   de: "",
   ate: "",
+  granularidade: "mes",
 });
 
 const opcoesCnpj = ref([]);
 const produtos = ref([]);
 const carregandoProdutos = ref(false);
+/** A série diária (`DRE-24`) — só é buscada e mostrada na granularidade `dia`. */
+const diario = ref({ dias: [], total: {}, metodo: {} });
 
 /**
  * As colunas do detalhe. A ordem é a leitura da cascata do dono (GMV → impostos → líquido → custos →
@@ -515,14 +599,72 @@ const resumo = ref({});
 const loading = ref(false);
 const erro = ref("");
 
+/** A granularidade escolhida é `dia`? (o dono pediu: um dia filtrado tem de mostrar a MC do dia) */
+const ehDiario = computed(() => filtros.value.granularidade === "dia");
+
+/**
+ * O período que a tela está mostrando: no mês é o `resumo` materializado; no dia é o **total da
+ * série**, que é a soma dos dias — as duas fontes têm as mesmas chaves da cascata do dono.
+ */
+const periodo = computed(() => (ehDiario.value ? diario.value.total || {} : resumo.value));
+
+/** As linhas da grade: os dias da série ou as linhas materializadas do mês. */
+const linhasDaGrade = computed(() => (ehDiario.value ? diario.value.dias || [] : linhas.value));
+
+/**
+ * A conferência contra o mês: a série é calculada **agora** e o mês é o **snapshot** da
+ * materialização. Quando os dois divergem (pedido ressincronizado depois), a tela **diz** — não
+ * esconde atrás de um total que "quase" bate.
+ */
+const conferencia = computed(() => Object.values(diario.value.conferencia_com_mes || {}));
+const conferenciaDivergente = computed(() => conferencia.value.some((mes) => mes.fecha === false));
+
+/** Dias do intervalo **sem** linha na série (sem pedido e sem Ads) — o vazio é dito, não escondido. */
+const diasVazios = computed(() =>
+  ehDiario.value ? diasSemMovimento(diario.value.dias, filtros.value.de, filtros.value.ate) : null,
+);
+
+const COLUNAS_DIA = [
+  { chave: "dia", rotulo: "Dia", largura: "110px", ordenavel: true },
+  { chave: "gmv", rotulo: "GMV (R$)", tipo: "moeda", alinhamento: "right", ordenavel: true },
+  { chave: "impostos", rotulo: "Impostos (R$)", tipo: "moeda", alinhamento: "right" },
+  {
+    chave: "faturamento_liquido",
+    rotulo: "Faturamento líquido (R$)",
+    tipo: "moeda",
+    alinhamento: "right",
+  },
+  { chave: "taxas", rotulo: "Taxas (R$)", tipo: "moeda", alinhamento: "right" },
+  { chave: "frete", rotulo: "Frete (R$)", tipo: "moeda", alinhamento: "right" },
+  { chave: "embalagem", rotulo: "Embalagem (R$)", alinhamento: "right" },
+  { chave: "ads", rotulo: "Ads (R$)", tipo: "moeda", alinhamento: "right" },
+  { chave: "cpv", rotulo: "CPV (R$)", tipo: "moeda", alinhamento: "right" },
+  {
+    chave: "mc",
+    rotulo: "Margem de contribuição (R$)",
+    tipo: "moeda",
+    alinhamento: "right",
+    ordenavel: true,
+  },
+  { chave: "mc_pct", rotulo: "MC % do faturamento líquido", alinhamento: "right", ordenavel: true },
+  { chave: "pedidos", rotulo: "Pedidos", alinhamento: "right", ordenavel: true },
+  { chave: "sinalizacoes", rotulo: "Sinalizações" },
+];
+
+/** As colunas da grade mudam com a granularidade; as de dinheiro são as mesmas nas duas. */
+const colunasDaGrade = computed(() => (ehDiario.value ? COLUNAS_DIA : COLUNAS));
+
 const ressalvas = computed(() => ressalvasDaMargem(linhas.value));
 // A embalagem do resumo agora vem do backend (a cascata do dono a inclui). O fallback é a soma das
 // linhas exibidas, para o número não desaparecer se a resposta for de uma versão anterior.
 const embalagem = computed(() => {
-  if (resumo.value?.embalagem !== null && resumo.value?.embalagem !== undefined) {
-    return { total: numero(resumo.value.embalagem), semValor: resumo.value.linhas_sem_embalagem ?? 0 };
+  if (periodo.value?.embalagem !== null && periodo.value?.embalagem !== undefined) {
+    return {
+      total: numero(periodo.value.embalagem),
+      semValor: periodo.value.linhas_sem_embalagem ?? 0,
+    };
   }
-  return somaEmbalagem(linhas.value);
+  return somaEmbalagem(linhasDaGrade.value);
 });
 const porNivel = computed(() => ({
   cnpj: resumo.value?.por_nivel?.cnpj ?? 0,
@@ -560,13 +702,23 @@ function filtrarProdutos(termo, atualizar) {
   atualizar();
 }
 
-// Base de pedidos: `resumo.base_completa=false` é o veredito do backend (já por nível somado);
-// os contadores de linha são o fallback quando o resumo não traz os campos novos.
-const baseIncompleta = computed(() => resumo.value?.base_completa === false);
-const linhasComBaseIncompleta = computed(
-  () => resumo.value?.linhas_com_base_incompleta ?? ressalvas.value.sem_base,
+// Base de pedidos: `periodo.base_completa=false` é o veredito do backend (já por nível somado);
+// os contadores de linha são o fallback quando o resumo não traz os campos novos. Na série diária o
+// veredito é da **competência** e vem em cada dia (`base_completa`), então o aviso olha os dias.
+const baseIncompleta = computed(() =>
+  ehDiario.value
+    ? (diario.value.dias || []).some((linha) => linha.base_completa === false)
+    : resumo.value?.base_completa === false,
 );
-const totalDeLinhas = computed(() => resumo.value?.linhas ?? linhas.value.length);
+const linhasComBaseIncompleta = computed(() => {
+  if (ehDiario.value) {
+    return (diario.value.dias || []).filter((linha) => linha.base_completa === false).length;
+  }
+  return resumo.value?.linhas_com_base_incompleta ?? ressalvas.value.sem_base;
+});
+const totalDeLinhas = computed(() =>
+  ehDiario.value ? (diario.value.dias || []).length : resumo.value?.linhas ?? linhas.value.length,
+);
 const observacoesDeBase = computed(() => [
   ...new Set(
     linhas.value
@@ -616,18 +768,46 @@ async function carregar() {
       ate: filtros.value.ate,
       nivel: nivel.value,
     });
+    if (ehDiario.value) {
+      if (!filtros.value.de || !filtros.value.ate) {
+        // Sem as duas datas não há série: recusar aqui é melhor que o backend devolver 400 e a tela
+        // ficar com o número do mês parecendo do dia.
+        diario.value = { dias: [], total: {}, metodo: {} };
+        erro.value = "Informe a data inicial e a data final para ver a margem por dia.";
+        return;
+      }
+      const resposta = await MargemService.getMargemDiaria(params);
+      diario.value = resposta.data || { dias: [], total: {}, metodo: {} };
+      linhas.value = [];
+      resumo.value = {};
+      return;
+    }
     const resposta = await MargemService.getMargens(params);
     const dados = resposta.data || {};
     linhas.value = Array.isArray(dados.margens) ? dados.margens : [];
     resumo.value = dados.resumo || {};
+    // A série diária sai da tela quando a granularidade é mês — dado de outro grão ao lado do mês
+    // confunde mais do que ajuda.
+    diario.value = { dias: [], total: {}, metodo: {} };
   } catch (e) {
     linhas.value = [];
     resumo.value = {};
+    diario.value = { dias: [], total: {}, metodo: {} };
     erro.value = mensagemDeErro(e);
     $q.notify({ type: "negative", message: erro.value });
   } finally {
     loading.value = false;
   }
+}
+
+/**
+ * Troca de data: **um único dia liga a granularidade `dia` sozinho** — é a pergunta do dono
+ * ("quanto foi este dia?") e não faz sentido exigir dois cliques. Intervalo maior volta para o mês,
+ * e a escolha dele continua valendo no seletor.
+ */
+function aoMudarData() {
+  filtros.value = { ...filtros.value, granularidade: granularidadePadrao(filtros.value.de, filtros.value.ate) };
+  recarregarTudo();
 }
 
 /**
@@ -671,7 +851,14 @@ function mensagemDeErro(e) {
 }
 
 function limparFiltros() {
-  filtros.value = { cnpj: null, marketplace: null, produto: null, de: "", ate: "" };
+  filtros.value = {
+    cnpj: null,
+    marketplace: null,
+    produto: null,
+    de: "",
+    ate: "",
+    granularidade: "mes",
+  };
   buscaProduto.value = "";
   recarregarTudo();
 }

@@ -3,11 +3,14 @@ import { describe, expect, it } from 'vitest'
 import {
   cascataDoRecorte,
   diagnosticoDaBase,
+  diasSemMovimento,
+  granularidadePadrao,
   nivelDoRecorte,
   parametrosDaMargem,
   ressalvasDaMargem,
   rotuloCompetencia,
   rotuloDaBase,
+  rotuloDia,
   rotuloDoProduto,
   rotuloMarketplace,
   rotuloNivel,
@@ -240,5 +243,44 @@ describe('cascataDoRecorte', () => {
     expect(embalagem.sem_custo).toBe(true)
     expect(embalagem.linhas_sem_custo).toBe(3)
     expect(embalagem.rotulo).toContain('não cadastrado')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// Granularidade mês | dia da aba de margem (ticket `DRE-24`).
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+describe('granularidadePadrao', () => {
+  it('um único dia liga a granularidade dia — é a pergunta do dono', () => {
+    expect(granularidadePadrao('2026-08-05', '2026-08-05')).toBe('dia')
+  })
+
+  it('intervalo maior (ou vazio) fica no mês', () => {
+    expect(granularidadePadrao('2026-08-01', '2026-08-31')).toBe('mes')
+    expect(granularidadePadrao('2026-08-01', '2026-09-01')).toBe('mes')
+    expect(granularidadePadrao('', '')).toBe('mes')
+    expect(granularidadePadrao('2026-08-05', '')).toBe('mes')
+  })
+})
+
+describe('rotuloDia', () => {
+  it('mostra o dia no formato do dono', () => {
+    expect(rotuloDia('2026-08-05')).toBe('05/08/2026')
+    expect(rotuloDia('')).toBe('—')
+    expect(rotuloDia('qualquer')).toBe('qualquer')
+  })
+})
+
+describe('diasSemMovimento', () => {
+  it('conta os dias do intervalo que não têm linha na série', () => {
+    // Agosto tem 31 dias; a série só traz 3 (dois com venda e um com Ads).
+    const dias = [{ dia: '2026-08-10' }, { dia: '2026-08-20' }, { dia: '2026-08-25' }]
+    expect(diasSemMovimento(dias, '2026-08-01', '2026-08-31')).toBe(28)
+    expect(diasSemMovimento(dias, '2026-08-10', '2026-08-10')).toBe(0)
+  })
+
+  it('sem intervalo válido não inventa contagem', () => {
+    expect(diasSemMovimento([], '', '')).toBeNull()
+    expect(diasSemMovimento([], '2026-08-31', '2026-08-01')).toBeNull()
   })
 })

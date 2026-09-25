@@ -57,4 +57,20 @@ export default {
   getProdutos(params = {}) {
     return api.get("/api/financeiro/margens/produtos/", { params });
   },
+
+  /**
+   * A **Margem de Contribuição por dia** (ticket `DRE-24`).
+   *
+   * As parcelas de pedido, Ads, embalagem e CPV são do **próprio dia**; o **DAS é da competência** e
+   * o dia recebe a alíquota efetiva (`impostos ÷ GMV` da linha do mês) aplicada ao seu GMV — com o
+   * resíduo de centavo fechado no dia de maior imposto, para a **soma dos dias bater com o mês**.
+   * Cada linha diz `impostos_rateados`: rateio não é declaração.
+   *
+   * @param {Object} params `de` e `ate` (AAAA-MM-DD) obrigatórios; `cnpj`, `fiscal_account`,
+   *   `marketplace` e `sku` opcionais
+   * @returns {Promise<import('axios').AxiosResponse>} `{ dias: [...], total: {...}, metodo: {...} }`
+   */
+  getMargemDiaria(params = {}) {
+    return api.get("/api/financeiro/margens/diario/", { params });
+  },
 };

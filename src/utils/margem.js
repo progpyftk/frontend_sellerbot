@@ -289,3 +289,46 @@ export function cascataDoRecorte(resumo = {}) {
     },
   ];
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// Granularidade da aba: mês (materializado) ou dia (calculado na hora) — ticket `DRE-24`.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+/** As granularidades que a aba oferece. O mês é o materializado; o dia é a série calculada. */
+export const GRANULARIDADES_DE_MARGEM = [
+  { label: 'Mês (competência)', value: 'mes' },
+  { label: 'Dia', value: 'dia' },
+];
+
+/**
+ * A granularidade que o recorte **pede**: um único dia (inicial = final) é a pergunta "quanto foi
+ * este dia?" — que é exatamente o que o dono pediu em 25/09. Qualquer outro intervalo nasce em mês,
+ * e a escolha continua sendo dele no seletor.
+ */
+export function granularidadePadrao(de, ate) {
+  return de && ate && de === ate ? 'dia' : 'mes';
+}
+
+/** Rótulo curto do dia (`2026-08-05` → `05/08/2026`). */
+export function rotuloDia(valor) {
+  if (!valor) return '—';
+  const texto = String(valor);
+  const [ano, mes, dia] = texto.split('-');
+  if (!ano || !mes || !dia) return texto;
+  return `${dia.slice(0, 2)}/${mes}/${ano}`;
+}
+
+/**
+ * Quantos dias do intervalo ficaram **sem linha** na série diária.
+ *
+ * O dia sem pedido e sem Ads não vira linha (a série é do que aconteceu) — mas o dono precisa saber
+ * que o intervalo tem dias vazios, senão "3 dias" pode parecer um mês inteiro sem venda.
+ */
+export function diasSemMovimento(dias = [], de, ate) {
+  if (!de || !ate) return null;
+  const inicio = new Date(`${de}T00:00:00Z`);
+  const fim = new Date(`${ate}T00:00:00Z`);
+  if (Number.isNaN(inicio.getTime()) || Number.isNaN(fim.getTime()) || fim < inicio) return null;
+  const total = Math.round((fim - inicio) / 86400000) + 1;
+  return Math.max(total - (Array.isArray(dias) ? dias.length : 0), 0);
+}
