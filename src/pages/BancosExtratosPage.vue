@@ -69,339 +69,7 @@
 
         <!-- ────────────────────────────────────────── ABA 2: EXTRATO -->
         <q-tab-panel name="extrato" class="q-pa-none">
-
-          <SbCard class="q-mb-md">
-            <div class="row q-col-gutter-md items-center">
-              <div class="col-12 col-md-4">
-                <q-select
-                  v-model="extratoFilters.conta"
-                  :options="contaOptions"
-                  emit-value
-                  map-options
-                  dense
-                  outlined
-                  label="Conta bancária"
-                  bg-color="white"
-                  @update:model-value="loadTransacoes"
-                />
-              </div>
-              <div class="col-6 col-md-2">
-                <q-input
-                  v-model="extratoFilters.dataInicio"
-                  type="date"
-                  dense
-                  outlined
-                  label="Data início"
-                  bg-color="white"
-                  @change="loadTransacoes"
-                />
-              </div>
-              <div class="col-6 col-md-2">
-                <q-input
-                  v-model="extratoFilters.dataFim"
-                  type="date"
-                  dense
-                  outlined
-                  label="Data fim"
-                  bg-color="white"
-                  @change="loadTransacoes"
-                />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-btn
-                  unelevated
-                  no-caps
-                  color="teal-8"
-                  text-color="white"
-                  icon="search"
-                  label="Buscar transações"
-                  :loading="loadingTransacoes"
-                  :disable="!extratoFilters.conta"
-                  @click="loadTransacoes"
-                />
-              </div>
-            </div>
-            <div class="row items-center q-col-gutter-md q-mt-md">
-              <div class="col-12 col-md-auto">
-                <q-btn-toggle
-                  v-model="extratoFilters.classificacao"
-                  :options="filtroClassificacaoOptions"
-                  no-caps
-                  unelevated
-                  dense
-                  toggle-color="teal-8"
-                  color="grey-2"
-                  text-color="grey-8"
-                  @update:model-value="loadTransacoes"
-                />
-              </div>
-              <div class="col-12 col-md">
-                <div class="row items-center q-gutter-sm">
-                  <q-btn
-                    v-if="resumo.pendentes > 0"
-                    flat
-                    dense
-                    no-caps
-                    color="amber-9"
-                    icon="filter_alt"
-                    :label="`Ver as ${resumo.pendentes} pendentes`"
-                    @click="verPendentes"
-                  />
-                  <q-space />
-                  <q-btn
-                    v-if="resumo.pendentes > 0"
-                    outline
-                    no-caps
-                    color="teal-8"
-                    icon="groups"
-                    :label="`Resolver por contraparte${contrapartesPendentes ? ` (${contrapartesPendentes})` : ''}`"
-                    :disable="!extratoFilters.conta"
-                    @click="abrirContrapartes"
-                  />
-                  <q-btn
-                    outline
-                    no-caps
-                    color="teal-8"
-                    icon="auto_fix_high"
-                    label="Reclassificar automaticamente"
-                    :loading="reclassificando"
-                    :disable="!extratoFilters.conta"
-                    @click="confirmarReclassificacao"
-                  />
-                </div>
-              </div>
-            </div>
-          </SbCard>
-
-          <!-- TERMÔMETRO: quanto do extrato ainda falta classificar -->
-          <div class="row q-col-gutter-md q-mb-md">
-            <div class="col-12 col-lg-6">
-              <SbKpiCard
-                label="Quanto falta classificar"
-                :value="percentualPendenteTexto"
-                :variant="termometroVariante"
-                :sub="`${resumo.classificadas} de ${resumo.total} transações classificadas`"
-              >
-                <q-linear-progress
-                  :value="percentualPendente / 100"
-                  :color="termometroCor"
-                  track-color="grey-3"
-                  rounded
-                  size="10px"
-                  class="q-mt-sm termometro-barra"
-                />
-                <div class="text-caption text-grey-7 q-mt-xs">
-                  {{ termometroMensagem }}
-                  <template v-if="contrapartesPendentes">
-                    São <strong>{{ contrapartesPendentes }} contrapartes</strong> — dá para
-                    resolver uma por uma.
-                  </template>
-                </div>
-              </SbKpiCard>
-            </div>
-            <div class="col-6 col-lg-2">
-              <SbKpiCard
-                label="Saídas pendentes"
-                :value="resumo.saidas_pendentes"
-                variant="red"
-                sub="travam o resultado"
-              />
-            </div>
-            <div class="col-6 col-lg-2">
-              <SbKpiCard
-                label="Entradas pendentes"
-                :value="resumo.entradas_pendentes"
-                variant="green"
-                sub="a classificar"
-              />
-            </div>
-            <div class="col-12 col-lg-2">
-              <SbKpiCard
-                label="Valor pendente"
-                :value="formatCurrency(resumo.valor_pendente)"
-                variant="amber"
-                sub="não entra no DRE enquanto pendente"
-              />
-            </div>
-          </div>
-
-          <div class="row q-col-gutter-md q-mb-lg">
-            <div class="col-12 col-sm-4">
-              <SbKpiCard
-                label="Entradas"
-                :value="formatCurrency(totais.entradas)"
-                variant="green"
-              />
-            </div>
-            <div class="col-12 col-sm-4">
-              <SbKpiCard
-                label="Saídas"
-                :value="formatCurrency(totais.saidas)"
-                variant="red"
-              />
-            </div>
-            <div class="col-12 col-sm-4">
-              <SbKpiCard
-                label="Líquido"
-                :value="formatCurrency(totais.liquido)"
-                :variant="Number(totais.liquido) < 0 ? 'amber' : 'teal'"
-              />
-            </div>
-          </div>
-
-          <!-- BARRA DE CLASSIFICAÇÃO EM LOTE -->
-          <q-banner v-if="selecionadas.length" rounded class="bg-teal-1 text-teal-10 q-mb-md">
-            <template #avatar><q-icon name="playlist_add_check" size="28px" /></template>
-            <div class="row items-center q-col-gutter-md">
-              <div class="col-12 col-md-4 text-body2">
-                <strong>{{ selecionadas.length }}</strong> transação(ões) selecionada(s). Escolha a
-                categoria e aplique em todas de uma vez.
-              </div>
-              <div class="col-12 col-md-4">
-                <SbCategoriaSelect
-                  v-model="classificacaoLote"
-                  :grupos="gruposCategorias"
-                  :loading="loadingCategorias"
-                  dense
-                  outlined
-                  bg-color="white"
-                  label="Categoria para as selecionadas"
-                />
-              </div>
-              <div class="col-12 col-md-4">
-                <div class="row items-center q-gutter-sm">
-                  <q-btn
-                    unelevated
-                    no-caps
-                    color="teal-8"
-                    text-color="white"
-                    icon="done_all"
-                    label="Classificar selecionadas"
-                    :loading="classificandoLote"
-                    :disable="!classificacaoLote"
-                    @click="classificarSelecionadas"
-                  />
-                  <q-btn
-                    flat
-                    dense
-                    no-caps
-                    color="grey-8"
-                    label="Limpar seleção"
-                    @click="selecionadas = []"
-                  />
-                </div>
-              </div>
-            </div>
-          </q-banner>
-
-          <SbCard>
-            <q-table
-              v-model:selected="selecionadas"
-              :rows="transacoes"
-              :columns="transacaoColumns"
-              row-key="id"
-              selection="multiple"
-              :loading="loadingTransacoes"
-              flat
-              :pagination="{ rowsPerPage: 25 }"
-              :no-data-label="'Nenhuma transação encontrada com os filtros atuais. Sincronize a conta, importe um arquivo OFX/CSV ou ajuste o filtro de classificação.'"
-            >
-              <template #body-cell-data="props">
-                <q-td :props="props">{{ formatDate(props.row.data) }}</q-td>
-              </template>
-
-              <template #body-cell-descricao="props">
-                <q-td :props="props">
-                  <div class="text-weight-medium text-grey-9">{{ props.row.descricao || '—' }}</div>
-                  <div class="text-caption text-grey-6">
-                    <span v-if="props.row.contraparte_cnpj" class="font-mono">
-                      {{ formatCnpj(props.row.contraparte_cnpj) }}
-                    </span>
-                    <span v-if="props.row.documento"> · Doc {{ props.row.documento }}</span>
-                    <span v-if="props.row.identificador"> · {{ props.row.identificador }}</span>
-                  </div>
-                </q-td>
-              </template>
-
-              <template #body-cell-valor="props">
-                <q-td :props="props">
-                  <span
-                    class="text-weight-bold"
-                    :class="Number(props.row.valor) < 0 ? 'text-red-9' : 'text-green-9'"
-                  >
-                    {{ formatCurrency(props.row.valor) }}
-                  </span>
-                </q-td>
-              </template>
-
-              <template #body-cell-classificacao="props">
-                <q-td :props="props" @click.stop>
-                  <div class="row items-center no-wrap q-gutter-xs">
-                    <SbCategoriaSelect
-                      v-model="props.row.classificacao"
-                      :grupos="gruposCategorias"
-                      dense
-                      borderless
-                      hide-bottom-space
-                      class="col classificacao-select"
-                      placeholder="Sem classificação"
-                      :loading="savingTransacoes.has(props.row.id)"
-                      :disable="loadingCategorias"
-                      @update:model-value="saveTransacao(props.row)"
-                    />
-
-                    <!-- DE ONDE VEIO A CLASSIFICAÇÃO -->
-                    <q-badge
-                      v-if="props.row.classificacao && origemInfo(props.row.origem_classificacao)"
-                      :color="origemInfo(props.row.origem_classificacao).color"
-                      :text-color="origemInfo(props.row.origem_classificacao).textColor"
-                      class="text-bold origem-badge"
-                    >
-                      <q-icon
-                        :name="origemInfo(props.row.origem_classificacao).icon"
-                        size="11px"
-                        class="q-mr-xs"
-                      />
-                      {{ origemInfo(props.row.origem_classificacao).label }}
-                      <q-tooltip max-width="280px">{{ origemInfo(props.row.origem_classificacao).ajuda }}</q-tooltip>
-                    </q-badge>
-                  </div>
-
-                  <div
-                    v-if="props.row.mc || props.row.fora_do_resultado || ajudaDaCategoria(props.row.classificacao)"
-                    class="row items-center q-gutter-xs q-mt-xs"
-                  >
-                    <q-badge v-if="props.row.mc" color="teal-1" text-color="teal-9" class="text-bold">
-                      custo variável
-                    </q-badge>
-                    <q-badge
-                      v-if="props.row.fora_do_resultado"
-                      color="purple-1"
-                      text-color="purple-9"
-                      class="text-bold"
-                    >
-                      fora do DRE
-                    </q-badge>
-                    <q-icon v-if="ajudaDaCategoria(props.row.classificacao)" name="info" size="14px" color="grey-6">
-                      <q-tooltip max-width="280px">{{ ajudaDaCategoria(props.row.classificacao) }}</q-tooltip>
-                    </q-icon>
-                  </div>
-                </q-td>
-              </template>
-
-              <template #body-cell-conciliado="props">
-                <q-td :props="props" class="text-center" @click.stop>
-                  <q-toggle
-                    v-model="props.row.conciliado"
-                    color="teal-8"
-                    :disable="savingTransacoes.has(props.row.id)"
-                    @update:model-value="saveTransacao(props.row)"
-                  />
-                </q-td>
-              </template>
-            </q-table>
-          </SbCard>
-
+          <ExtratosExtratoTab :ctx="ctxExtrato" />
         </q-tab-panel>
 
         <!-- ────────────────────────────────────────── ABA 3: IMPORTAR ARQUIVO -->
@@ -420,282 +88,14 @@
         </q-tab-panel>
 
       </q-tab-panels>
-
-      <!-- ══════════════════════════════════════════ DIÁLOGO: NOVA CONEXÃO -->
-      <q-dialog v-model="showNovaConexao" persistent>
-        <q-card style="width: 640px; max-width: 95vw;" class="rounded-borders">
-          <q-card-section class="row items-center justify-between border-bottom bg-grey-1">
-            <div class="text-h6 text-weight-bold text-grey-9">Nova conexão bancária</div>
-            <q-btn icon="close" flat round dense v-close-popup />
-          </q-card-section>
-
-          <q-card-section class="q-pa-md">
-            <q-banner v-if="erroNovaConexao" dense rounded class="bg-red-1 text-red-10 q-mb-md">
-              <template #avatar><q-icon name="error_outline" /></template>
-              {{ erroNovaConexao }}
-            </q-banner>
-
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-sm-6">
-                <SbSeletorEmpresa
-                  v-model="novaConexao.fiscal_account"
-                  :options="cnpjOptions"
-                  label="CNPJ fiscal *"
-                  :rules="[(v) => !!v || 'Selecione o CNPJ']"
-                />
-              </div>
-              <div class="col-12 col-sm-6">
-                <q-select
-                  v-model="novaConexao.banco"
-                  :options="bancoOptions"
-                  emit-value
-                  map-options
-                  dense
-                  outlined
-                  label="Banco *"
-                  bg-color="white"
-                  :rules="[(v) => !!v || 'Selecione o banco']"
-                  @update:model-value="onBancoChange"
-                />
-              </div>
-              <div class="col-12 col-sm-6">
-                <q-select
-                  v-model="novaConexao.ambiente"
-                  :options="ambienteOptions"
-                  emit-value
-                  map-options
-                  dense
-                  outlined
-                  label="Ambiente"
-                  bg-color="white"
-                />
-              </div>
-            </div>
-
-            <!-- Campos de credencial montados dinamicamente a partir da API -->
-            <div v-if="bancoSelecionado" class="q-mt-md">
-              <div class="text-subtitle2 text-weight-bold text-grey-9 q-mb-sm">
-                Credenciais
-                <q-badge
-                  v-if="!bancoSelecionado.aceita_api"
-                  color="amber-2"
-                  text-color="amber-10"
-                  class="q-ml-xs text-bold"
-                >
-                  Somente arquivo
-                </q-badge>
-              </div>
-
-              <div v-if="bancoSelecionado.campos_credencial && bancoSelecionado.campos_credencial.length" class="row q-col-gutter-md">
-                <div
-                  v-for="campo in bancoSelecionado.campos_credencial"
-                  :key="campo.nome"
-                  class="col-12 col-sm-6"
-                >
-                  <q-input
-                    v-model="novaConexao.credenciais[campo.nome]"
-                    dense
-                    outlined
-                    bg-color="white"
-                    autocomplete="new-password"
-                    :type="campo.secreto ? 'password' : 'text'"
-                    :label="campo.rotulo || campo.nome"
-                    :hint="campo.secreto ? 'Armazenado com segurança (write-only)' : ''"
-                    :rules="[(v) => !campo.obrigatorio || (v !== null && v !== undefined && String(v).length > 0) || 'Campo obrigatório']"
-                  />
-                </div>
-              </div>
-              <div v-else class="text-caption text-grey-6">
-                Este banco não exige credenciais de API.
-              </div>
-
-              <div v-if="bancoSelecionado.exige_certificado" class="row q-col-gutter-md q-mt-sm">
-                <div class="col-12 col-sm-7">
-                  <q-file
-                    v-model="novaConexao.certificado"
-                    dense
-                    outlined
-                    clearable
-                    bg-color="white"
-                    accept=".pfx,.p12"
-                    label="Certificado digital (.pfx/.p12)"
-                  >
-                    <template #prepend><q-icon name="badge" /></template>
-                  </q-file>
-                </div>
-                <div class="col-12 col-sm-5">
-                  <q-input
-                    v-model="novaConexao.senha_certificado"
-                    dense
-                    outlined
-                    type="password"
-                    autocomplete="new-password"
-                    bg-color="white"
-                    label="Senha do certificado"
-                  />
-                </div>
-              </div>
-            </div>
-          </q-card-section>
-
-          <q-card-actions align="right" class="q-pa-md border-top">
-            <q-btn flat no-caps label="Cancelar" color="grey-8" v-close-popup />
-            <q-btn
-              unelevated
-              no-caps
-              color="teal-8"
-              text-color="white"
-              icon="save"
-              label="Criar conexão"
-              :loading="salvandoConexao"
-              @click="salvarConexao"
-            />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
-
-      <!-- ══════════════════════════════════════════ DIÁLOGO: PENDENTES POR CONTRAPARTE -->
-      <q-dialog v-model="showContrapartes">
-        <q-card style="width: 860px; max-width: 96vw;" class="rounded-borders">
-          <q-card-section class="row items-center justify-between border-bottom bg-grey-1">
-            <div>
-              <div class="text-h6 text-weight-bold text-grey-9">Resolver pendentes por contraparte</div>
-              <div class="text-caption text-grey-7">
-                Classificar uma linha ensina o sistema: as iguais do mesmo CNPJ entram
-                classificadas sozinhas na próxima importação.
-              </div>
-            </div>
-            <q-btn icon="close" flat round dense v-close-popup />
-          </q-card-section>
-
-          <q-card-section class="q-pa-md contrapartes-corpo">
-            <div v-if="carregandoContrapartes" class="column items-center q-pa-lg">
-              <q-spinner color="teal-8" size="32px" />
-              <div class="text-caption text-grey-7 q-mt-sm">Carregando contrapartes pendentes…</div>
-            </div>
-
-            <SbEmptyState
-              v-else-if="gruposPendentes.length === 0"
-              title="Nenhuma contraparte pendente"
-              message="Tudo que chegou neste período já está classificado."
-            />
-
-            <div v-else class="column q-gutter-sm">
-              <div
-                v-for="grupo in gruposPendentes"
-                :key="grupo.contraparte_chave"
-                class="contraparte-item q-pa-sm rounded-borders"
-              >
-                <div class="row items-center q-col-gutter-md">
-                  <div class="col-12 col-md-5">
-                    <div class="text-weight-medium text-grey-9">
-                      {{ grupo.contraparte_nome || '(sem contraparte identificada)' }}
-                    </div>
-                    <div class="text-caption text-grey-6 font-mono">
-                      {{ grupo.contraparte_cnpj ? formatCnpj(grupo.contraparte_cnpj) : grupo.contraparte_chave }}
-                    </div>
-                    <div class="text-caption text-grey-6">
-                      {{ grupo.linhas }} lançamento(s) · {{ descreverTipos(grupo.tipos) }} ·
-                      {{ formatDate(grupo.primeira_data) }} a {{ formatDate(grupo.ultima_data) }}
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-2 text-right">
-                    <div
-                      class="text-weight-bold"
-                      :class="(grupo.tipos || []).includes('D') ? 'text-red-9' : 'text-green-9'"
-                    >
-                      {{ formatCurrency(grupo.valor) }}
-                    </div>
-                  </div>
-                  <div class="col-12 col-md-5">
-                    <div class="row items-center q-gutter-sm no-wrap">
-                      <SbCategoriaSelect
-                        v-model="categoriasContraparte[grupo.contraparte_chave]"
-                        :grupos="gruposCategorias"
-                        :loading="loadingCategorias"
-                        dense
-                        outlined
-                        bg-color="white"
-                        label="Classificar como"
-                        class="col"
-                      />
-                      <q-btn
-                        unelevated
-                        no-caps
-                        color="teal-8"
-                        text-color="white"
-                        icon="done_all"
-                        label="Aplicar"
-                        :disable="!categoriasContraparte[grupo.contraparte_chave]"
-                        :loading="classificandoGrupo === grupo.contraparte_chave"
-                        @click="classificarGrupo(grupo)"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </q-card-section>
-
-          <q-card-actions align="right" class="q-pa-md border-top">
-            <q-btn flat no-caps label="Fechar" color="grey-8" v-close-popup />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
-
-      <!-- ══════════════════════════════════════════ DIÁLOGO: SINCRONIZAR -->
-      <q-dialog v-model="showSincronizar">
-        <q-card style="width: 460px; max-width: 95vw;" class="rounded-borders">
-          <q-card-section class="row items-center justify-between border-bottom bg-grey-1">
-            <div class="text-h6 text-weight-bold text-grey-9">Sincronizar extrato</div>
-            <q-btn icon="close" flat round dense v-close-popup />
-          </q-card-section>
-
-          <q-card-section class="q-pa-md">
-            <div class="text-body2 text-grey-8 q-mb-md">
-              {{ sincronizarAlvo?.conexao?.banco_nome }} —
-              {{ sincronizarAlvo?.conta?.apelido || sincronizarAlvo?.conta?.numero }}
-            </div>
-            <div class="row q-col-gutter-md">
-              <div class="col-6">
-                <q-input v-model="sincronizarPeriodo.data_inicio" type="date" dense outlined label="Data início" bg-color="white" />
-              </div>
-              <div class="col-6">
-                <q-input v-model="sincronizarPeriodo.data_fim" type="date" dense outlined label="Data fim" bg-color="white" />
-              </div>
-            </div>
-            <q-banner v-if="resultadoSincronizacao" dense rounded class="q-mt-md"
-              :class="resultadoSincronizacao.ok ? 'bg-green-1 text-green-10' : 'bg-red-1 text-red-10'">
-              <template #avatar>
-                <q-icon :name="resultadoSincronizacao.ok ? 'check_circle' : 'error_outline'" />
-              </template>
-              {{ resultadoSincronizacao.mensagem }}
-            </q-banner>
-          </q-card-section>
-
-          <q-card-actions align="right" class="q-pa-md border-top">
-            <q-btn flat no-caps label="Fechar" color="grey-8" v-close-popup />
-            <q-btn
-              unelevated
-              no-caps
-              color="teal-8"
-              text-color="white"
-              icon="sync"
-              label="Sincronizar"
-              :loading="sincronizando"
-              :disable="!sincronizarPeriodo.data_inicio || !sincronizarPeriodo.data_fim"
-              @click="sincronizar"
-            />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
+      <ExtratosDialogos :ctx="ctxDialogos" />
 
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, reactive } from "vue";
 import { useQuasar } from "quasar";
 import SbPageHeader from "src/components/common/SbPageHeader.vue";
 import SbCard from "src/components/common/SbCard.vue";
@@ -707,6 +107,8 @@ import ExtratosImportarTab from "src/components/financeiro/extratos/ExtratosImpo
 import { opcoesDeEmpresa } from "src/utils/seletores";
 import { formatCnpj, formatCurrency, formatDate, formatDateTime } from "src/utils/formato";
 import ExtratosConexoesTab from "src/components/financeiro/extratos/ExtratosConexoesTab.vue";
+import ExtratosExtratoTab from "src/components/financeiro/extratos/ExtratosExtratoTab.vue";
+import ExtratosDialogos from "src/components/financeiro/extratos/ExtratosDialogos.vue";
 import FinanceiroService from "src/services/FinanceiroService";
 import FiscalService from "src/services/FiscalService";
 
@@ -1490,6 +892,69 @@ function toIsoDate(date) {
   const dia = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
+
+// Objeto que a aba `extrato` recebe (FIN-23): refs desembrulham no acesso, então o filho lê e escreve
+// no estado do page sem repasse de 29 props.
+const ctxExtrato = reactive({
+  abrirContrapartes,
+  ajudaDaCategoria,
+  classificacaoLote,
+  classificandoLote,
+  classificarSelecionadas,
+  confirmarReclassificacao,
+  contaOptions,
+  contrapartesPendentes,
+  extratoFilters,
+  filtroClassificacaoOptions,
+  gruposCategorias,
+  loadTransacoes,
+  loadingCategorias,
+  loadingTransacoes,
+  origemInfo,
+  percentualPendente,
+  percentualPendenteTexto,
+  reclassificando,
+  resumo,
+  saveTransacao,
+  savingTransacoes,
+  selecionadas,
+  termometroCor,
+  termometroMensagem,
+  termometroVariante,
+  totais,
+  transacaoColumns,
+  transacoes,
+  verPendentes,
+})
+
+// Diálogos (FIN-23): mesmo desenho do `ctxExtrato` — o page segue dono do fluxo.
+const ctxDialogos = reactive({
+  ambienteOptions,
+  bancoOptions,
+  bancoSelecionado,
+  carregandoContrapartes,
+  categoriasContraparte,
+  classificandoGrupo,
+  classificarGrupo,
+  cnpjOptions,
+  descreverTipos,
+  erroNovaConexao,
+  gruposCategorias,
+  gruposPendentes,
+  loadingCategorias,
+  novaConexao,
+  onBancoChange,
+  resultadoSincronizacao,
+  salvandoConexao,
+  salvarConexao,
+  showContrapartes,
+  showNovaConexao,
+  showSincronizar,
+  sincronizando,
+  sincronizar,
+  sincronizarAlvo,
+  sincronizarPeriodo,
+})
 
 onMounted(async () => {
   await Promise.all([loadBancos(), loadConexoes(), loadCnpjs(), loadCategorias()]);
