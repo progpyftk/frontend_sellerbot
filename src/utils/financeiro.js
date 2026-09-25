@@ -60,6 +60,7 @@ export const ABAS_FINANCEIRO = [
     onda: 'FIN-14d',
     endpoint: '/api/financeiro/contabil/tributos/',
     descricao: 'Apuração × contador, com a diferença classificada.',
+    disponivel: true,
   },
   {
     id: 'cenarios',
@@ -68,6 +69,7 @@ export const ABAS_FINANCEIRO = [
     onda: 'FIN-14d',
     endpoint: '/api/financeiro/contabil/cenarios/',
     descricao: 'Simples × Presumido × Real, alíquota efetiva e cenários de 2027.',
+    disponivel: true,
   },
   {
     id: 'conciliacao',
@@ -76,6 +78,7 @@ export const ABAS_FINANCEIRO = [
     onda: 'FIN-14e',
     endpoint: '/api/financeiro/contabil/conciliacao/',
     descricao: 'O que o sistema apura × o demonstrativo do contador.',
+    disponivel: true,
   },
   {
     id: 'extratos',

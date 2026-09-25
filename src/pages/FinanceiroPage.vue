@@ -60,6 +60,18 @@
           <FinanceiroDfc />
         </q-tab-panel>
 
+        <q-tab-panel name="tributos" class="q-pa-none">
+          <FinanceiroTributos />
+        </q-tab-panel>
+
+        <q-tab-panel name="cenarios" class="q-pa-none">
+          <FinanceiroCenarios />
+        </q-tab-panel>
+
+        <q-tab-panel name="conciliacao" class="q-pa-none">
+          <FinanceiroConciliacao />
+        </q-tab-panel>
+
         <q-tab-panel name="extratos" class="q-pa-none">
           <BancosExtratosPage />
         </q-tab-panel>
@@ -101,8 +113,11 @@ import { useRoute, useRouter } from 'vue-router'
 
 import BancosExtratosPage from 'pages/BancosExtratosPage.vue'
 import FinanceiroBalanco from 'src/components/financeiro/FinanceiroBalanco.vue'
+import FinanceiroCenarios from 'src/components/financeiro/FinanceiroCenarios.vue'
+import FinanceiroConciliacao from 'src/components/financeiro/FinanceiroConciliacao.vue'
 import FinanceiroDfc from 'src/components/financeiro/FinanceiroDfc.vue'
 import FinanceiroDre from 'src/components/financeiro/FinanceiroDre.vue'
+import FinanceiroTributos from 'src/components/financeiro/FinanceiroTributos.vue'
 import FinanceiroVisaoGeral from 'src/components/financeiro/FinanceiroVisaoGeral.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'

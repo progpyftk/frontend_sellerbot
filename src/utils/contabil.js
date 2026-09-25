@@ -175,3 +175,61 @@ export function formatarMoeda(valor) {
   if (Number.isNaN(numero)) return '—';
   return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
+
+/** Rótulo de negócio de cada regime do comparador. */
+export const ROTULOS_REGIME = {
+  simples: 'Simples Nacional',
+  simples_puro: 'Simples puro (2027)',
+  hibrido: 'Simples híbrido (2027)',
+  fora_simples: 'Fora do Simples (2027)',
+  presumido: 'Lucro Presumido',
+  real: 'Lucro Real',
+};
+
+export function rotuloRegime(chave) {
+  return ROTULOS_REGIME[chave] || chave || '—';
+}
+
+/** Os cenários de uma empresa do comparador, cada um com o total, a completude e as lacunas. */
+export function cenariosDaEmpresa(empresa = {}) {
+  return (Array.isArray(empresa?.cenarios) ? empresa.cenarios : []).map((cenario) => ({
+    regime: cenario.regime,
+    rotulo: rotuloRegime(cenario.regime),
+    total: cenario.total ?? null,
+    totalPct: cenario.total_pct_receita ?? null,
+    completo: cenario.completo === true,
+    faltantes: Array.isArray(cenario.faltantes) ? cenario.faltantes : [],
+    observacoes: Array.isArray(cenario.observacoes) ? cenario.observacoes : [],
+    linhas: Array.isArray(cenario.linhas) ? cenario.linhas : [],
+  }));
+}
+
+/** `true` quando o comparador trouxe total para o cenário (mesmo parcial). */
+export function cenarioTemNumero(cenario = {}) {
+  return cenario.total !== null && cenario.total !== undefined && cenario.total !== '';
+}
+
+/** Linhas de um bloco da conciliação (sistema × contador), como o backend classificou. */
+export function linhasDaConciliacao(bloco = {}) {
+  return Array.isArray(bloco?.linhas) ? bloco.linhas : [];
+}
+
+/** Resumo por classe da conciliação (`de_base`, `de_dado`, `nao_explicado`, `confere`…). */
+export function resumoDaConciliacao(bloco = {}) {
+  const resumo = bloco?.resumo || {};
+  return Object.entries(resumo).map(([classe, quantidade]) => ({ classe, quantidade }));
+}
+
+/** O painel de apuração pronto para a tela: totais e as competências que divergem. */
+export function resumoDaApuracao(empresa = {}) {
+  const linhas = Array.isArray(empresa?.linhas) ? empresa.linhas : [];
+  return {
+    competencias: empresa?.competencias ?? linhas.length,
+    comDeclaracao: empresa?.com_declaracao ?? 0,
+    divergentes: empresa?.divergentes ?? 0,
+    totalDeclarado: empresa?.total_declarado ?? null,
+    totalCalculado: empresa?.total_calculado ?? null,
+    diferencaTotal: empresa?.diferenca_total ?? null,
+    linhas,
+  };
+}

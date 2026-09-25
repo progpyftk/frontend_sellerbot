@@ -2,11 +2,17 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CASCATA_DRE,
+  cenarioTemNumero,
+  cenariosDaEmpresa,
   contasDaLinha,
   formatarMoeda,
   gruposDoBalanco,
   linhasDaCascata,
+  linhasDaConciliacao,
   numerosDaVisaoGeral,
+  resumoDaApuracao,
+  resumoDaConciliacao,
+  rotuloRegime,
   temInconsistencia,
   viasDoDfc,
 } from 'src/utils/contabil'
@@ -181,5 +187,84 @@ describe('contasDaLinha', () => {
   it('devolve as contas do DRE ou lista vazia', () => {
     expect(contasDaLinha({ linhas: [{ codigo: '3.1.1.01' }] })).toHaveLength(1)
     expect(contasDaLinha({})).toEqual([])
+  })
+})
+
+describe('rotuloRegime', () => {
+  it('traduz os regimes do comparador e não inventa para chave desconhecida', () => {
+    expect(rotuloRegime('hibrido')).toBe('Simples híbrido (2027)')
+    expect(rotuloRegime('fora_simples')).toBe('Fora do Simples (2027)')
+    expect(rotuloRegime('xpto')).toBe('xpto')
+  })
+})
+
+describe('cenariosDaEmpresa', () => {
+  const EMPRESA_CEN = {
+    cenarios: [
+      { regime: 'simples_puro', total: '15312.63', total_pct_receita: '9.8798', completo: true, faltantes: [], linhas: [{ tributo: 'DAS', valor: '15312.63' }] },
+      { regime: 'hibrido', total: null, completo: false, faltantes: [{ chave: 'cbs' }], observacoes: ['parcial'] },
+    ],
+  }
+
+  it('traz rótulo, total, completude e as linhas de cada cenário', () => {
+    const cenarios = cenariosDaEmpresa(EMPRESA_CEN)
+    expect(cenarios[0].rotulo).toBe('Simples puro (2027)')
+    expect(cenarios[0].total).toBe('15312.63')
+    expect(cenarios[0].linhas).toHaveLength(1)
+    expect(cenarios[1].completo).toBe(false)
+    expect(cenarios[1].faltantes[0].chave).toBe('cbs')
+  })
+
+  it('empresa sem cenários devolve lista vazia', () => {
+    expect(cenariosDaEmpresa()).toEqual([])
+  })
+
+  it('cenarioTemNumero distingue parcial de zero', () => {
+    expect(cenarioTemNumero({ total: '0.00' })).toBe(true)
+    expect(cenarioTemNumero({ total: null })).toBe(false)
+    expect(cenarioTemNumero({})).toBe(false)
+  })
+})
+
+describe('resumoDaApuracao', () => {
+  it('traz totais e linhas do painel, com fallback para a contagem de linhas', () => {
+    const resumo = resumoDaApuracao({
+      total_declarado: '100.00',
+      total_calculado: '99.98',
+      diferenca_total: '0.02',
+      divergentes: 1,
+      linhas: [{ competencia: '2026-08', classe: 'redistribuicao' }],
+    })
+    expect(resumo.totalDeclarado).toBe('100.00')
+    expect(resumo.diferencaTotal).toBe('0.02')
+    expect(resumo.competencias).toBe(1)
+    expect(resumo.divergentes).toBe(1)
+  })
+
+  it('painel vazio não quebra', () => {
+    const resumo = resumoDaApuracao()
+    expect(resumo.competencias).toBe(0)
+    expect(resumo.totalDeclarado).toBeNull()
+  })
+})
+
+describe('conciliacao', () => {
+  const BLOCO = {
+    demonstrativo: 'dre',
+    resumo: { confere: 3, de_dado: 1 },
+    linhas: [{ chave: 'receita_bruta', sistema: '10.00', contador: '9.00', diferenca: '1.00', classe: 'de_dado' }],
+  }
+
+  it('devolve as linhas e o resumo por classe', () => {
+    expect(linhasDaConciliacao(BLOCO)).toHaveLength(1)
+    expect(resumoDaConciliacao(BLOCO)).toEqual([
+      { classe: 'confere', quantidade: 3 },
+      { classe: 'de_dado', quantidade: 1 },
+    ])
+  })
+
+  it('bloco vazio não quebra', () => {
+    expect(linhasDaConciliacao()).toEqual([])
+    expect(resumoDaConciliacao()).toEqual([])
   })
 })

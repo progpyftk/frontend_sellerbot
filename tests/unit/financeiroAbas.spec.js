@@ -24,7 +24,16 @@ describe('ABAS_FINANCEIRO', () => {
   })
 
   it('as abas com tela nesta fase são a visão geral e os extratos', () => {
-    expect(abasDisponiveis()).toEqual(['visao-geral', 'dre', 'balanco', 'dfc', 'extratos'])
+    expect(abasDisponiveis()).toEqual([
+      'visao-geral',
+      'dre',
+      'balanco',
+      'dfc',
+      'tributos',
+      'cenarios',
+      'conciliacao',
+      'extratos',
+    ])
   })
 })
 
