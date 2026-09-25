@@ -33,6 +33,7 @@ export const ABAS_FINANCEIRO = [
     onda: 'FIN-14c',
     endpoint: '/api/financeiro/contabil/dre/',
     descricao: 'Cascata contábil do período, com a margem de contribuição explícita.',
+    disponivel: true,
   },
   {
     id: 'balanco',
@@ -41,6 +42,7 @@ export const ABAS_FINANCEIRO = [
     onda: 'FIN-14c',
     endpoint: '/api/financeiro/contabil/balanco/',
     descricao: 'Ativo = Passivo + PL com o resíduo explícito.',
+    disponivel: true,
   },
   {
     id: 'dfc',
@@ -49,6 +51,7 @@ export const ABAS_FINANCEIRO = [
     onda: 'FIN-14d',
     endpoint: '/api/financeiro/contabil/dfc/',
     descricao: 'Fluxo de caixa indireto e direto lado a lado.',
+    disponivel: true,
   },
   {
     id: 'tributos',

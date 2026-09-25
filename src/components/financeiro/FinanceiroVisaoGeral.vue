@@ -125,7 +125,7 @@ import SbSeletorPeriodo from 'src/components/common/SbSeletorPeriodo.vue'
 import FiscalService from 'src/services/FiscalService'
 import ContabilService from 'src/services/ContabilService'
 import { formatarCnpj, opcoesDeEmpresa } from 'src/utils/seletores'
-import { linhasDaCascata, numerosDaVisaoGeral } from 'src/utils/contabil'
+import { formatarMoeda, linhasDaCascata, numerosDaVisaoGeral } from 'src/utils/contabil'
 
 const empresa = ref(null)
 const periodo = ref({ de: '', ate: '' })
@@ -163,13 +163,6 @@ function cardsDaEmpresa(item) {
     { label: 'Ativo', valor: formatarMoeda(n.ativo), sub: 'Balanço na data final', variant: 'sky' },
     { label: 'Variação de caixa', valor: formatarMoeda(n.variacao_do_caixa), sub: 'DFC do período', variant: 'indigo' },
   ]
-}
-
-function formatarMoeda(valor) {
-  if (valor === null || valor === undefined || valor === '') return '—'
-  const numero = Number(valor)
-  if (Number.isNaN(numero)) return '—'
-  return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 async function carregarEmpresas() {

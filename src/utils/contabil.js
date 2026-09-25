@@ -78,3 +78,100 @@ export function temInconsistencia(empresa = {}) {
     numeros.dfc_confere === false
   );
 }
+
+/** Os grupos do Balanço na ordem de leitura, com os subtotais de cada um. */
+export const GRUPOS_BALANCO = [
+  {
+    chave: 'ativo',
+    rotulo: 'Ativo',
+    subtotais: [
+      ['circulante', 'Circulante'],
+      ['nao_circulante', 'Não circulante'],
+    ],
+  },
+  {
+    chave: 'passivo',
+    rotulo: 'Passivo',
+    subtotais: [
+      ['circulante', 'Circulante'],
+      ['nao_circulante', 'Não circulante'],
+    ],
+  },
+  { chave: 'patrimonio_liquido', rotulo: 'Patrimônio líquido', subtotais: [] },
+];
+
+/** As atividades do DFC, com o rótulo de negócio de cada uma. */
+export const ROTULOS_ATIVIDADE = {
+  operacional: 'Operacional',
+  investimento: 'Investimento',
+  financiamento: 'Financiamento',
+};
+
+export function rotuloAtividade(chave) {
+  return ROTULOS_ATIVIDADE[chave] || chave || '(sem atividade)';
+}
+
+/** O Balanço pronto para a tela: cada grupo com total, subtotais e contas. */
+export function gruposDoBalanco(balanco = {}) {
+  return GRUPOS_BALANCO.map((grupo) => {
+    const bloco = balanco?.[grupo.chave] || {};
+    return {
+      chave: grupo.chave,
+      rotulo: grupo.rotulo,
+      total: bloco.total ?? null,
+      subtotais: grupo.subtotais.map(([chave, rotulo]) => ({
+        chave,
+        rotulo,
+        valor: bloco[chave] ?? null,
+      })),
+      contas: Array.isArray(bloco.contas) ? bloco.contas : [],
+    };
+  });
+}
+
+/**
+ * O DFC pronto para a tela: as duas vias lado a lado e a diferença **explicada**.
+ *
+ * A via indireta tem as linhas na ordem do contador (`linhas`) e as atividades; a direta tem as
+ * atividades classificadas pela contrapartida. `null` em qualquer número é "o backend não devolveu" —
+ * a tela mostra `—` em vez de zero.
+ */
+export function viasDoDfc(dfc = {}) {
+  const indireto = dfc?.indireto || {};
+  const direto = dfc?.direto || {};
+  const atividades = (bloco) =>
+    Object.entries(bloco?.atividades || {}).map(([chave, valor]) => ({
+      chave,
+      rotulo: rotuloAtividade(chave),
+      valor,
+    }));
+  return {
+    linhasIndiretas: Array.isArray(indireto.linhas)
+      ? indireto.linhas.map((linha) => ({ rotulo: linha.linha, valor: linha.valor }))
+      : [],
+    atividadesIndiretas: atividades(indireto),
+    atividadesDiretas: atividades(direto),
+    totalIndireto: indireto.total ?? null,
+    totalDireto: direto.total ?? null,
+    saldoInicial: dfc?.saldo_inicial ?? null,
+    saldoFinal: dfc?.saldo_final ?? null,
+    variacaoDoCaixa: dfc?.variacao_do_caixa ?? null,
+    diferencaEntreMetodos: dfc?.diferenca_entre_metodos ?? null,
+    foraDoResultado: indireto?.fora_do_resultado_e_controle ?? null,
+    confere: dfc?.confere ?? null,
+    explicacoes: Array.isArray(dfc?.explicacoes) ? dfc.explicacoes : [],
+  };
+}
+
+/** As contas de uma linha do DRE (a origem do número), como o backend devolveu. */
+export function contasDaLinha(dre = {}) {
+  return Array.isArray(dre?.linhas) ? dre.linhas : [];
+}
+
+/** `1234.5` → `R$ 1.234,50`; valor ausente vira `—` (nunca `R$ 0,00` por engano). */
+export function formatarMoeda(valor) {
+  if (valor === null || valor === undefined || valor === '') return '—';
+  const numero = Number(valor);
+  if (Number.isNaN(numero)) return '—';
+  return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}

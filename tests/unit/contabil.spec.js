@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CASCATA_DRE,
+  contasDaLinha,
+  formatarMoeda,
+  gruposDoBalanco,
   linhasDaCascata,
   numerosDaVisaoGeral,
   temInconsistencia,
+  viasDoDfc,
 } from 'src/utils/contabil'
 
 const EMPRESA = {
@@ -99,5 +103,83 @@ describe('temInconsistencia', () => {
   it('é verdadeiro quando qualquer um não fecha — e null (sem dado) não acusa', () => {
     expect(temInconsistencia({ ...EMPRESA, balanco: { ...EMPRESA.balanco, equilibra: false } })).toBe(true)
     expect(temInconsistencia({ dre: { confere: null } })).toBe(false)
+  })
+})
+
+describe('formatarMoeda', () => {
+  it('formata em real e devolve — para ausente (nunca R$ 0,00 por engano)', () => {
+    expect(formatarMoeda('1234.5')).toContain('1.234,50')
+    expect(formatarMoeda(null)).toBe('—')
+    expect(formatarMoeda('')).toBe('—')
+    expect(formatarMoeda('abc')).toBe('—')
+  })
+})
+
+describe('gruposDoBalanco', () => {
+  const BALANCO = {
+    ativo: { circulante: '100.00', nao_circulante: '50.00', total: '150.00', contas: [{ codigo: '1.1.1.01', nome: 'Caixa', saldo: '100.00' }] },
+    passivo: { circulante: '30.00', nao_circulante: '0.00', total: '30.00', contas: [] },
+    patrimonio_liquido: { total: '120.00', contas: [] },
+  }
+
+  it('devolve os três grupos na ordem e com os subtotais', () => {
+    const grupos = gruposDoBalanco(BALANCO)
+    expect(grupos.map((g) => g.chave)).toEqual(['ativo', 'passivo', 'patrimonio_liquido'])
+    expect(grupos[0].total).toBe('150.00')
+    expect(grupos[0].subtotais.map((s) => s.valor)).toEqual(['100.00', '50.00'])
+    expect(grupos[2].subtotais).toEqual([])
+  })
+
+  it('balanço vazio não quebra: totais viram null', () => {
+    const grupos = gruposDoBalanco()
+    expect(grupos).toHaveLength(3)
+    expect(grupos[0].total).toBeNull()
+    expect(grupos[0].contas).toEqual([])
+  })
+})
+
+describe('viasDoDfc', () => {
+  const DFC = {
+    saldo_inicial: '1000.00',
+    saldo_final: '2500.00',
+    variacao_do_caixa: '1500.00',
+    confere: true,
+    diferenca_entre_metodos: '0.00',
+    explicacoes: [],
+    indireto: {
+      linhas: [{ linha: 'Resultado do periodo', valor: '1500.00' }],
+      atividades: { operacional: '1500.00', investimento: '0.00', financiamento: '0.00' },
+      total: '1500.00',
+    },
+    direto: {
+      atividades: { operacional: '1500.00' },
+      total: '1500.00',
+    },
+  }
+
+  it('traz as linhas do indireto com o rótulo do documento e as atividades com nome de negócio', () => {
+    const via = viasDoDfc(DFC)
+    expect(via.linhasIndiretas[0]).toEqual({ rotulo: 'Resultado do periodo', valor: '1500.00' })
+    expect(via.atividadesIndiretas[0]).toEqual({
+      chave: 'operacional',
+      rotulo: 'Operacional',
+      valor: '1500.00',
+    })
+    expect(via.variacaoDoCaixa).toBe('1500.00')
+    expect(via.confere).toBe(true)
+  })
+
+  it('DFC vazio não quebra e não inventa zero', () => {
+    const via = viasDoDfc()
+    expect(via.linhasIndiretas).toEqual([])
+    expect(via.totalIndireto).toBeNull()
+    expect(via.variacaoDoCaixa).toBeNull()
+  })
+})
+
+describe('contasDaLinha', () => {
+  it('devolve as contas do DRE ou lista vazia', () => {
+    expect(contasDaLinha({ linhas: [{ codigo: '3.1.1.01' }] })).toHaveLength(1)
+    expect(contasDaLinha({})).toEqual([])
   })
 })
