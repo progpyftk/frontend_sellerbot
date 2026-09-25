@@ -39,6 +39,10 @@ export const ORIGENS = {
   manual: { rotulo: 'Manual', variante: 'green', derivada: false },
   planilha: { rotulo: 'Planilha', variante: 'green', derivada: false },
   usuario: { rotulo: 'Usuário', variante: 'green', derivada: false },
+  // Despesa do dono (`DespesaLancamento.ORIGENS`, FINT-9): `nota` vem de documento, então o valor
+  // não se edita à mão; `recorrente` nasce da ação de replicar o mês, que é decisão do dono.
+  nota: { rotulo: 'Nota', variante: 'sky', derivada: true },
+  recorrente: { rotulo: 'Recorrente', variante: 'green', derivada: false },
 };
 
 /** A origem existe? Origem vazia ou desconhecida devolve `null` — quem chama decide o aviso. */

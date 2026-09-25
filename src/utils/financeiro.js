@@ -82,6 +82,15 @@ export const ABAS_FINANCEIRO = [
     disponivel: true,
   },
   {
+    id: 'despesas',
+    label: 'Despesas',
+    icone: 'receipt',
+    onda: 'FINT-9',
+    endpoint: '/api/financeiro/despesas/lancamentos/',
+    descricao: 'As despesas personalizáveis do DRE — criar, editar na célula e excluir.',
+    disponivel: true,
+  },
+  {
     id: 'extratos',
     label: 'Bancos e extratos',
     icone: 'account_balance_wallet',

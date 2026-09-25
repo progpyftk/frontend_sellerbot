@@ -76,6 +76,10 @@
           <FinanceiroConciliacao />
         </q-tab-panel>
 
+        <q-tab-panel name="despesas" class="q-pa-none">
+          <FinanceiroDespesas />
+        </q-tab-panel>
+
         <q-tab-panel name="extratos" class="q-pa-none">
           <BancosExtratosPage />
         </q-tab-panel>
@@ -119,6 +123,7 @@ import BancosExtratosPage from 'pages/BancosExtratosPage.vue'
 import FinanceiroBalanco from 'src/components/financeiro/FinanceiroBalanco.vue'
 import FinanceiroCenarios from 'src/components/financeiro/FinanceiroCenarios.vue'
 import FinanceiroConciliacao from 'src/components/financeiro/FinanceiroConciliacao.vue'
+import FinanceiroDespesas from 'src/components/financeiro/FinanceiroDespesas.vue'
 import FinanceiroDfc from 'src/components/financeiro/FinanceiroDfc.vue'
 import FinanceiroDre from 'src/components/financeiro/FinanceiroDre.vue'
 import FinanceiroMarketplace from 'src/components/financeiro/FinanceiroMarketplace.vue'

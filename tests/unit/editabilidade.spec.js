@@ -56,6 +56,11 @@ describe('origemDerivada', () => {
     expect(origemDerivada('planilha')).toBe(false)
   })
 
+  it('despesa vinda de nota não se edita; a recorrente se edita (FINT-9)', () => {
+    expect(origemDerivada('nota')).toBe(true)
+    expect(origemDerivada('recorrente')).toBe(false)
+  })
+
   it('origem desconhecida conta como derivada (o padrão é não editar)', () => {
     expect(origemDerivada('planilha_do_contador')).toBe(true)
     expect(origemDerivada('')).toBe(true)

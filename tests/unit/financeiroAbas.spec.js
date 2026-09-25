@@ -15,7 +15,8 @@ describe('ABAS_FINANCEIRO', () => {
     for (const aba of ABAS_FINANCEIRO) {
       expect(aba.endpoint.startsWith('/api/')).toBe(true)
       expect(aba.label.length).toBeGreaterThan(2)
-      expect(aba.onda.startsWith('FIN-14')).toBe(true)
+      // `onda` nomeia a onda que trouxe a aba; o módulo passou do FIN-14 (a Despesas é do FINT-9).
+      expect(aba.onda.length).toBeGreaterThan(0)
     }
   })
 
@@ -23,7 +24,7 @@ describe('ABAS_FINANCEIRO', () => {
     expect(ABAS_FINANCEIRO.some((aba) => aba.id === ABA_PADRAO)).toBe(true)
   })
 
-  it('as abas com tela nesta fase são a visão geral e os extratos', () => {
+  it('as abas com tela são todas as do módulo, na ordem de leitura', () => {
     expect(abasDisponiveis()).toEqual([
       'visao-geral',
       'marketplace',
@@ -33,6 +34,7 @@ describe('ABAS_FINANCEIRO', () => {
       'tributos',
       'cenarios',
       'conciliacao',
+      'despesas',
       'extratos',
     ])
   })
