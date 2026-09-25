@@ -178,7 +178,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="linha in efeitoVendas.linhas" :key="`${linha.item_id}-${linha.checkpoint_days}`">
+              <tr v-for="linha in efeitoVendas.linhas" :key="`${linha.item_id}-${linha.checkpoint_days}-${linha.measured_at}`">
                 <th scope="row" class="today__item">
                   <span class="today__mlb">{{ linha.item_id }}</span>
                   <span class="today__title">{{ linha.acao || '—' }}</span>
@@ -210,7 +210,9 @@
       <!-- PROMO-IA-32: parecer do agente revisor em MODO SOMBRA — relatório, nunca bloqueia -->
       <AdvisorSection v-if="temParecer" title="Parecer do agente revisor (modo sombra)"
                       :count="parecerAgente.teria_vetados + parecerAgente.ressalvas || undefined"
-                      lead="Um segundo olhar sobre o plano do dia. Em modo sombra ele só avisa — quem impede a escrita é o cálculo (preço mínimo, margem e frete conferido).">
+                      :lead="parecerAgente.sombra === false
+                        ? 'Parecer do início do dia. O revisor está desligado agora (a escrita segue só pelo cálculo — preço mínimo, margem e frete conferidos), então o que está aqui é o que ele disse antes de ser desligado.'
+                        : 'Um segundo olhar sobre o plano do dia. Em modo sombra ele só avisa — quem impede a escrita é o cálculo (preço mínimo, margem e frete conferido).'">
         <ul class="today__motivos">
           <li><strong>{{ parecerAgente.aprovados }}</strong> aprovados pelo agente</li>
           <li v-if="parecerAgente.ressalvas"><strong>{{ parecerAgente.ressalvas }}</strong> com ressalva (vale olhar)</li>
@@ -220,8 +222,12 @@
           </li>
         </ul>
         <p v-if="parecerAgente.omitidos" class="today__hint">
-          O agente revisou {{ parecerAgente.revisados }} de {{ parecerAgente.plano_total }} anúncios
-          do plano — os mais destacados primeiro.
+          O agente revisou {{ parecerAgente.revisados || 0 }} de {{ parecerAgente.plano_total || '—' }}
+          anúncios do plano — os mais destacados primeiro.
+        </p>
+        <p v-if="parecerAgente.descartados" class="today__hint">
+          {{ parecerAgente.descartados }} resposta(s) do agente foram descartadas na validação
+          (item fora do plano ou veredito fora do contrato) e não contam como parecer.
         </p>
         <ul v-if="itensComRessalva.length" class="today__motivos">
           <li v-for="item in itensComRessalva" :key="`${item.item_id}-${item.veredito}`">
@@ -232,7 +238,7 @@
             — {{ item.motivo }}
           </li>
         </ul>
-        <p v-if="graduacao" class="today__hint">
+        <p v-if="graduacao && parecerAgente.status === 'ok'" class="today__hint">
           Graduação para o veto real: {{ graduacao.ciclos_com_marcacao }} ciclo(s) medido(s),
           {{ graduacao.falsos_vetos.length }} falso(s) veto(s),
           {{ graduacao.achados_reais.length }} achado(s) real(is){{

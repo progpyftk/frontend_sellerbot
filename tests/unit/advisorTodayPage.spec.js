@@ -419,3 +419,55 @@ describe('AdvisorTodayPage', () => {
     expect(texto).not.toContain('Nenhum anúncio alterado');
   });
 });
+
+// PROMO-IA-71: casos que o spec do Hoje não cobria (o bloco do parecer só era testado no
+// caminho feliz — com todos os campos preenchidos e a sombra ligada).
+describe('bloco do parecer — casos de borda (PROMO-IA-71)', () => {
+  const comParecer = (extra = {}) => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD))
+    payload.parecer_agente = {
+      status: 'ok', sombra: true, aprovados: 4, ressalvas: 1, teria_vetados: 1,
+      plano_total: 10, revisados: 10, omitidos: 0, descartados: 0,
+      itens: [], ...extra,
+    }
+    return payload
+  }
+
+  it('payload sem parecer_agente não mostra o bloco e não quebra a página', async () => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD))
+    delete payload.parecer_agente
+    const texto = (await montar(payload)).text()
+    expect(texto).not.toContain('Parecer do agente revisor')
+  })
+
+  it('omitidos 0 não mostra a linha de cobertura do plano', async () => {
+    const texto = (await montar(comParecer())).text()
+    expect(texto).toContain('Parecer do agente revisor')
+    expect(texto).not.toContain('os mais destacados primeiro')
+  })
+
+  it('sombra desligada diz que o parecer é do início do dia', async () => {
+    const texto = (await montar(comParecer({ sombra: false }))).text()
+    expect(texto).toContain('revisor está desligado agora')
+  })
+
+  it('graduação some quando o ciclo não teve parecer, em vez de contradizer o aviso', async () => {
+    const payload = comParecer({ status: 'sem_parecer', motivo: 'resposta sem JSON' })
+    payload.parecer_agente.graduacao = {
+      ciclos_com_marcacao: 3, falsos_vetos: [], achados_reais: [{ item_id: 'MLB-1' }],
+      pendentes: [], pronto_para_veto: true,
+    }
+    const texto = (await montar(payload)).text()
+    expect(texto).toContain('Sem parecer neste ciclo')
+    expect(texto).not.toContain('critério cumprido')
+  })
+
+  it('descartados e cobertura do plano sem "undefined" com payload antigo', async () => {
+    const payload = comParecer({ omitidos: 4, revisados: null, descartados: 3 })
+    const texto = (await montar(payload)).text()
+    expect(texto).toContain('revisou 0 de 10')
+    expect(texto).toContain('3 resposta(s) do agente foram descartadas')
+    expect(texto).not.toContain('undefined')
+    expect(texto).not.toContain('NaN')
+  })
+})
