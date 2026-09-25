@@ -91,6 +91,15 @@ export const ABAS_FINANCEIRO = [
     disponivel: true,
   },
   {
+    id: 'livro',
+    label: 'Livro',
+    icone: 'menu_book',
+    onda: 'FINT-10',
+    endpoint: '/api/financeiro/contabil/lancamentos/',
+    descricao: 'As partidas do livro e o plano de contas — a origem de cada número do DRE.',
+    disponivel: true,
+  },
+  {
     id: 'extratos',
     label: 'Bancos e extratos',
     icone: 'account_balance_wallet',

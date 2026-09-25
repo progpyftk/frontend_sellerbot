@@ -35,6 +35,7 @@ describe('ABAS_FINANCEIRO', () => {
       'cenarios',
       'conciliacao',
       'despesas',
+      'livro',
       'extratos',
     ])
   })
