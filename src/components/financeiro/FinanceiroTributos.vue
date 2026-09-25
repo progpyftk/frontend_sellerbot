@@ -57,6 +57,8 @@
         </div>
 
         <SbTabela
+          exportavel
+          :nome-exportacao="'tributos-apuracao'"
           v-model:ordenacao="ordenacao"
           :colunas="COLUNAS"
           :linhas="resumo(item).linhas"

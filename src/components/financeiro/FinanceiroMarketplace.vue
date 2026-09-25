@@ -65,6 +65,8 @@
 
       <SbCard title="Por canal e conta" eyebrow="Conferência de marketplace">
         <SbTabela
+          exportavel
+          :nome-exportacao="'marketplace-conferencia'"
           v-model:ordenacao="ordenacao"
           :colunas="COLUNAS"
           :linhas="linhas"

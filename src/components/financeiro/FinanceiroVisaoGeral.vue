@@ -73,6 +73,7 @@
         </div>
 
         <CascataDre
+          :nome-exportacao="`visao-geral-${item.cnpj}`"
           :dre="item.dre"
           titulo-detalhe="Origem do número"
           subtitulo-detalhe="As contas do livro que compõem esta linha"

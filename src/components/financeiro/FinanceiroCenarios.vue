@@ -49,6 +49,8 @@
         <div class="text-caption text-grey-7 q-mb-sm">{{ item.aviso || 'Todos os cenários estão completos.' }}</div>
 
         <SbTabela
+          exportavel
+          :nome-exportacao="'cenarios'"
           v-model:ordenacao="ordenacao"
           :colunas="COLUNAS"
           :linhas="linhasDeCenarios(item)"

@@ -31,6 +31,8 @@
           <div class="col-12 col-md-6">
             <div class="via-titulo">Método indireto</div>
             <SbTabela
+              exportavel
+              :nome-exportacao="'dfc-indireto'"
               :colunas="COLUNAS"
               :linhas="linhasDaViaIndireta(item)"
               chave-linha="chave"
@@ -44,6 +46,8 @@
           <div class="col-12 col-md-6">
             <div class="via-titulo">Método direto</div>
             <SbTabela
+              exportavel
+              :nome-exportacao="'dfc-direto'"
               :colunas="COLUNAS"
               :linhas="linhasDaViaDireta(item)"
               chave-linha="chave"

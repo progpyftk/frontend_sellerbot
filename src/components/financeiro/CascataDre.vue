@@ -1,6 +1,8 @@
 <template>
   <div class="cascata-dre">
     <SbTabela
+      exportavel
+      :nome-exportacao="nomeExportacao"
       :colunas="COLUNAS"
       :linhas="linhas"
       chave-linha="chave"
@@ -51,6 +53,8 @@ const props = defineProps({
   dre: { type: Object, default: () => ({}) },
   tituloDetalhe: { type: String, default: 'Origem do número' },
   subtituloDetalhe: { type: String, default: '' },
+  /** Nome do arquivo do CSV — a aba passa o recorte para o link ser reconhecível. */
+  nomeExportacao: { type: String, default: 'dre-cascata' },
 })
 
 const COLUNAS = [

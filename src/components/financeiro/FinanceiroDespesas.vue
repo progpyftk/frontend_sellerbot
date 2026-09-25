@@ -67,6 +67,8 @@
       </div>
 
       <SbTabela
+        exportavel
+        :nome-exportacao="'despesas'"
         v-model:ordenacao="ordenacao"
         :colunas="COLUNAS"
         :linhas="lancamentos"

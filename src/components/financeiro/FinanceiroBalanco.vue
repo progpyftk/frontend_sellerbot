@@ -32,6 +32,8 @@
 
         <div class="balanco-tabela">
           <SbTabela
+            exportavel
+            :nome-exportacao="'balanco'"
             :colunas="COLUNAS"
             :linhas="linhasDoBalanco(item)"
             chave-linha="chave"

@@ -38,6 +38,8 @@
             </div>
 
             <SbTabela
+              exportavel
+              :nome-exportacao="`conciliacao-${bloco.demonstrativo}`"
               v-model:ordenacao="ordenacao"
               :colunas="COLUNAS"
               :linhas="linhasDaConciliacao(bloco)"

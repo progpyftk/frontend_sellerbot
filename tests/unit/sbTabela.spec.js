@@ -6,7 +6,11 @@ import { describe, expect, it } from 'vitest'
 import SbTabela from 'src/components/common/SbTabela.vue'
 
 const iconStub = { template: '<i />' }
-const stubs = { QIcon: iconStub, QSpinnerDots: iconStub, QBtn: { template: '<button />' } }
+const stubs = {
+  QIcon: iconStub,
+  QSpinnerDots: iconStub,
+  QBtn: { props: ['label'], template: '<button>{{ label }}<slot /></button>' },
+}
 
 const COLUNAS = [
   { chave: 'nome', rotulo: 'Nome', ordenavel: true },
@@ -215,6 +219,22 @@ describe('SbTabela — classe da linha e detalhe por linha (FINT-7)', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
 
     wrapper.unmount()
+  })
+})
+
+describe('SbTabela — exportar a visão (FINT-12)', () => {
+  it('o botão de exportar só existe quando a tabela é exportável', () => {
+    expect(montar().find('.sb-tabela__barra').exists()).toBe(false)
+
+    const wrapper = montar({ exportavel: true, nomeExportacao: 'dre' })
+    expect(wrapper.find('.sb-tabela__barra').exists()).toBe(true)
+    // A contagem é a da visão (filtrada e ordenada), não a da lista crua.
+    expect(wrapper.find('.sb-tabela__barra').text()).toContain('Exportar 2 linha(s)')
+  })
+
+  it('a contagem cai quando a lista tem menos linhas', () => {
+    const wrapper = montar({ exportavel: true, linhas: [LINHAS[0]] })
+    expect(wrapper.find('.sb-tabela__barra').text()).toContain('Exportar 1 linha(s)')
   })
 })
 

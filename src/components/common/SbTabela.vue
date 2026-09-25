@@ -8,7 +8,25 @@
       <SbEmptyState :title="vazio.titulo" :message="vazio.mensagem" />
     </slot>
 
-    <div v-else class="sb-tabela__rolagem" :style="estiloDaRolagem">
+    <template v-else>
+      <!-- Exportação (FINT-12): o botão vive na tabela porque o que se exporta é **esta visão** —
+           as linhas já filtradas e na ordem que está na tela. -->
+      <div v-if="exportavel" class="sb-tabela__barra">
+        <q-btn
+          flat
+          dense
+          no-caps
+          size="sm"
+          color="teal-8"
+          icon="download"
+          :label="`Exportar ${linhasOrdenadas.length} linha(s)`"
+          @click="exportar"
+        >
+          <q-tooltip>Baixa o CSV desta tabela, já filtrada e na ordem da tela</q-tooltip>
+        </q-btn>
+      </div>
+
+    <div class="sb-tabela__rolagem" :style="estiloDaRolagem">
       <table class="sb-tabela__grade">
         <caption v-if="rotulo" class="sb-tabela__legenda">{{ rotulo }}</caption>
         <thead>
@@ -84,7 +102,8 @@
           <slot name="rodape" />
         </tfoot>
       </table>
-    </div>
+      </div>
+    </template>
 
     <SbDetalheLinha
       v-if="temDetalhe"
@@ -122,6 +141,7 @@ import {
   proximaOrdenacao,
   valorDaChave,
 } from 'src/composables/useOrdenacao'
+import { baixarCsv, paraCsv } from 'src/utils/csv'
 import SbDetalheLinha from './SbDetalheLinha.vue'
 import SbEmptyState from './SbEmptyState.vue'
 
@@ -163,9 +183,21 @@ const props = defineProps({
    * origem o backend não manda (o subtotal do Balanço, por exemplo) — e a tela não inventa origem.
    */
   detalhavel: { type: Function, default: null },
+  /** Mostra o botão de exportar CSV da **visão atual** (linhas filtradas e na ordem da tela). */
+  exportavel: { type: Boolean, default: false },
+  /** Nome do arquivo, sem `.csv` — a aba passa o recorte para o link ser reconhecível. */
+  nomeExportacao: { type: String, default: 'tabela' },
 })
 
 const emit = defineEmits(['update:ordenacao', 'ordenar', 'linha'])
+
+/** Exporta a **visão**: as colunas declaradas × as linhas já filtradas e na ordem da tela. */
+function exportar() {
+  baixarCsv(
+    props.nomeExportacao,
+    paraCsv({ colunas: props.colunas, linhas: linhasOrdenadas.value }),
+  )
+}
 
 const slots = useSlots()
 const temDetalhe = computed(() => !!slots.detalhe)
@@ -288,6 +320,12 @@ function textoPadrao(linha, coluna) {
 
 .sb-tabela {
   width: 100%;
+
+  &__barra {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: $space-1;
+  }
 
   &__rolagem {
     width: 100%;

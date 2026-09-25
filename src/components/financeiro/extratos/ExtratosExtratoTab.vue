@@ -227,6 +227,8 @@ categoria e aplique em todas de uma vez.
 
   <SbCard :title="tituloTabela" eyebrow="Extrato do período">
     <SbTabela
+      exportavel
+      :nome-exportacao="'extratos-transacoes'"
       v-model:ordenacao="ordenacao"
       :colunas="colunas"
       :linhas="ctx.transacoes"

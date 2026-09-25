@@ -40,6 +40,8 @@
     <template v-else>
       <!-- LANÇAMENTOS: a partida, com os débitos e créditos que geraram cada número do DRE. -->
       <SbTabela
+        exportavel
+        :nome-exportacao="'livro-lancamentos'"
         v-if="visao === 'lancamentos'"
         v-model:ordenacao="ordenacao"
         :colunas="COLUNAS_LANCAMENTOS"
@@ -125,6 +127,8 @@
 
       <!-- PLANO DE CONTAS: a árvore que dá sentido à partida (natureza, grupo e o mapeamento). -->
       <SbTabela
+        exportavel
+        :nome-exportacao="'livro-plano'"
         v-else
         v-model:ordenacao="ordenacao"
         :colunas="COLUNAS_PLANO"

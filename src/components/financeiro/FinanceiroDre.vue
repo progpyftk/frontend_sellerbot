@@ -31,6 +31,7 @@
         </div>
 
         <CascataDre
+          :nome-exportacao="`dre-${item.cnpj}`"
           :dre="item"
           titulo-detalhe="Origem do número"
           subtitulo-detalhe="As contas do livro que compõem esta linha"
