@@ -109,7 +109,7 @@
             <div class="org__acoes">
               <label class="org__filtro">
                 <input type="checkbox" v-model="soFaltam" />
-                só as que faltam
+                só as que faltam ({{ faltam(conta) }})
               </label>
               <button class="org__btn" @click="baixarCsv(conta)">Baixar CSV</button>
               <button class="org__btn" @click="baixarMarkdown(conta)">Baixar checklist</button>
@@ -401,7 +401,23 @@ const periodoBr = computed(() => {
   return `${dataBr(p.date_from)} a ${dataBr(p.date_to)}`;
 });
 
+// Frescor do vínculo: sem ele o "já aplicada" e o filtro "só as que faltam" parecem
+// mortos — a campanha criada há minutos só entra no `ja_existe` no próximo sync (4h).
+const avisoSync = computed(() => {
+  const conf = payload.value?.confianca;
+  if (!conf) return '';
+  if (!conf.vinculo_sincronizado_em) {
+    return 'o vínculo anúncio↔campanha nunca foi sincronizado — clique em "Sincronizar Ads" antes de confiar na coluna "aplicada" desta tabela.';
+  }
+  const dias = Number(conf.dias_desde_sync ?? 0);
+  if (dias <= 0.25) return '';
+  const horas = Math.round(dias * 24);
+  const idade = horas < 24 ? `há ${horas}h` : `há ${Math.round(dias)} dia(s)`;
+  return `vínculo anúncio↔campanha sincronizado ${idade}: campanhas criadas depois disso ainda não contam como aplicadas e continuam em "só as que faltam" — clique em "Sincronizar Ads" para atualizar.`;
+});
+
 const avisos = computed(() => [
+  ...(avisoSync.value ? [avisoSync.value] : []),
   ...(payload.value?.avisos || []),
   ...(payload.value?.sobreposicoes?.avisos || []),
   ...contas.value.flatMap((c) => c.avisos || []),
@@ -447,6 +463,11 @@ function dicaDoProgresso(conta) {
   const manuais = feitas(conta) - confirmadas;
   if (!manuais) return 'confirmadas pelo sync';
   return `${confirmadas} confirmadas pelo sync + ${manuais} marcadas à mão`;
+}
+
+// Quantas linhas ainda faltam criar — o número que o filtro "só as que faltam" mostra.
+function faltam(conta) {
+  return conta.campanhas_sugeridas.length - feitas(conta);
 }
 
 function linhasVisiveis(conta) {
@@ -560,7 +581,7 @@ function linhasParaExport(conta) {
     mlbs: c.anuncios.join(' '),
     roas: c.roas_target == null ? '' : fmtRoas(c.roas_target),
     orcamento: c.orcamento_automatico ? 'Automático' : (c.orcamento_diario ?? '').toString(),
-    aplicada: c.ja_existe ? 'sim' : 'não',
+    aplicada: c.ja_existe || marcada(conta.conta, c.nome) ? 'sim' : 'não',
   }));
 }
 
@@ -582,7 +603,7 @@ function baixarCsv(conta) {
 
 function baixarMarkdown(conta) {
   const linhas = conta.campanhas_sugeridas.map((c) => {
-    const marca = c.ja_existe ? 'x' : ' ';
+    const marca = c.ja_existe || marcada(conta.conta, c.nome) ? 'x' : ' ';
     const orc = c.orcamento_automatico ? 'orçamento automático' : `orçamento ${fmtMoeda(c.orcamento_diario)}`;
     const roas = c.roas_target == null ? 'sem meta' : `ROAS ${fmtRoas(c.roas_target)}`;
     return `- [${marca}] **${c.nome}** — ${c.anuncios.join(', ')} · ${roas} · ${orc}`;

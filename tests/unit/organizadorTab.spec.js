@@ -131,3 +131,31 @@ describe('OrganizadorTab · produto de catálogo na tabela (D15/D16)', () => {
     expect(w.text()).toContain('MLB4215446123');
   });
 });
+
+describe('OrganizadorTab · "só as que faltam" e frescor do sync (ADSA-38)', () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+  });
+
+  it('mostra a contagem de pendentes no filtro', async () => {
+    const w = await montar();
+    // a única linha do fixture não está aplicada nem marcada -> falta 1
+    expect(w.text()).toContain('só as que faltam (1)');
+  });
+
+  it('avisa quando o vínculo do sync está velho e manda sincronizar', async () => {
+    const velho = {
+      ...PAYLOAD,
+      confianca: { ...PAYLOAD.confianca, dias_desde_sync: 0.5 },
+    };
+    const w = await montar(velho);
+    expect(w.text()).toContain('sincronizado há 12h');
+    expect(w.text()).toContain('Sincronizar Ads');
+  });
+
+  it('não avisa quando o vínculo é fresco', async () => {
+    const w = await montar();
+    expect(w.text()).not.toContain('vínculo anúncio↔campanha sincronizado');
+  });
+});
