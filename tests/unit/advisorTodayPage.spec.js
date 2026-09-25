@@ -471,3 +471,52 @@ describe('bloco do parecer — casos de borda (PROMO-IA-71)', () => {
     expect(texto).not.toContain('NaN')
   })
 })
+
+// PROMO-IA-76: o controle do ciclo — o que o robô pegou, o que deixou de fora e por quê.
+describe('controle do último ciclo (PROMO-IA-76)', () => {
+  const comControle = (extra = {}) => {
+    const payload = JSON.parse(JSON.stringify(PAYLOAD))
+    payload.controle_ciclo = {
+      rodou: true, segundos: 900, status: 'partial', contas: 3, contas_puladas: ['ACC-3'],
+      planejados: 300, fora_da_fatia: 1040, truncados: 30,
+      motivo_truncamento: 'orçamento de planejamento de 360s esgotado',
+      escritos: 74,
+      bloqueados_por: [['CADENCE_COOLDOWN', 13], ['VARIATION_NOT_SUPPORTED', 2]],
+      ...extra,
+    }
+    return payload
+  }
+
+  it('mostra o que entrou, o que ficou de fora e o motivo', async () => {
+    const texto = (await montar(comControle())).text()
+    expect(texto).toContain('O que o robô fez no último ciclo')
+    expect(texto).toContain('3 conta(s) no ciclo')
+    expect(texto).toContain('1 pulada(s)')
+    expect(texto).toContain('300 anúncios avaliados')
+    expect(texto).toContain('1040 fora da fatia do dia')
+    expect(texto).toContain('30 anúncios ficaram de fora por orçamento de tempo')
+    expect(texto).toContain('orçamento de planejamento de 360s esgotado')
+  })
+
+  it('traduz o código de bloqueio para linguagem de negócio', async () => {
+    const texto = (await montar(comControle())).text()
+    expect(texto).toContain('13 esperando a cadência de 7 dias')
+    expect(texto).toContain('2 anúncio com variações')
+    expect(texto).not.toContain('CADENCE_COOLDOWN')
+  })
+
+  it('sem ciclo registrado o bloco não aparece', async () => {
+    const texto = (await montar(PAYLOAD)).text()
+    expect(texto).not.toContain('O que o robô fez no último ciclo')
+  })
+
+  it('ciclo limpo mostra só o que rodou, sem linha de truncamento', async () => {
+    const texto = (await montar(comControle({
+      truncados: 0, motivo_truncamento: '', fora_da_fatia: 0, contas_puladas: [],
+      bloqueados_por: [],
+    }))).text()
+    expect(texto).toContain('3 conta(s) no ciclo')
+    expect(texto).not.toContain('orçamento de tempo')
+    expect(texto).not.toContain('fora da fatia do dia')
+  })
+})

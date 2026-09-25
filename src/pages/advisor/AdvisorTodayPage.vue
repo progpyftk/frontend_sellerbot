@@ -143,6 +143,36 @@
       </AdvisorSection>
 
       <!-- PROMO-IA-35: histórico ontem/7 dias — o dono pergunta "o que ele fez na semana?" -->
+      <!-- PROMO-IA-76: o controle do último ciclo — o que pegou, o que deixou de fora e por quê -->
+      <AdvisorSection v-if="controle.rodou" title="O que o robô fez no último ciclo"
+                      :count="controle.escritos || undefined"
+                      lead="Quantas contas entraram, quantos anúncios foram avaliados e o que ficou de fora. O que ficou de fora não é erro: é a cadência e o orçamento do dia.">
+        <ul class="today__motivos">
+          <li><strong>{{ controle.contas }}</strong> conta(s) no ciclo
+            <template v-if="controle.contas_puladas.length">
+              · {{ controle.contas_puladas.length }} pulada(s) por ciclo anterior ainda rodando
+            </template>
+          </li>
+          <li><strong>{{ controle.planejados }}</strong> anúncios avaliados
+            <template v-if="controle.fora_da_fatia">
+              · {{ controle.fora_da_fatia }} fora da fatia do dia (cada anúncio é avaliado
+              uma vez por semana)
+            </template>
+          </li>
+          <li v-if="controle.truncados">
+            <strong>{{ controle.truncados }}</strong> anúncios ficaram de fora por orçamento de
+            tempo — entram no dia seguinte
+          </li>
+          <li v-for="item in bloqueadosLegiveis.slice(0, 4)" :key="item.codigo">
+            <strong>{{ item.total }}</strong> {{ item.rotulo }}
+          </li>
+        </ul>
+        <p v-if="controle.motivo_truncamento" class="today__hint">{{ controle.motivo_truncamento }}</p>
+        <p v-else-if="!controle.rodou" class="today__hint">
+          O ciclo não registrou nada — o robô pode ter parado no meio (o log por conta mostra onde).
+        </p>
+      </AdvisorSection>
+
       <AdvisorSection v-if="historico.dias.length" title="Ontem e nos últimos 7 dias"
                       :count="historico.alterados_janela || undefined"
                       lead="Anúncios alterados por dia (dias do negócio). Dias sem barra não tiveram escrita.">
@@ -337,6 +367,7 @@ const {
   naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
   factsError, killSwitch, modoGlobal, contasQueEscrevem, noPlanoEscrita,
   falhas, totalFalhas, totalComAcao, historico, efeitoVendas, parecerAgente,
+  controle, bloqueadosLegiveis,
   brl, pct, STATUS_LABEL,
 } = useAdvisorToday();
 

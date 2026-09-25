@@ -157,11 +157,32 @@ export function useAdvisorToday() {
   const parecerAgente = computed(() => data.value?.parecer_agente
     || { status: 'sem_parecer_do_dia', aprovados: 0, ressalvas: 0, teria_vetados: 0, itens: [] });
 
+  /**
+   * PROMO-IA-76: o controle do último ciclo — o que o robô pegou, o que deixou de fora e por
+   * quê (fora da fatia do dia, por falta de orçamento, por cadência). É o que responde "por que
+   * meu anúncio não foi mexido hoje?" sem abrir log. `rodou: false` = o ciclo não registrou
+   * nada (a ausência também é informação).
+   */
+  const controle = computed(() => data.value?.controle_ciclo || { rodou: false });
+  const bloqueadosLegiveis = computed(() => {
+    const mapa = {
+      CADENCE_COOLDOWN: 'esperando a cadência de 7 dias',
+      ALREADY_WRITTEN_TODAY_ITEM: 'já escrito hoje',
+      VARIATION_NOT_SUPPORTED: 'anúncio com variações',
+      SMART_READ_ONLY: 'promoção SMART (só leitura)',
+      WRITE_DISABLED: 'escrita desligada na conta',
+      PROFIT_BELOW_FLOOR: 'lucro abaixo do piso',
+      MARGIN_BELOW_FLOOR: 'margem abaixo do piso',
+    };
+    return (controle.value.bloqueados_por || [])
+      .map(([codigo, total]) => ({ codigo, total, rotulo: mapa[codigo] || codigo }));
+  });
+
   return {
     data, carregando, erro, carregar,
     contas, total, motivos, naoAvaliados, naoMexidosQueAvaliou, escritas, protecao, escrita, ciclo, cicloHoje,
     factsError, killSwitch, modoGlobal, falhas, falhasComAcao, falhasDeEspera, totalFalhas, totalComAcao, contasQueEscrevem, noPlanoEscrita,
-    historico, efeitoVendas, parecerAgente,
+    historico, efeitoVendas, parecerAgente, controle, bloqueadosLegiveis,
     brl, pct, STATUS_LABEL,
   };
 }
