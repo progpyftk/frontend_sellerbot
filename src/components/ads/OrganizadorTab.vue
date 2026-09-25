@@ -416,6 +416,7 @@ import AdvisorTable from 'components/advisor/AdvisorTable.vue';
 import AdvisorMetric from 'components/advisor/AdvisorMetric.vue';
 import AdvisorStatusPill from 'components/advisor/AdvisorStatusPill.vue';
 import AdvisorEmptyState from 'components/advisor/AdvisorEmptyState.vue';
+import { normalizarBusca } from 'src/components/common/categoriaOptions';
 
 const props = defineProps({
   dateFrom: { type: String, default: '' },
@@ -690,14 +691,11 @@ const COLUNAS_ORDENAVEIS = {
 const ORDEM_SITUACAO = { nao_criada: 0, fundida: 1, ajustar: 2, atencao: 3, ok: 4 };
 
 // Colapsa espaços e tira acento antes de comparar: "Casca de pinus" e "Casca de Pinus" são
-// a mesma família e não podem ficar em blocos diferentes da tabela.
+// a mesma família e não podem ficar em blocos diferentes da tabela. Reusa `normalizarBusca`
+// do projeto (faixa de acento escrita por extenso) e ainda apaga os espaços internos
+// duplicados, que quebrariam a comparação.
 function chaveTexto(valor) {
-  return String(valor)
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
+  return normalizarBusca(valor).replace(/\s+/g, ' ');
 }
 
 function ordenarPor(coluna) {
@@ -725,7 +723,7 @@ function ordenarPor(coluna) {
   pagina.value = 1;
 }
 
-function ordenarLista(lista, conta) {
+function ordenarLista(lista) {
   const def = COLUNAS_ORDENAVEIS[ordem.value.coluna];
   if (!def) return lista;
   const sinal = ordem.value.direcao === 'asc' ? 1 : -1;
@@ -755,7 +753,7 @@ function ordenarLista(lista, conta) {
 }
 
 function linhasVisiveis(conta) {
-  return ordenarLista(filtradas(conta), conta);
+  return ordenarLista(filtradas(conta));
 }
 
 const totalVisiveis = (conta) => linhasVisiveis(conta).length;
@@ -793,9 +791,10 @@ function motivoCompleto(linha) {
 }
 
 function motivoLinha(linha) {
-  const motivo = motivoCompleto(linha);
-  if (!motivo) return '';
-  const [primeiro] = motivo.split(' · ');
+  // O erro vem antes da nota: é o que muda a tela (falta MLB, ROAS ou orçamento fora).
+  // Ler o array direto, e não a string montada, evita depender do separador: um motivo que
+  // containha o separador quebraria o corte e a célula mostraria texto pela metade.
+  const primeiro = (linha.erros_estado || [])[0] || (linha.notas_estado || [])[0] || '';
   // A mensagem mais común do backend é o nome que difere; encurtada, ela vira "nome criado
   // difere", que é a informação, e não "os MLB batem exatamente; nome criado difere".
   return primeiro
