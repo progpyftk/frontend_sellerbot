@@ -683,15 +683,10 @@
 
             <div class="row q-col-gutter-md">
               <div class="col-12 col-sm-6">
-                <q-select
+                <SbSeletorEmpresa
                   v-model="novaConexao.fiscal_account"
                   :options="cnpjOptions"
-                  emit-value
-                  map-options
-                  dense
-                  outlined
                   label="CNPJ fiscal *"
-                  bg-color="white"
                   :rules="[(v) => !!v || 'Selecione o CNPJ']"
                 />
               </div>
@@ -953,6 +948,8 @@ import SbCard from "src/components/common/SbCard.vue";
 import SbKpiCard from "src/components/common/SbKpiCard.vue";
 import SbEmptyState from "src/components/common/SbEmptyState.vue";
 import SbCategoriaSelect from "src/components/common/SbCategoriaSelect.vue";
+import SbSeletorEmpresa from "src/components/common/SbSeletorEmpresa.vue";
+import { opcoesDeEmpresa } from "src/utils/seletores";
 import FinanceiroService from "src/services/FinanceiroService";
 import FiscalService from "src/services/FiscalService";
 
@@ -1266,10 +1263,7 @@ async function loadCnpjs() {
   try {
     const res = await FiscalService.getCnpjs();
     const list = res.data?.results || res.data || [];
-    cnpjOptions.value = list.map((c) => ({
-      label: `${formatCnpj(c.cnpj)} — ${c.razao_social || "CNPJ Fiscal"}`,
-      value: c.id,
-    }));
+    cnpjOptions.value = opcoesDeEmpresa(list, { valor: "id" });
   } catch (err) {
     $q.notify({ type: "negative", message: `Erro ao carregar CNPJs: ${apiErrorMessage(err)}` });
   }

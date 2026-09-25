@@ -63,16 +63,11 @@
       <SbCard class="q-mb-md" title="Filtros" eyebrow="Recorte da margem">
         <div class="row q-col-gutter-md items-end">
           <div class="col-12 col-sm-6 col-md-3">
-            <q-select
+            <SbSeletorEmpresa
               v-model="filtros.cnpj"
               :options="opcoesCnpj"
-              emit-value
-              map-options
-              dense
-              outlined
-              clearable
               label="CNPJ / empresa"
-              bg-color="white"
+              clearable
               @update:model-value="carregar"
             />
           </div>
@@ -120,28 +115,8 @@
             />
           </div>
 
-          <div class="col-6 col-md-3">
-            <q-input
-              v-model="filtros.de"
-              type="month"
-              dense
-              outlined
-              label="Competência de"
-              bg-color="white"
-              @change="carregar"
-            />
-          </div>
-
-          <div class="col-6 col-md-3">
-            <q-input
-              v-model="filtros.ate"
-              type="month"
-              dense
-              outlined
-              label="Competência até"
-              bg-color="white"
-              @change="carregar"
-            />
+          <div class="col-12 col-md-6">
+            <SbSeletorPeriodo v-model="periodoMargem" />
           </div>
 
           <div class="col-12 col-md-6">
@@ -451,6 +426,9 @@ import SbInfoCallout from "src/components/common/SbInfoCallout.vue";
 import SbBadge from "src/components/common/SbBadge.vue";
 import SbTable from "src/components/common/SbTable.vue";
 import SbEmptyState from "src/components/common/SbEmptyState.vue";
+import SbSeletorEmpresa from "src/components/common/SbSeletorEmpresa.vue";
+import SbSeletorPeriodo from "src/components/common/SbSeletorPeriodo.vue";
+import { formatarCnpj, opcoesDeEmpresa } from "src/utils/seletores";
 import MargemService from "src/services/MargemService";
 import FiscalService from "src/services/FiscalService";
 import {
@@ -493,6 +471,16 @@ const porNivel = computed(() => ({
   sku: resumo.value?.por_nivel?.sku ?? 0,
 }));
 
+// O seletor de período trabalha com `{ de, ate }`; aqui ele é um proxy do filtro da tela, e cada
+// mudança recarrega — mesmo efeito do `@change="carregar"` que os dois inputs tinham.
+const periodoMargem = computed({
+  get: () => ({ de: filtros.value.de, ate: filtros.value.ate }),
+  set: (valor) => {
+    filtros.value = { ...filtros.value, de: valor?.de || "", ate: valor?.ate || "" };
+    carregar();
+  },
+});
+
 // Base de pedidos: `resumo.base_completa=false` é o veredito do backend (já por nível somado);
 // os contadores de linha são o fallback quando o resumo não traz os campos novos.
 const baseIncompleta = computed(() => resumo.value?.base_completa === false);
@@ -528,10 +516,7 @@ async function carregarCnpjs() {
   try {
     const resposta = await FiscalService.getCnpjs();
     const lista = resposta.data?.results || resposta.data || [];
-    opcoesCnpj.value = lista.map((c) => ({
-      label: `${formatarCnpj(c.cnpj)} — ${c.razao_social || "CNPJ Fiscal"}`,
-      value: c.cnpj,
-    }));
+    opcoesCnpj.value = opcoesDeEmpresa(lista);
   } catch (e) {
     // Sem a lista o filtro de CNPJ fica vazio, mas a margem continua carregando.
     console.error("Não foi possível carregar os CNPJs:", e);
@@ -579,11 +564,6 @@ function formatarMoeda(valor) {
 function formatarPct(valor) {
   if (valor === null || valor === undefined || valor === "") return "—";
   return `${numero(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
-}
-
-function formatarCnpj(cnpj) {
-  if (!cnpj || cnpj.length !== 14) return cnpj || "—";
-  return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
 }
 
 function varianteMarketplace(marketplace) {

@@ -60,15 +60,10 @@
           <SbCard class="q-mb-md">
             <div class="row q-col-gutter-md items-center">
               <div class="col-12 col-md-3">
-                <q-select
+                <SbSeletorEmpresa
                   v-model="balanceFilters.cnpj"
                   :options="cnpjOptionsForBalance"
-                  emit-value
-                  map-options
-                  dense
-                  outlined
                   label="CNPJ Fiscal (Obrigatório)"
-                  bg-color="white"
                   @update:model-value="loadBalance"
                 />
               </div>
@@ -421,15 +416,10 @@
               </div>
 
               <div class="col-12 col-md-3">
-                <q-select
+                <SbSeletorEmpresa
                   v-model="docFilters.fiscalAccount"
                   :options="cnpjOptionsForDocs"
-                  emit-value
-                  map-options
-                  dense
-                  outlined
                   label="CNPJ Fiscal"
-                  bg-color="white"
                   @update:model-value="loadDocuments(1)"
                 />
               </div>
@@ -1022,6 +1012,8 @@ import { useQuasar } from "quasar";
 import SbPageHeader from "src/components/common/SbPageHeader.vue";
 import SbCard from "src/components/common/SbCard.vue";
 import SbKpiCard from "src/components/common/SbKpiCard.vue";
+import SbSeletorEmpresa from "src/components/common/SbSeletorEmpresa.vue";
+import { opcoesDeEmpresa } from "src/utils/seletores";
 import FiscalNormalizationReview from "src/components/fiscal/FiscalNormalizationReview.vue";
 import FiscalNormalizationRuns from "src/components/fiscal/FiscalNormalizationRuns.vue";
 import FiscalNormalizedBalance from "src/components/fiscal/FiscalNormalizedBalance.vue";
@@ -1182,17 +1174,9 @@ async function loadCnpjs() {
   try {
     const res = await FiscalService.getCnpjs();
     const list = res.data?.results || res.data || [];
-    const formatted = list.map((c) => ({
-      label: `${formatCnpj(c.cnpj)} — ${c.razao_social || 'CNPJ Fiscal'}`,
-      value: c.id,
-      cnpj: c.cnpj,
-      razao_social: c.razao_social,
-    }));
+    const formatted = opcoesDeEmpresa(list, { valor: "id" });
     cnpjOptionsForBalance.value = formatted;
-    cnpjOptionsForDocs.value = [
-      { label: "Todos os CNPJs", value: null },
-      ...formatted,
-    ];
+    cnpjOptionsForDocs.value = opcoesDeEmpresa(list, { valor: "id", incluirTodos: true });
     if (formatted.length > 0 && !balanceFilters.value.cnpj) {
       balanceFilters.value.cnpj = formatted[0].value;
       loadBalance();
