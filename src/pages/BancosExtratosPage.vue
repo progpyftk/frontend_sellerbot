@@ -53,180 +53,18 @@
 
         <!-- ────────────────────────────────────────── ABA 1: CONEXÕES -->
         <q-tab-panel name="conexoes" class="q-pa-none">
-
-          <SbEmptyState
-            v-if="loadingConexoes && conexoes.length === 0"
-            variant="loading"
-            title="Carregando conexões bancárias"
+          <ExtratosConexoesTab
+            :loading-conexoes="loadingConexoes"
+            :conexoes="conexoes"
+            :testes="testes"
+            :testando-id="testandoId"
+            :conta-columns="contaColumns"
+            @nova="openNovaConexao"
+            @testar="testarConexao"
+            @remover="confirmarRemocao"
+            @sincronizar="openSincronizar"
+            @ver-extrato="verExtrato"
           />
-
-          <SbEmptyState
-            v-else-if="conexoes.length === 0"
-            title="Nenhuma conexão bancária cadastrada"
-            message="Conecte um banco para importar o extrato automaticamente via API."
-          >
-            <template #action>
-              <q-btn
-                unelevated
-                color="teal-8"
-                text-color="white"
-                icon="add"
-                label="Nova conexão"
-                no-caps
-                @click="openNovaConexao"
-              />
-            </template>
-          </SbEmptyState>
-
-          <template v-else>
-            <SbCard v-for="conexao in conexoes" :key="conexao.id" class="q-mb-md">
-              <template #header>
-                <div class="row items-center no-wrap">
-                  <q-icon name="account_balance" size="sm" color="teal-8" class="q-mr-sm" />
-                  <div>
-                    <div class="text-subtitle1 text-weight-bold text-grey-9">
-                      {{ conexao.banco_nome || conexao.banco }}
-                    </div>
-                    <div class="text-caption text-grey-6">
-                      {{ conexao.razao_social || 'Razão social não informada' }}
-                      <span class="font-mono">· {{ formatCnpj(conexao.cnpj) }}</span>
-                    </div>
-                  </div>
-                  <q-badge
-                    class="q-ml-md text-bold"
-                    :color="conexao.status === 'ativa' ? 'green-2' : 'grey-3'"
-                    :text-color="conexao.status === 'ativa' ? 'green-10' : 'grey-9'"
-                  >
-                    {{ conexao.status || '—' }}
-                  </q-badge>
-                  <q-badge class="q-ml-xs text-bold" color="blue-grey-1" text-color="blue-grey-9">
-                    {{ conexao.ambiente }}
-                  </q-badge>
-                </div>
-              </template>
-
-              <template #actions>
-                <q-btn
-                  flat
-                  dense
-                  no-caps
-                  color="teal-8"
-                  icon="network_check"
-                  label="Testar conexão"
-                  :loading="testandoId === conexao.id"
-                  @click="testarConexao(conexao)"
-                />
-                <q-btn
-                  flat
-                  dense
-                  round
-                  color="grey-7"
-                  icon="delete_outline"
-                  @click="confirmarRemocao(conexao)"
-                >
-                  <q-tooltip>Remover conexão</q-tooltip>
-                </q-btn>
-              </template>
-
-              <div class="row q-col-gutter-md q-mb-sm">
-                <div class="col-12 col-sm-6 col-md-4">
-                  <div class="text-caption text-grey-6">Última sincronização</div>
-                  <div class="text-weight-medium text-grey-9">
-                    {{ formatDateTime(conexao.ultima_sincronizacao) }}
-                  </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-4">
-                  <div class="text-caption text-grey-6">Contas vinculadas</div>
-                  <div class="text-weight-medium text-grey-9">
-                    {{ (conexao.contas || []).length }}
-                  </div>
-                </div>
-              </div>
-
-              <q-banner
-                v-if="conexao.ultimo_erro"
-                dense
-                rounded
-                class="bg-red-1 text-red-10 q-mb-sm"
-              >
-                <template #avatar><q-icon name="error_outline" /></template>
-                {{ conexao.ultimo_erro }}
-              </q-banner>
-
-              <q-banner
-                v-if="testes[conexao.id]"
-                dense
-                rounded
-                class="q-mb-sm"
-                :class="testes[conexao.id].ok ? 'bg-green-1 text-green-10' : 'bg-amber-1 text-amber-10'"
-              >
-                <template #avatar>
-                  <q-icon :name="testes[conexao.id].ok ? 'check_circle' : 'warning'" />
-                </template>
-                {{ testes[conexao.id].mensagem }}
-                <span v-if="testes[conexao.id].saldo !== null && testes[conexao.id].saldo !== undefined">
-                  — saldo informado: <strong>{{ formatCurrency(testes[conexao.id].saldo) }}</strong>
-                </span>
-              </q-banner>
-
-              <q-table
-                :rows="conexao.contas || []"
-                :columns="contaColumns"
-                row-key="id"
-                dense
-                flat
-                bordered
-                :pagination="{ rowsPerPage: 10 }"
-                :no-data-label="'Nenhuma conta retornada por esta conexão.'"
-              >
-                <template #body-cell-apelido="props">
-                  <q-td :props="props">
-                    <div class="text-weight-medium text-grey-9">
-                      {{ props.row.apelido || 'Conta' }}
-                    </div>
-                    <div class="text-caption text-grey-6 font-mono">
-                      Ag {{ props.row.agencia || '—' }} / C {{ props.row.numero || '—' }}{{ props.row.digito ? '-' + props.row.digito : '' }}
-                    </div>
-                  </q-td>
-                </template>
-
-                <template #body-cell-saldo="props">
-                  <q-td :props="props">
-                    <span class="text-weight-bold" :class="Number(props.row.saldo) < 0 ? 'text-red-9' : 'text-teal-9'">
-                      {{ formatCurrency(props.row.saldo) }}
-                    </span>
-                    <div v-if="props.row.saldo_em" class="text-caption text-grey-6">
-                      em {{ formatDate(props.row.saldo_em) }}
-                    </div>
-                  </q-td>
-                </template>
-
-                <template #body-cell-actions="props">
-                  <q-td :props="props" class="text-center">
-                    <q-btn
-                      flat
-                      dense
-                      no-caps
-                      color="teal-8"
-                      icon="sync"
-                      label="Sincronizar"
-                      @click="openSincronizar(conexao, props.row)"
-                    />
-                    <q-btn
-                      flat
-                      dense
-                      no-caps
-                      color="grey-7"
-                      icon="table_view"
-                      label="Ver extrato"
-                      @click="verExtrato(conexao, props.row)"
-                    />
-                  </q-td>
-                </template>
-              </q-table>
-            </SbCard>
-          </template>
-
         </q-tab-panel>
 
         <!-- ────────────────────────────────────────── ABA 2: EXTRATO -->
@@ -568,101 +406,17 @@
 
         <!-- ────────────────────────────────────────── ABA 3: IMPORTAR ARQUIVO -->
         <q-tab-panel name="importar" class="q-pa-none">
-
-          <SbCard class="q-mb-md">
-            <div class="row q-col-gutter-md items-center">
-              <div class="col-12 col-md-4">
-                <q-select
-                  v-model="importacao.conta"
-                  :options="contaOptions"
-                  emit-value
-                  map-options
-                  dense
-                  outlined
-                  label="Conta bancária"
-                  bg-color="white"
-                  @update:model-value="onImportContaChange"
-                />
-              </div>
-              <div class="col-6 col-md-3">
-                <q-select
-                  v-model="importacao.formato"
-                  :options="formatosImportacao"
-                  dense
-                  outlined
-                  label="Formato"
-                  bg-color="white"
-                  :disable="formatosImportacao.length === 0"
-                />
-              </div>
-              <div class="col-12 col-md-5">
-                <q-file
-                  v-model="importacao.arquivo"
-                  dense
-                  outlined
-                  clearable
-                  bg-color="white"
-                  :accept="acceptImportacao"
-                  :label="`Arquivo (${formatosImportacao.join(' / ') || 'OFX / CSV'})`"
-                >
-                  <template #prepend><q-icon name="attach_file" /></template>
-                </q-file>
-              </div>
-            </div>
-
-            <div class="row justify-end q-mt-md">
-              <q-btn
-                unelevated
-                no-caps
-                color="teal-8"
-                text-color="white"
-                icon="cloud_upload"
-                label="Importar arquivo"
-                :loading="importando"
-                :disable="!importacao.conta || !importacao.arquivo || !importacao.formato"
-                @click="importarArquivo"
-              />
-            </div>
-
-            <div v-if="formatosImportacao.length === 0" class="text-caption text-grey-6 q-mt-sm">
-              O banco desta conexão não informou formatos de arquivo aceitos pela API.
-            </div>
-          </SbCard>
-
-          <q-banner
-            v-if="resultadoImportacao"
-            dense
-            rounded
-            class="q-mb-md"
-            :class="resultadoImportacao.ok ? 'bg-green-1 text-green-10' : 'bg-red-1 text-red-10'"
-          >
-            <template #avatar>
-              <q-icon :name="resultadoImportacao.ok ? 'check_circle' : 'error_outline'" />
-            </template>
-            {{ resultadoImportacao.mensagem }}
-            <span v-if="resultadoImportacao.ok">
-              — {{ resultadoImportacao.importadas }} importada(s), {{ resultadoImportacao.duplicadas }} duplicada(s)
-              <span v-if="resultadoImportacao.periodo"> · {{ resultadoImportacao.periodo }}</span>
-            </span>
-          </q-banner>
-
-          <SbCard v-if="resultadoImportacao?.ok">
-            <div class="row items-center justify-between">
-              <div class="text-subtitle2 text-weight-bold text-grey-9">
-                Extrato da conta após a importação
-              </div>
-              <q-btn
-                flat
-                dense
-                no-caps
-                color="teal-8"
-                icon="table_view"
-                label="Abrir aba Extrato"
-                @click="abrirExtratoDaImportacao"
-              />
-            </div>
-          </SbCard>
-
+          <ExtratosImportarTab
+            :importacao="importacao"
+            :conta-options="contaOptions"
+            :formatos-importacao="formatosImportacao"
+            :accept-importacao="acceptImportacao"
+            :importando="importando"
+            :resultado-importacao="resultadoImportacao"
+            @conta-change="onImportContaChange"
+            @importar="importarArquivo"
+            @abrir-extrato="abrirExtratoDaImportacao"
+          />
         </q-tab-panel>
 
       </q-tab-panels>
@@ -949,7 +703,10 @@ import SbKpiCard from "src/components/common/SbKpiCard.vue";
 import SbEmptyState from "src/components/common/SbEmptyState.vue";
 import SbCategoriaSelect from "src/components/common/SbCategoriaSelect.vue";
 import SbSeletorEmpresa from "src/components/common/SbSeletorEmpresa.vue";
+import ExtratosImportarTab from "src/components/financeiro/extratos/ExtratosImportarTab.vue";
 import { opcoesDeEmpresa } from "src/utils/seletores";
+import { formatCnpj, formatCurrency, formatDate, formatDateTime } from "src/utils/formato";
+import ExtratosConexoesTab from "src/components/financeiro/extratos/ExtratosConexoesTab.vue";
 import FinanceiroService from "src/services/FinanceiroService";
 import FiscalService from "src/services/FiscalService";
 
@@ -1732,37 +1489,6 @@ function toIsoDate(date) {
   const mes = String(d.getMonth() + 1).padStart(2, "0");
   const dia = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${mes}-${dia}`;
-}
-
-function formatCurrency(val) {
-  const num = parseFloat(val) || 0;
-  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  const d = new Date(value.length === 10 ? `${value}T00:00:00` : value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function formatDateTime(value) {
-  if (!value) return "Nunca sincronizada";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatCnpj(cnpj) {
-  const digits = String(cnpj || "").replace(/\D/g, "");
-  if (digits.length !== 14) return cnpj || "—";
-  return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
 }
 
 onMounted(async () => {
