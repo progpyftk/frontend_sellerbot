@@ -299,6 +299,26 @@ export function cenarioTemNumero(cenario = {}) {
   return cenario.total !== null && cenario.total !== undefined && cenario.total !== '';
 }
 
+/**
+ * Os cenários de uma empresa prontos para a tabela (ticket FINT-8): um por regime, com a **situação**
+ * explícita. Cenário incompleto sai como `parcial (N lacunas)` — nunca como zero nem como completo.
+ */
+export function linhasDeCenarios(empresa = {}) {
+  return cenariosDaEmpresa(empresa).map((cenario) => ({
+    chave: cenario.regime,
+    regime: cenario.rotulo,
+    total: cenario.total,
+    totalPct: cenario.totalPct,
+    completo: cenario.completo,
+    faltantes: cenario.faltantes,
+    observacoes: cenario.observacoes,
+    linhas: cenario.linhas,
+    situacao: cenario.completo
+      ? 'completo'
+      : `parcial${cenario.faltantes.length ? ` (${cenario.faltantes.length})` : ''}`,
+  }));
+}
+
 /** Linhas de um bloco da conciliação (sistema × contador), como o backend classificou. */
 export function linhasDaConciliacao(bloco = {}) {
   return Array.isArray(bloco?.linhas) ? bloco.linhas : [];

@@ -56,36 +56,40 @@
           </div>
         </div>
 
-        <q-markup-table flat dense>
-          <thead>
-            <tr>
-              <th class="text-left">Competência</th>
-              <th class="text-left">Classe</th>
-              <th class="text-right">Declarado (R$)</th>
-              <th class="text-right">Tabela (R$)</th>
-              <th class="text-right">Diferença (R$)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="linha in resumo(item).linhas" :key="linha.competencia">
-              <td>{{ linha.competencia }}</td>
-              <td>
-                <SbBadge :variant="varianteDaClasse(linha.classe)" :icon="iconeDaClasse(linha.classe)">
-                  {{ linha.classe }}
-                </SbBadge>
-              </td>
-              <td class="text-right">{{ formatarMoeda(linha.valor_declarado) }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.valor_calculado) }}</td>
-              <td class="text-right">{{ formatarMoeda(linha.diferenca) }}</td>
-            </tr>
-          </tbody>
-        </q-markup-table>
+        <SbTabela
+          v-model:ordenacao="ordenacao"
+          :colunas="COLUNAS"
+          :linhas="resumo(item).linhas"
+          chave-linha="competencia"
+          rotulo="Apuração por competência"
+          :classe-linha="classeDaLinha"
+          :detalhavel="temExplicacao"
+          titulo-detalhe="Explicação da divergência"
+          subtitulo-detalhe="O que o sistema classificou nesta competência"
+          largura-detalhe="480px"
+        >
+          <template #celula-classe="{ linha }">
+            <SbBadge :variant="varianteDaClasse(linha.classe)" :icon="iconeDaClasse(linha.classe)">
+              {{ linha.classe }}
+            </SbBadge>
+          </template>
 
-        <ul class="text-caption text-grey-7 q-mt-sm">
-          <li v-for="linha in divergentes(item)" :key="linha.competencia">
-            <strong>{{ linha.competencia }}:</strong> {{ linha.explicacao }}
-          </li>
-        </ul>
+          <template #celula-valor_declarado="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-valor_calculado="{ valor }">{{ formatarMoeda(valor) }}</template>
+          <template #celula-diferenca="{ valor }">{{ formatarMoeda(valor) }}</template>
+
+          <template #detalhe="{ linha }">
+            <div class="row items-center q-gutter-sm q-mb-sm">
+              <SbBadge :variant="varianteDaClasse(linha.classe)" :icon="iconeDaClasse(linha.classe)">
+                {{ linha.classe }}
+              </SbBadge>
+              <span class="text-caption text-grey-7">{{ linha.competencia }}</span>
+            </div>
+            <p class="text-body2 detalhe-texto">
+              {{ linha.explicacao || 'Sem divergência a explicar: o declarado e a tabela coincidem.' }}
+            </p>
+          </template>
+        </SbTabela>
       </SbCard>
     </template>
     <SbEmptyState v-else title="Sem apuração para este recorte" message="Escolha outra competência ou verifique se há PGDASD importada." />
@@ -93,11 +97,15 @@
 </template>
 
 <script setup>
-// Aba "Tributos" do módulo (ticket FIN-14, onda 3; dados do FIN-11).
+// Aba "Tributos" do módulo (ticket FIN-14, onda 3; dados do FIN-11; tabela padrão no FINT-8).
 //
 // Lê `GET /api/financeiro/contabil/tributos/` (com `origem=calculado|gravado`) e mostra o confronto
-// declarado × tabela por competência, com a **classe** de cada divergência e a explicação. As duas
-// origens devolvem o mesmo formato — é o que permite à tela ter um caminho só.
+// declarado × tabela por competência. As duas origens devolvem o mesmo formato — é o que permite à
+// tela ter um caminho só.
+//
+// O que mudou no FINT-8: a **classe** deixou de ser um selo solto e virou coluna **ordenável** (dá para
+// agrupar as competências por tipo de divergência) e a **explicação** saiu da lista abaixo da tabela
+// para o detalhe do clique na linha — a lista contava a mesma coisa duas vezes.
 import { computed, onMounted, ref } from 'vue'
 
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
@@ -105,9 +113,11 @@ import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
+import SbTabela from 'src/components/common/SbTabela.vue'
 import ContabilService from 'src/services/ContabilService'
-import { formatarCnpj } from 'src/utils/seletores'
+import { iconeDaClasse, varianteDaClasse } from 'src/utils/classes'
 import { formatarMoeda, resumoDaApuracao, rotuloRegime } from 'src/utils/contabil'
+import { formatarCnpj } from 'src/utils/seletores'
 
 const empresa = ref(null)
 const periodo = ref({ de: '', ate: '' })
@@ -115,6 +125,17 @@ const origem = ref('calculado')
 const empresas = ref([])
 const loading = ref(false)
 const erro = ref('')
+
+// Ordenação local; o `FINT-11` leva recorte e ordem para a URL.
+const ordenacao = ref({ chave: '', direcao: '' })
+
+const COLUNAS = [
+  { chave: 'competencia', rotulo: 'Competência', tipo: 'texto', ordenavel: true, largura: '122px' },
+  { chave: 'classe', rotulo: 'Classe', tipo: 'texto', ordenavel: true, largura: '160px' },
+  { chave: 'valor_declarado', rotulo: 'Declarado (R$)', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'valor_calculado', rotulo: 'Tabela (R$)', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'diferenca', rotulo: 'Diferença (R$)', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+]
 
 const aviso = computed(() =>
   empresa.value ? '' : 'Sem empresa escolhida, o recorte é o grupo (a apuração é por CNPJ).',
@@ -124,23 +145,8 @@ function resumo(item) {
   return resumoDaApuracao(item)
 }
 
-function divergentes(item) {
-  return resumo(item).linhas.filter((l) => ['nao_explicado', 'redistribuicao'].includes(l.classe))
-}
-
-function varianteDaClasse(classe) {
-  if (classe === 'confere') return 'green'
-  if (classe === 'redistribuicao') return 'amber'
-  if (classe === 'nao_explicado') return 'red'
-  return 'slate'
-}
-
-function iconeDaClasse(classe) {
-  if (classe === 'confere') return 'check'
-  if (classe === 'sem_declaracao') return 'help_outline'
-  if (classe === 'sem_tabela') return 'rule'
-  return 'warning'
-}
+const classeDaLinha = (linha) => (linha.classe === 'nao_explicado' ? 'linha--alerta' : '')
+const temExplicacao = (linha) => !!linha.explicacao
 
 async function carregar() {
   loading.value = true
@@ -163,3 +169,17 @@ async function carregar() {
 
 onMounted(carregar)
 </script>
+
+<style lang="scss" scoped>
+@import 'src/css/tokens.scss';
+
+.detalhe-texto {
+  margin: 0;
+  color: $text-body;
+  line-height: 1.5;
+}
+
+:deep(.linha--alerta) {
+  background: $tint-red-bg;
+}
+</style>

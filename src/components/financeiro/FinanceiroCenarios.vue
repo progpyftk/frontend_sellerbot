@@ -36,17 +36,6 @@
         :title="item.razao_social || item.cnpj"
         :eyebrow="`${formatarCnpj(item.cnpj)} · ${item.competencia} · base ${item.base?.lastro || '—'}`"
       >
-        <div class="row q-col-gutter-md q-mb-md">
-          <div v-for="cenario in cenariosDaEmpresa(item)" :key="cenario.regime" class="col-12 col-sm-6 col-md-4">
-            <SbKpiCard
-              :label="cenario.rotulo"
-              :value="cenarioTemNumero(cenario) ? formatarMoeda(cenario.total) : 'parcial'"
-              :sub="cenario.completo ? `${cenario.totalPct || '—'}% da receita` : `${cenario.faltantes.length} lacuna(s)`"
-              :variant="cenario.completo ? 'teal' : 'amber'"
-            />
-          </div>
-        </div>
-
         <div v-if="item.ranking" class="row items-center q-gutter-sm q-mb-sm">
           <SbBadge variant="green" icon="emoji_events">
             Menor total: {{ rotuloRegime(item.ranking.primeiro) }} — diferença de R$ {{ item.ranking.diferenca_para_o_segundo }} para o 2º
@@ -59,34 +48,71 @@
         </div>
         <div class="text-caption text-grey-7 q-mb-sm">{{ item.aviso || 'Todos os cenários estão completos.' }}</div>
 
-        <q-expansion-item
-          v-for="cenario in cenariosDaEmpresa(item)"
-          :key="`detalhe-${cenario.regime}`"
-          dense
-          :label="`${cenario.rotulo} — linhas e lacunas`"
+        <SbTabela
+          v-model:ordenacao="ordenacao"
+          :colunas="COLUNAS"
+          :linhas="linhasDeCenarios(item)"
+          chave-linha="chave"
+          rotulo="Cenários de regime"
+          :classe-linha="classeDaLinha"
+          :detalhavel="temDetalhe"
+          titulo-detalhe="Linhas e lacunas do cenário"
+          subtitulo-detalhe="Como o cenário foi apurado, linha a linha"
+          largura-detalhe="580px"
         >
-          <q-markup-table flat dense>
-            <thead>
-              <tr>
-                <th class="text-left">Tributo</th>
-                <th class="text-left">Base</th>
-                <th class="text-right">Valor (R$)</th>
-                <th class="text-left">Fonte</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="linha in cenario.linhas" :key="linha.tributo + (linha.base || '')">
-                <td>{{ linha.tributo }}</td>
-                <td>{{ linha.base }}</td>
-                <td class="text-right">{{ formatarMoeda(linha.valor) }}</td>
-                <td class="text-caption">{{ linha.fonte }}</td>
-              </tr>
-            </tbody>
-          </q-markup-table>
-          <ul v-if="cenario.observacoes.length" class="text-caption text-grey-7 q-mt-sm">
-            <li v-for="(obs, i) in cenario.observacoes" :key="i">{{ obs }}</li>
-          </ul>
-        </q-expansion-item>
+          <template #celula-total="{ linha }">
+            <span v-if="cenarioTemNumero(linha)">{{ formatarMoeda(linha.total) }}</span>
+            <span v-else class="text-grey-7">parcial</span>
+          </template>
+
+          <template #celula-totalPct="{ valor }">{{ valor ? `${valor}%` : '—' }}</template>
+
+          <template #celula-situacao="{ linha }">
+            <SbBadge
+              :variant="linha.completo ? 'green' : 'amber'"
+              :icon="linha.completo ? 'check' : 'help_outline'"
+            >
+              {{ linha.situacao }}
+            </SbBadge>
+          </template>
+
+          <template #detalhe="{ linha }">
+            <div class="row items-center q-gutter-sm q-mb-sm">
+              <SbBadge
+                :variant="linha.completo ? 'green' : 'amber'"
+                :icon="linha.completo ? 'check' : 'help_outline'"
+              >
+                {{ linha.situacao }}
+              </SbBadge>
+              <span class="text-caption text-grey-7">{{ linha.regime }}</span>
+            </div>
+
+            <SbTabela
+              v-if="linha.linhas.length"
+              :colunas="COLUNAS_LINHAS"
+              :linhas="linha.linhas"
+              :chave-linha="chaveDaLinhaDoCenario"
+              rotulo="Linhas do cenário"
+              densidade="compacta"
+            >
+              <template #celula-valor="{ valor }">{{ formatarMoeda(valor) }}</template>
+            </SbTabela>
+            <p v-else class="text-caption text-grey-7">O cenário não trouxe linhas detalhadas.</p>
+
+            <div v-if="linha.faltantes.length" class="q-mt-sm">
+              <div class="text-caption text-grey-7">Lacunas que impedem o total:</div>
+              <ul class="text-caption text-grey-7">
+                <li v-for="falta in linha.faltantes" :key="falta.chave || falta">
+                  {{ falta.rotulo || falta.chave || falta }}
+                </li>
+              </ul>
+            </div>
+
+            <ul v-if="linha.observacoes.length" class="text-caption text-grey-7 q-mt-sm">
+              <li v-for="(obs, i) in linha.observacoes" :key="i">{{ obs }}</li>
+            </ul>
+          </template>
+        </SbTabela>
       </SbCard>
     </template>
     <SbEmptyState v-else title="Sem cenários para este recorte" message="Escolha outra competência ou verifique se há PGDASD importada." />
@@ -94,21 +120,26 @@
 </template>
 
 <script setup>
-// Aba "Cenários e termômetros" do módulo (ticket FIN-14, onda 3; motor do FIN-13 e do TRIB-12).
+// Aba "Cenários e termômetros" do módulo (ticket FIN-14, onda 3; motor do FIN-13 e do TRIB-12;
+// tabela padrão no FINT-8).
 //
 // Lê `GET /api/financeiro/contabil/cenarios/` — e, com `modelo=2027`, o eixo da reforma (Simples puro ×
 // híbrido × fora). A tela mostra o total de cada cenário **como o backend apurou**, as lacunas nomeadas
 // e o ranking só quando ele é honesto; cenário incompleto aparece como "parcial", nunca como zero.
-import { computed, onMounted, ref } from 'vue'
+//
+// O que mudou no FINT-8: os cartões de KPI por cenário e os `q-expansion-item` viraram **uma tabela**
+// com a coluna de **situação** (completo × parcial) ordenável; as linhas e as lacunas de cada cenário
+// abrem no detalhe do clique.
+import { onMounted, ref } from 'vue'
 
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
-import SbKpiCard from 'src/components/common/SbKpiCard.vue'
+import SbTabela from 'src/components/common/SbTabela.vue'
 import ContabilService from 'src/services/ContabilService'
+import { cenarioTemNumero, formatarMoeda, linhasDeCenarios, rotuloRegime } from 'src/utils/contabil'
 import { formatarCnpj } from 'src/utils/seletores'
-import { cenarioTemNumero, cenariosDaEmpresa, formatarMoeda, rotuloRegime } from 'src/utils/contabil'
 
 const empresa = ref(null)
 const periodo = ref({ de: '', ate: '' })
@@ -117,9 +148,29 @@ const empresas = ref([])
 const loading = ref(false)
 const erro = ref('')
 
-const aviso = computed(() =>
-  empresa.value ? '' : 'Sem empresa escolhida, o grupo soma as empresas (o Simples é apurado por CNPJ).',
-)
+// Ordenação local; o `FINT-11` leva recorte e ordem para a URL.
+const ordenacao = ref({ chave: '', direcao: '' })
+
+const COLUNAS = [
+  { chave: 'regime', rotulo: 'Cenário', tipo: 'texto', ordenavel: true },
+  { chave: 'total', rotulo: 'Total (R$)', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'totalPct', rotulo: '% da receita', tipo: 'numero', alinhamento: 'right', ordenavel: true, largura: '122px' },
+  { chave: 'situacao', rotulo: 'Situação', tipo: 'texto', ordenavel: true, largura: '132px' },
+]
+
+const COLUNAS_LINHAS = [
+  { chave: 'tributo', rotulo: 'Tributo', tipo: 'texto' },
+  { chave: 'base', rotulo: 'Base', tipo: 'texto' },
+  { chave: 'valor', rotulo: 'Valor (R$)', tipo: 'moeda', alinhamento: 'right' },
+  { chave: 'fonte', rotulo: 'Fonte', tipo: 'texto' },
+]
+
+const classeDaLinha = (linha) => (linha.completo ? '' : 'linha--parcial')
+const temDetalhe = (linha) =>
+  (linha.linhas?.length || 0) > 0 || (linha.faltantes?.length || 0) > 0 || (linha.observacoes?.length || 0) > 0
+
+// O par tributo+base identifica a linha do cenário (o mesmo tributo aparece em bases diferentes).
+const chaveDaLinhaDoCenario = (linha) => `${linha.tributo}|${linha.base || ''}`
 
 async function carregar() {
   loading.value = true
@@ -143,3 +194,11 @@ async function carregar() {
 
 onMounted(carregar)
 </script>
+
+<style lang="scss" scoped>
+@import 'src/css/tokens.scss';
+
+:deep(.linha--parcial) {
+  background: $tint-amber-bg;
+}
+</style>

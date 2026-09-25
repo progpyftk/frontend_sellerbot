@@ -24,11 +24,7 @@
           :message="item.motivo || 'Sem demonstrativo para esta competência: nada a confrontar.'"
         />
         <template v-else>
-          <div
-            v-for="bloco in item.demonstrativos"
-            :key="bloco.demonstrativo"
-            class="q-mb-md"
-          >
+          <div v-for="bloco in item.demonstrativos" :key="bloco.demonstrativo" class="q-mb-md">
             <div class="bloco-titulo">{{ bloco.demonstrativo }}</div>
             <div class="row items-center q-gutter-sm q-mb-sm">
               <SbBadge
@@ -40,32 +36,44 @@
                 {{ linha.quantidade }} {{ linha.classe }}
               </SbBadge>
             </div>
-            <q-markup-table flat dense>
-              <thead>
-                <tr>
-                  <th class="text-left">Chave</th>
-                  <th class="text-right">Sistema (R$)</th>
-                  <th class="text-right">Contador (R$)</th>
-                  <th class="text-right">Diferença (R$)</th>
-                  <th class="text-left">Classe</th>
-                  <th class="text-left">Explicação</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="linha in linhasDaConciliacao(bloco)" :key="linha.chave">
-                  <td class="font-mono">{{ linha.chave }}</td>
-                  <td class="text-right">{{ formatarMoeda(linha.sistema) }}</td>
-                  <td class="text-right">{{ formatarMoeda(linha.contador) }}</td>
-                  <td class="text-right">{{ formatarMoeda(linha.diferenca) }}</td>
-                  <td>
-                    <SbBadge :variant="varianteDaClasse(linha.classe)" :icon="iconeDaClasse(linha.classe)">
-                      {{ linha.classe }}
-                    </SbBadge>
-                  </td>
-                  <td class="text-caption">{{ linha.explicacao }}</td>
-                </tr>
-              </tbody>
-            </q-markup-table>
+
+            <SbTabela
+              v-model:ordenacao="ordenacao"
+              :colunas="COLUNAS"
+              :linhas="linhasDaConciliacao(bloco)"
+              chave-linha="chave"
+              :rotulo="`Conciliação — ${bloco.demonstrativo}`"
+              :classe-linha="classeDaLinha"
+              :detalhavel="temExplicacao"
+              titulo-detalhe="Explicação da diferença"
+              subtitulo-detalhe="A causa que o próprio sistema classificou"
+              largura-detalhe="480px"
+            >
+              <template #celula-chave="{ valor }">
+                <span class="font-mono">{{ valor }}</span>
+              </template>
+              <template #celula-sistema="{ valor }">{{ formatarMoeda(valor) }}</template>
+              <template #celula-contador="{ valor }">{{ formatarMoeda(valor) }}</template>
+              <template #celula-diferenca="{ valor }">{{ formatarMoeda(valor) }}</template>
+
+              <template #celula-classe="{ linha }">
+                <SbBadge :variant="varianteDaClasse(linha.classe)" :icon="iconeDaClasse(linha.classe)">
+                  {{ linha.classe }}
+                </SbBadge>
+              </template>
+
+              <template #detalhe="{ linha }">
+                <div class="row items-center q-gutter-sm q-mb-sm">
+                  <SbBadge :variant="varianteDaClasse(linha.classe)" :icon="iconeDaClasse(linha.classe)">
+                    {{ linha.classe }}
+                  </SbBadge>
+                  <span class="text-caption text-grey-7 font-mono">{{ linha.chave }}</span>
+                </div>
+                <p class="text-body2 detalhe-texto">
+                  {{ linha.explicacao || 'Diferença sem explicação registrada.' }}
+                </p>
+              </template>
+            </SbTabela>
           </div>
         </template>
       </SbCard>
@@ -75,21 +83,27 @@
 </template>
 
 <script setup>
-// Aba "Conciliação" do módulo (ticket FIN-14, onda 4; serviço do FIN-15).
+// Aba "Conciliação" do módulo (ticket FIN-14, onda 4; serviço do FIN-15; tabela padrão no FINT-8).
 //
 // Lê `GET /api/financeiro/contabil/conciliacao/` e mostra o confronto **linha a linha** com o
 // demonstrativo do contador, com a diferença **classificada** (`de_base` = explicar, `de_dado` =
 // corrigir, `nao_explicado`) e a causa que o próprio sistema gravou. Quando não há snapshot, a tela diz
 // **o que falta** em vez de comparar com zero.
+//
+// O que mudou no FINT-8: a **classe** virou coluna ordenável (dá para juntar as linhas por tipo de
+// causa) e a **explicação** saiu da coluna — que a deixava espremida em `text-caption` — para o
+// detalhe do clique na linha.
 import { computed, onMounted, ref } from 'vue'
 
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
+import SbTabela from 'src/components/common/SbTabela.vue'
 import ContabilService from 'src/services/ContabilService'
-import { formatarCnpj } from 'src/utils/seletores'
+import { iconeDaClasse, varianteDaClasse } from 'src/utils/classes'
 import { formatarMoeda, linhasDaConciliacao, resumoDaConciliacao } from 'src/utils/contabil'
+import { formatarCnpj } from 'src/utils/seletores'
 
 const empresa = ref(null)
 const periodo = ref({ de: '', ate: '' })
@@ -97,24 +111,23 @@ const lista = ref([])
 const loading = ref(false)
 const erro = ref('')
 
+// Ordenação local; o `FINT-11` leva recorte e ordem para a URL.
+const ordenacao = ref({ chave: '', direcao: '' })
+
+const COLUNAS = [
+  { chave: 'chave', rotulo: 'Chave', tipo: 'texto', ordenavel: true, largura: '160px' },
+  { chave: 'sistema', rotulo: 'Sistema (R$)', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'contador', rotulo: 'Contador (R$)', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'diferenca', rotulo: 'Diferença (R$)', tipo: 'moeda', alinhamento: 'right', ordenavel: true },
+  { chave: 'classe', rotulo: 'Classe', tipo: 'texto', ordenavel: true, largura: '150px' },
+]
+
 const aviso = computed(() =>
   empresa.value ? '' : 'Sem empresa escolhida, o recorte é o grupo (a conciliação é por CNPJ).',
 )
 
-function varianteDaClasse(classe) {
-  if (classe === 'confere') return 'green'
-  if (classe === 'de_dado') return 'amber'
-  if (classe === 'de_base') return 'sky'
-  if (classe === 'nao_explicado') return 'red'
-  return 'slate'
-}
-
-function iconeDaClasse(classe) {
-  if (classe === 'confere') return 'check'
-  if (classe === 'de_dado') return 'build'
-  if (classe === 'de_base') return 'info'
-  return 'warning'
-}
+const classeDaLinha = (linha) => (linha.classe === 'nao_explicado' ? 'linha--alerta' : '')
+const temExplicacao = (linha) => !!linha.explicacao
 
 async function carregar() {
   loading.value = true
@@ -139,12 +152,24 @@ onMounted(carregar)
 </script>
 
 <style lang="scss" scoped>
+@import 'src/css/tokens.scss';
+
 .bloco-titulo {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: $text-xs-size;
+  font-weight: $font-semibold;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #0f766e;
-  margin-bottom: 6px;
+  color: $tint-teal-text;
+  margin-bottom: $space-2;
+}
+
+.detalhe-texto {
+  margin: 0;
+  color: $text-body;
+  line-height: 1.5;
+}
+
+:deep(.linha--alerta) {
+  background: $tint-red-bg;
 }
 </style>

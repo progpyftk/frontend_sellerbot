@@ -12,6 +12,7 @@ import {
   linhasDaConciliacao,
   linhasDaViaDireta,
   linhasDaViaIndireta,
+  linhasDeCenarios,
   linhasDoBalanco,
   numerosDaVisaoGeral,
   resumoDaApuracao,
@@ -366,5 +367,33 @@ describe('conciliacao', () => {
   it('bloco vazio não quebra', () => {
     expect(linhasDaConciliacao()).toEqual([])
     expect(resumoDaConciliacao()).toEqual([])
+  })
+})
+
+describe('linhasDeCenarios', () => {
+  const EMPRESA = {
+    cenarios: [
+      { regime: 'simples_puro', total: '15312.63', total_pct_receita: '9.8798', completo: true, faltantes: [], observacoes: [], linhas: [{ tributo: 'DAS', valor: '15312.63' }] },
+      { regime: 'hibrido', total: null, total_pct_receita: null, completo: false, faltantes: [{ chave: 'cbs' }, { chave: 'ibs' }], observacoes: ['parcial'], linhas: [] },
+    ],
+  }
+
+  it('um cenário por linha, com a chave sendo o regime', () => {
+    const linhas = linhasDeCenarios(EMPRESA)
+    expect(linhas.map((l) => l.chave)).toEqual(['simples_puro', 'hibrido'])
+    expect(linhas[0].regime).toBe('Simples puro (2027)')
+    expect(linhas[0].total).toBe('15312.63')
+    expect(linhas[0].linhas).toHaveLength(1)
+  })
+
+  it('a situação diz completo × parcial e quantas lacunas — nunca zero', () => {
+    const linhas = linhasDeCenarios(EMPRESA)
+    expect(linhas[0].situacao).toBe('completo')
+    expect(linhas[1].situacao).toBe('parcial (2)')
+    expect(linhas[1].total).toBeNull()
+  })
+
+  it('empresa sem cenários devolve lista vazia', () => {
+    expect(linhasDeCenarios()).toEqual([])
   })
 })
