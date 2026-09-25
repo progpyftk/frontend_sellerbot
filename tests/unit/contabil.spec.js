@@ -5,10 +5,14 @@ import {
   cenarioTemNumero,
   cenariosDaEmpresa,
   contasDaLinha,
+  contasDaLinhaDoDre,
   formatarMoeda,
   gruposDoBalanco,
   linhasDaCascata,
   linhasDaConciliacao,
+  linhasDaViaDireta,
+  linhasDaViaIndireta,
+  linhasDoBalanco,
   numerosDaVisaoGeral,
   resumoDaApuracao,
   resumoDaConciliacao,
@@ -187,6 +191,102 @@ describe('contasDaLinha', () => {
   it('devolve as contas do DRE ou lista vazia', () => {
     expect(contasDaLinha({ linhas: [{ codigo: '3.1.1.01' }] })).toHaveLength(1)
     expect(contasDaLinha({})).toEqual([])
+  })
+})
+
+describe('contasDaLinhaDoDre', () => {
+  const DRE = {
+    linhas: [
+      { codigo: '3.1.1.01', conta: 'Receita', linha_do_dre: 'receita_bruta', valor: '100.00' },
+      { codigo: '3.3.1.01', conta: 'DAS', linha_do_dre: 'impostos_sobre_a_receita', valor: '10.00' },
+      { codigo: '3.1.2.01', conta: 'Outra receita', linha_do_dre: 'receita_bruta', valor: '5.00' },
+    ],
+  }
+
+  it('a origem é filtrada pela linha do DRE que o backend marca', () => {
+    expect(contasDaLinhaDoDre(DRE, 'receita_bruta').map((c) => c.codigo)).toEqual(['3.1.1.01', '3.1.2.01'])
+    expect(contasDaLinhaDoDre(DRE, 'impostos_sobre_a_receita')).toHaveLength(1)
+  })
+
+  it('linha sem conta devolve vazio — a tela não inventa origem', () => {
+    expect(contasDaLinhaDoDre(DRE, 'cmv')).toEqual([])
+    expect(contasDaLinhaDoDre(DRE, '')).toEqual([])
+    expect(contasDaLinhaDoDre({}, 'receita_bruta')).toEqual([])
+  })
+})
+
+describe('linhasDoBalanco', () => {
+  const BALANCO = {
+    ativo: {
+      circulante: '100.00',
+      nao_circulante: '50.00',
+      total: '150.00',
+      contas: [{ codigo: '1.1.1.01', nome: 'Caixa', saldo: '100.00' }],
+    },
+    passivo: { circulante: '30.00', nao_circulante: '0.00', total: '30.00', contas: [] },
+    patrimonio_liquido: { total: '120.00', contas: [{ codigo: '2.3.1.01', nome: 'Capital', saldo: '120.00' }] },
+  }
+
+  it('achata subtotais e total do grupo na ordem de leitura', () => {
+    const linhas = linhasDoBalanco(BALANCO)
+    expect(linhas.map((l) => l.chave)).toEqual([
+      'ativo:circulante',
+      'ativo:nao_circulante',
+      'ativo:total',
+      'passivo:circulante',
+      'passivo:nao_circulante',
+      'passivo:total',
+      'patrimonio_liquido:total',
+    ])
+    expect(linhas[2]).toMatchObject({
+      grupo: 'Ativo',
+      rotulo: 'Total Ativo',
+      valor: '150.00',
+      tipo: 'total',
+    })
+  })
+
+  it('subtotal não carrega contas (o payload não recorta) e o total carrega', () => {
+    const linhas = linhasDoBalanco(BALANCO)
+    expect(linhas[0].contas).toEqual([])
+    expect(linhas[2].contas).toHaveLength(1)
+    expect(linhas[6].contas).toHaveLength(1)
+  })
+
+  it('balanço vazio mantém a estrutura e não inventa número', () => {
+    const linhas = linhasDoBalanco()
+    expect(linhas).toHaveLength(7) // 6 subtotais + o total do PL
+    expect(linhas[0].valor).toBeNull()
+    expect(linhas[0].contas).toEqual([])
+  })
+})
+
+describe('linhas das vias do DFC', () => {
+  const VIA = {
+    linhasIndiretas: [{ rotulo: 'Resultado do periodo', valor: '1500.00' }],
+    atividadesIndiretas: [{ chave: 'operacional', rotulo: 'Operacional', valor: '1500.00' }],
+    totalIndireto: '1500.00',
+    atividadesDiretas: [{ chave: 'operacional', rotulo: 'Operacional', valor: '1500.00' }],
+    totalDireto: '1500.00',
+  }
+
+  it('a via indireta tem ajuste, atividade e total, nesta ordem', () => {
+    const linhas = linhasDaViaIndireta(VIA)
+    expect(linhas.map((l) => l.rotulo)).toEqual([
+      'Resultado do periodo',
+      'Atividade Operacional',
+      'Total indireto',
+    ])
+    expect(linhas.map((l) => l.tipo)).toEqual(['ajuste', 'atividade', 'total'])
+  })
+
+  it('a via direta tem atividade e total', () => {
+    expect(linhasDaViaDireta(VIA).map((l) => l.rotulo)).toEqual(['Operacional', 'Total direto'])
+  })
+
+  it('via vazia vira null — nunca zero por engano', () => {
+    expect(linhasDaViaIndireta().map((l) => l.valor)).toEqual([null])
+    expect(linhasDaViaDireta().map((l) => l.valor)).toEqual([null])
   })
 })
 

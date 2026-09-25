@@ -30,30 +30,28 @@
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
             <div class="via-titulo">Método indireto</div>
-            <div v-for="linha in item.linhasIndiretas" :key="linha.rotulo" class="via-linha">
-              <span>{{ linha.rotulo }}</span>
-              <span>{{ formatarMoeda(linha.valor) }}</span>
-            </div>
-            <div v-for="atividade in item.atividadesIndiretas" :key="atividade.chave" class="via-linha via-linha--atividade">
-              <span>{{ atividade.rotulo }}</span>
-              <span>{{ formatarMoeda(atividade.valor) }}</span>
-            </div>
-            <div class="via-total">
-              <span>Total indireto</span>
-              <span>{{ formatarMoeda(item.totalIndireto) }}</span>
-            </div>
+            <SbTabela
+              :colunas="COLUNAS"
+              :linhas="linhasDaViaIndireta(item)"
+              chave-linha="chave"
+              rotulo="DFC — método indireto"
+              :classe-linha="classeDaLinha"
+            >
+              <template #celula-valor="{ valor }">{{ formatarMoeda(valor) }}</template>
+            </SbTabela>
           </div>
 
           <div class="col-12 col-md-6">
             <div class="via-titulo">Método direto</div>
-            <div v-for="atividade in item.atividadesDiretas" :key="atividade.chave" class="via-linha">
-              <span>{{ atividade.rotulo }}</span>
-              <span>{{ formatarMoeda(atividade.valor) }}</span>
-            </div>
-            <div class="via-total">
-              <span>Total direto</span>
-              <span>{{ formatarMoeda(item.totalDireto) }}</span>
-            </div>
+            <SbTabela
+              :colunas="COLUNAS"
+              :linhas="linhasDaViaDireta(item)"
+              chave-linha="chave"
+              rotulo="DFC — método direto"
+              :classe-linha="classeDaLinha"
+            >
+              <template #celula-valor="{ valor }">{{ formatarMoeda(valor) }}</template>
+            </SbTabela>
           </div>
         </div>
 
@@ -81,9 +79,10 @@ import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
+import SbTabela from 'src/components/common/SbTabela.vue'
 import ContabilService from 'src/services/ContabilService'
 import { formatarCnpj } from 'src/utils/seletores'
-import { formatarMoeda, viasDoDfc } from 'src/utils/contabil'
+import { formatarMoeda, linhasDaViaDireta, linhasDaViaIndireta, viasDoDfc } from 'src/utils/contabil'
 
 const empresa = ref(null)
 const periodo = ref({ de: '', ate: '' })
@@ -96,6 +95,14 @@ const aviso = computed(() =>
     ? ''
     : 'Sem empresa escolhida, o recorte é o grupo somado (leitura gerencial — a eliminação intercompany não está feita).',
 )
+
+// O DFC é uma **demonstração**: a ordem das atividades é a leitura do fluxo. Sem ordenação por coluna.
+const COLUNAS = [
+  { chave: 'rotulo', rotulo: 'Linha' },
+  { chave: 'valor', rotulo: 'Valor (R$)', tipo: 'moeda', alinhamento: 'right' },
+]
+
+const classeDaLinha = (linha) => `via--${linha.tipo}`
 
 async function carregar() {
   loading.value = true
@@ -123,35 +130,22 @@ onMounted(carregar)
 </script>
 
 <style lang="scss" scoped>
+@import 'src/css/tokens.scss';
+
 .via-titulo {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: $text-xs-size;
+  font-weight: $font-semibold;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #0f766e;
-  margin-bottom: 6px;
+  color: $tint-teal-text;
+  margin-bottom: $space-2;
 }
 
-.via-linha {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 13px;
-  color: #475569;
-  padding: 2px 0;
-}
-
-.via-linha--atividade {
-  font-style: italic;
-}
-
-.via-total {
-  display: flex;
-  justify-content: space-between;
+:deep(.via--total) {
   font-weight: 700;
-  color: #0f172a;
-  border-top: 1px solid #e2e8f0;
-  margin-top: 6px;
-  padding-top: 6px;
+}
+
+:deep(.via--atividade) {
+  font-style: italic;
 }
 </style>

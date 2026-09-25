@@ -180,3 +180,40 @@ describe('SbTabela — detalhe da linha (FINT-3)', () => {
     wrapper.unmount()
   })
 })
+
+describe('SbTabela — classe da linha e detalhe por linha (FINT-7)', () => {
+  it('aplica a classe que a demonstração passa por linha', () => {
+    const wrapper = montar({ classeLinha: (linha) => `tipo--${linha.nome}` })
+    const linhas = wrapper.findAll('tbody tr')
+    expect(linhas[0].classes()).toContain('tipo--Beta')
+    expect(linhas[1].classes()).toContain('tipo--Alfa')
+    expect(linhas[0].classes()).toContain('sb-tabela__linha')
+  })
+
+  it('não abre o painel em linha sem detalhe, mas ainda emite a linha', async () => {
+    const wrapper = mount(SbTabela, {
+      props: {
+        colunas: COLUNAS,
+        linhas: LINHAS,
+        detalhavel: (linha) => linha.nome === 'Alfa',
+      },
+      slots: { detalhe: () => h('p', { class: 'conteudo' }, 'origem') },
+      global: { stubs },
+      attachTo: document.body,
+    })
+
+    // Só a linha com origem ganha botão de abrir.
+    expect(wrapper.findAll('tbody button.sb-tabela__abrir')).toHaveLength(1)
+
+    await wrapper.findAll('tbody tr')[0].trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(wrapper.emitted('linha')).toHaveLength(1)
+
+    await wrapper.findAll('tbody tr')[1].trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+
+    wrapper.unmount()
+  })
+})

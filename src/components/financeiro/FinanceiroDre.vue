@@ -25,62 +25,16 @@
           <SbBadge v-if="item.fora_do_resultado && item.fora_do_resultado !== '0.00'" variant="indigo" icon="block">
             R$ {{ item.fora_do_resultado }} fora do resultado (decisão #12)
           </SbBadge>
+          <SbBadge v-if="contasDeOrigem(item)" variant="slate" icon="link">
+            {{ contasDeOrigem(item) }} conta(s) de origem — clique na linha
+          </SbBadge>
         </div>
 
-        <q-markup-table flat dense>
-          <thead>
-            <tr>
-              <th class="text-left">Linha</th>
-              <th class="text-right">Valor (R$)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="linha in linhasDaCascata(item.subtotais)"
-              :key="linha.chave"
-              :class="`cascata-linha--${linha.tipo}`"
-            >
-              <td>
-                {{ linha.rotulo }}
-                <span
-                  v-if="linha.chave === 'margem_contribuicao' && item.margem_contribuicao_pct"
-                  class="text-grey-7"
-                >
-                  ({{ item.margem_contribuicao_pct }}% da receita líquida)
-                </span>
-                <span v-if="linha.chave === 'ebitda' && item.ebitda_pct" class="text-grey-7">
-                  ({{ item.ebitda_pct }}% da receita líquida)
-                </span>
-              </td>
-              <td class="text-right">{{ formatarMoeda(linha.valor) }}</td>
-            </tr>
-          </tbody>
-        </q-markup-table>
-
-        <q-expansion-item
-          v-if="contasDaLinha(item).length"
-          icon="receipt_long"
-          :label="`Origem do número — ${contasDaLinha(item).length} conta(s)`"
-          caption="a conta e o valor que compõem cada linha"
-          class="q-mt-sm"
-        >
-          <q-markup-table flat dense>
-            <thead>
-              <tr>
-                <th class="text-left">Conta</th>
-                <th class="text-left">Nome</th>
-                <th class="text-right">Contribuição (R$)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="conta in contasDaLinha(item)" :key="conta.codigo">
-                <td class="font-mono">{{ conta.codigo }}</td>
-                <td>{{ conta.conta }}</td>
-                <td class="text-right">{{ formatarMoeda(conta.valor) }}</td>
-              </tr>
-            </tbody>
-          </q-markup-table>
-        </q-expansion-item>
+        <CascataDre
+          :dre="item"
+          titulo-detalhe="Origem do número"
+          subtitulo-detalhe="As contas do livro que compõem esta linha"
+        />
 
         <ul v-if="item.observacoes?.length" class="text-caption text-grey-7 q-mt-sm">
           <li v-for="(obs, i) in item.observacoes" :key="i">{{ obs }}</li>
@@ -92,20 +46,24 @@
 </template>
 
 <script setup>
-// Aba "DRE" do módulo (ticket FIN-14, onda 2).
+// Aba "DRE" do módulo (ticket FIN-14, onda 2; tabela padrão no FINT-7).
 //
 // Lê `GET /api/financeiro/contabil/dre/` e mostra a cascata **como o livro apurou**, com a
-// conferência contra o resultado do livro (`resultado_do_livro`) e, opcionalmente, a origem de
-// cada número (as contas da linha). A tela não recalcula imposto nem margem.
+// conferência contra o resultado do livro. A tela não recalcula imposto nem margem.
+//
+// A cascata em si é a `CascataDre`, compartilhada com a Visão geral: antes cada aba desenhava a sua
+// grade. A origem de cada linha — as contas do livro — deixou de ser um bloco escondido no pé da
+// tabela e virou o **detalhe do clique** na linha.
 import { computed, onMounted, ref } from 'vue'
 
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
+import CascataDre from 'src/components/financeiro/CascataDre.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import ContabilService from 'src/services/ContabilService'
 import { formatarCnpj } from 'src/utils/seletores'
-import { contasDaLinha, formatarMoeda, linhasDaCascata } from 'src/utils/contabil'
+import { contasDaLinha } from 'src/utils/contabil'
 
 const empresa = ref(null)
 const periodo = ref({ de: '', ate: '' })
@@ -118,6 +76,8 @@ const aviso = computed(() =>
     ? ''
     : 'Sem empresa escolhida, o recorte é o grupo somado (leitura gerencial — a eliminação intercompany não está feita).',
 )
+
+const contasDeOrigem = (item) => contasDaLinha(item).length
 
 async function carregar() {
   loading.value = true
@@ -143,14 +103,3 @@ async function carregar() {
 
 onMounted(carregar)
 </script>
-
-<style lang="scss" scoped>
-.cascata-linha--destaque td {
-  font-weight: 700;
-  color: #0f766e;
-}
-
-.cascata-linha--subtotal td {
-  font-weight: 600;
-}
-</style>

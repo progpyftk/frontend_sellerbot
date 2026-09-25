@@ -30,27 +30,23 @@
           </SbBadge>
         </div>
 
-        <div class="row q-col-gutter-md">
-          <div v-for="grupo in gruposDoBalanco(item)" :key="grupo.chave" class="col-12 col-md-4">
-            <div class="grupo-titulo">{{ grupo.rotulo }}</div>
-            <div class="grupo-total">{{ formatarMoeda(grupo.total) }}</div>
-            <div v-for="sub in grupo.subtotais" :key="sub.chave" class="grupo-sub">
-              <span>{{ sub.rotulo }}</span>
-              <span>{{ formatarMoeda(sub.valor) }}</span>
-            </div>
-            <q-expansion-item
-              v-if="grupo.contas.length"
-              dense
-              :label="`${grupo.contas.length} conta(s)`"
-              class="q-mt-xs"
-            >
-              <div v-for="conta in grupo.contas" :key="conta.codigo" class="conta-linha">
-                <span class="font-mono">{{ conta.codigo }}</span>
-                <span class="conta-nome">{{ conta.nome }}</span>
-                <span>{{ formatarMoeda(conta.saldo) }}</span>
-              </div>
-            </q-expansion-item>
-          </div>
+        <div class="balanco-tabela">
+          <SbTabela
+            :colunas="COLUNAS"
+            :linhas="linhasDoBalanco(item)"
+            chave-linha="chave"
+            rotulo="Balanço patrimonial"
+            :classe-linha="classeDaLinha"
+            :detalhavel="temContas"
+            titulo-detalhe="Contas do grupo"
+            subtitulo-detalhe="Os saldos do livro que compõem o total"
+            largura-detalhe="480px"
+          >
+            <template #celula-valor="{ valor }">{{ formatarMoeda(valor) }}</template>
+            <template #detalhe="{ linha }">
+              <DetalheContas :contas="linha.contas" :titulo="`Contas de ${linha.grupo}`" />
+            </template>
+          </SbTabela>
         </div>
 
         <div class="text-caption text-grey-7 q-mt-md">
@@ -75,12 +71,14 @@
 import { computed, onMounted, ref } from 'vue'
 
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
+import DetalheContas from 'src/components/financeiro/DetalheContas.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
+import SbTabela from 'src/components/common/SbTabela.vue'
 import ContabilService from 'src/services/ContabilService'
 import { formatarCnpj } from 'src/utils/seletores'
-import { formatarMoeda, gruposDoBalanco } from 'src/utils/contabil'
+import { formatarMoeda, linhasDoBalanco } from 'src/utils/contabil'
 
 const empresa = ref(null)
 const periodo = ref({ de: '', ate: '' })
@@ -93,6 +91,17 @@ const aviso = computed(() =>
     ? ''
     : 'Sem empresa escolhida, o recorte é o grupo somado (leitura gerencial — a eliminação intercompany não está feita).',
 )
+
+// O Balanço é uma **demonstração**, não uma lista: a ordem dos grupos é a estrutura do patrimônio.
+// Por isso nenhuma coluna é ordenável — ordenar por valor embaralharia a leitura do balanço.
+const COLUNAS = [
+  { chave: 'grupo', rotulo: 'Grupo', largura: '150px', ocultaEm: 'sm' },
+  { chave: 'rotulo', rotulo: 'Linha' },
+  { chave: 'valor', rotulo: 'Valor (R$)', tipo: 'moeda', alinhamento: 'right' },
+]
+
+const classeDaLinha = (linha) => `balanco--${linha.tipo}`
+const temContas = (linha) => (linha.contas?.length ?? 0) > 0
 
 async function carregar() {
   loading.value = true
@@ -120,39 +129,11 @@ onMounted(carregar)
 </script>
 
 <style lang="scss" scoped>
-.grupo-titulo {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #0f766e;
-}
+@import 'src/css/tokens.scss';
 
-.grupo-total {
-  font-size: 20px;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 6px;
-}
-
-.grupo-sub {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: #475569;
-}
-
-.conta-linha {
-  display: grid;
-  grid-template-columns: 90px 1fr auto;
-  gap: 8px;
-  font-size: 12px;
-  color: #475569;
-}
-
-.conta-nome {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.balanco-tabela {
+  :deep(.balanco--total) {
+    font-weight: 600;
+  }
 }
 </style>

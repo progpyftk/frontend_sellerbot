@@ -168,6 +168,96 @@ export function contasDaLinha(dre = {}) {
   return Array.isArray(dre?.linhas) ? dre.linhas : [];
 }
 
+/**
+ * As linhas da via **indireta** do DFC para a tabela: os ajustes, as atividades e o total.
+ *
+ * O payload não traz origem por linha aqui (só o método direto tem os lançamentos), então estas
+ * linhas são **somente leitura e sem detalhe** — a tela não inventa composição.
+ */
+export function linhasDaViaIndireta(dfc = {}) {
+  const linhas = (dfc.linhasIndiretas || []).map((linha) => ({
+    chave: `i:${linha.rotulo}`,
+    rotulo: linha.rotulo,
+    valor: linha.valor ?? null,
+    tipo: 'ajuste',
+  }));
+  (dfc.atividadesIndiretas || []).forEach((atividade) => {
+    linhas.push({
+      chave: `i:atividade:${atividade.chave}`,
+      rotulo: `Atividade ${atividade.rotulo}`,
+      valor: atividade.valor ?? null,
+      tipo: 'atividade',
+    });
+  });
+  linhas.push({
+    chave: 'i:total',
+    rotulo: 'Total indireto',
+    valor: dfc.totalIndireto ?? null,
+    tipo: 'total',
+  });
+  return linhas;
+}
+
+/** As linhas da via **direta** do DFC para a tabela: as atividades e o total. */
+export function linhasDaViaDireta(dfc = {}) {
+  const linhas = (dfc.atividadesDiretas || []).map((atividade) => ({
+    chave: `d:atividade:${atividade.chave}`,
+    rotulo: atividade.rotulo,
+    valor: atividade.valor ?? null,
+    tipo: 'atividade',
+  }));
+  linhas.push({
+    chave: 'd:total',
+    rotulo: 'Total direto',
+    valor: dfc.totalDireto ?? null,
+    tipo: 'total',
+  });
+  return linhas;
+}
+
+/**
+ * As contas de **uma** linha da cascata — a origem daquele número.
+ *
+ * O backend marca cada conta com a linha do DRE a que ela pertence (`linha_do_dre`), então a origem
+ * **por linha** existe no payload; a tela só precisa agrupar, não adivinhar.
+ */
+export function contasDaLinhaDoDre(dre = {}, chave = '') {
+  if (!chave) return [];
+  return contasDaLinha(dre).filter((conta) => conta.linha_do_dre === chave);
+}
+
+/**
+ * O Balanço achatado para a tabela: um subtotal por linha e o **total do grupo** por último, já com
+ * as contas que compõem o grupo (a origem do total).
+ *
+ * Os subtotais **não** têm recorte de contas no payload — por isso `contas` vem vazio neles, e a tela
+ * não abre painel vazio. Ausência de recorte não vira recorte inventado.
+ */
+export function linhasDoBalanco(balanco = {}) {
+  const linhas = [];
+  gruposDoBalanco(balanco).forEach((grupo) => {
+    grupo.subtotais.forEach((sub) => {
+      linhas.push({
+        chave: `${grupo.chave}:${sub.chave}`,
+        grupo: grupo.rotulo,
+        rotulo: sub.rotulo,
+        valor: sub.valor,
+        tipo: 'subtotal',
+        contas: [],
+      });
+    });
+    linhas.push({
+      chave: `${grupo.chave}:total`,
+      grupo: grupo.rotulo,
+      rotulo: `Total ${grupo.rotulo}`,
+      valor: grupo.total,
+      tipo: 'total',
+      contas: grupo.contas,
+    });
+  });
+  return linhas;
+}
+
 /** `1234.5` → `R$ 1.234,50`; valor ausente vira `—` (nunca `R$ 0,00` por engano). */
 export function formatarMoeda(valor) {
   if (valor === null || valor === undefined || valor === '') return '—';

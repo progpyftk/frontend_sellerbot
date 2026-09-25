@@ -72,29 +72,11 @@
           </SbBadge>
         </div>
 
-        <q-markup-table flat dense class="cascata-tabela">
-          <thead>
-            <tr>
-              <th class="text-left">Linha do DRE</th>
-              <th class="text-right">Valor (R$)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="linha in linhasDaCascata(item.dre?.subtotais)"
-              :key="linha.chave"
-              :class="`cascata-linha cascata-linha--${linha.tipo}`"
-            >
-              <td>
-                {{ linha.rotulo }}
-                <span v-if="linha.chave === 'margem_contribuicao' && item.dre?.margem_contribuicao_pct" class="text-grey-7">
-                  ({{ item.dre.margem_contribuicao_pct }}% da receita líquida)
-                </span>
-              </td>
-              <td class="text-right">{{ formatarMoeda(linha.valor) }}</td>
-            </tr>
-          </tbody>
-        </q-markup-table>
+        <CascataDre
+          :dre="item.dre"
+          titulo-detalhe="Origem do número"
+          subtitulo-detalhe="As contas do livro que compõem esta linha"
+        />
       </SbCard>
     </template>
     <SbEmptyState
@@ -106,7 +88,7 @@
 </template>
 
 <script setup>
-// Aba "Visão geral" do Módulo Financeiro/Contábil (ticket FIN-14, onda 1).
+// Aba "Visão geral" do Módulo Financeiro/Contábil (ticket FIN-14, onda 1; tabela padrão no FINT-7).
 //
 // Carrega `GET /api/financeiro/contabil/resumo/` — DRE + Balanço + DFC + estoque de uma vez — e mostra
 // os números **como o backend apurou**, com o selo de conferência de cada demonstrativo. A tela não
@@ -114,8 +96,11 @@
 //
 // Sem empresa escolhida, o recorte é o **grupo somado** (`todas_juntas=1`); o aviso de que a eliminação
 // intercompany não está feita vem da própria tela para o número não ser lido como consolidado contábil.
+//
+// A cascata é a mesma `CascataDre` da aba DRE — uma implementação só para as duas telas.
 import { computed, onMounted, ref } from 'vue'
 
+import CascataDre from 'src/components/financeiro/CascataDre.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
@@ -125,7 +110,7 @@ import SbSeletorPeriodo from 'src/components/common/SbSeletorPeriodo.vue'
 import FiscalService from 'src/services/FiscalService'
 import ContabilService from 'src/services/ContabilService'
 import { formatarCnpj, opcoesDeEmpresa } from 'src/utils/seletores'
-import { formatarMoeda, linhasDaCascata, numerosDaVisaoGeral } from 'src/utils/contabil'
+import { formatarMoeda, numerosDaVisaoGeral } from 'src/utils/contabil'
 
 const empresa = ref(null)
 const periodo = ref({ de: '', ate: '' })
@@ -210,18 +195,3 @@ onMounted(async () => {
   await carregar()
 })
 </script>
-
-<style lang="scss" scoped>
-.cascata-tabela {
-  background: transparent;
-}
-
-.cascata-linha--destaque td {
-  font-weight: 700;
-  color: #0f766e;
-}
-
-.cascata-linha--subtotal td {
-  font-weight: 600;
-}
-</style>

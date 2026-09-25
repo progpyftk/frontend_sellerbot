@@ -46,7 +46,7 @@
           <tr
             v-for="(linha, indice) in linhasOrdenadas"
             :key="chaveDaLinha(linha, indice)"
-            class="sb-tabela__linha"
+            :class="[classeDaLinha(linha, indice), 'sb-tabela__linha']"
             tabindex="0"
             @click="aoClicarNaLinha($event, linha)"
             @keydown.enter.prevent="emitirLinha(linha, $event.currentTarget)"
@@ -67,6 +67,7 @@
             </td>
             <td v-if="mostrarAcao" class="is-center sb-tabela__col-acao">
               <button
+                v-if="podeAbrirDetalhe(linha)"
                 type="button"
                 class="sb-tabela__abrir"
                 :aria-label="`Abrir detalhes da linha ${indice + 1}`"
@@ -147,6 +148,16 @@ const props = defineProps({
   tituloDetalhe: { type: String, default: '' },
   subtituloDetalhe: { type: String, default: '' },
   larguraDetalhe: { type: String, default: '420px' },
+  /**
+   * Classe — ou função `(linha, indice) => classe` — aplicada à `<tr>`. Existe porque a cascata
+   * precisa destacar subtotais sem a tabela conhecer regra de negócio.
+   */
+  classeLinha: { type: [String, Function], default: '' },
+  /**
+   * `(linha) => boolean`: a linha **tem** detalhe? Sem isto o painel abriria vazio nas linhas cuja
+   * origem o backend não manda (o subtotal do Balanço, por exemplo) — e a tela não inventa origem.
+   */
+  detalhavel: { type: Function, default: null },
 })
 
 const emit = defineEmits(['update:ordenacao', 'ordenar', 'linha'])
@@ -175,9 +186,19 @@ function ordenarPor(coluna) {
   emit('ordenar', proxima)
 }
 
+function podeAbrirDetalhe(linha) {
+  if (!temDetalhe.value) return false
+  if (typeof props.detalhavel !== 'function') return true
+  return props.detalhavel(linha) !== false
+}
+
+function classeDaLinha(linha, indice) {
+  return typeof props.classeLinha === 'function' ? props.classeLinha(linha, indice) : props.classeLinha
+}
+
 function emitirLinha(linha, elemento) {
   emit('linha', linha)
-  if (temDetalhe.value) abrirDetalhe(linha, elemento)
+  if (podeAbrirDetalhe(linha)) abrirDetalhe(linha, elemento)
 }
 
 function aoClicarNaLinha(evento, linha) {
