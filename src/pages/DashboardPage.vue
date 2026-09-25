@@ -792,7 +792,7 @@
             </div>
             <div class="wf-arrow">▼</div>
             <div class="wf-step wf-step--final" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-step--pos' : 'wf-step--neg'">
-              <div class="wf-label" title="O que sobra das vendas para cobrir custos fixos e gerar lucro, antes de impostos. Não desconta despesas fixas. Afiliados (AMS) já estão descontados na margem antes de Ads.">= Margem de Contribuição Final Sem Impostos</div>
+              <div class="wf-label" title="O que sobra das vendas para cobrir custos fixos e gerar lucro; já é líquida de impostos, taxas, frete, embalagem, Ads e CPV. Não desconta despesas fixas. Afiliados (AMS) já estão descontados na margem antes de Ads.">= Margem de Contribuição</div>
               <div class="wf-bar-wrap">
                 <div class="wf-bar" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-bar--ll' : 'wf-bar--neg'"
                   :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
