@@ -319,3 +319,145 @@ describe('OrganizadorTab · situação de cada linha (ADSA-42)', () => {
     expect(w.text()).toContain('só as que faltam (2)');
   });
 });
+
+// ── ADSA-45 · o porquê da linha, a ordem e a paginação ──────────────────────
+//
+// O que protegem:
+// - a linha mostra POR QUE está em "ajustar" (o texto vem do backend, não é inventado aqui);
+// - a ordem padrão é o maior custo de Ads primeiro, que é a ordem de execução do dono;
+// - a situação ordena por gravidade, e não em ordem alfabética;
+// - 149 linhas paginadas em 50, com o rodapé dizendo onde o dono está;
+// - o filtro "só as que faltam" recomeça na primeira página.
+const COM_CUSTO = {
+  ...COM_ESTADO,
+  campanhas_sugeridas: COM_ESTADO.campanhas_sugeridas.map((c, i) => ({
+    ...c,
+    custo_ads: [10, 300, 50, 200][i] ?? 0,
+    erros_estado: i === 0 ? ['MLB planejado fora da campanha: [MLB2]'] : [],
+    notas_estado:
+      i === 0
+        ? ['os MLB batem exatamente; nome criado difere: "Casca De Pinus Antiga"']
+        : [],
+  })),
+};
+
+describe('OrganizadorTab · o porquê, a ordem e a paginação (ADSA-45)', () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+  });
+
+  it('a linha mostra o motivo, e o detalhe mostra o texto inteiro', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_CUSTO] });
+    // Na célula vai o primeiro motivo, que é o erro: é ele que muda a tela (falta MLB).
+    expect(w.text()).toContain('MLB planejado fora da campanha');
+    // A nota ("nome criado difere") entra como detalhe, e não concorre com o erro.
+    expect(w.text()).not.toContain('nome criado difere');
+
+    const linhas = w.findAll('tr').map((tr) => tr.text());
+    const idx = linhas.findIndex((t) => t.includes('Substrato - Casca de Pinus 1'));
+    await w.findAll('tr')[idx].trigger('click');
+    await flushPromises();
+    const painel = w.find('.org__painel');
+    expect(painel.text()).toContain('Por que está assim');
+    expect(painel.text()).toContain('os MLB batem exatamente; nome criado difere');
+  });
+
+  it('a linha que só tem nota mostra a nota, não umarazão genérica', async () => {
+    const soNota = {
+      ...COM_ESTADO,
+      campanhas_sugeridas: [
+        { ...COM_ESTADO.campanhas_sugeridas[0], erros_estado: [], notas_estado: ['os MLB batem exatamente; nome criado difere: "X"'] },
+        ...COM_ESTADO.campanhas_sugeridas.slice(1),
+      ],
+    };
+    const w = await montar({ ...PAYLOAD, contas: [soNota] });
+    expect(w.text()).toContain('nome criado difere');
+    // O texto do backend vem com o prefixo que só faz sentido no relatório.
+    expect(w.text()).not.toContain('os MLB batem exatamente;');
+  });
+
+  it('a tabela abre pelo maior custo de Ads', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_CUSTO] });
+    const nomes = w.findAll('tr').map((tr) => tr.text());
+    // custos 10, 300, 50, 200 na ordem do fixture -> Ureia (300), Basacote (200),
+    // Kits 2 (50), Casca de Pinus (10).
+    expect(nomes[1]).toContain('Ureia 46% 4kg');
+    expect(nomes[2]).toContain('Basacote 3m');
+    expect(nomes[3]).toContain('Kits 2');
+    expect(nomes[4]).toContain('Substrato - Casca de Pinus 1');
+  });
+
+  it('ordenar pela situação põe o que está errado na frente do que está pronto', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_CUSTO] });
+    const th = w.findAll('th').find((t) => t.text().includes('Situação'));
+    await th.trigger('click');
+    await flushPromises();
+    const nomes = w.findAll('tr').map((tr) => tr.text());
+    // Subindo por gravidade: não criada, completar, ajustar e (por último) pronta.
+    expect(nomes[1]).toContain('Ureia 46% 4kg');
+    expect(nomes[2]).toContain('Kits 2');
+    expect(nomes[3]).toContain('Substrato - Casca de Pinus 1');
+    expect(nomes[4]).toContain('Basacote 3m');
+  });
+
+  it('o segundo clique na mesma coluna inverte a ordem', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_CUSTO] });
+    const th = w.findAll('th').find((t) => t.text().includes('Custo Ads'));
+    await th.trigger('click');
+    await flushPromises();
+    const subindo = w.findAll('tr').map((tr) => tr.text());
+    expect(subindo[1]).toContain('Substrato - Casca de Pinus 1');
+    await th.trigger('click');
+    await flushPromises();
+    const descendo = w.findAll('tr').map((tr) => tr.text());
+    expect(descendo[1]).toContain('Ureia 46% 4kg');
+  });
+
+  it('ordenar por texto ignora acento e caixa, e manda vazio para o fim', async () => {
+    const comVazios = {
+      ...COM_ESTADO,
+      campanhas_sugeridas: [
+        { ...COM_ESTADO.campanhas_sugeridas[0], nome: 'Casca de pinus', roas_target: null },
+        { ...COM_ESTADO.campanhas_sugeridas[0], nome: 'casca DE PINUS 2' },
+        { ...COM_ESTADO.campanhas_sugeridas[0], nome: 'zzz ultimo' },
+      ],
+    };
+    const w = await montar({ ...PAYLOAD, contas: [comVazios] });
+    const th = w.findAll('th').find((t) => t.text().includes('ROAS alvo'));
+    await th.trigger('click');
+    await flushPromises();
+    const nomes = w.findAll('tr').map((tr) => tr.text());
+    // ROAS null não é "o menor": falta número vai para o fim, em qualquer direção.
+    expect(nomes[nomes.length - 1]).toContain('Casca de pinus');
+
+    const thNome = w.findAll('th').find((t) => t.text().includes('Campanha'));
+    await thNome.trigger('click');
+    await flushPromises();
+    const porNome = w.findAll('tr').map((tr) => tr.text());
+    expect(porNome[1]).toContain('Casca de pinus');
+    expect(porNome[2]).toContain('casca DE PINUS 2');
+  });
+
+  it('pagina em 50 e o rodapé diz onde o dono está', async () => {
+    const muitas = {
+      ...COM_ESTADO,
+      campanhas_sugeridas: Array.from({ length: 149 }, (_, i) => ({
+        ...COM_ESTADO.campanhas_sugeridas[0],
+        nome: `Campanha ${String(i + 1).padStart(3, '0')}`,
+        custo_ads: 1000 - i,
+      })),
+    };
+    const w = await montar({ ...PAYLOAD, contas: [muitas] });
+    expect(w.findAll('tr').length).toBeLessThanOrEqual(51);
+    expect(w.text()).toContain('149 linhas');
+    expect(w.text()).toContain('mostrando 1–50');
+  });
+
+  it('com poucas linhas não inventa paginação', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_ESTADO] });
+    expect(w.text()).not.toContain('mostrando');
+    expect(w.find('.org__paginacao').exists()).toBe(false);
+  });
+});
+

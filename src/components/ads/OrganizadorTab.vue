@@ -129,21 +129,33 @@
           <AdvisorTable
             v-else
             :columns="colunas"
-            :rows="linhasVisiveis(conta)"
+            :rows="paginaVisivel(conta)"
             :campos-cartao="camposCartao"
             row-key="nome"
+            :sort="ordem.chave"
             :legenda="`${conta.conta} — período de ${periodoBr}`"
+            @sort="ordenarPor"
             @row="abrirDetalhe($event, conta)"
           >
             <template #card-title="{ row }">{{ row.nome }}</template>
 
             <template #cell-estado="{ row }">
-              <AdvisorStatusPill
-                v-if="situacao(conta, row)"
-                :status="situacao(conta, row).pill"
-                :label="situacao(conta, row).label"
-              />
-              <span v-else class="org__soNome">{{ semEstado.label }}</span>
+              <div class="org__estado">
+                <AdvisorStatusPill
+                  v-if="situacao(conta, row)"
+                  :status="situacao(conta, row).pill"
+                  :label="situacao(conta, row).label"
+                />
+                <span v-else class="org__soNome">{{ semEstado.label }}</span>
+                <!-- O porquê em uma linha: sem isso o dono lê "ajustar" e não sabe se é o
+                     nome, o ROAS, o orçamento ou MLB sobrando (ADSA-45). O texto completo
+                     fica no detalhe. -->
+                <span
+                  v-if="motivoLinha(row)"
+                  class="org__motivo"
+                  :title="motivoCompleto(row)"
+                >{{ motivoLinha(row) }}</span>
+              </div>
             </template>
 
             <template #cell-nome="{ row }">
@@ -181,6 +193,11 @@
               </div>
             </template>
 
+            <template #cell-custo_ads="{ row }">
+              <span v-if="row.custo_ads == null" class="org__vazio">—</span>
+              <span v-else class="org__num">{{ fmtMoeda(row.custo_ads) }}</span>
+            </template>
+
             <template #cell-roas_target="{ row }">
               <span v-if="row.roas_target == null" class="org__vazio">—</span>
               <span v-else class="org__num">
@@ -212,6 +229,24 @@
               </span>
             </template>
           </AdvisorTable>
+
+          <!-- Paginação: 149 linhas do plano não cabem numa tela, e o dono trabalha de cima
+               para baixo. O rodapé diz onde ele está, porque "só as que faltam (124)" sem
+               saber se está na página 1 ou 3 é receita de linha perdida. -->
+          <div v-if="totalVisiveis(conta) > POR_PAGINA" class="org__paginacao">
+            <span class="org__paginacaoInfo">
+              {{ totalVisiveis(conta).toLocaleString('pt-BR') }} linhas ·
+              mostrando {{ primeiroVisivel(conta) }}–{{ ultimoVisivel(conta) }}
+            </span>
+            <q-pagination
+              :model-value="pagina"
+              :max="totalPaginas(conta)"
+              :max-pages="7"
+              boundary-numbers
+              direction-links
+              @update:model-value="pagina = $event"
+            />
+          </div>
         </AdvisorSection>
 
         <!-- Bloco 3 — plano de migração -->
@@ -290,6 +325,30 @@
               </div>
             </div>
           </div>
+
+          <!-- O porquê, item a item (ADSA-45). O texto vem do backend: é a mesma informação
+               que o relatório usa para dizer "conforme/nota/erro", traduzida para ação. -->
+          <template v-if="detalhe.linha.erros_estado?.length || detalhe.linha.notas_estado?.length">
+            <h3 class="org__painelSecao">Por que está assim</h3>
+            <ul class="org__motivos">
+              <li
+                v-for="erro in detalhe.linha.erros_estado"
+                :key="`erro-${erro}`"
+                class="org__motivoItem org__motivoItem--erro"
+              >
+                <q-icon name="error_outline" size="15px" aria-hidden="true" />
+                <span>{{ erro }}</span>
+              </li>
+              <li
+                v-for="nota in detalhe.linha.notas_estado"
+                :key="`nota-${nota}`"
+                class="org__motivoItem"
+              >
+                <q-icon name="info_outline" size="15px" aria-hidden="true" />
+                <span>{{ nota }}</span>
+              </li>
+            </ul>
+          </template>
 
           <div class="org__metricas">
             <AdvisorMetric :value="fmtMoeda(detalhe.linha.venda)" label="venda no período" />
@@ -380,12 +439,15 @@ function hintParados(parados) {
   return chaves.map((s) => `${porStatus[s]} ${s}`).join(' · ');
 }
 
-// As quatro colunas que o dono pediu, nesta ordem (D13), mais a situação (ADSA-42) — que
-// fica na segunda coluna porque é a resposta que ele abre a tela para ver.
+// As quatro colunas que o dono pediu, nesta ordem (D13), mais a situação (ADSA-42) e o custo
+// de Ads (ADSA-45), que é por onde a tabela abre: a ordem padrão é o maior gasto primeiro,
+// o mesmo critério do bloco "Por onde começar". Sem a coluna visível, a ordenação padrão
+// seria um mistério.
 const colunas = [
   { key: 'nome', label: 'Campanha', sortable: true, minWidth: 260 },
-  { key: 'estado', label: 'Situação', minWidth: 150, sortable: true },
-  { key: 'anuncios', label: 'MLB(s)', minWidth: 160 },
+  { key: 'estado', label: 'Situação', minWidth: 190, sortable: true },
+  { key: 'anuncios', label: 'MLB(s)', minWidth: 160, sortable: true },
+  { key: 'custo_ads', label: 'Custo Ads', numeric: true, sortable: true, minWidth: 120 },
   { key: 'roas_target', label: 'ROAS alvo', numeric: true, sortable: true },
   { key: 'orcamento_diario', label: 'Orçamento', numeric: true, sortable: true },
 ];
@@ -397,6 +459,12 @@ const erro = ref('');
 const sincronizando = ref(false);
 const sincMensagem = ref({});
 const soFaltam = ref(false);
+
+// Trocar o filtro recomeça na primeira página: com o filtro ligado a lista encolhe das 149
+// linhas para as que faltam, e ficar na página 3 mostraria um trecho sem começo.
+watch(soFaltam, () => {
+  pagina.value = 1;
+});
 
 // Marcação manual de "já criei esta campanha no painel do ML".
 //
@@ -477,6 +545,9 @@ async function carregar() {
     if (props.dateTo) params.date_to = props.dateTo;
     const { data } = await api.get('/mercadolivre/ads/advisor/organizador/', { params });
     payload.value = data;
+    // Dado novo, lista nova: a página onde o dono estava pode não existir mais (o plano
+    // mudou de tamanho, o filtro deixou de valer). Recomeçar é o comportamento honesto.
+    pagina.value = 1;
   } catch (e) {
     // Estado de erro é de primeira classe: a tela NUNCA pode dizer "nenhum anúncio"
     // quando o que houve foi falha de rede.
@@ -587,9 +658,149 @@ function faltam(conta) {
   return conta.campanhas_sugeridas.filter((c) => faltaAinda(conta, c)).length;
 }
 
-function linhasVisiveis(conta) {
+function filtradas(conta) {
   if (!soFaltam.value) return conta.campanhas_sugeridas;
   return conta.campanhas_sugeridas.filter((c) => faltaAinda(conta, c));
+}
+
+// ── Ordem e paginação (ADSA-45) ────────────────────────────────────────────
+//
+// O cabeçalho já prometia ordenação (`sortable: true` emite `sort`) e ninguém escutava: o
+// cursor ficava de ordenável sem ordenar. E 149 linhas do plano inteiro numa tabela é o
+// oposto de "o que eu faço agora" — a ordem padrão é por **custo de Ads decrescente**, que
+// é a ordem em que o dono executa (o mesmo critério do bloco "Por onde começar").
+const POR_PAGINA = 50;
+// A ordem guarda a COLUNA, não o tipo: `COLUNAS_ORDENAVEIS` é indexado por chave, e guardar
+// o tipo fazia a busca falhar (quem ordena por "Situação" ou "ROAS alvo" recebia lista
+// desordenada e nenhuma mensagem — o pior tipo de bug, porque parece funcionar).
+const ordem = ref({ chave: '-custo_ads', coluna: 'custo_ads', direcao: 'desc' });
+const pagina = ref(1);
+
+const COLUNAS_ORDENAVEIS = {
+  nome: { tipo: 'texto', valor: (l) => l.nome || '' },
+  estado: { tipo: 'situacao', valor: (l) => l.estado || '' },
+  anuncios: { tipo: 'numero', valor: (l) => (l.anuncios || []).length },
+  roas_target: { tipo: 'numero', valor: (l) => l.roas_target },
+  orcamento_diario: { tipo: 'numero', valor: (l) => l.orcamento_diario },
+  custo_ads: { tipo: 'numero', valor: (l) => l.custo_ads },
+};
+
+// A situação ordena pela gravidade, não em ordem alfabética: quem abre a tela para
+// trabalhar começa pelo que está errado, não pelo que começa com "a".
+const ORDEM_SITUACAO = { nao_criada: 0, fundida: 1, ajustar: 2, atencao: 3, ok: 4 };
+
+// Colapsa espaços e tira acento antes de comparar: "Casca de pinus" e "Casca de Pinus" são
+// a mesma família e não podem ficar em blocos diferentes da tabela.
+function chaveTexto(valor) {
+  return String(valor)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function ordenarPor(coluna) {
+  const def = COLUNAS_ORDENAVEIS[coluna.key];
+  if (!def) return;
+  const mesmaColuna = ordem.value.coluna === coluna.key;
+  if (mesmaColuna) {
+    // Segundo clique na mesma coluna inverte; a chave com o "-" é o próprio estado do
+    // AdvisorTable (é ele que desenha a seta e o `aria-sort`).
+    const agoraDesc = ordem.value.chave.startsWith('-');
+    ordem.value = {
+      chave: agoraDesc ? coluna.key : `-${coluna.key}`,
+      coluna: coluna.key,
+      direcao: agoraDesc ? 'asc' : 'desc',
+    };
+  } else {
+    // Numérico começa descendo (o maior primeiro); texto e situação, subindo.
+    const numerico = def.tipo === 'numero';
+    ordem.value = {
+      chave: numerico ? `-${coluna.key}` : coluna.key,
+      coluna: coluna.key,
+      direcao: numerico ? 'desc' : 'asc',
+    };
+  }
+  pagina.value = 1;
+}
+
+function ordenarLista(lista, conta) {
+  const def = COLUNAS_ORDENAVEIS[ordem.value.coluna];
+  if (!def) return lista;
+  const sinal = ordem.value.direcao === 'asc' ? 1 : -1;
+  return [...lista].sort((a, b) => {
+    if (def.tipo === 'texto') {
+      const x = chaveTexto(def.valor(a));
+      const y = chaveTexto(def.valor(b));
+      if (x === y) return (a.nome || '').localeCompare(b.nome || '', 'pt-BR');
+      return sinal * (x < y ? -1 : 1);
+    }
+    if (def.tipo === 'situacao') {
+      const x = ORDEM_SITUACAO[a.estado] ?? 99;
+      const y = ORDEM_SITUACAO[b.estado] ?? 99;
+      if (x !== y) return sinal * (x - y);
+      return (a.custo_ads || 0) - (b.custo_ads || 0);
+    }
+    // `null`/`undefined` vão para o fim em qualquer direção: número ausente não é o
+    // menor nem o maior, é ausência.
+    const x = def.valor(a);
+    const y = def.valor(b);
+    if (x == null && y == null) return (a.nome || '').localeCompare(b.nome || '', 'pt-BR');
+    if (x == null) return 1;
+    if (y == null) return -1;
+    if (x === y) return (a.nome || '').localeCompare(b.nome || '', 'pt-BR');
+    return sinal * (x < y ? -1 : 1);
+  });
+}
+
+function linhasVisiveis(conta) {
+  return ordenarLista(filtradas(conta), conta);
+}
+
+const totalVisiveis = (conta) => linhasVisiveis(conta).length;
+const totalPaginas = (conta) => Math.max(1, Math.ceil(totalVisiveis(conta) / POR_PAGINA));
+
+// Página fora de rango (o filtro "só as que faltam" reduz o total depois de a página estar
+// alta) volta para a última página válida em vez de mostrar tabela vazia.
+function paginaSegura(conta) {
+  const total = totalPaginas(conta);
+  return Math.min(Math.max(1, pagina.value), total);
+}
+
+function paginaVisivel(conta) {
+  const atual = paginaSegura(conta);
+  const linhas = linhasVisiveis(conta);
+  return linhas.slice((atual - 1) * POR_PAGINA, atual * POR_PAGINA);
+}
+
+function primeiroVisivel(conta) {
+  const total = totalVisiveis(conta);
+  return total ? (paginaSegura(conta) - 1) * POR_PAGINA + 1 : 0;
+}
+
+function ultimoVisivel(conta) {
+  return Math.min(paginaSegura(conta) * POR_PAGINA, totalVisiveis(conta));
+}
+
+// ── O porquê da linha (ADSA-45) ─────────────────────────────────────────────
+//
+// O backend já manda `notas_estado` e `erros_estado` (o mesmo texto que o relatório usa
+// para "conforme/nota/erro"); a aba ignorava os dois. Na célula vai o resumo — o motivo em
+// uma frase, sem a lista de MLB, que não cabe em 150px — e o texto inteiro fica no detalhe.
+function motivoCompleto(linha) {
+  return [...(linha.erros_estado || []), ...(linha.notas_estado || [])].join(' · ');
+}
+
+function motivoLinha(linha) {
+  const motivo = motivoCompleto(linha);
+  if (!motivo) return '';
+  const [primeiro] = motivo.split(' · ');
+  // A mensagem mais común do backend é o nome que difere; encurtada, ela vira "nome criado
+  // difere", que é a informação, e não "os MLB batem exatamente; nome criado difere".
+  return primeiro
+    .replace('os MLB batem exatamente; ', '')
+    .replace('pareado por MLBs — ', '');
 }
 
 // Onde cada MLB que sai desta linha está planejado — é o "vai para" do painel. Vem das
@@ -1007,6 +1218,51 @@ const dataBr = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
   &__oQueFazerSub { color: $text-muted; margin-top: $space-1; }
 
   &__soNome { color: $text-muted; font-size: $text-small-size; }
+
+  // O motivo vive abaixo do selo: é a segunda linha da célula, e a coluna tem largura
+  // suficiente porque o texto trunca com reticências e o inteiro fica no `title`.
+  &__estado { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+
+  &__motivo {
+    color: $text-muted;
+    font-size: $text-xs-size;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__motivos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+  }
+
+  &__motivoItem {
+    display: flex;
+    gap: $space-2;
+    align-items: flex-start;
+    font-size: $text-small-size;
+    color: $text-body;
+    border-top: 1px solid $border;
+    padding-top: $space-2;
+
+    &--erro { color: $tint-red-text; }
+  }
+
+  &__paginacao {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-3;
+    flex-wrap: wrap;
+    margin-top: $space-4;
+  }
+
+  &__paginacaoInfo { color: $text-muted; font-size: $text-small-size; }
 
   &__painelSecao {
     margin: $space-5 0 $space-3;
