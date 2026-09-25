@@ -219,6 +219,10 @@
             Sem parecer neste ciclo: {{ parecerAgente.motivo || 'o agente não respondeu — a escrita seguiu só pelo cálculo.' }}
           </li>
         </ul>
+        <p v-if="parecerAgente.omitidos" class="today__hint">
+          O agente revisou {{ parecerAgente.revisados }} de {{ parecerAgente.plano_total }} anúncios
+          do plano — os mais destacados primeiro.
+        </p>
         <ul v-if="itensComRessalva.length" class="today__motivos">
           <li v-for="item in itensComRessalva" :key="`${item.item_id}-${item.veredito}`">
             <span class="today__mlb">{{ item.item_id }}</span>

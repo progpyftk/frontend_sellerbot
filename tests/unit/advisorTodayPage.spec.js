@@ -155,6 +155,7 @@ describe('AdvisorTodayPage', () => {
     const payload = JSON.parse(JSON.stringify(PAYLOAD));
     payload.parecer_agente = {
       status: 'ok', sombra: true, aprovados: 8, ressalvas: 1, teria_vetados: 1,
+      plano_total: 10, revisados: 8, omitidos: 2,
       itens: [
         { item_id: 'MLB-AG9', veredito: 'vetar', teria_vetado: true,
           motivo: 'lucro R$ 4,00 abaixo do piso R$ 13,00' },
@@ -169,6 +170,8 @@ describe('AdvisorTodayPage', () => {
     expect(texto).toContain('teria vetado');
     expect(texto).toContain('8');
     expect(texto).toContain('pode vetar');
+    // PROMO-IA-64: quando o digest corta (>60), o painel diz quantos ficaram de fora
+    expect(texto).toContain('revisou 8 de 10');
   });
 
   it('PROMO-IA-32: sombra avisa que o parecer não bloqueia e sem parecer é declarado', async () => {
