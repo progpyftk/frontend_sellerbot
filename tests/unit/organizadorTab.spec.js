@@ -4,9 +4,13 @@
  *
  * O que protegem:
  * - os anúncios parados (idle/hold/deleted) aparecem como indicador, com o detalhe por status;
- * - produto de catálogo aparece com o marcador `· catálogo` e os MLBs irmãos na MESMA linha;
+ * - produto de catálogo aparece com o marcador `·CAT` e os MLBs irmãos na MESMA linha;
  * - sem `anuncios_parados` no payload o indicador mostra zero, com hint de "todos patrocinam";
  * - o aviso de parados aparece no bloco de avisos do topo.
+ *
+ * O marcador virou `·CAT` e o nome passou a caber no limite de ~29 caracteres do Mercado
+ * Livre (ADSA-39); a fixture usa o nome que o backend produz de verdade (ADSA-40) — com
+ * `· catálogo`, ela passava sem proteger nada do marcador.
  */
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -28,7 +32,7 @@ const CONTA = {
   ],
   campanhas_sugeridas: [
     {
-      nome: 'Casca De Pinus Polida 9 L · catálogo',
+      nome: 'Casca De Pinus Polida… ·CAT',
       curva: 'C',
       anuncios: ['MLB4215711751', 'MLB4215446123'],
       qtd_anuncios: 2,
@@ -120,9 +124,19 @@ describe('OrganizadorTab · produto de catálogo na tabela (D15/D16)', () => {
     post.mockReset();
   });
 
-  it('mostra o marcador · catálogo no nome da campanha sugerida', async () => {
+  it('mostra o marcador ·CAT no nome da campanha sugerida', async () => {
     const w = await montar();
-    expect(w.text()).toContain('Casca De Pinus Polida 9 L · catálogo');
+    expect(w.text()).toContain('Casca De Pinus Polida… ·CAT');
+  });
+
+  it('mostra o nome inteiro, sem cortar o que o ML aceitaria', async () => {
+    // O nome truncado em 29 caracteres é decisão do backend (ADSA-39); a aba não pode
+    // encurtar mais nem trocar o marcador, senão o dono digita no ML outro nome.
+    const w = await montar();
+    const linhas = w.findAll('tr').map((tr) => tr.text());
+    const linha = linhas.find((t) => t.includes('Casca De Pinus Polida'));
+    expect(linha).toContain('Casca De Pinus Polida… ·CAT');
+    expect(linha).not.toContain('Catálogo');
   });
 
   it('mostra os MLBs irmãos do produto na MESMA linha', async () => {
