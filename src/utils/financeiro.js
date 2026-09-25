@@ -16,6 +16,7 @@ export const ABAS_FINANCEIRO = [
     onda: 'FIN-14b',
     endpoint: '/api/financeiro/contabil/resumo/',
     descricao: 'Margem de contribuição e o resumo dos três demonstrativos.',
+    disponivel: true,
   },
   {
     id: 'marketplace',

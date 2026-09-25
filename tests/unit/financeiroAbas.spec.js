@@ -23,8 +23,8 @@ describe('ABAS_FINANCEIRO', () => {
     expect(ABAS_FINANCEIRO.some((aba) => aba.id === ABA_PADRAO)).toBe(true)
   })
 
-  it('nesta onda só os extratos têm tela', () => {
-    expect(abasDisponiveis()).toEqual(['extratos'])
+  it('as abas com tela nesta fase são a visão geral e os extratos', () => {
+    expect(abasDisponiveis()).toEqual(['visao-geral', 'extratos'])
   })
 })
 

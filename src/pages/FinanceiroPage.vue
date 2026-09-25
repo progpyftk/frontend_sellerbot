@@ -44,6 +44,10 @@
       </div>
 
       <q-tab-panels :key="versao" :model-value="aba" animated class="bg-transparent">
+        <q-tab-panel name="visao-geral" class="q-pa-none">
+          <FinanceiroVisaoGeral />
+        </q-tab-panel>
+
         <q-tab-panel name="extratos" class="q-pa-none">
           <BancosExtratosPage />
         </q-tab-panel>
@@ -84,6 +88,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import BancosExtratosPage from 'pages/BancosExtratosPage.vue'
+import FinanceiroVisaoGeral from 'src/components/financeiro/FinanceiroVisaoGeral.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
