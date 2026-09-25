@@ -75,6 +75,8 @@
 // a **diferença explicada** por causa nomeada — é o que o `FIN-9` entrega. A tela não soma nada.
 import { computed, onMounted, ref } from 'vue'
 
+import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
+
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
@@ -84,8 +86,8 @@ import ContabilService from 'src/services/ContabilService'
 import { formatarCnpj } from 'src/utils/seletores'
 import { formatarMoeda, linhasDaViaDireta, linhasDaViaIndireta, viasDoDfc } from 'src/utils/contabil'
 
-const empresa = ref(null)
-const periodo = ref({ de: '', ate: '' })
+// Recorte na URL (FINT-11): a empresa e a competência vêm do link e voltam para ele.
+const { empresa, periodo } = useEstadoNaUrl()
 const lista = ref([])
 const loading = ref(false)
 const erro = ref('')

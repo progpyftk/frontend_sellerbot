@@ -5,6 +5,19 @@ import { describe, expect, it, vi } from 'vitest'
 
 import ExtratosExtratoTab from 'src/components/financeiro/extratos/ExtratosExtratoTab.vue'
 
+// A aba lê a ordem da URL (FINT-11); no teste unitário ela recebe refs soltos, sem router.
+vi.mock('src/composables/useEstadoNaUrl', async () => {
+  const { ref } = await import('vue')
+  return {
+    useEstadoNaUrl: () => ({
+      empresa: ref(null),
+      periodo: ref({ de: '', ate: '' }),
+      ordenacao: ref({ chave: '', direcao: '' }),
+      busca: ref(''),
+    }),
+  }
+})
+
 // Checkbox de mentira: clicar emite o contrário do estado atual, que é o que a tela usa.
 const checkboxStub = {
   props: ['modelValue', 'indeterminate'],

@@ -138,6 +138,7 @@ import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
 import { ABAS_FINANCEIRO, ABA_PADRAO, abaValida } from 'src/utils/financeiro'
+import { somenteRecorte } from 'src/utils/urlDoRecorte'
 
 const route = useRoute()
 const router = useRouter()
@@ -162,7 +163,14 @@ watch(
 function irPara(id) {
   const alvo = abaValida(id) || ABA_PADRAO
   if (alvo !== aba.value) {
-    router.replace({ name: 'financeiro', params: { aba: alvo } })
+    // A troca de aba **preserva o recorte** (empresa/competência) e **descarta a visão** (ordem e
+    // busca): a coluna ordenada de uma aba não existe na outra, e o recorte atravessar é o que o
+    // dono espera ao pular de demonstrativo (FINT-11).
+    router.replace({
+      name: 'financeiro',
+      params: { aba: alvo },
+      query: somenteRecorte(route.query),
+    })
   }
 }
 

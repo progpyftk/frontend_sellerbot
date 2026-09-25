@@ -130,6 +130,8 @@
 // origem.
 import { computed, onMounted, ref } from 'vue'
 
+import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
+
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import SbInfoCallout from 'src/components/common/SbInfoCallout.vue'
@@ -151,13 +153,16 @@ import {
 const hoje = new Date()
 const competenciaAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
 
-const periodo = ref({ de: competenciaAtual, ate: competenciaAtual })
+const { periodo, ordenacao } = useEstadoNaUrl()
+
+// Sem recorte na URL, a conferência abre na competência atual.
+if (!periodo.value.de && !periodo.value.ate) {
+  periodo.value = { de: competenciaAtual, ate: competenciaAtual }
+}
 const linhas = ref([])
 const avisos = ref([])
 const loading = ref(false)
 
-// Ordenação local; o `FINT-11` leva recorte e ordem para a URL.
-const ordenacao = ref({ chave: '', direcao: '' })
 
 // A conferência tem duas chaves de texto (marketplace/conta) e oito valores — a coluna `tipo` decide
 // a comparação, então GMV ordena como número e não como texto.

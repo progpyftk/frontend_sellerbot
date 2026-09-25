@@ -95,6 +95,8 @@
 // detalhe do clique na linha.
 import { computed, onMounted, ref } from 'vue'
 
+import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
+
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
@@ -105,14 +107,12 @@ import { iconeDaClasse, varianteDaClasse } from 'src/utils/classes'
 import { formatarMoeda, linhasDaConciliacao, resumoDaConciliacao } from 'src/utils/contabil'
 import { formatarCnpj } from 'src/utils/seletores'
 
-const empresa = ref(null)
-const periodo = ref({ de: '', ate: '' })
+// Recorte na URL (FINT-11): a empresa e a competência vêm do link e voltam para ele.
+const { empresa, periodo, ordenacao } = useEstadoNaUrl()
 const lista = ref([])
 const loading = ref(false)
 const erro = ref('')
 
-// Ordenação local; o `FINT-11` leva recorte e ordem para a URL.
-const ordenacao = ref({ chave: '', direcao: '' })
 
 const COLUNAS = [
   { chave: 'chave', rotulo: 'Chave', tipo: 'texto', ordenavel: true, largura: '160px' },

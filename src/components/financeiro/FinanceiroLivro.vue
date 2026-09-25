@@ -41,7 +41,7 @@
       <!-- LANÇAMENTOS: a partida, com os débitos e créditos que geraram cada número do DRE. -->
       <SbTabela
         v-if="visao === 'lancamentos'"
-        v-model:ordenacao="ordenacaoLancamentos"
+        v-model:ordenacao="ordenacao"
         :colunas="COLUNAS_LANCAMENTOS"
         :linhas="lancamentosFiltrados"
         chave-linha="id"
@@ -126,7 +126,7 @@
       <!-- PLANO DE CONTAS: a árvore que dá sentido à partida (natureza, grupo e o mapeamento). -->
       <SbTabela
         v-else
-        v-model:ordenacao="ordenacaoPlano"
+        v-model:ordenacao="ordenacao"
         :colunas="COLUNAS_PLANO"
         :linhas="planoFiltrado"
         chave-linha="codigo"
@@ -181,7 +181,9 @@
 //
 // O endpoint do livro não tem `busca` (tem `limite`), então o filtro é no cliente, sobre o que já foi
 // carregado — é o que faz a busca responder na hora, sem ida ao servidor a cada tecla.
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+
+import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
 
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
@@ -193,18 +195,20 @@ import { formatDate } from 'src/utils/formato'
 import { formatarMoeda } from 'src/utils/contabil'
 import { filtrarLivro, linhasDoLivro, partidasNormalizadas } from 'src/utils/livro'
 
-const empresa = ref(null)
-const periodo = ref({ de: '', ate: '' })
+// Recorte, ordem e busca na URL (FINT-11): o link abre na mesma visão e o `F5` não perde nada.
+const { empresa, periodo, ordenacao, busca } = useEstadoNaUrl()
 const visao = ref('lancamentos')
-const busca = ref('')
+
+// Uma ordem só, para as duas tabelas — só uma delas está na tela por vez. Trocar de visão limpa a
+// ordem, porque a coluna ordenada de uma não existe na outra (e a URL acompanha).
+watch(visao, () => {
+  ordenacao.value = { chave: '', direcao: '' }
+})
 
 const lancamentos = ref([])
 const plano = ref([])
 const loading = ref(false)
 const erro = ref('')
-
-const ordenacaoLancamentos = ref({ chave: '', direcao: '' })
-const ordenacaoPlano = ref({ chave: '', direcao: '' })
 
 const COLUNAS_LANCAMENTOS = [
   { chave: 'data', rotulo: 'Data', tipo: 'data', ordenavel: true, largura: '112px' },

@@ -56,6 +56,8 @@
 // tabela e virou o **detalhe do clique** na linha.
 import { computed, onMounted, ref } from 'vue'
 
+import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
+
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import CascataDre from 'src/components/financeiro/CascataDre.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
@@ -65,8 +67,8 @@ import ContabilService from 'src/services/ContabilService'
 import { formatarCnpj } from 'src/utils/seletores'
 import { contasDaLinha } from 'src/utils/contabil'
 
-const empresa = ref(null)
-const periodo = ref({ de: '', ate: '' })
+// Recorte na URL (FINT-11): a empresa e a competência vêm do link e voltam para ele.
+const { empresa, periodo } = useEstadoNaUrl()
 const lista = ref([])
 const loading = ref(false)
 const erro = ref('')

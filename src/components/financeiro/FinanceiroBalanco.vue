@@ -70,6 +70,8 @@
 // equação e o número fecharia por sorte.
 import { computed, onMounted, ref } from 'vue'
 
+import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
+
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import DetalheContas from 'src/components/financeiro/DetalheContas.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
@@ -80,8 +82,8 @@ import ContabilService from 'src/services/ContabilService'
 import { formatarCnpj } from 'src/utils/seletores'
 import { formatarMoeda, linhasDoBalanco } from 'src/utils/contabil'
 
-const empresa = ref(null)
-const periodo = ref({ de: '', ate: '' })
+// Recorte na URL (FINT-11): a empresa e a competência vêm do link e voltam para ele.
+const { empresa, periodo } = useEstadoNaUrl()
 const lista = ref([])
 const loading = ref(false)
 const erro = ref('')

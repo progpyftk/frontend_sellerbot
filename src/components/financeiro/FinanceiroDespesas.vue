@@ -255,6 +255,8 @@
 //   é **dedução da receita** (DAS/ISS); a tela mostra os três, sem somar o que não se soma.
 import { computed, onMounted, reactive, ref } from 'vue'
 
+import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
+
 import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCelulaEditavel from 'src/components/common/SbCelulaEditavel.vue'
@@ -269,8 +271,8 @@ import { formatDate } from 'src/utils/formato'
 import { formatarMoeda } from 'src/utils/contabil'
 import { opcoesDeEmpresa } from 'src/utils/seletores'
 
-const empresa = ref(null)
-const periodo = ref({ de: '', ate: '' })
+// Recorte na URL (FINT-11): a empresa e a competência vêm do link e voltam para ele.
+const { empresa, periodo, ordenacao } = useEstadoNaUrl()
 
 const lancamentos = ref([])
 const resumo = ref({})
@@ -287,7 +289,6 @@ const salvando = ref(false)
 const removendo = ref(false)
 const erroFormulario = ref('')
 
-const ordenacao = ref({ chave: '', direcao: '' })
 
 const COLUNAS = [
   { chave: 'competencia', rotulo: 'Competência', tipo: 'texto', ordenavel: true, largura: '116px' },

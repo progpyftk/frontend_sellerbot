@@ -364,6 +364,8 @@ categoria e aplique em todas de uma vez.
 // limitada com cabeçalho fixo — a lista de um período é para ler inteira, rolando.
 import { computed, ref } from 'vue'
 
+import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
+
 import SbCard from 'src/components/common/SbCard.vue'
 import SbCategoriaSelect from 'src/components/common/SbCategoriaSelect.vue'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
@@ -380,8 +382,8 @@ const ctx = props.ctx
 // definição de colunas do page (que é dona dos campos que vêm do backend).
 const COLUNA_SELECAO = { chave: 'selecao', rotulo: 'Seleção', largura: '52px', alinhamento: 'center' }
 
-// Ordenação ainda local; o `FINT-11` leva recorte e ordem para a URL.
-const ordenacao = ref({ chave: '', direcao: '' })
+// Ordem na URL (FINT-11).
+const { ordenacao } = useEstadoNaUrl()
 
 const colunas = computed(() => [COLUNA_SELECAO, ...(ctx.transacaoColumns || [])])
 

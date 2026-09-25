@@ -17,6 +17,19 @@ const fiscal = vi.hoisted(() => ({ getCnpjs: vi.fn() }))
 vi.mock('src/services/DespesasService', () => ({ default: despesas }))
 vi.mock('src/services/FiscalService', () => ({ default: fiscal }))
 
+// O composable da URL usa `useRoute`/`useRouter`; no teste unitário a aba recebe refs soltos.
+vi.mock('src/composables/useEstadoNaUrl', async () => {
+  const { ref } = await import('vue')
+  return {
+    useEstadoNaUrl: () => ({
+      empresa: ref(null),
+      periodo: ref({ de: '', ate: '' }),
+      ordenacao: ref({ chave: '', direcao: '' }),
+      busca: ref(''),
+    }),
+  }
+})
+
 const LINHAS = [
   {
     id: 1,
