@@ -369,7 +369,7 @@
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
               <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Margem de Contribuição (após CMV e Ads) ÷ GMV. Não desconta despesas fixas nem impostos — para isso, veja a aba DRE-Aproximada.
+                Margem de Contribuição (após CMV e Ads) ÷ GMV. Não desconta despesas fixas nem impostos — para a cascata completa, veja o Módulo Financeiro (aba DRE).
               </q-tooltip>
             </q-icon>
           </template>
@@ -711,196 +711,6 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- ══════════ ABA: DRE-APROXIMADA ══════════════════════════════════ -->
-      <div v-show="activeTab === 'dre'" class="tab-content">
-        <!-- Alerta de dados de Ads possivelmente incompletos (feedback #19) -->
-        <div v-if="adsGapDays.length" class="ads-gap-banner">
-          <q-icon name="warning" size="16px" class="q-mr-sm" />
-          <div>
-            <strong>Dado de Ads possivelmente incompleto</strong>
-            em {{ adsGapDays.length }} dia(s): {{ adsGapDays.map(g => g.dateLabel).join(', ') }}.
-            O gasto ficou muito abaixo do esperado comparado aos dias vizinhos — o Mercado Livre
-            ou a Shopee pode não ter processado o relatório a tempo. Os KPIs desses dias podem
-            estar subestimados.
-            <q-tooltip max-width="260px">
-              <div v-for="g in adsGapDays" :key="g.date">
-                {{ g.dateLabel }}: R$ {{ g.ads_cost.toFixed(2) }} registrado, ~R$ {{ g.expected }} esperado
-              </div>
-            </q-tooltip>
-          </div>
-        </div>
-        <div class="waterfall-card" v-if="op?.gmv">
-          <div class="waterfall-header">
-            <div class="waterfall-title">
-              <q-icon name="account_balance" size="16px" class="q-mr-xs" />
-              DRE-Aproximada
-            </div>
-            <div class="waterfall-subtitle">Demonstrativo de Resultado do Exercício — período selecionado</div>
-            <div class="projection-badge" v-if="monthProjection">
-              <q-icon name="trending_up" size="12px" />
-              Projeção mês: <strong>{{ fmt(monthProjection.gmv) }}</strong> GMV · <strong>{{ fmt(monthProjection.lucro) }}</strong> lucro
-              <span class="muted" style="font-size:10px">(dia {{ monthProjection.dayOfMonth }} de {{ monthProjection.daysInMonth }})</span>
-            </div>
-          </div>
-
-          <!-- Cascata visual -->
-          <div class="waterfall-steps">
-            <div class="wf-step wf-step--start">
-              <div class="wf-label">GMV</div>
-              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--gmv" style="width:100%"></div></div>
-              <div class="wf-value">{{ fmt(op?.gmv) }}</div>
-            </div>
-            <div class="wf-arrow">▼</div>
-            <div class="wf-step wf-step--deduct">
-              <div class="wf-label" title="Comissão + tarifa fixa cobradas pelo marketplace (Mercado Livre e Shopee somados)">− Taxas de marketplace</div>
-              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.total_fees, op?.gmv) + '%' }"></div></div>
-              <div class="wf-value wf-value--neg">−{{ fmt(op?.total_fees) }} <span class="wf-pct">({{ wfPct(op?.total_fees, op?.gmv).toFixed(1) }}%)</span></div>
-            </div>
-            <div class="wf-arrow">▼</div>
-            <div class="wf-step wf-step--result">
-              <div class="wf-label">= Receita Líquida</div>
-              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--net" :style="{ width: wfPct(op?.net_revenue, op?.gmv) + '%' }"></div></div>
-              <div class="wf-value">{{ fmt(op?.net_revenue) }} <span class="wf-pct">({{ wfPct(op?.net_revenue, op?.gmv).toFixed(1) }}% do GMV)</span></div>
-            </div>
-            <div class="wf-arrow">▼</div>
-            <div class="wf-step wf-step--deduct">
-              <div class="wf-label" title="Custo da Mercadoria Vendida — custo por SKU (Tiny) × quantidade">− CMV (custo da mercadoria)</div>
-              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--deduct" :style="{ width: wfPct(op?.cmv_total, op?.gmv) + '%' }"></div></div>
-              <div class="wf-value wf-value--neg">−{{ fmt(op?.cmv_total) }} <span class="wf-pct">({{ wfPct(op?.cmv_total, op?.gmv).toFixed(1) }}%)</span></div>
-            </div>
-            <div class="wf-arrow">▼</div>
-            <div class="wf-step wf-step--result">
-              <div class="wf-label" title="Receita líquida menos CMV, antes de descontar Ads e afiliados">= Margem de Contribuição Antes do Ads</div>
-              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--gp" :style="{ width: wfPct(op?.gross_profit, op?.gmv) + '%' }"></div></div>
-              <div class="wf-value">{{ fmt(op?.gross_profit) }} <span class="wf-pct">({{ wfPct(op?.gross_profit, op?.gmv).toFixed(1) }}% do GMV)</span></div>
-            </div>
-            <div class="wf-arrow">▼</div>
-            <div class="wf-step wf-step--deduct">
-              <div class="wf-label" title="Product Ads (ML) + Shopee Ads no período">− Investimento em Ads</div>
-              <div class="wf-bar-wrap"><div class="wf-bar wf-bar--ads" :style="{ width: wfPct(op?.ads_cost, op?.gmv) + '%' }"></div></div>
-              <div class="wf-value wf-value--warn">−{{ fmt(op?.ads_cost) }} <span class="wf-pct">(TACoS {{ wfPct(op?.ads_cost, op?.gmv).toFixed(1) }}%)</span></div>
-            </div>
-            <div class="wf-arrow">▼</div>
-            <div class="wf-step wf-step--result">
-              <div class="wf-label" title="Margem de Contribuição Antes do Ads menos o investimento em Ads do período">= Margem de Contribuição Após Ads</div>
-              <div class="wf-bar-wrap">
-                <div class="wf-bar wf-bar--gp" :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
-              </div>
-              <div class="wf-value">{{ fmt(op?.lucro_liquido) }} <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% do GMV)</span></div>
-            </div>
-            <div class="wf-arrow">▼</div>
-            <div class="wf-step wf-step--final" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-step--pos' : 'wf-step--neg'">
-              <div class="wf-label" title="O que sobra das vendas para cobrir custos fixos e gerar lucro; já é líquida de impostos, taxas, frete, embalagem, Ads e CPV. Não desconta despesas fixas. Afiliados (AMS) já estão descontados na margem antes de Ads.">= Margem de Contribuição</div>
-              <div class="wf-bar-wrap">
-                <div class="wf-bar" :class="(op?.lucro_liquido || 0) >= 0 ? 'wf-bar--ll' : 'wf-bar--neg'"
-                  :style="{ width: Math.abs(wfPct(op?.lucro_liquido, op?.gmv)) + '%' }"></div>
-              </div>
-              <div class="wf-value wf-value--highlight">
-                {{ fmt(op?.lucro_liquido) }}
-                <span class="wf-pct">({{ wfPct(op?.lucro_liquido, op?.gmv).toFixed(1) }}% do GMV)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Breakdown por conta -->
-          <div class="dre-breakdown">
-            <div class="dre-breakdown-title">
-              <q-icon name="account_tree" size="13px" class="q-mr-xs" />
-              Origem dos valores — por conta e marketplace
-            </div>
-            <div class="table-wrap">
-              <table class="data-table dre-breakdown-table">
-                <thead>
-                  <tr>
-                    <th>Marketplace</th>
-                    <th>Conta</th>
-                    <th class="right">GMV</th>
-                    <th class="right">Tarifas</th>
-                    <th class="right">Rec. Líquida</th>
-                    <th class="right">CMV</th>
-                    <th class="right">Margem Contrib. Antes do Ads</th>
-                    <th class="right">Ads</th>
-                    <th class="right">Margem Contrib. Após Ads</th>
-                    <th class="right">Margem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <template v-if="activeMarketplaces.includes('ml') && data?.accounts">
-                    <tr v-for="a in data.accounts.filter(a => selectedAccountKeys.includes('ml:' + a.account_id))" :key="'dre2-ml-' + a.account_id">
-                      <td><span class="mkt-badge mkt-badge--ml">ML</span></td>
-                      <td class="bold">
-                        <span class="acct-dot-inline" :style="{ background: accountColor('ml:' + a.account_id) }"></span>
-                        {{ a.account_nickname }}
-                      </td>
-                      <td class="right">{{ fmt(a.gmv) }}</td>
-                      <td class="right warn">{{ fmt(a.total_fees) }}</td>
-                      <td class="right">{{ fmt(a.net_revenue) }}</td>
-                      <td class="right warn">{{ fmt(a.cmv_total) }}</td>
-                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
-                      <td class="right warn">{{ fmt(a.ads_cost) }}</td>
-                      <td class="right" :class="(a.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido) }}</td>
-                      <td class="right">{{ pct(a.lucro_liquido, a.gmv) }}</td>
-                    </tr>
-                  </template>
-                  <template v-if="activeMarketplaces.includes('shopee') && shopeeData?.by_account">
-                    <tr v-for="a in shopeeData.by_account.filter(a => selectedAccountKeys.includes('shopee:' + a.account_id))" :key="'dre2-sh-' + a.account_id">
-                      <td><span class="mkt-badge mkt-badge--shopee">Shopee</span></td>
-                      <td class="bold">
-                        <span class="acct-dot-inline" :style="{ background: accountColor('shopee:' + a.account_id) }"></span>
-                        {{ a.shop_name }}
-                      </td>
-                      <td class="right">{{ fmt(a.gmv) }}</td>
-                      <td class="right warn">
-                        <span :title="'Comissão + taxas Shopee + frete líquido'">{{ fmt(a.gmv - a.net_revenue) }}</span>
-                      </td>
-                      <td class="right">{{ fmt(a.net_revenue) }}</td>
-                      <td class="right warn">{{ a.gross_profit != null ? fmt(a.net_revenue - a.gross_profit) : '—' }}</td>
-                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
-                      <td class="right warn">{{ a.ads_cost ? fmt(a.ads_cost) : '—' }}</td>
-                      <td class="right" :class="(a.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ a.lucro_liquido != null ? fmt(a.lucro_liquido) : '—' }}</td>
-                      <td class="right">{{ pct(a.lucro_liquido, a.gmv) }}</td>
-                    </tr>
-                  </template>
-                  <template v-if="activeMarketplaces.includes('tiktokshop') && tiktokData?.by_account">
-                    <tr v-for="a in tiktokData.by_account.filter(a => selectedAccountKeys.includes('tiktokshop:' + a.account_id))" :key="'dre2-tk-' + a.account_id">
-                      <td><span class="mkt-badge mkt-badge--tiktokshop">TikTok</span></td>
-                      <td class="bold">
-                        <span class="acct-dot-inline" :style="{ background: accountColor('tiktokshop:' + a.account_id) }"></span>
-                        {{ a.shop_name }}
-                      </td>
-                      <td class="right">{{ fmt(a.gmv) }}</td>
-                      <td class="right warn">—</td>
-                      <td class="right">{{ fmt(a.net_revenue) }}</td>
-                      <td class="right warn">—</td>
-                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit) : '—' }}</td>
-                      <td class="right warn">—</td>
-                      <!-- B2 (FIN-32): "Após Ads" do TikTok = margem antes do Ads − Ads, o mesmo
-                           critério do ML/Shopee (que recebem `lucro_liquido` já líquido do backend). -->
-                      <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ a.gross_profit != null ? fmt(a.gross_profit - (a.ads_cost || 0)) : '—' }}</td>
-                      <td class="right">{{ pct(a.gross_profit != null ? a.gross_profit - (a.ads_cost || 0) : null, a.gmv) }}</td>
-                  </tr>
-              </template>
-            </tbody>
-                <tfoot>
-                  <tr class="total-row">
-                    <td colspan="2">TOTAL</td>
-                    <td class="right">{{ fmt(op?.gmv) }}</td>
-                    <td class="right warn">{{ fmt(op?.total_fees) }}</td>
-                    <td class="right">{{ fmt(op?.net_revenue) }}</td>
-                    <td class="right warn">{{ fmt(op?.cmv_total) }}</td>
-                    <td class="right" :class="(op?.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(op?.gross_profit) }}</td>
-                    <td class="right warn">{{ fmt(op?.ads_cost) }}</td>
-                    <td class="right" :class="(op?.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(op?.lucro_liquido) }}</td>
-                    <td class="right">{{ pct(op?.lucro_liquido, op?.gmv) }}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div v-else class="chart-empty">Sem dados para o período</div>
       </div>
 
       <!-- ══════════ ABA: CONTAS & CNPJ ════════════════════════════════════ -->
@@ -2043,7 +1853,6 @@ const tabs = [
   { key: 'evolucao',    label: 'Evolução',       icon: 'show_chart' },
   { key: 'estoque',     label: 'Estoque',        icon: 'inventory' },
   { key: 'ranking',     label: 'Ranking Contas', icon: 'leaderboard' },
-  { key: 'dre',         label: 'DRE-Aprox.',     icon: 'account_balance' },
   { key: 'contas',      label: 'Contas & CNPJ',  icon: 'storefront' },
   { key: 'produtos',    label: 'Top Produtos',   icon: 'inventory_2' },
   { key: 'flex',        label: 'Flex Delivery',  icon: 'electric_bike' },
@@ -2153,26 +1962,6 @@ const chartData = computed(() => {
 
 // Descendente (mais recente primeiro) — usado na tabela
 const chartDataDesc = computed(() => [...chartData.value].reverse())
-
-// Feedback #19: detecta dias com Ads provavelmente incompleto (relatório do ML/Shopee
-// atrasado — caso real observado em 14/07). Compara cada dia com a média dos vizinhos;
-// exclui o dia de hoje (naturalmente parcial) e dias sem pedidos (Ads=0 é esperado).
-const adsGapDays = computed(() => {
-  const days = chartData.value
-  if (days.length < 5) return []
-  const todayStr = new Date().toISOString().split('T')[0]
-  const gaps = []
-  for (let i = 1; i < days.length - 1; i++) {
-    const d = days[i]
-    if (d.date === todayStr || !d.orders_count) continue
-    const window = days.slice(Math.max(0, i - 3), i).concat(days.slice(i + 1, i + 4))
-    const neighborAvg = window.reduce((s, x) => s + (x.ads_cost || 0), 0) / (window.length || 1)
-    if (neighborAvg > 5 && (d.ads_cost || 0) < neighborAvg * 0.25) {
-      gaps.push({ date: d.date, dateLabel: d.dateLabel, ads_cost: d.ads_cost, expected: Math.round(neighborAvg) })
-    }
-  }
-  return gaps
-})
 
 // Produtos ordenados pelo critério selecionado.
 // Feedback #13: inclui os produtos Shopee (que ficavam fora do ranking).
@@ -3417,12 +3206,6 @@ function sparklineData(metric) {
   const data = chartData.value
   if (!data.length) return null
   return data.map(d => d[metric] || 0)
-}
-
-// ── Cascata P&L helpers ───────────────────────────────────────────────────
-function wfPct(num, den) {
-  if (!den || num == null) return 0
-  return (num / den) * 100
 }
 
 // ── Projeção do mês ───────────────────────────────────────────────────────
@@ -4785,106 +4568,6 @@ watch(selectedAccountKeys, () => {
   color: #f97316; font-size: 14px; padding: 0 4px;
 }
 
-/* ── Waterfall P&L ──────────────────────────────────────────────────────── */
-.waterfall-card {
-  background: #fff;
-  border: 1.5px solid #e8edf3;
-  border-radius: 16px;
-  padding: 22px 24px 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.04);
-}
-.waterfall-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-.waterfall-title {
-  display: flex; align-items: center;
-  font-size: 15px; font-weight: 700; color: #1a1f36;
-}
-.waterfall-subtitle {
-  font-size: 12px; color: #9aa0ac;
-}
-.projection-badge {
-  margin-left: auto;
-  background: #f0fdf9;
-  border: 1.5px solid #0d9488;
-  border-radius: 20px;
-  padding: 5px 14px;
-  font-size: 12px;
-  color: #0d9488;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.waterfall-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.wf-step {
-  display: grid;
-  grid-template-columns: 180px 1fr 220px;
-  align-items: center;
-  gap: 12px;
-}
-.wf-arrow {
-  text-align: center;
-  color: #cbd5e1;
-  font-size: 12px;
-  line-height: 1;
-  margin-left: 180px;
-}
-.wf-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  white-space: nowrap;
-}
-.wf-step--result .wf-label { color: #1a1f36; }
-.wf-step--final .wf-label  { color: #1a1f36; font-size: 13px; }
-
-.wf-bar-wrap {
-  height: 10px;
-  background: #f1f5f9;
-  border-radius: 5px;
-  overflow: hidden;
-}
-.wf-bar {
-  height: 100%;
-  border-radius: 5px;
-  transition: width $transition-slow;
-}
-.wf-bar--gmv   { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
-.wf-bar--deduct{ background: linear-gradient(90deg, #fca5a5, #f87171); }
-.wf-bar--net   { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
-.wf-bar--gp    { background: linear-gradient(90deg, #10b981, #34d399); }
-.wf-bar--ads   { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-.wf-bar--ll    { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
-.wf-bar--neg   { background: linear-gradient(90deg, #ef4444, #f87171); }
-
-.wf-value {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  white-space: nowrap;
-}
-.wf-value--neg      { color: #ef4444; }
-.wf-value--warn     { color: #f59e0b; }
-.wf-value--highlight{ color: #0d9488; font-size: 15px; }
-.wf-pct {
-  font-size: 11px;
-  font-weight: 400;
-  color: #9aa0ac;
-  margin-left: 6px;
-}
-.wf-step--pos { background: #f0fdf9; border-radius: 8px; padding: 6px 8px; }
-.wf-step--neg { background: #fff1f2; border-radius: 8px; padding: 6px 8px; }
-
 /* ── Sparkline ──────────────────────────────────────────────────────────── */
 .sparkline {
   display: block;
@@ -4914,14 +4597,6 @@ watch(selectedAccountKeys, () => {
   background: #fff7ed;
   border: 1.5px solid #fbbf24;
   color: #92400e;
-}
-
-/* Alerta de Ads incompleto (feedback #19) */
-.ads-gap-banner {
-  display: flex; align-items: flex-start; gap: 4px;
-  padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
-  font-size: 12.5px; line-height: 1.5; font-weight: 500;
-  background: #fff7ed; border: 1.5px solid #fbbf24; color: #92400e;
 }
 
 /* ── Row highlight ──────────────────────────────────────────────────────── */
@@ -5528,39 +5203,6 @@ tr.pareto-line-95 td {
   border-radius: 50%;
 }
 
-/* ── DRE breakdown toggle ────────────────────────────────────────────────── */
-.dre-breakdown-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 11px;
-  color: #64748b;
-  cursor: pointer;
-  transition: all $transition-base;
-  margin-left: auto;
-}
-.dre-breakdown-toggle:hover { background: #f1f5f9; color: #0d9488; border-color: #0d9488; }
-
-.dre-breakdown {
-  border-top: 1px solid #e8edf3;
-  margin-top: 12px;
-  padding-top: 12px;
-}
-.dre-breakdown-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-}
-.dre-breakdown-table thead th { font-size: 11px; }
-.dre-breakdown-table td, .dre-breakdown-table th { padding: 6px 10px; }
-
 /* ── Main layout: sidebar + content ─────────────────────────────────────── */
 .dash-page {
   background: #f5f7fa;
@@ -6050,24 +5692,6 @@ tr.pareto-line-95 td {
 
   .plotly-wrap {
     min-height: 260px;
-  }
-
-  /* ── Waterfall P&L — colunas menores ── */
-  .waterfall-card {
-    padding: 14px 12px 12px;
-  }
-
-  .wf-step {
-    grid-template-columns: 110px 1fr 130px;
-    gap: 8px;
-  }
-
-  .wf-label {
-    font-size: 11px;
-  }
-
-  .wf-arrow {
-    margin-left: 110px;
   }
 
   .projection-badge {
