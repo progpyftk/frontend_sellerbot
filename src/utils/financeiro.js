@@ -25,6 +25,7 @@ export const ABAS_FINANCEIRO = [
     onda: 'FIN-14b',
     endpoint: '/api/financeiro/contabil/resumo/',
     descricao: 'A DRE-Aproximada por canal, corrigida (absorve a aba antiga do dashboard).',
+    disponivel: true,
   },
   {
     id: 'dre',

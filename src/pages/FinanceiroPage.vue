@@ -48,6 +48,10 @@
           <FinanceiroVisaoGeral />
         </q-tab-panel>
 
+        <q-tab-panel name="marketplace" class="q-pa-none">
+          <FinanceiroMarketplace />
+        </q-tab-panel>
+
         <q-tab-panel name="dre" class="q-pa-none">
           <FinanceiroDre />
         </q-tab-panel>
@@ -117,6 +121,7 @@ import FinanceiroCenarios from 'src/components/financeiro/FinanceiroCenarios.vue
 import FinanceiroConciliacao from 'src/components/financeiro/FinanceiroConciliacao.vue'
 import FinanceiroDfc from 'src/components/financeiro/FinanceiroDfc.vue'
 import FinanceiroDre from 'src/components/financeiro/FinanceiroDre.vue'
+import FinanceiroMarketplace from 'src/components/financeiro/FinanceiroMarketplace.vue'
 import FinanceiroTributos from 'src/components/financeiro/FinanceiroTributos.vue'
 import FinanceiroVisaoGeral from 'src/components/financeiro/FinanceiroVisaoGeral.vue'
 import SbCard from 'src/components/common/SbCard.vue'
