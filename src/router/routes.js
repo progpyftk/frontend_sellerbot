@@ -187,14 +187,22 @@ const routes = [
         component: () => import('pages/FiscalPage.vue')
       },
       {
+        // Módulo Financeiro/Contábil com abas na URL (ticket FIN-14). O nome antigo
+        // `financeiro-bancos` continua valendo como **redirect** para a aba de extratos: é o que
+        // o menu usa, então nenhum link existente quebra.
         path: 'financeiro/bancos',
         name: 'financeiro-bancos',
-        component: () => import('pages/BancosExtratosPage.vue')
+        redirect: { name: 'financeiro', params: { aba: 'extratos' } },
       },
       {
         path: 'financeiro/margens',
         name: 'financeiro-margens',
         component: () => import('pages/MargensPage.vue')
+      },
+      {
+        path: 'financeiro/:aba?',
+        name: 'financeiro',
+        component: () => import('pages/FinanceiroPage.vue')
       },
     ],
   },

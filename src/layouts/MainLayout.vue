@@ -225,6 +225,7 @@ const menuSections = [
     title: "Financeiro",
     sectionIcon: "account_balance_wallet",
     items: [
+      { label: "Módulo Financeiro", icon: "account_balance", route: "financeiro" },
       { label: "Bancos e Extratos", icon: "account_balance_wallet", route: "financeiro-bancos" },
       { label: "Margem de Contribuição", icon: "calculate", route: "financeiro-margens" },
     ],
