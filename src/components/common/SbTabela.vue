@@ -37,6 +37,9 @@
               </button>
               <template v-else>{{ coluna.rotulo }}</template>
             </th>
+            <th v-if="mostrarAcao" scope="col" class="is-center sb-tabela__col-acao">
+              <span class="sb-tabela__oculto">{{ rotuloAcao }}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -46,8 +49,8 @@
             class="sb-tabela__linha"
             tabindex="0"
             @click="aoClicarNaLinha($event, linha)"
-            @keydown.enter.prevent="emitirLinha(linha)"
-            @keydown.space.prevent="emitirLinha(linha)"
+            @keydown.enter.prevent="emitirLinha(linha, $event.currentTarget)"
+            @keydown.space.prevent="emitirLinha(linha, $event.currentTarget)"
           >
             <td
               v-for="coluna in colunas"
@@ -62,10 +65,31 @@
                 :indice="indice"
               >{{ textoPadrao(linha, coluna) }}</slot>
             </td>
+            <td v-if="mostrarAcao" class="is-center sb-tabela__col-acao">
+              <button
+                type="button"
+                class="sb-tabela__abrir"
+                :aria-label="`Abrir detalhes da linha ${indice + 1}`"
+                @click.stop="emitirLinha(linha, $event.currentTarget)"
+              >
+                <q-icon name="chevron_right" size="18px" aria-hidden="true" />
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <SbDetalheLinha
+      v-if="temDetalhe"
+      :aberto="!!linhaAberta"
+      :titulo="tituloDetalhe"
+      :subtitulo="subtituloDetalhe"
+      :largura="larguraDetalhe"
+      @fechar="fecharDetalhe"
+    >
+      <slot name="detalhe" :linha="linhaAberta" />
+    </SbDetalheLinha>
   </div>
 </template>
 
@@ -77,12 +101,13 @@
 // estados de tela (carregando/vazio/erro). O que é específico de uma aba entra por
 // **slot** (`#celula-<chave>`), não por prop nova — é o que impede isto de virar um `q-table`.
 //
-// Fora do contrato de propósito: paginação, seleção múltipla, agrupamento e edição (esta é do
-// FINT-4). O detalhe da linha (painel) e o botão acessível explícito são do FINT-3.
+// O detalhe (`FINT-3`): se a aba passar o slot `#detalhe`, a tabela **já** abre o painel no clique
+// (e no Enter/Espaço), acrescenta o **botão acessível de abrir** em coluna própria e devolve o foco
+// a quem abriu quando o painel fecha. Sem o slot, a tabela só emite `linha`.
 //
 // `stickyHeader` só gruda de verdade quando o contêiner tem altura limitada — passe
 // `alturaMaxima` ou limite pelo pai (é a lição do DASH-18: `sticky` sem altura não gruda).
-import { computed } from 'vue'
+import { computed, nextTick, ref, useSlots, watch } from 'vue'
 
 import {
   estadoDaColuna,
@@ -91,6 +116,7 @@ import {
   proximaOrdenacao,
   valorDaChave,
 } from 'src/composables/useOrdenacao'
+import SbDetalheLinha from './SbDetalheLinha.vue'
 import SbEmptyState from './SbEmptyState.vue'
 
 const props = defineProps({
@@ -114,9 +140,24 @@ const props = defineProps({
   vazio: { type: Object, default: () => ({ titulo: 'Nada para mostrar', mensagem: '' }) },
   /** Vira o `<caption>` (só para leitor de tela) — diz o que a tabela lista. */
   rotulo: { type: String, default: '' },
+  /** Força a coluna de ação mesmo sem o slot `#detalhe` (raro). */
+  acaoAbrir: { type: Boolean, default: false },
+  rotuloAcao: { type: String, default: 'Abrir' },
+  /** Título do painel de detalhe (slot `#detalhe`). */
+  tituloDetalhe: { type: String, default: '' },
+  subtituloDetalhe: { type: String, default: '' },
+  larguraDetalhe: { type: String, default: '420px' },
 })
 
 const emit = defineEmits(['update:ordenacao', 'ordenar', 'linha'])
+
+const slots = useSlots()
+const temDetalhe = computed(() => !!slots.detalhe)
+const mostrarAcao = computed(() => temDetalhe.value || props.acaoAbrir)
+
+const linhaAberta = ref(null)
+const chaveAberta = ref(null)
+const elementoOrigem = ref(null)
 
 const colunaOrdenada = computed(
   () => props.colunas.find((coluna) => coluna.chave === props.ordenacao?.chave) || null,
@@ -134,8 +175,9 @@ function ordenarPor(coluna) {
   emit('ordenar', proxima)
 }
 
-function emitirLinha(linha) {
+function emitirLinha(linha, elemento) {
   emit('linha', linha)
+  if (temDetalhe.value) abrirDetalhe(linha, elemento)
 }
 
 function aoClicarNaLinha(evento, linha) {
@@ -143,8 +185,37 @@ function aoClicarNaLinha(evento, linha) {
   const alvo = evento.target
   if (alvo?.closest?.('button, a, input, select, textarea, [data-sem-clique]')) return
   if (typeof window !== 'undefined' && window.getSelection?.()?.toString()) return
-  emitirLinha(linha)
+  emitirLinha(linha, evento.currentTarget)
 }
+
+function abrirDetalhe(linha, elemento) {
+  elementoOrigem.value = elemento || null
+  linhaAberta.value = linha
+  chaveAberta.value = chaveDaLinha(linha, -1)
+}
+
+/** Fecha o painel e **devolve o foco** a quem o abriu (o botão ou a própria linha). */
+function fecharDetalhe() {
+  const elemento = elementoOrigem.value
+  linhaAberta.value = null
+  chaveAberta.value = null
+  nextTick(() => {
+    if (elemento?.isConnected) elemento.focus()
+  })
+}
+
+// A linha aberta pode sair da lista (filtro, recorte, novo carregamento): o painel não pode ficar
+// mostrando um detalhe que já não está na tela.
+watch(
+  () => props.linhas,
+  () => {
+    if (!linhaAberta.value) return
+    const aindaExiste = props.linhas.some(
+      (linha, indice) => String(chaveDaLinha(linha, indice)) === String(chaveAberta.value),
+    )
+    if (!aindaExiste) fecharDetalhe()
+  },
+)
 
 function chaveDaLinha(linha, indice) {
   const chave = typeof props.chaveLinha === 'function' ? props.chaveLinha(linha) : linha?.[props.chaveLinha]
@@ -295,6 +366,46 @@ function textoPadrao(linha, coluna) {
 
   .is-ativa {
     color: $text-primary;
+  }
+
+  &__col-acao {
+    width: 44px;
+  }
+
+  &__abrir {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: $radius-sm;
+    background: none;
+    color: $text-muted;
+    cursor: pointer;
+
+    &:hover {
+      background: $surface-2;
+      color: $text-primary;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $primary;
+      outline-offset: 1px;
+    }
+  }
+
+  &__oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   &__linha {

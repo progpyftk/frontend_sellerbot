@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
+import { h, nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import SbTabela from 'src/components/common/SbTabela.vue'
 
 const iconStub = { template: '<i />' }
-const stubs = { QIcon: iconStub, QSpinnerDots: iconStub }
+const stubs = { QIcon: iconStub, QSpinnerDots: iconStub, QBtn: { template: '<button />' } }
 
 const COLUNAS = [
   { chave: 'nome', rotulo: 'Nome', ordenavel: true },
@@ -125,5 +126,57 @@ describe('SbTabela — estados', () => {
     const wrapper = montar({ erro: 'Falha ao ler o livro' })
     expect(wrapper.find('table').exists()).toBe(false)
     expect(wrapper.text()).toContain('Falha ao ler o livro')
+  })
+})
+
+describe('SbTabela — detalhe da linha (FINT-3)', () => {
+  function montarComDetalhe() {
+    return mount(SbTabela, {
+      props: { colunas: COLUNAS, linhas: LINHAS },
+      slots: { detalhe: ({ linha }) => h('p', { class: 'conteudo' }, String(linha?.nome ?? '')) },
+      global: { stubs },
+      attachTo: document.body,
+    })
+  }
+
+  it('sem o slot #detalhe não há coluna de ação nem painel', () => {
+    const wrapper = montar()
+    expect(wrapper.find('tbody button.sb-tabela__abrir').exists()).toBe(false)
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+  })
+
+  it('abre pelo botão acessível e devolve o foco ao fechar no Esc', async () => {
+    const wrapper = montarComDetalhe()
+    const botao = wrapper.find('tbody button.sb-tabela__abrir')
+    expect(botao.exists()).toBe(true)
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+
+    await botao.trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+    expect(wrapper.find('.conteudo').text()).toBe('Beta')
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await nextTick()
+    await flushPromises()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(document.activeElement).toBe(botao.element)
+
+    wrapper.unmount()
+  })
+
+  it('abre no clique da linha e fecha quando a linha sai da lista', async () => {
+    const wrapper = montarComDetalhe()
+
+    await wrapper.findAll('tbody tr')[0].trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+    expect(wrapper.find('.conteudo').text()).toBe('Beta')
+
+    await wrapper.setProps({ linhas: [LINHAS[1]] })
+    await nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+
+    wrapper.unmount()
   })
 })
