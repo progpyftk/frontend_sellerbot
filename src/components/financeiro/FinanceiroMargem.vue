@@ -523,6 +523,7 @@ import SbEmptyState from "src/components/common/SbEmptyState.vue";
 import SbSeletorEmpresa from "src/components/common/SbSeletorEmpresa.vue";
 import { formatarCnpj, opcoesDeEmpresa } from "src/utils/seletores";
 import MargemService from "src/services/MargemService";
+import { mensagemDeErro } from 'src/utils/erros'
 import FiscalService from "src/services/FiscalService";
 import {
   GRANULARIDADES_DE_MARGEM,
@@ -793,7 +794,7 @@ async function carregar() {
     linhas.value = [];
     resumo.value = {};
     diario.value = { dias: [], total: {}, metodo: {} };
-    erro.value = mensagemDeErro(e);
+    erro.value = mensagemDeErro(e, 'Erro ao carregar a margem de contribuição.');
     $q.notify({ type: "negative", message: erro.value });
   } finally {
     loading.value = false;
@@ -839,15 +840,6 @@ async function carregarProdutos() {
 function recarregarTudo() {
   carregarProdutos();
   carregar();
-}
-
-function mensagemDeErro(e) {
-  const dados = e?.response?.data;
-  if (dados?.detail) return dados.detail;
-  const primeiro = dados && typeof dados === "object" ? Object.values(dados)[0] : null;
-  if (Array.isArray(primeiro) && primeiro.length) return String(primeiro[0]);
-  if (typeof primeiro === "string") return primeiro;
-  return "Erro ao carregar a margem de contribuição.";
 }
 
 function limparFiltros() {

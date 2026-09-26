@@ -267,6 +267,7 @@ import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbOrigemSelo from 'src/components/common/SbOrigemSelo.vue'
 import SbTabela from 'src/components/common/SbTabela.vue'
 import DespesasService from 'src/services/DespesasService'
+import { mensagemDeErro } from 'src/utils/erros'
 import FiscalService from 'src/services/FiscalService'
 import { motivoNaoEditavel, podeEditar } from 'src/utils/editabilidade'
 import { formatDate } from 'src/utils/formato'
@@ -290,7 +291,6 @@ const removerAlvo = ref(null)
 const salvando = ref(false)
 const removendo = ref(false)
 const erroFormulario = ref('')
-
 
 const COLUNAS = [
   { chave: 'competencia', rotulo: 'Competência', tipo: 'texto', ordenavel: true, largura: '116px' },
@@ -351,15 +351,6 @@ function validarValor(valor) {
   return true
 }
 
-function mensagemDeErro(e) {
-  const dados = e?.response?.data
-  if (typeof dados === 'string' && dados) return dados
-  if (dados?.detail) return dados.detail
-  const primeiro = dados && Object.entries(dados)[0]
-  if (primeiro) return `${primeiro[0]}: ${[].concat(primeiro[1]).join(' ')}`
-  return 'Não foi possível salvar.'
-}
-
 /** Salva uma célula. Quem trata o rollback é a `SbCelulaEditavel`; aqui só o caminho feliz. */
 async function salvarCampo(linha, payload) {
   const resposta = await DespesasService.atualizarLancamento(linha.id, payload)
@@ -403,7 +394,7 @@ async function criar() {
     mostrarNova.value = false
     await carregar()
   } catch (e) {
-    erroFormulario.value = mensagemDeErro(e)
+    erroFormulario.value = mensagemDeErro(e, 'Não foi possível salvar.')
   } finally {
     salvando.value = false
   }
@@ -421,7 +412,7 @@ async function confirmarRemocao() {
     mostrarRemover.value = false
     await carregar()
   } catch (e) {
-    erro.value = mensagemDeErro(e)
+    erro.value = mensagemDeErro(e, 'Não foi possível salvar.')
     mostrarRemover.value = false
   } finally {
     removendo.value = false
@@ -438,7 +429,7 @@ async function carregar() {
   } catch (e) {
     lancamentos.value = []
     resumo.value = {}
-    erro.value = mensagemDeErro(e)
+    erro.value = mensagemDeErro(e, 'Não foi possível salvar.')
   } finally {
     loading.value = false
   }

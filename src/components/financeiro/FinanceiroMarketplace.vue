@@ -112,6 +112,15 @@
         </ul>
       </SbCard>
     </template>
+    <!-- Canal fora do ar não é "sem dado" (FINT-20): sem nenhuma linha, o motivo fica aqui. Antes os
+         avisos viviam dentro do ramo com linhas, então uma queda dos três canais se disfarçava de
+         recorte vazio e o dono ia procurar pedido que existia. -->
+    <SbEmptyState
+      v-else-if="avisos.length"
+      variant="error"
+      title="Não foi possível carregar a conferência de marketplace"
+      :message="avisos.join(' ')"
+    />
     <SbEmptyState
       v-else
       title="Sem dado de marketplace neste recorte"

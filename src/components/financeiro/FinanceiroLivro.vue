@@ -195,6 +195,7 @@ import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import SbOrigemSelo from 'src/components/common/SbOrigemSelo.vue'
 import SbTabela from 'src/components/common/SbTabela.vue'
 import ContabilService from 'src/services/ContabilService'
+import { mensagemDeErro } from 'src/utils/erros'
 import { formatDate } from 'src/utils/formato'
 import { formatarMoeda } from 'src/utils/contabil'
 import { filtrarLivro, linhasDoLivro, partidasNormalizadas } from 'src/utils/livro'
@@ -288,14 +289,6 @@ function mapeamentoDaLinha(conta) {
   ]
 }
 
-function mensagemDeErro(e) {
-  return (
-    e?.response?.data?.detail ||
-    e?.response?.data?.competencia ||
-    'Verifique a competência escolhida e o vínculo da conta com o CNPJ.'
-  )
-}
-
 async function carregar() {
   loading.value = true
   erro.value = ''
@@ -309,7 +302,7 @@ async function carregar() {
   } catch (e) {
     lancamentos.value = []
     plano.value = []
-    erro.value = mensagemDeErro(e)
+    erro.value = mensagemDeErro(e, 'Verifique a competência escolhida e o vínculo da conta com o CNPJ.', ['competencia'])
   } finally {
     loading.value = false
   }

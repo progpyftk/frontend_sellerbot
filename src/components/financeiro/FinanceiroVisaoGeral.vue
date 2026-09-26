@@ -1,37 +1,12 @@
 <template>
   <div>
-    <SbCard class="q-mb-md" title="Recorte" eyebrow="Empresa e competência">
-      <div class="row q-col-gutter-md items-end">
-        <div class="col-12 col-md-4">
-          <SbSeletorEmpresa
-            v-model="empresa"
-            :options="opcoesEmpresa"
-            label="Empresa"
-            clearable
-            @update:model-value="carregar"
-          />
-        </div>
-        <div class="col-12 col-md-6">
-          <SbSeletorPeriodo v-model="periodo" @update:model-value="carregar" />
-        </div>
-        <div class="col-12 col-md-2">
-          <q-btn
-            unelevated
-            color="teal-8"
-            text-color="white"
-            icon="refresh"
-            label="Atualizar"
-            :loading="loading"
-            class="full-width"
-            @click="carregar"
-          />
-        </div>
-      </div>
-      <div class="text-caption text-grey-7 q-mt-sm">
-        Sem empresa selecionada, o recorte é o <strong>grupo somado</strong> (leitura gerencial — a
-        eliminação intercompany ainda não está feita).
-      </div>
-    </SbCard>
+    <FinanceiroRecorte
+      v-model:empresa="empresa"
+      v-model:periodo="periodo"
+      :carregando="loading"
+      :aviso="avisoDoRecorte"
+      @carregar="carregar"
+    />
 
     <SbEmptyState v-if="loading" variant="loading" title="Carregando o recorte…" />
     <SbEmptyState
@@ -96,7 +71,11 @@
 // recalcula margem nem imposto: a régua é a do livro (`FIN-18`).
 //
 // Sem empresa escolhida, o recorte é o **grupo somado** (`todas_juntas=1`); o aviso de que a eliminação
-// intercompany não está feita vem da própria tela para o número não ser lido como consolidado contábil.
+// intercompany não está feita vai como prop para o recorte compartilhado, para o número não ser lido
+// como consolidado contábil.
+//
+// O recorte é o `FinanceiroRecorte` (FINT-20): esta aba tinha a própria cópia do cartão, com a sua
+// própria busca de CNPJ — o mesmo formulário escrito duas vezes.
 //
 // A cascata é a mesma `CascataDre` da aba DRE — uma implementação só para as duas telas.
 import { computed, onMounted, ref } from 'vue'
@@ -104,20 +83,21 @@ import { computed, onMounted, ref } from 'vue'
 import { useEstadoNaUrl } from 'src/composables/useEstadoNaUrl'
 
 import CascataDre from 'src/components/financeiro/CascataDre.vue'
+import FinanceiroRecorte from 'src/components/financeiro/FinanceiroRecorte.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
-import SbSeletorEmpresa from 'src/components/common/SbSeletorEmpresa.vue'
-import SbSeletorPeriodo from 'src/components/common/SbSeletorPeriodo.vue'
-import FiscalService from 'src/services/FiscalService'
 import ContabilService from 'src/services/ContabilService'
-import { formatarCnpj, opcoesDeEmpresa } from 'src/utils/seletores'
+
+import { formatarCnpj } from 'src/utils/seletores'
 import { formatarMoeda, numerosDaVisaoGeral } from 'src/utils/contabil'
 
 // Recorte na URL (FINT-11): a empresa e a competência vêm do link e voltam para ele.
 const { empresa, periodo } = useEstadoNaUrl()
-const opcoesEmpresa = ref([])
+// O aviso do grupo somado acompanha o recorte, agora que ele é o componente compartilhado.
+const avisoDoRecorte =
+  'Sem empresa selecionada, o recorte é o grupo somado (leitura gerencial — a eliminação intercompany ainda não está feita).'
 
 const empresas = ref([])
 const grupo = ref(null)
@@ -153,21 +133,6 @@ function cardsDaEmpresa(item) {
   ]
 }
 
-async function carregarEmpresas() {
-  try {
-    const resposta = await FiscalService.getCnpjs()
-    const lista = resposta.data?.results || resposta.data || []
-    opcoesEmpresa.value = opcoesDeEmpresa(lista, {
-      valor: 'cnpj',
-      incluirTodos: true,
-      rotuloTodos: 'Todas as empresas (grupo)',
-    })
-  } catch (e) {
-    // Sem a lista o filtro fica vazio, mas o recorte do grupo continua funcionando.
-    console.error('Não foi possível carregar os CNPJs:', e)
-  }
-}
-
 async function carregar() {
   loading.value = true
   erro.value = ''
@@ -193,8 +158,5 @@ async function carregar() {
   }
 }
 
-onMounted(async () => {
-  await carregarEmpresas()
-  await carregar()
-})
+onMounted(carregar)
 </script>
