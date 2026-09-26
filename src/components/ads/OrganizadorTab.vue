@@ -958,12 +958,15 @@ async function salvarCurva(conta, mlb) {
     const nomeDaLinha = detalhe.value?.linha?.nome;
     await carregar();
     const contaAtual = payload.value?.contas?.find((c) => c.conta === conta.conta);
-    if (contaAtual && nomeDaLinha) atualizarLinhaDoPainel(contaAtual, nomeDaLinha, mlb);
-    $q.notify({
-      message: `${mlb}: curva ${opcaoCurva.value} registrada. O plano foi recalculado.`,
-      timeout: 2600,
-      position: 'bottom',
-    });
+    // Se a decisão partiu a linha, o painel já avisou o que aconteceu; mandar "registrada"
+    // em seguida esconderia o aviso que importa atrás do genérico.
+    if (atualizarLinhaDoPainel(contaAtual, nomeDaLinha, mlb)) {
+      $q.notify({
+        message: `${mlb}: curva ${opcaoCurva.value} registrada. O plano foi recalculado.`,
+        timeout: 2600,
+        position: 'bottom',
+      });
+    }
   } catch (e) {
     $q.notify({
       message: erroDaExcecao(e),
@@ -985,12 +988,13 @@ async function reverterCurva(conta, mlb) {
     const nomeDaLinha = detalhe.value?.linha?.nome;
     await carregar();
     const contaAtual = payload.value?.contas?.find((c) => c.conta === conta.conta);
-    if (contaAtual && nomeDaLinha) atualizarLinhaDoPainel(contaAtual, nomeDaLinha, mlb);
-    $q.notify({
-      message: `${mlb}: voltou a ser o Pareto que decide.`,
-      timeout: 2600,
-      position: 'bottom',
-    });
+    if (atualizarLinhaDoPainel(contaAtual, nomeDaLinha, mlb)) {
+      $q.notify({
+        message: `${mlb}: voltou a ser o Pareto que decide.`,
+        timeout: 2600,
+        position: 'bottom',
+      });
+    }
   } catch (e) {
     $q.notify({ message: erroDaExcecao(e), color: 'negative', timeout: 5000 });
   } finally {
@@ -1023,6 +1027,9 @@ const linhaDoPlano = (conta, nome) =>
   conta.campanhas_sugeridas.find((l) => l.nome === nome) || null;
 
 function atualizarLinhaDoPainel(conta, nome, mlb) {
+  // `conta`/`nome` chegam do payload novo; se a recarga falhou ou o painel já estava fechado,
+  // não há linha para atualizar e não há o que avisar.
+  if (!conta || !nome) return true;
   const nova = linhaDoPlano(conta, nome);
   if (nova) {
     detalhe.value = { ...detalhe.value, linha: nova };

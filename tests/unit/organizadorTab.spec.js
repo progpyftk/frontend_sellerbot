@@ -626,9 +626,11 @@ describe('OrganizadorTab · curva decidida pelo dono (ADSA-47)', () => {
     await painel.findAll('button').find((b) => b.text().includes('salvar decisão')).trigger('click');
     await flushPromises();
 
-    const avisos = notify.mock.calls.map((c) => c[0].message).join(' | ');
-    expect(avisos).toContain('saiu desta linha');
+    const avisos = notify.mock.calls.map((c) => c[0].message);
+    expect(avisos.join(' | ')).toContain('saiu desta linha');
     expect(w.find('.org__painel').exists()).toBe(false);
+    // Um aviso só: o genérico "curva registrada" chegando depois esconderia o que importa.
+    expect(avisos.filter((m) => m.includes('registrada'))).toHaveLength(0);
   });
 
   it('a recusa do servidor aparece com a mensagem dele, não uma genérica', async () => {
