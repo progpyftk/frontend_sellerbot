@@ -26,8 +26,9 @@ export default {
    * @param {string} payload.banco            código do banco (ex: "inter")
    * @param {string} payload.ambiente         ex: "producao" | "homologacao"
    * @param {Object} payload.credenciais      { [nome_do_campo]: valor }
-   * @param {File|null} payload.certificado   quando o banco exige certificado
-   * @param {string} [payload.senha_certificado]
+   * @param {File|null} payload.certificado   quando o banco exige certificado (`.pfx`/`.p12` **ou** `.crt`/`.pem`)
+   * @param {File|null} [payload.chave]        a chave privada (`.key`) quando o banco entrega o par separado
+   * @param {string} [payload.senha_certificado] senha, quando o certificado é um `.pfx`
    */
   criarConexao({
     fiscal_account,
@@ -35,6 +36,7 @@ export default {
     ambiente,
     credenciais = {},
     certificado = null,
+    chave = null,
     senha_certificado = "",
   }) {
     const formData = new FormData();
@@ -43,6 +45,10 @@ export default {
     formData.append("ambiente", ambiente);
     formData.append("credenciais", JSON.stringify(credenciais || {}));
     if (certificado) formData.append("certificado", certificado);
+    // O Inter entrega o par **`.crt` + `.key`**, não um `.pfx`: sem enviar a chave, o certificado
+    // chega sozinho e a conexão falha na hora de usar ("precisa vir com a chave"). O backend já
+    // aceita e guarda os dois cifrados (`FIN-25`) — faltava a tela mandar.
+    if (chave) formData.append("chave", chave);
     if (senha_certificado) formData.append("senha_certificado", senha_certificado);
     return api.post("/api/financeiro/conexoes/", formData, {
       headers: { "Content-Type": "multipart/form-data" },

@@ -146,6 +146,7 @@ const novaConexao = ref({
   ambiente: "producao",
   credenciais: {},
   certificado: null,
+  chave: null,
   senha_certificado: "",
 });
 
@@ -440,6 +441,7 @@ function openNovaConexao() {
     ambiente: "producao",
     credenciais: {},
     certificado: null,
+    chave: null,
     senha_certificado: "",
   };
   showNovaConexao.value = true;
@@ -449,6 +451,7 @@ function onBancoChange() {
   // Reinicia credenciais: os campos são específicos de cada banco.
   novaConexao.value.credenciais = {};
   novaConexao.value.certificado = null;
+  novaConexao.value.chave = null;
   novaConexao.value.senha_certificado = "";
 }
 

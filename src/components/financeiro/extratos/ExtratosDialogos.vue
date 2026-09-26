@@ -89,30 +89,54 @@
         Este banco não exige credenciais de API.
       </div>
 
-      <div v-if="ctx.bancoSelecionado.exige_certificado" class="row q-col-gutter-md q-mt-sm">
-        <div class="col-12 col-sm-7">
-          <q-file
-            v-model="ctx.novaConexao.certificado"
-            dense
-            outlined
-            clearable
-            bg-color="white"
-            accept=".pfx,.p12"
-            label="Certificado digital (.pfx/.p12)"
-          >
-            <template #prepend><q-icon name="badge" /></template>
-          </q-file>
+      <div v-if="ctx.bancoSelecionado.exige_certificado" class="q-mt-sm">
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-sm-7">
+            <q-file
+              v-model="ctx.novaConexao.certificado"
+              dense
+              outlined
+              clearable
+              bg-color="white"
+              accept=".pfx,.p12,.crt,.pem"
+              label="Certificado digital (.pfx/.p12 ou .crt/.pem)"
+            >
+              <template #prepend><q-icon name="badge" /></template>
+            </q-file>
+          </div>
+          <div class="col-12 col-sm-5">
+            <q-input
+              v-model="ctx.novaConexao.senha_certificado"
+              dense
+              outlined
+              type="password"
+              autocomplete="new-password"
+              bg-color="white"
+              label="Senha do certificado (.pfx)"
+            />
+          </div>
         </div>
-        <div class="col-12 col-sm-5">
-          <q-input
-            v-model="ctx.novaConexao.senha_certificado"
-            dense
-            outlined
-            type="password"
-            autocomplete="new-password"
-            bg-color="white"
-            label="Senha do certificado"
-          />
+
+        <!-- O Inter entrega o par **`.crt` + `.key`** (não um `.pfx`): a chave é um arquivo à parte e
+             sem ela a conexão autentica nunca. Com `.pfx`, este campo fica vazio. -->
+        <div class="row q-col-gutter-md q-mt-sm">
+          <div class="col-12 col-sm-7">
+            <q-file
+              v-model="ctx.novaConexao.chave"
+              dense
+              outlined
+              clearable
+              bg-color="white"
+              accept=".key,.pem"
+              label="Chave privada (.key) — só quando o banco entrega o par separado"
+            >
+              <template #prepend><q-icon name="vpn_key" /></template>
+            </q-file>
+          </div>
+          <div class="col-12 col-sm-5 text-caption text-grey-7 self-center">
+            Envie o certificado <strong>e</strong> a chave uma única vez: os dois ficam guardados
+            cifrados e sobrevivem ao deploy.
+          </div>
         </div>
       </div>
     </div>
