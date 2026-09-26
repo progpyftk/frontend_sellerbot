@@ -61,6 +61,7 @@
             :conta-columns="contaColumns"
             @nova="openNovaConexao"
             @testar="testarConexao"
+            @editar="openEditarConexao"
             @remover="confirmarRemocao"
             @sincronizar="openSincronizar"
             @ver-extrato="verExtrato"
@@ -131,6 +132,8 @@ const contaColumns = [
 
 // ────────────────────────────────────────── ESTADO: NOVA CONEXÃO
 const showNovaConexao = ref(false);
+/** A conexão que está sendo **editada** (`null` = criando uma nova) — ticket `FIN-35`. */
+const conexaoEmEdicao = ref(null);
 const salvandoConexao = ref(false);
 const erroNovaConexao = ref("");
 const cnpjOptions = ref([]);
@@ -435,6 +438,7 @@ async function loadCnpjs() {
 // ────────────────────────────────────────── AÇÕES: CONEXÕES
 function openNovaConexao() {
   erroNovaConexao.value = "";
+  conexaoEmEdicao.value = null;
   novaConexao.value = {
     fiscal_account: cnpjOptions.value[0]?.value ?? null,
     banco: null,
@@ -457,37 +461,82 @@ function onBancoChange() {
 
 async function salvarConexao() {
   erroNovaConexao.value = "";
-  if (!novaConexao.value.fiscal_account) {
-    erroNovaConexao.value = "Selecione o CNPJ fiscal.";
-    return;
+  const editando = conexaoEmEdicao.value;
+  if (!editando) {
+    if (!novaConexao.value.fiscal_account) {
+      erroNovaConexao.value = "Selecione o CNPJ fiscal.";
+      return;
+    }
+    if (!novaConexao.value.banco) {
+      erroNovaConexao.value = "Selecione o banco.";
+      return;
+    }
   }
-  if (!novaConexao.value.banco) {
-    erroNovaConexao.value = "Selecione o banco.";
-    return;
-  }
-  const faltando = (bancoSelecionado.value?.campos_credencial || [])
-    .filter((campo) => campo.obrigatorio && !String(novaConexao.value.credenciais[campo.nome] ?? "").length)
-    .map((campo) => campo.rotulo || campo.nome);
+  // Na **edição** os campos são write-only e opcionais: vazio significa "manter o que já está
+  // guardado" — exigir de novo obrigaria a redigitar o segredo para trocar só o certificado.
+  const preenchidas = Object.fromEntries(
+    Object.entries(novaConexao.value.credenciais || {}).filter(([, valor]) => String(valor ?? "").length),
+  );
+  const faltando = editando
+    ? []
+    : (bancoSelecionado.value?.campos_credencial || [])
+        .filter((campo) => campo.obrigatorio && !String(novaConexao.value.credenciais[campo.nome] ?? "").length)
+        .map((campo) => campo.rotulo || campo.nome);
   if (faltando.length) {
     erroNovaConexao.value = `Preencha: ${faltando.join(", ")}.`;
     return;
   }
-  if (bancoSelecionado.value?.exige_certificado && !novaConexao.value.certificado) {
-    erroNovaConexao.value = "Este banco exige certificado digital (.pfx/.p12).";
+  if (!editando && bancoSelecionado.value?.exige_certificado && !novaConexao.value.certificado) {
+    erroNovaConexao.value = "Este banco exige certificado digital (.pfx/.p12 ou .crt + .key).";
+    return;
+  }
+  if (editando && !Object.keys(preenchidas).length && !novaConexao.value.certificado && !novaConexao.value.chave) {
+    erroNovaConexao.value = "Nada para atualizar: preencha a credencial ou envie o certificado.";
     return;
   }
 
   salvandoConexao.value = true;
   try {
-    await FinanceiroService.criarConexao(novaConexao.value);
-    $q.notify({ type: "positive", message: "Conexão criada com sucesso." });
+    if (editando) {
+      await FinanceiroService.atualizarConexao(editando.id, {
+        credenciais: Object.keys(preenchidas).length ? preenchidas : null,
+        certificado: novaConexao.value.certificado,
+        chave: novaConexao.value.chave,
+        senha_certificado: novaConexao.value.senha_certificado,
+      });
+      $q.notify({ type: "positive", message: "Conexão atualizada com sucesso." });
+    } else {
+      await FinanceiroService.criarConexao(novaConexao.value);
+      $q.notify({ type: "positive", message: "Conexão criada com sucesso." });
+    }
     showNovaConexao.value = false;
+    conexaoEmEdicao.value = null;
     await loadConexoes();
   } catch (err) {
     erroNovaConexao.value = apiErrorMessage(err);
   } finally {
     salvandoConexao.value = false;
   }
+}
+
+/**
+ * Abre a conexão para **editar** (ticket `FIN-35`): troca a credencial, renova o certificado e
+ * **mantém** a conta, as importações e as transações classificadas. Os campos de credencial chegam
+ * vazios de propósito — a API nunca devolve segredo — e vazio significa "manter".
+ */
+function openEditarConexao(conexao) {
+  erroNovaConexao.value = "";
+  conexaoEmEdicao.value = conexao;
+  novaConexao.value = {
+    fiscal_account: conexao.fiscal_account,
+    banco: conexao.banco,
+    ambiente: conexao.ambiente,
+    credenciais: {},
+    certificado: null,
+    chave: null,
+    senha_certificado: "",
+  };
+  showNovaConexao.value = true;
 }
 
 async function testarConexao(conexao) {
@@ -936,6 +985,8 @@ const ctxExtrato = reactive({
 // Diálogos (FIN-23): mesmo desenho do `ctxExtrato` — o page segue dono do fluxo.
 const ctxDialogos = reactive({
   ambienteOptions,
+  conexaoEmEdicao,
+  openEditarConexao,
   bancoOptions,
   bancoSelecionado,
   carregandoContrapartes,

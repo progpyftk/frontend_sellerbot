@@ -67,10 +67,20 @@
             dense
             round
             color="grey-7"
+            icon="edit"
+            @click="emit('editar', conexao)"
+          >
+            <q-tooltip>Editar credencial ou renovar o certificado (não perde o extrato)</q-tooltip>
+          </q-btn>
+          <q-btn
+            flat
+            dense
+            round
+            color="grey-7"
             icon="delete_outline"
             @click="emit('remover', conexao)"
           >
-            <q-tooltip>Remover conexão</q-tooltip>
+            <q-tooltip>Remover conexão (apaga o extrato importado por ela)</q-tooltip>
           </q-btn>
         </template>
 
@@ -191,5 +201,5 @@ defineProps({
   testandoId: { type: [Number, String], default: null },
   contaColumns: { type: Array, default: () => [] },
 })
-const emit = defineEmits(['nova', 'testar', 'remover', 'sincronizar', 'ver-extrato'])
+const emit = defineEmits(['nova', 'editar', 'testar', 'remover', 'sincronizar', 'ver-extrato'])
 </script>

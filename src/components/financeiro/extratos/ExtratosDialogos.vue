@@ -5,7 +5,9 @@
       <q-dialog v-model="ctx.showNovaConexao" persistent>
 <q-card style="width: 640px; max-width: 95vw;" class="rounded-borders">
   <q-card-section class="row items-center justify-between border-bottom bg-grey-1">
-    <div class="text-h6 text-weight-bold text-grey-9">Nova conexão bancária</div>
+    <div class="text-h6 text-weight-bold text-grey-9">
+      {{ ctx.conexaoEmEdicao ? 'Editar conexão bancária' : 'Nova conexão bancária' }}
+    </div>
     <q-btn icon="close" flat round dense v-close-popup />
   </q-card-section>
 
@@ -15,12 +17,19 @@
       {{ ctx.erroNovaConexao }}
     </q-banner>
 
+    <q-banner v-if="ctx.conexaoEmEdicao" dense rounded class="bg-blue-1 text-blue-10 q-mb-md">
+      <template #avatar><q-icon name="info" /></template>
+      A conta, as importações e as transações classificadas desta conexão <strong>não</strong> são
+      tocadas. Deixe um campo vazio para <strong>manter</strong> o que já está guardado.
+    </q-banner>
+
     <div class="row q-col-gutter-md">
       <div class="col-12 col-sm-6">
         <SbSeletorEmpresa
           v-model="ctx.novaConexao.fiscal_account"
           :options="ctx.cnpjOptions"
           label="CNPJ fiscal *"
+          :disable="!!ctx.conexaoEmEdicao"
           :rules="[(v) => !!v || 'Selecione o CNPJ']"
         />
       </div>
@@ -34,6 +43,7 @@
           outlined
           label="Banco *"
           bg-color="white"
+          :disable="!!ctx.conexaoEmEdicao"
           :rules="[(v) => !!v || 'Selecione o banco']"
           @update:model-value="ctx.onBancoChange"
         />
@@ -80,7 +90,13 @@
             autocomplete="new-password"
             :type="campo.secreto ? 'password' : 'text'"
             :label="campo.rotulo || campo.nome"
-            :hint="campo.secreto ? 'Armazenado com segurança (write-only)' : ''"
+            :hint="
+              ctx.conexaoEmEdicao
+                ? 'Vazio mantém o valor atual (a API nunca devolve o segredo)'
+                : campo.secreto
+                  ? 'Armazenado com segurança (write-only)'
+                  : ''
+            "
             :rules="[(v) => !campo.obrigatorio || (v !== null && v !== undefined && String(v).length > 0) || 'Campo obrigatório']"
           />
         </div>
@@ -112,7 +128,7 @@
               type="password"
               autocomplete="new-password"
               bg-color="white"
-              label="Senha do certificado (.pfx)"
+              :label="ctx.conexaoEmEdicao ? 'Senha do certificado (.pfx) — vazio mantém' : 'Senha do certificado (.pfx)'"
             />
           </div>
         </div>
@@ -150,7 +166,7 @@
       color="teal-8"
       text-color="white"
       icon="save"
-      label="Criar conexão"
+      :label="ctx.conexaoEmEdicao ? 'Salvar alterações' : 'Criar conexão'"
       :loading="ctx.salvandoConexao"
       @click="ctx.salvarConexao"
     />

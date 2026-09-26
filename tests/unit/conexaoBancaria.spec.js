@@ -6,6 +6,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const post = vi.fn(() => Promise.resolve({ data: {} }))
+const patch = vi.fn(() => Promise.resolve({ data: {} }))
 const formDataEnviados = []
 
 vi.mock('src/boot/axios', () => ({
@@ -14,6 +15,7 @@ vi.mock('src/boot/axios', () => ({
       formDataEnviados.push(args[1])
       return post(...args)
     },
+    patch: (...args) => patch(...args),
   },
 }))
 
@@ -52,5 +54,32 @@ describe('FinanceiroService.criarConexao', () => {
     expect(form.get('certificado').name).toBe('cert.pfx')
     expect(form.get('chave')).toBeNull()
     expect(form.get('senha_certificado')).toBe('segredo')
+  })
+})
+
+describe('FinanceiroService.atualizarConexao', () => {
+  it('atualiza por PATCH e manda só o que mudou (o resto é mantido)', async () => {
+    patch.mockClear()
+    await FinanceiroService.atualizarConexao(7, {
+      certificado: new File(['cert'], 'inter-casa.crt'),
+      chave: new File(['key'], 'inter-casa.key'),
+    })
+    const [url, form] = patch.mock.calls[0]
+    expect(url).toBe('/api/financeiro/conexoes/7/')
+    expect(form.get('certificado').name).toBe('inter-casa.crt')
+    expect(form.get('chave').name).toBe('inter-casa.key')
+    // o que não foi enviado **não** vai — e por isso não apaga o que já está guardado
+    expect(form.get('credenciais')).toBeNull()
+    expect(form.get('senha_certificado')).toBeNull()
+  })
+
+  it('troca só a credencial quando é isso que mudou', async () => {
+    patch.mockClear()
+    await FinanceiroService.atualizarConexao(7, {
+      credenciais: { client_id: 'novo', client_secret: 'novo-segredo' },
+    })
+    const [, form] = patch.mock.calls[0]
+    expect(JSON.parse(form.get('credenciais'))).toEqual({ client_id: 'novo', client_secret: 'novo-segredo' })
+    expect(form.get('certificado')).toBeNull()
   })
 })

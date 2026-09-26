@@ -55,6 +55,31 @@ export default {
     });
   },
 
+  /**
+   * Atualiza uma conexão **existente** (ticket `FIN-35`).
+   *
+   * Serve para trocar a credencial e/ou renovar o certificado **sem perder o que já está ligado à
+   * conexão** — a conta, as importações e as transações classificadas. Remover e recriar apagaria
+   * tudo isso em cascata, que foi o risco medido em 26/09 (a Casa tinha 10 transações, 6
+   * classificadas).
+   *
+   * O que não for enviado **não é apagado**: mandar só o certificado novo mantém as credenciais, e
+   * vice-versa (o serializer trata campo ausente como "manter").
+   *
+   * @param {number} id                      id da conexão
+   * @param {Object} payload                 os mesmos campos de `criarConexao`, todos opcionais
+   */
+  atualizarConexao(id, { credenciais = null, certificado = null, chave = null, senha_certificado = "" } = {}) {
+    const formData = new FormData();
+    if (credenciais) formData.append("credenciais", JSON.stringify(credenciais));
+    if (certificado) formData.append("certificado", certificado);
+    if (chave) formData.append("chave", chave);
+    if (senha_certificado) formData.append("senha_certificado", senha_certificado);
+    return api.patch(`/api/financeiro/conexoes/${id}/`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
   /** Testa a autenticação de uma conexão. Retorna { ok, mensagem, saldo? }. */
   testarConexao(conexaoId) {
     return api.post(`/api/financeiro/conexoes/${conexaoId}/testar/`);
