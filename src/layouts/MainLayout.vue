@@ -225,9 +225,9 @@ const menuSections = [
     title: "Financeiro",
     sectionIcon: "account_balance_wallet",
     items: [
-      { label: "Módulo Financeiro", icon: "account_balance", route: "financeiro" },
-      { label: "Bancos e Extratos", icon: "account_balance_wallet", route: "financeiro-bancos" },
-      { label: "Margem de Contribuição", icon: "calculate", route: "financeiro-margens" },
+      // Um item só: bancos/extratos e margem de contribuição são **abas** do módulo, não destinos
+      // próprios (FINT-18). Duas entradas apontavam para a mesma página por redirect.
+      { label: "Módulo Financeiro & Contábil", icon: "account_balance", route: "financeiro" },
     ],
   },
   {

@@ -908,10 +908,12 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import 'src/css/tokens.scss';
+
 .margens-section-label {
   font-size: 13px;
-  color: #475569;
+  color: $tint-slate-text;
 }
 .margens-lista {
   margin: 0;
@@ -933,9 +935,9 @@ onMounted(() => {
   justify-content: space-between;
   gap: 16px;
   padding: 8px 0;
-  border-bottom: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed $border;
   font-size: 13px;
-  color: #334155;
+  color: $text-body;
 }
 .cascata-linha:last-child {
   border-bottom: none;
@@ -950,24 +952,24 @@ onMounted(() => {
   white-space: nowrap;
 }
 .cascata-linha--deducao .cascata-valor {
-  color: #b91c1c;
+  color: $negative;
 }
 .cascata-linha--subtotal {
   font-weight: 600;
-  color: #0f172a;
+  color: $text-primary;
   border-bottom-style: solid;
 }
 .cascata-linha--total {
   font-weight: 700;
-  color: #0f172a;
+  color: $text-primary;
   font-size: 14px;
-  border-top: 2px solid #0f172a;
+  border-top: 2px solid $text-primary;
   margin-top: 4px;
   padding-top: 12px;
 }
 .cascata-pct {
   margin-left: 8px;
   font-size: 12px;
-  color: #0f766e;
+  color: $tint-teal-text;
 }
 </style>
