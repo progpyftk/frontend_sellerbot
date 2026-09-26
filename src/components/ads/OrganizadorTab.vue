@@ -758,7 +758,13 @@ const POR_PAGINA = 50;
 // A ordem guarda a COLUNA, não o tipo: `COLUNAS_ORDENAVEIS` é indexado por chave, e guardar
 // o tipo fazia a busca falhar (quem ordena por "Situação" ou "ROAS alvo" recebia lista
 // desordenada e nenhuma mensagem — o pior tipo de bug, porque parece funcionar).
-const ordem = ref({ chave: '-custo_ads', coluna: 'custo_ads', direcao: 'desc' });
+//
+// A direção NÃO é campo: ela é o "-" da chave, que é o mesmo estado que o `AdvisorTable` lê
+// para desenhar a seta e o `aria-sort`. Guardar os dois é estado que pode discordar de si
+// mesmo — e quando discorda, a seta aponta para um lado e a tabela ordena para o outro, sem
+// erro nenhum (ADSA-48).
+const ordem = ref({ chave: '-custo_ads', coluna: 'custo_ads' });
+const ehDescendente = () => ordem.value.chave.startsWith('-');
 const pagina = ref(1);
 
 const COLUNAS_ORDENAVEIS = {
@@ -785,23 +791,17 @@ function chaveTexto(valor) {
 function ordenarPor(coluna) {
   const def = COLUNAS_ORDENAVEIS[coluna.key];
   if (!def) return;
-  const mesmaColuna = ordem.value.coluna === coluna.key;
-  if (mesmaColuna) {
-    // Segundo clique na mesma coluna inverte; a chave com o "-" é o próprio estado do
-    // AdvisorTable (é ele que desenha a seta e o `aria-sort`).
-    const agoraDesc = ordem.value.chave.startsWith('-');
+  if (ordem.value.coluna === coluna.key) {
+    // Segundo clique na mesma coluna inverte.
     ordem.value = {
-      chave: agoraDesc ? coluna.key : `-${coluna.key}`,
+      chave: ehDescendente() ? coluna.key : `-${coluna.key}`,
       coluna: coluna.key,
-      direcao: agoraDesc ? 'asc' : 'desc',
     };
   } else {
     // Numérico começa descendo (o maior primeiro); texto e situação, subindo.
-    const numerico = def.tipo === 'numero';
     ordem.value = {
-      chave: numerico ? `-${coluna.key}` : coluna.key,
+      chave: def.tipo === 'numero' ? `-${coluna.key}` : coluna.key,
       coluna: coluna.key,
-      direcao: numerico ? 'desc' : 'asc',
     };
   }
   pagina.value = 1;
@@ -810,7 +810,7 @@ function ordenarPor(coluna) {
 function ordenarLista(lista) {
   const def = COLUNAS_ORDENAVEIS[ordem.value.coluna];
   if (!def) return lista;
-  const sinal = ordem.value.direcao === 'asc' ? 1 : -1;
+  const sinal = ehDescendente() ? -1 : 1;
   return [...lista].sort((a, b) => {
     if (def.tipo === 'texto') {
       const x = chaveTexto(def.valor(a));
