@@ -19,6 +19,7 @@ const CONTA = {
   regua: {
     margin_pct: '30.00', profit_brl: '13.00', target_parado_pct: '30.00',
     target_medio_pct: '40.00', high_turnover_pct: '40.00', smart_signal_pct: '25.00',
+    lightning_margin_pct: '25.00', lightning_profit_brl: '10.00',
   },
   regua_overrides: ['floor_profit_brl'],
 };
@@ -54,7 +55,8 @@ function montar({ overrides = ['floor_profit_brl'], rascunho = {} } = {}) {
     ACC1: {
       floor_margin_pct: null, floor_profit_brl: 30, target_margin_parado_pct: null,
       target_margin_medio_pct: null, high_turnover_margin_pct: null,
-      smart_signal_margin_pct: null, ...rascunho,
+      smart_signal_margin_pct: null, lightning_margin_pct: null,
+      lightning_profit_brl: null, ...rascunho,
     },
   };
   const wrapper = mount(AdvisorReguaConta, {
@@ -76,9 +78,9 @@ describe('AdvisorReguaConta', () => {
   it('marca cada campo como "sua conta" ou "padrão da plataforma"', () => {
     const { wrapper } = montar();
     const selos = wrapper.findAll('.regua__badge').map((s) => s.text());
-    expect(selos).toHaveLength(6);
+    expect(selos).toHaveLength(8);
     expect(selos.filter((t) => t === 'sua conta')).toHaveLength(1);
-    expect(selos.filter((t) => t === 'padrão da plataforma')).toHaveLength(5);
+    expect(selos.filter((t) => t === 'padrão da plataforma')).toHaveLength(7);
   });
 
   it('"Restaurar padrão" só aparece nos campos com ajuste e grava null', async () => {
@@ -113,6 +115,44 @@ describe('AdvisorReguaConta', () => {
     wrapper.findComponent({ name: 'QSelectStub' }).vm.$emit('update:model-value', 'conservador');
     expect(aplicarPreset).toHaveBeenCalledWith(
       expect.objectContaining({ account_id: 'ACC1' }), 'conservador',
+    );
+  });
+
+  // PROMO-IA-92: o piso do relâmpago é configurável por conta como o resto da régua.
+  it('expõe os dois campos do relâmpago no bloco Avançado, no padrão da plataforma', () => {
+    const { wrapper } = montar();
+    const labels = wrapper.findAll('input').map((i) => i.attributes('data-label'));
+    expect(labels).toContain('Margem mínima — Ofertas relâmpago');
+    expect(labels).toContain('Lucro mínimo por venda — Ofertas relâmpago');
+    // Nenhum override no relâmpago: 7 campos no padrão e 1 ajuste (floor_profit_brl).
+    const badges = wrapper.findAll('.regua__badge').map((b) => b.text());
+    expect(badges).toHaveLength(8);
+    expect(badges.filter((t) => t === 'padrão da plataforma')).toHaveLength(7);
+  });
+
+  it('blur num campo do relâmpago grava com o nome do campo do payload', async () => {
+    const { wrapper, salvarCampo } = montar({
+      overrides: ['floor_profit_brl', 'lightning_profit_brl'],
+    });
+    const alvo = wrapper.findAll('input')
+      .find((i) => i.attributes('data-label') === 'Lucro mínimo por venda — Ofertas relâmpago');
+    await alvo.trigger('blur');
+    expect(salvarCampo).toHaveBeenCalledWith(
+      expect.objectContaining({ account_id: 'ACC1' }), 'lightning_profit_brl',
+    );
+  });
+
+  it('"Restaurar padrão" no relance do relâmpago limpa o rascunho e grava null', async () => {
+    const { wrapper, salvarCampo, reguas } = montar({
+      overrides: ['floor_profit_brl', 'lightning_margin_pct'],
+      rascunho: { lightning_margin_pct: 18 },
+    });
+    const restaurar = wrapper.findAll('button').filter((b) => b.text().includes('Restaurar padrão'));
+    expect(restaurar).toHaveLength(2);
+    await restaurar[1].trigger('click');
+    expect(reguas.ACC1.lightning_margin_pct).toBeNull();
+    expect(salvarCampo).toHaveBeenCalledWith(
+      expect.objectContaining({ account_id: 'ACC1' }), 'lightning_margin_pct',
     );
   });
 });

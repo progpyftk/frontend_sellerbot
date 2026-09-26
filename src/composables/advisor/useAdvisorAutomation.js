@@ -75,6 +75,8 @@ export function useAdvisorAutomation() {
         target_margin_medio_pct: conta.regua?.target_medio_pct ?? null,
         high_turnover_margin_pct: conta.regua?.high_turnover_pct ?? null,
         smart_signal_margin_pct: conta.regua?.smart_signal_pct ?? null,
+        lightning_margin_pct: conta.regua?.lightning_margin_pct ?? null,
+        lightning_profit_brl: conta.regua?.lightning_profit_brl ?? null,
       };
     }
   }
@@ -91,7 +93,13 @@ export function useAdvisorAutomation() {
     target_margin_medio_pct: 'alvo de margem (vendas médias)',
     high_turnover_margin_pct: 'teto de margem (vendas altas)',
     smart_signal_margin_pct: 'margem mínima de sinalização SMART',
+    lightning_margin_pct: 'margem mínima do relâmpago',
+    lightning_profit_brl: 'lucro mínimo do relâmpago',
   };
+
+  // Campos cujo valor é em reais — o resto é percentual (o toast do "voltou ao padrão"
+  // precisa da unidade certa, e o relâmpago tem os dois).
+  const CAMPOS_EM_REAIS = new Set(['floor_profit_brl', 'lightning_profit_brl']);
 
   const _CAMPO_PARA_CHAVE_CURTA = {
     floor_margin_pct: 'margin_pct',
@@ -100,6 +108,8 @@ export function useAdvisorAutomation() {
     target_margin_medio_pct: 'target_medio_pct',
     high_turnover_margin_pct: 'high_turnover_pct',
     smart_signal_margin_pct: 'smart_signal_pct',
+    lightning_margin_pct: 'lightning_margin_pct',
+    lightning_profit_brl: 'lightning_profit_brl',
   };
 
   /** Grava 1 campo da régua se o rascunho difere do valor já resolvido da conta. `conta.regua`
@@ -115,7 +125,7 @@ export function useAdvisorAutomation() {
     await gravar(conta.account_id, { [campo]: novo },
       novo === null
         ? `${conta.account_nickname}: ${REGUA_ROTULOS[campo]} voltou ao padrão da plataforma.`
-        : `${conta.account_nickname}: ${REGUA_ROTULOS[campo]} agora é ${novo}${campo === 'floor_profit_brl' ? ' (R$)' : '%'}.`);
+        : `${conta.account_nickname}: ${REGUA_ROTULOS[campo]} agora é ${novo}${CAMPOS_EM_REAIS.has(campo) ? ' (R$)' : '%'}.`);
     sincronizarReguas();
   }
 
@@ -135,7 +145,8 @@ export function useAdvisorAutomation() {
   };
 
   /** Aplica um preset: só preenche os 4 campos principais no PAYLOAD de uma vez (1 gravação,
-   * não 4) — os campos avançados (giro alto / sinal SMART) não fazem parte de preset. */
+   * não 4) — os campos avançados (giro alto, sinal SMART e os dois do relâmpago) não fazem
+   * parte de preset. */
   async function aplicarPreset(conta, chave) {
     const preset = PRESETS_REGUA[chave];
     if (!preset) return;

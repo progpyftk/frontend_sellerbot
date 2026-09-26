@@ -182,6 +182,40 @@ describe('AdvisorAutomationPage', () => {
     expect(wrapper.text()).toContain('margem mínima agora é 35%');
   });
 
+  // PROMO-IA-92: o piso do relâmpago é configurável por conta. Guarda duas coisas que
+  // quebram em silêncio: o mapeamento do campo do rascunho para a chave que o GET devolve
+  // (sem ele, "já está no padrão" nunca é reconhecido e a conta grava sem parar) e a
+  // unidade do toast (o lucro do relâmpago é em R$, não em %).
+  it('piso do relâmpago já no padrão da conta não gasta gravação', async () => {
+    const payload = {
+      ...PAYLOAD,
+      by_account: {
+        ...PAYLOAD.by_account,
+        ACC1: {
+          ...PAYLOAD.by_account.ACC1,
+          regua: {
+            margin_pct: '30.00', profit_brl: '13.00', target_parado_pct: '30.00',
+            target_medio_pct: '40.00', high_turnover_pct: '40.00', smart_signal_pct: '25.00',
+            lightning_margin_pct: '25.00', lightning_profit_brl: '10.00',
+          },
+        },
+      },
+    };
+    const wrapper = await montar(payload);
+    await wrapper.vm.salvarReguaCampo(wrapper.vm.contas[0], 'lightning_margin_pct');
+    expect(patchAutomation).not.toHaveBeenCalled();
+  });
+
+  it('novo lucro do relâmpago grava no payload e informa em reais (PROMO-IA-92)', async () => {
+    const wrapper = await montar();
+    wrapper.vm.reguas.ACC1.lightning_profit_brl = 12;
+    await wrapper.vm.salvarReguaCampo(wrapper.vm.contas[0], 'lightning_profit_brl');
+    await flushPromises();
+
+    expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', lightning_profit_brl: 12 });
+    expect(wrapper.text()).toContain('lucro mínimo do relâmpago agora é 12 (R$)');
+  });
+
   it('um preset preenche os 4 campos principais numa única gravação', async () => {
     const wrapper = await montar();
     await wrapper.vm.aplicarPreset(wrapper.vm.contas[0], 'conservador');

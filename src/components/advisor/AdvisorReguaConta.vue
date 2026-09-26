@@ -119,6 +119,14 @@ const CAMPOS_AVANCADOS = [
     key: 'smart_signal_margin_pct', label: 'Margem mínima para sinalizar (SMART)', suffix: '%',
     hint: 'Abaixo disso num anúncio SMART, o robô sinaliza (nunca escreve — preço é do ML).',
   },
+  {
+    key: 'lightning_margin_pct', label: 'Margem mínima — Ofertas relâmpago', suffix: '%',
+    hint: 'Piso do tipo relâmpago, mais afrouxado: o padrão da plataforma é 25%. "Restaurar padrão" volta para ele.',
+  },
+  {
+    key: 'lightning_profit_brl', label: 'Lucro mínimo por venda — Ofertas relâmpago', prefix: 'R$',
+    hint: 'Piso do tipo relâmpago, mais afrouxado: o padrão da plataforma é R$ 10. "Restaurar padrão" volta para ele.',
+  },
 ];
 
 const rascunho = computed(() => props.reguas?.[props.conta.account_id] || {});
