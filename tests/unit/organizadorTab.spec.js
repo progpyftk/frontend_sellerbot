@@ -17,10 +17,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const get = vi.fn();
 const post = vi.fn();
+const del = vi.fn();
 
 vi.mock('src/boot/axios', () => ({
-  api: { get: (...a) => get(...a), post: (...a) => post(...a) },
+  api: {
+    get: (...a) => get(...a),
+    post: (...a) => post(...a),
+    delete: (...a) => del(...a),
+  },
 }));
+
+// O `useQuasar` real devolve `undefined` aqui (não há plugin Quasar nos testes), então uma
+// notificação de erro derrubaria o teste com TypeError em vez de mostrar a recusa. E sem o
+// mock não dá para AFIRMAR a mensagem que o dono lê — que é a parte que importa.
+const notify = vi.fn();
+vi.mock('quasar', async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, useQuasar: () => ({ notify }) };
+});
 
 import OrganizadorTab from 'src/components/ads/OrganizadorTab.vue';
 
@@ -98,6 +112,7 @@ describe('OrganizadorTab · anúncios parados (ADSA-34)', () => {
   beforeEach(() => {
     get.mockReset();
     post.mockReset();
+    del.mockReset();
   });
 
   it('mostra o total de parados e o detalhe por status', async () => {
@@ -127,6 +142,7 @@ describe('OrganizadorTab · produto de catálogo na tabela (D15/D16)', () => {
   beforeEach(() => {
     get.mockReset();
     post.mockReset();
+    del.mockReset();
   });
 
   it('mostra o marcador ·CAT no nome da campanha sugerida', async () => {
@@ -155,6 +171,7 @@ describe('OrganizadorTab · "só as que faltam" e frescor do sync (ADSA-38)', ()
   beforeEach(() => {
     get.mockReset();
     post.mockReset();
+    del.mockReset();
   });
 
   it('mostra a contagem de pendentes no filtro', async () => {
@@ -240,6 +257,7 @@ describe('OrganizadorTab · situação de cada linha (ADSA-42)', () => {
   beforeEach(() => {
     get.mockReset();
     post.mockReset();
+    del.mockReset();
   });
 
   it('traduz o estado em o que o dono tem que fazer', async () => {
@@ -345,6 +363,7 @@ describe('OrganizadorTab · o porquê, a ordem e a paginação (ADSA-45)', () =>
   beforeEach(() => {
     get.mockReset();
     post.mockReset();
+    del.mockReset();
   });
 
   it('a linha mostra o motivo, e o detalhe mostra o texto inteiro', async () => {
@@ -461,3 +480,187 @@ describe('OrganizadorTab · o porquê, a ordem e a paginação (ADSA-45)', () =>
   });
 });
 
+
+// ── ADSA-47 · a curva decidida pelo dono, no painel da linha ─────────────────
+//
+// O que protegem:
+// - o painel oferece só as duas decisões que existem (isolar em A / voltar ao agrupamento) e
+//   diz que "forçar Curva C" não existe, porque a exceção só promove;
+// - a razão é obrigatória antes de salvar (botão travado e aviso);
+// - quem tem decisão mostra a razão e pode reverter; quem não tem, mostra a curva do Pareto;
+// - reverter manda DELETE com conta e MLB, sem curva nem motivo;
+// - depois de salvar, a aba recarrega: a decisão muda a estrutura do plano, e fingir que a
+//   linha continua igual é pior do que não ter botão.
+const COM_EXCECAO = {
+  ...COM_ESTADO,
+  excecoes_curva: [
+    { item_id: 'MLB4215711751', curva: 'A', motivo: 'produto novo, sem histórico para o Pareto' },
+  ],
+  campanhas_sugeridas: COM_ESTADO.campanhas_sugeridas.map((c, i) =>
+    i === 0 ? { ...c, curva_por_decisao: true, motivo_curva: 'produto novo' } : c,
+  ),
+};
+
+async function abrirPrimeiraLinha(wrapper) {
+  const linhas = wrapper.findAll('tr').map((tr) => tr.text());
+  const idx = linhas.findIndex((t) => t.includes('Substrato - Casca de Pinus 1'));
+  await wrapper.findAll('tr')[idx].trigger('click');
+  await flushPromises();
+  return wrapper.find('.org__painel');
+}
+
+describe('OrganizadorTab · curva decidida pelo dono (ADSA-47)', () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    del.mockReset();
+    notify.mockReset();
+  });
+
+  it('anuncia o limite: só isolar ou voltar ao agrupamento', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_ESTADO] });
+    const painel = await abrirPrimeiraLinha(w);
+
+    expect(painel.text()).toContain('Curva de cada anúncio');
+    expect(painel.text()).toContain('isolar um anúncio em Curva A');
+    expect(painel.text()).toContain('devolvê-lo ao agrupamento');
+    expect(painel.text()).toContain('não existe “forçar Curva C”');
+  });
+
+  it('sem decisão, mostra a curva do Pareto e o botão de decidir', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_ESTADO] });
+    const painel = await abrirPrimeiraLinha(w);
+
+    expect(painel.text()).toContain('curva do Pareto');
+    expect(painel.text()).toContain('decidir curva');
+    expect(painel.text()).not.toContain('reverter');
+  });
+
+  it('com decisão, mostra a razão e oferece reverter e mudar', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_EXCECAO] });
+    const painel = await abrirPrimeiraLinha(w);
+
+    expect(painel.text()).toContain('curva A · sua decisão');
+    expect(painel.text()).toContain('produto novo, sem histórico para o Pareto');
+    expect(painel.findAll('button').map((b) => b.text()).join('|')).toContain('reverter');
+    expect(painel.findAll('button').map((b) => b.text()).join('|')).toContain('mudar');
+  });
+
+  it('não deixa salvar sem razão', async () => {
+    const w = await montar({ ...PAYLOAD, contas: [COM_EXCECAO] });
+    const painel = await abrirPrimeiraLinha(w);
+    const mudar = painel.findAll('button').find((b) => b.text() === 'mudar');
+    await mudar.trigger('click');
+    await flushPromises();
+    // "mudar" abre com a razão atual preenchida (é edição, não decisão nova): o caminho do
+    // campo vazio é o de quem decide pela primeira vez.
+    expect(painel.find('textarea').element.value).toBe('produto novo, sem histórico para o Pareto');
+    await painel.find('textarea').setValue('');
+
+    expect(painel.text()).toContain('a razão é obrigatória');
+    const salvar = painel.findAll('button').find((b) => b.text().includes('salvar decisão'));
+    expect(salvar.attributes('disabled')).toBeDefined();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('salvar manda a decisão e recarrega o plano', async () => {
+    get.mockResolvedValue({ data: { ...PAYLOAD, contas: [COM_EXCECAO] } });
+    post.mockResolvedValue({ data: { mudou: true } });
+    const w = await montar({ ...PAYLOAD, contas: [COM_EXCECAO] });
+    const painel = await abrirPrimeiraLinha(w);
+    await painel.findAll('button').find((b) => b.text() === 'mudar').trigger('click');
+    await flushPromises();
+
+    const campo = painel.find('textarea');
+    await campo.setValue('fora da curva A: o Pareto errou o peso');
+    await painel.findAll('button').find((b) => b.text().includes('salvar decisão')).trigger('click');
+    await flushPromises();
+
+    expect(post).toHaveBeenCalledWith('/mercadolivre/ads/advisor/curva-excecao/', {
+      accounts: ['MOGIVITTA'],
+      item_id: 'MLB4215711751',
+      curva: 'A',
+      motivo: 'fora da curva A: o Pareto errou o peso',
+    });
+    // O plano é reestruturado pela decisão: a aba tem de reler, senão mostra a linha antiga.
+    expect(get.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it('reverter manda DELETE com conta e MLB, sem curva nem motivo', async () => {
+    del.mockResolvedValue({ data: { mudou: true } });
+    const w = await montar({ ...PAYLOAD, contas: [COM_EXCECAO] });
+    const painel = await abrirPrimeiraLinha(w);
+
+    await painel.findAll('button').find((b) => b.text() === 'reverter').trigger('click');
+    await flushPromises();
+
+    expect(del).toHaveBeenCalledWith('/mercadolivre/ads/advisor/curva-excecao/', {
+      data: { accounts: ['MOGIVITTA'], item_id: 'MLB4215711751' },
+    });
+  });
+
+  it('se a decisão partir a linha, o painel fecha avisando em vez de estourar', async () => {
+    // Isolar um anúncio em Curva A pode SEPARAR a linha em duas. Se o painel seguras a linha
+    // velha, o template estoura em `detalhe.linha.nome` e o dono fica com a tela quebrada
+    // justo no momento em que acabou de tomar uma decisão.
+    post.mockResolvedValue({ data: { mudou: true } });
+    const depoisDaDecisao = {
+      ...PAYLOAD,
+      contas: [
+        {
+          ...COM_EXCECAO,
+          // A linha original não existe mais: o MLB isolado virou linha própria.
+          campanhas_sugeridas: COM_ESTADO.campanhas_sugeridas.slice(1),
+        },
+      ],
+    };
+    const w = await montar({ ...PAYLOAD, contas: [COM_EXCECAO] });
+    // A recarga depois de salvar devolve o plano partido. (`montar` define o mock da
+    // chamada inicial, então a segunda resposta entra aqui; se as duas fossem iguais, o
+    // teste passaria sem exercitar o caminho da linha que sumiu.)
+    get.mockResolvedValue({ data: depoisDaDecisao });
+    const painel = await abrirPrimeiraLinha(w);
+    await painel.findAll('button').find((b) => b.text() === 'mudar').trigger('click');
+    await flushPromises();
+    await painel.find('textarea').setValue('isolar para campanha própria');
+    await painel.findAll('button').find((b) => b.text().includes('salvar decisão')).trigger('click');
+    await flushPromises();
+
+    const avisos = notify.mock.calls.map((c) => c[0].message).join(' | ');
+    expect(avisos).toContain('saiu desta linha');
+    expect(w.find('.org__painel').exists()).toBe(false);
+  });
+
+  it('a recusa do servidor aparece com a mensagem dele, não uma genérica', async () => {
+    post.mockRejectedValue({
+      response: { data: { erro: 'MLB9 não é um anúncio desta conta — confira o código.' } },
+    });
+    const w = await montar({ ...PAYLOAD, contas: [COM_EXCECAO] });
+    const painel = await abrirPrimeiraLinha(w);
+    await painel.findAll('button').find((b) => b.text() === 'mudar').trigger('click');
+    await flushPromises();
+    await painel.find('textarea').setValue('tentativa com MLB errado');
+    await painel.findAll('button').find((b) => b.text().includes('salvar decisão')).trigger('click');
+    await flushPromises();
+
+    const avisos = notify.mock.calls.map((c) => c[0].message).join(' | ');
+    expect(avisos).toContain('não é um anúncio desta conta');
+  });
+
+  it('falha de rede não vira "decisão salva": mostra que não deu', async () => {
+    post.mockRejectedValue({});
+    const w = await montar({ ...PAYLOAD, contas: [COM_EXCECAO] });
+    const painel = await abrirPrimeiraLinha(w);
+    await painel.findAll('button').find((b) => b.text() === 'mudar').trigger('click');
+    await flushPromises();
+    await painel.find('textarea').setValue('vai falhar na rede');
+    await painel.findAll('button').find((b) => b.text().includes('salvar decisão')).trigger('click');
+    await flushPromises();
+
+    const avisos = notify.mock.calls.map((c) => c[0].message).join(' | ');
+    expect(avisos).toContain('Não foi possível registrar');
+    // O formulário continua aberto, com a razão que o dono digitou: perder o texto digitado
+    // por causa de rede é a pior parte de um formulário.
+    expect(painel.find('textarea').element.value).toBe('vai falhar na rede');
+  });
+});

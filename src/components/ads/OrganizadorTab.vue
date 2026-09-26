@@ -350,6 +350,90 @@
             </ul>
           </template>
 
+          <h3 class="org__painelSecao">Curva de cada anúncio</h3>
+          <p class="org__curvaAjuda">
+            O Pareto (80/15/5 da venda) escolhe a curva. Você decide só duas coisas:
+            <strong>isolar um anúncio em Curva A</strong> ou <strong>devolvê-lo ao
+            agrupamento</strong> — não existe “forçar Curva C”, porque a decisão só promove.
+          </p>
+          <div v-for="mlb in detalhe.linha.anuncios" :key="`curva-${mlb}`" class="org__curvaItem">
+            <div class="org__curvaItemTopo">
+              <span class="org__mlb">{{ mlb }}</span>
+              <AdvisorStatusPill
+                v-if="excecaoDe(detalhe.contaObj, mlb)"
+                status="ligado"
+                :label="`curva ${excecaoDe(detalhe.contaObj, mlb).curva} · sua decisão`"
+              />
+              <span v-else class="org__curvaItemPareto">
+                curva do Pareto: <strong>{{ detalhe.linha.curva }}</strong>
+              </span>
+              <button
+                v-if="!excecaoDe(detalhe.contaObj, mlb)"
+                class="org__btn"
+                :disabled="salvandoCurva"
+                @click="abrirCurva(mlb, null)"
+              >
+                decidir curva
+              </button>
+              <button
+                v-else
+                class="org__btn"
+                :disabled="salvandoCurva"
+                @click="reverterCurva(detalhe.contaObj, mlb)"
+              >
+                reverter
+              </button>
+            </div>
+            <div
+              v-if="excecaoDe(detalhe.contaObj, mlb) && editandoCurva !== mlb"
+              class="org__curvaMotivo"
+            >
+              {{ excecaoDe(detalhe.contaObj, mlb).motivo }}
+            </div>
+            <button
+              v-if="excecaoDe(detalhe.contaObj, mlb) && editandoCurva !== mlb"
+              class="org__btn org__btn--sutil"
+              @click="abrirCurva(mlb, excecaoDe(detalhe.contaObj, mlb))"
+            >
+              mudar
+            </button>
+
+            <div v-if="editandoCurva === mlb" class="org__curvaForm">
+              <label
+                v-for="op in OPCOES_CURVA"
+                :key="op.value"
+                class="org__curvaOpcao"
+                :class="{ 'org__curvaOpcao--ativa': opcaoCurva === op.value }"
+              >
+                <input v-model="opcaoCurva" type="radio" :value="op.value" />
+                <span>
+                  <strong>{{ op.titulo }}</strong>
+                  <span class="org__curvaAjuda">{{ op.ajuda }}</span>
+                </span>
+              </label>
+              <textarea
+                v-model="motivoCurva"
+                class="org__curvaTexto"
+                rows="2"
+                placeholder="Por que esta decisão (ex.: produto novo, sem histórico para o Pareto)"
+                maxlength="400"
+              />
+              <div class="org__curvaAcoes">
+                <span v-if="!motivoCurva.trim()" class="org__curvaAviso">
+                  a razão é obrigatória
+                </span>
+                <button class="org__btn" @click="fecharCurva()">cancelar</button>
+                <button
+                  class="org__btn org__btn--primario"
+                  :disabled="salvandoCurva || !motivoCurva.trim()"
+                  @click="salvarCurva(detalhe.contaObj, mlb)"
+                >
+                  {{ salvandoCurva ? 'salvando…' : 'salvar decisão' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="org__metricas">
             <AdvisorMetric :value="fmtMoeda(detalhe.linha.venda)" label="venda no período" />
             <AdvisorMetric
@@ -811,6 +895,149 @@ function vaiPara(conta, mlb) {
   return destino ? destino.nome : null;
 }
 
+// ── Curva decidida pelo dono (ADSA-47) ─────────────────────────────────────
+//
+// O Pareto (80/15/5) escolhe a curva. O dono decide só duas coisas: isolar um anúncio em
+// Curva A, ou devolver ao agrupamento. **Não existe "forçar Curva C"** — a exceção só
+// promove, e entre B e C decide o Pareto. O texto do controle diz isso, porque o dono procura
+// uma terceira opção que não existe.
+//
+// Registrar muda a **estrutura** do plano (a curva entra depois do Pareto e só promove), então
+// depois de salvar a aba recarrega em vez de fingir que a linha continua igual: uma decisão
+// que muda o agrupamento sem mexer na tela é pior do que não ter botão.
+const excecoesConta = (conta) => conta.excecoes_curva || [];
+const excecaoDe = (conta, mlb) => excecoesConta(conta).find((e) => e.item_id === mlb) || null;
+
+const editandoCurva = ref('');
+const opcaoCurva = ref('A');
+const motivoCurva = ref('');
+const salvandoCurva = ref(false);
+
+function abrirCurva(mlb, excecao) {
+  editandoCurva.value = mlb;
+  opcaoCurva.value = excecao?.curva || 'A';
+  motivoCurva.value = excecao?.motivo || '';
+}
+
+function fecharCurva() {
+  editandoCurva.value = '';
+  motivoCurva.value = '';
+}
+
+const OPCOES_CURVA = [
+  {
+    value: 'A',
+    titulo: 'Isolar em Curva A',
+    ajuda: 'Campanha própria para este anúncio, com orçamento e ROAS próprios.',
+  },
+  {
+    value: 'B',
+    titulo: 'Voltar ao agrupamento',
+    ajuda: 'O Pareto escolhe de novo (Curva B ou C) conforme a venda do período.',
+  },
+];
+
+async function salvarCurva(conta, mlb) {
+  if (!motivoCurva.value.trim()) {
+    $q.notify({
+      message: 'A razão é obrigatória: sem ela a decisão não é revisável depois.',
+      color: 'warning',
+      timeout: 3200,
+    });
+    return;
+  }
+  salvandoCurva.value = true;
+  try {
+    await api.post('/mercadolivre/ads/advisor/curva-excecao/', {
+      accounts: [conta.conta],
+      item_id: mlb,
+      curva: opcaoCurva.value,
+      motivo: motivoCurva.value.trim(),
+    });
+    fecharCurva();
+    const nomeDaLinha = detalhe.value?.linha?.nome;
+    await carregar();
+    const contaAtual = payload.value?.contas?.find((c) => c.conta === conta.conta);
+    if (contaAtual && nomeDaLinha) atualizarLinhaDoPainel(contaAtual, nomeDaLinha, mlb);
+    $q.notify({
+      message: `${mlb}: curva ${opcaoCurva.value} registrada. O plano foi recalculado.`,
+      timeout: 2600,
+      position: 'bottom',
+    });
+  } catch (e) {
+    $q.notify({
+      message: erroDaExcecao(e),
+      color: 'negative',
+      timeout: 5000,
+    });
+  } finally {
+    salvandoCurva.value = false;
+  }
+}
+
+async function reverterCurva(conta, mlb) {
+  salvandoCurva.value = true;
+  try {
+    await api.delete('/mercadolivre/ads/advisor/curva-excecao/', {
+      data: { accounts: [conta.conta], item_id: mlb },
+    });
+    fecharCurva();
+    const nomeDaLinha = detalhe.value?.linha?.nome;
+    await carregar();
+    const contaAtual = payload.value?.contas?.find((c) => c.conta === conta.conta);
+    if (contaAtual && nomeDaLinha) atualizarLinhaDoPainel(contaAtual, nomeDaLinha, mlb);
+    $q.notify({
+      message: `${mlb}: voltou a ser o Pareto que decide.`,
+      timeout: 2600,
+      position: 'bottom',
+    });
+  } catch (e) {
+    $q.notify({ message: erroDaExcecao(e), color: 'negative', timeout: 5000 });
+  } finally {
+    salvandoCurva.value = false;
+  }
+}
+
+// A mensagem do serviço vem em português e explica o motivo da recusa; o fallback é para
+// quando a falha é de rede e não há corpo de resposta.
+function erroDaExcecao(e) {
+  const erro = e?.response?.data?.erro;
+  if (typeof erro === 'string') return erro;
+  if (erro && typeof erro === 'object') {
+    const campos = Object.entries(erro)
+      .map(([campo, lista]) => `${campo}: ${[].concat(lista).join(' ')}`)
+      .join(' · ');
+    if (campos) return campos;
+  }
+  return 'Não foi possível registrar a decisão agora.';
+}
+
+// Após recarregar, a linha do painel é a nova: a curva pode ter mudado e o MLB pode ter ido
+// para outra linha. Sem isto, o painel continuaria mostrando a estrutura antiga ao lado do
+// plano novo.
+//
+// E isolar um anúncio em Curva A **pode partir a linha em duas** — é o que a decisão faz. Nesse
+// caso a linha do painel deixa de existir, e deixar `linha: null` faria o template estourar em
+// `detalhe.linha.nome`: o painel fecha com um aviso que diz o que aconteceu.
+const linhaDoPlano = (conta, nome) =>
+  conta.campanhas_sugeridas.find((l) => l.nome === nome) || null;
+
+function atualizarLinhaDoPainel(conta, nome, mlb) {
+  const nova = linhaDoPlano(conta, nome);
+  if (nova) {
+    detalhe.value = { ...detalhe.value, linha: nova };
+    return true;
+  }
+  detalheAberto.value = false;
+  detalhe.value = null;
+  $q.notify({
+    message: `${mlb} saiu desta linha: a decisão separou a campanha. Abra a linha nova.`,
+    timeout: 4200,
+    position: 'bottom',
+  });
+  return false;
+}
+
 async function sincronizar(nickname) {
   sincronizando.value = true;
   sincMensagem.value = { ...sincMensagem.value, [nickname]: '' };
@@ -1212,6 +1439,76 @@ const dataBr = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
     margin-bottom: $space-4;
     font-size: $text-small-size;
   }
+
+  // A decisão de curva é um formulário dentro do painel: precisa dos dois modificadores de
+  // botão que o resto da tela não usava (primário para salvar, sutil para "mudar").
+  &__btn--primario {
+    background: $primary;
+    border-color: $primary;
+    color: $surface;
+    &:hover { background: $primary; opacity: 0.9; }
+  }
+
+  &__btn--sutil { color: $text-muted; }
+  &__btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+  &__curvaAjuda { color: $text-muted; font-size: $text-xs-size; }
+
+  &__curvaItem {
+    border-top: 1px solid $border;
+    padding: $space-3 0;
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+  }
+
+  &__curvaItemTopo {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    flex-wrap: wrap;
+  }
+
+  &__curvaItemPareto { color: $text-body; font-size: $text-small-size; }
+  &__curvaMotivo { color: $text-muted; font-size: $text-xs-size; }
+
+  &__curvaForm {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+    background: $surface-2;
+    border-radius: $radius-md;
+    padding: $space-3;
+  }
+
+  &__curvaOpcao {
+    display: flex;
+    gap: $space-2;
+    align-items: flex-start;
+    font-size: $text-small-size;
+    color: $text-body;
+    padding: $space-1 0;
+
+    &--ativa { color: $text-primary; font-weight: $font-medium; }
+  }
+
+  &__curvaTexto {
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    padding: $space-2;
+    font-size: $text-small-size;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  &__curvaAcoes {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    justify-content: flex-end;
+  }
+
+  &__curvaAviso { color: $tint-amber-text; font-size: $text-xs-size; margin-right: auto; }
 
   &__oQueFazerTitulo { color: $text-primary; font-weight: $font-semibold; }
   &__oQueFazerSub { color: $text-muted; margin-top: $space-1; }
