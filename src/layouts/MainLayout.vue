@@ -42,8 +42,22 @@
 
           <template v-for="(section, si) in menuSections" :key="si">
 
+            <!-- Raiz que é o próprio destino (FINT-19): a seção leva à tela, não abre submenu.
+                 Sem chevron porque não há o que expandir. -->
+            <router-link v-if="section.route" :to="{ name: section.route }" custom
+              v-slot="{ isActive, navigate }">
+              <button
+                :class="['nav-section', (isActive || section.route === route.meta?.menu) && 'nav-section--active']"
+                @click="navigate">
+                <span class="nav-section-icon">
+                  <q-icon :name="section.sectionIcon || 'circle'" size="11px" />
+                </span>
+                <span class="nav-section-label">{{ section.title }}</span>
+              </button>
+            </router-link>
+
             <!-- Section header -->
-            <button :class="['nav-section', expandedSections.includes(si) && 'nav-section--open']"
+            <button v-else :class="['nav-section', expandedSections.includes(si) && 'nav-section--open']"
               @click="toggleSection(si)">
               <span v-if="section.ml" class="mkt-badge mkt-badge--ml">ML</span>
               <span v-else-if="section.shopee" class="mkt-badge mkt-badge--shopee">SHOPEE</span>
@@ -57,7 +71,7 @@
             </button>
 
             <!-- Itens aninhados -->
-            <div class="nav-children" :class="expandedSections.includes(si) && 'nav-children--open'">
+            <div v-if="!section.route" class="nav-children" :class="expandedSections.includes(si) && 'nav-children--open'">
               <router-link v-for="item in section.items" :key="item.route" :to="{ name: item.route }" custom
                 v-slot="{ isActive, navigate }">
                 <button :class="['nav-item', (isActive || item.route === route.meta?.menu) && 'nav-item--active']" @click="navigate">
@@ -222,13 +236,11 @@ const menuSections = [
     ],
   },
   {
-    title: "Financeiro",
+    // A raiz é o destino, não um grupo com um filho (FINT-19): clicar leva ao módulo, que já
+    // tem as suas abas. Sem `items` porque não há submenu.
+    title: "Financeiro & Contábil",
     sectionIcon: "account_balance_wallet",
-    items: [
-      // Um item só: bancos/extratos e margem de contribuição são **abas** do módulo, não destinos
-      // próprios (FINT-18). Duas entradas apontavam para a mesma página por redirect.
-      { label: "Módulo Financeiro & Contábil", icon: "account_balance", route: "financeiro" },
-    ],
+    route: "financeiro",
   },
   {
     title: "Logística",
@@ -253,8 +265,9 @@ const menuSections = [
 // A seção da rota ativa já abre expandida, para a função em uso não ficar escondida.
 // `meta.menu` (PROMO-IA-45): rotas irmãs do advisor marcam o item do sidebar pelo menu,
 // não pelo nome exato da rota — antes só a rota raiz ficava ativa.
+// `items` é opcional: a seção que é o próprio destino (FINT-19) não tem filho para procurar.
 const activeSectionIndex = menuSections.findIndex((section) =>
-  section.items.some((item) => item.route === route.name || item.route === route.meta?.menu),
+  section.items?.some((item) => item.route === route.name || item.route === route.meta?.menu),
 )
 const expandedSections = ref([...new Set([0, 1, activeSectionIndex].filter((index) => index >= 0))])
 const toggleSection = (i) => {
@@ -359,6 +372,12 @@ const redirectToLogin = () => router.push("/login")
   margin-top: 6px;
 }
 .nav-section:hover { background: #f8fafc; }
+
+/* Raiz que é destino (FINT-19): a mesma linha das outras seções, mas leva à tela em vez de
+   expandir — o estado ativo usa o mesmo vocabulário do item de menu. */
+.nav-section--active { background: #f0fdf9; }
+.nav-section--active .nav-section-label { color: #0f766e; }
+.nav-section--active .nav-section-icon { background: #ccfbf1; color: #0f766e; }
 
 .nav-section-icon {
   display: flex;
