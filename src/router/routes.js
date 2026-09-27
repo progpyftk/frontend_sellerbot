@@ -152,11 +152,6 @@ const routes = [
         component: () => import('pages/ItemDetailsPage.vue')
       },
       {
-        path: 'fulfillment',
-        name: 'fulfillment-management',
-        component: () => import('pages/FulfillmentManagementPage.vue')
-      },
-      {
         path: 'sellerbot-ai',
         name: 'sellerbot-ai',
         component: () => import('pages/SellerBotAIPage.vue')
