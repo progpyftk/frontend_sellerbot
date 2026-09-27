@@ -482,6 +482,8 @@ describe('controle do último ciclo (PROMO-IA-76)', () => {
       motivo_truncamento: 'orçamento de planejamento de 360s esgotado',
       escritos: 74,
       bloqueados_por: [['CADENCE_COOLDOWN', 13], ['VARIATION_NOT_SUPPORTED', 2]],
+      isencao_diaria: 12, falha_de_escrita: 2,
+      motivo_parcial: '4 item(ns) previsto(s) e nao confirmado(s); falha de escrita: 2',
       ...extra,
     }
     return payload
@@ -496,6 +498,9 @@ describe('controle do último ciclo (PROMO-IA-76)', () => {
     expect(texto).toContain('1040 fora da fatia do dia')
     expect(texto).toContain('30 anúncios ficaram de fora por orçamento de tempo')
     expect(texto).toContain('orçamento de planejamento de 360s esgotado')
+    expect(texto).toContain('12isentos da fatia diária')
+    expect(texto).toContain('2falhas de escrita')
+    expect(texto).toContain('4 item(ns) previsto(s) e nao confirmado(s)')
   })
 
   it('traduz o código de bloqueio para linguagem de negócio', async () => {

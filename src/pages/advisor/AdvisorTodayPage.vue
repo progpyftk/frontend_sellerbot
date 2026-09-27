@@ -168,6 +168,16 @@
           </li>
         </ul>
         <p v-if="controle.motivo_truncamento" class="today__hint">{{ controle.motivo_truncamento }}</p>
+        <div class="today__metrics" aria-label="Resumo de confirmação e falhas do ciclo">
+          <AdvisorMetric :value="controle.isencao_diaria || 0" label="isentos da fatia diária"
+                         hint="avaliados fora da fatia semanal" />
+          <AdvisorMetric :value="ciclo?.unreconciled || ciclo?.nao_confirmados || 0"
+                         label="sem confirmação" hint="serão conferidos novamente" />
+          <AdvisorMetric :value="controle.falha_de_escrita || 0" label="falhas de escrita"
+                         :variant="controle.falha_de_escrita ? 'danger' : 'neutral'"
+                         hint="exigem investigação" />
+        </div>
+        <p v-if="controle.motivo_parcial" class="today__hint">{{ controle.motivo_parcial }}</p>
         <p v-else-if="!controle.rodou" class="today__hint">
           O ciclo não registrou nada — o robô pode ter parado no meio (o log por conta mostra onde).
         </p>
