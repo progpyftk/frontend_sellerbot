@@ -2,19 +2,19 @@
   <q-page class="seo-review q-pa-lg">
     <SbPageHeader
       eyebrow="Mercado Livre"
-      title="Anúncios · Revisão SEO"
+      title="Anúncios · Revisão"
       subtitle="O revisor lê seus anúncios parados ou fracos e aponta o que melhorar em cada um. Você decide: aplica a correção, escala pra depois ou dispensa."
       icon="fact_check"
     >
       <template #actions>
         <q-btn
-          unelevated color="primary" no-caps icon="playlist_add_check"
-          :label="running ? 'Gerando lote…' : 'Gerar lote de hoje'"
-          :loading="running" @click="runBatch"
+          flat color="primary" no-caps icon="refresh"
+          label="Atualizar candidatos"
+          :loading="candidatesLoading" @click="loadCandidates"
         />
         <q-btn
           flat no-caps icon="refresh" label="Recarregar fila"
-          :loading="loading" :disable="running" @click="loadQueue"
+          :loading="loading" @click="loadQueue"
         />
       </template>
     </SbPageHeader>
@@ -37,10 +37,10 @@
           <div class="seo-review__step">
             <div class="seo-review__step-num">1</div>
             <div>
-              <div class="seo-review__step-title">Gerar o lote</div>
+              <div class="seo-review__step-title">Escolher o anúncio</div>
               <div class="seo-review__step-text">
-                O botão audita ao vivo até 30 anúncios <strong>parados</strong> ou <strong>fracos</strong>
-                — sem vender ou vendendo muito pouco. Nada é gravado no Mercado Livre nesta etapa.
+                Selecione um anúncio ativo <strong>parado</strong> ou <strong>fraco</strong>. A lista é
+                só uma leitura e não cria lote automaticamente.
               </div>
             </div>
           </div>
@@ -50,8 +50,8 @@
             <div>
               <div class="seo-review__step-title">Ler a proposta</div>
               <div class="seo-review__step-text">
-                Cada linha mostra o que está fraco (descrição curta, atributos, título, fotos) e o que
-                o revisor sugere no lugar — sempre com a evidência que justifica a mudança.
+                Clique em <strong>Revisar anúncio</strong> para ler ao vivo descrição, atributos,
+                catálogo e as evidências daquele único item.
               </div>
             </div>
           </div>
@@ -61,9 +61,9 @@
             <div>
               <div class="seo-review__step-title">Decidir</div>
               <div class="seo-review__step-text">
-                <SbBadge variant="green" icon="bolt">correção segura</SbBadge> você aplica com 1 clique.
-                <SbBadge variant="amber" icon="priority_high">decisão do dono</SbBadge> — título, preço e
-                fotos — só o revisor aponta; quem muda é você, fora daqui.
+                <SbBadge variant="green" icon="bolt">correção segura</SbBadge> você aplica depois de
+                conferir. <SbBadge variant="amber" icon="priority_high">decisão do dono</SbBadge> fica
+                separado para título e fotos.
               </div>
             </div>
           </div>
@@ -81,13 +81,65 @@
         />
       </SbKpiGrid>
 
-      <div v-if="lastRun" class="seo-review__runbar q-mb-lg">
-        <q-icon name="info" size="18px" class="q-mr-xs" />
-        Último lote gerado {{ formatDate(lastRun.generated_at) }}: {{ lastRun.selected }} anúncios
-        analisados — <strong>{{ lastRun.queued }}</strong> novos, {{ lastRun.refreshed }} atualizados,
-        {{ lastRun.skipped_already_decided }} já decididos, {{ lastRun.errors }} com erro.
-        Contas: {{ (lastRun.accounts || []).join(', ') || '—' }}.
+      <div class="seo-review__pilot-note q-mb-lg">
+        <q-icon name="science" size="18px" class="q-mr-xs" />
+        Piloto manual: uma revisão por vez. Nada é escrito no Mercado Livre até você clicar em
+        <strong>Aplicar correções seguras</strong>.
       </div>
+
+      <SbCard class="seo-review__candidates q-mb-lg">
+        <div class="seo-review__section-head">
+          <div>
+            <div class="seo-review__section-kicker">Escolha manual</div>
+            <h2 class="seo-review__section-title">Anúncios que merecem uma olhada</h2>
+            <p class="seo-review__section-copy">A saúde é recalculada pela régua de vendas. Escolha um item para gerar a proposta.</p>
+          </div>
+          <div class="seo-review__candidate-count">{{ candidates.length }} candidatos</div>
+        </div>
+        <div class="seo-review__candidate-toolbar q-mb-md">
+          <q-input
+            v-model="candidateSearch" dense outlined clearable
+            placeholder="Buscar por título, SKU ou item"
+            class="seo-review__search"
+            @keyup.enter="loadCandidates"
+          >
+            <template #prepend><q-icon name="search" /></template>
+          </q-input>
+          <q-btn-toggle
+            v-model="candidateHealth"
+            no-caps unelevated toggle-color="primary" color="grey-3" text-color="grey-9"
+            :options="candidateHealthOptions"
+            @update:model-value="loadCandidates"
+          />
+        </div>
+        <q-table
+          :rows="candidates" :columns="candidateColumns" row-key="item_id"
+          flat bordered dense :loading="candidatesLoading"
+          :pagination="{ rowsPerPage: 10 }" :rows-per-page-options="[10, 20, 50]"
+          no-data-label="Nenhum anúncio ativo parado ou fraco encontrado"
+        >
+          <template #body-cell-health="props">
+            <q-td :props="props"><SbBadge :variant="healthVariant(props.row.health)">{{ props.row.health }}</SbBadge></q-td>
+          </template>
+          <template #body-cell-item="props">
+            <q-td :props="props">
+              <div class="text-weight-medium ellipsis" style="max-width: 430px">{{ props.row.title }}</div>
+              <div class="text-caption text-grey-7">{{ props.row.item_id }} · {{ props.row.account_nickname }} · {{ props.row.sku || 'sem SKU' }}</div>
+            </q-td>
+          </template>
+          <template #body-cell-action="props">
+            <q-td :props="props">
+              <q-btn
+                unelevated color="primary" no-caps icon="fact_check" label="Revisar anúncio"
+                :loading="reviewingItem === props.row.item_id"
+                :disable="reviewingItem !== null || Boolean(props.row.queue)"
+                @click="reviewCandidate(props.row)"
+              />
+              <div v-if="props.row.queue" class="text-caption text-grey-6 q-mt-xs">já está na fila</div>
+            </q-td>
+          </template>
+        </q-table>
+      </SbCard>
 
       <div class="seo-review__toolbar q-mb-md">
         <q-btn-toggle
@@ -244,7 +296,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import SbPageHeader from 'src/components/common/SbPageHeader.vue'
 import SbEmptyState from 'src/components/common/SbEmptyState.vue'
@@ -257,12 +309,15 @@ import MercadoLivreService from 'src/services/MercadoLivreService'
 const $q = useQuasar()
 
 const rows = ref([])
+const candidates = ref([])
 const loading = ref(false)
-const running = ref(false)
+const candidatesLoading = ref(false)
 const error = ref('')
-const lastRun = ref(null)
 const expanded = ref(new Set())
 const busyRow = ref(null)
+const reviewingItem = ref(null)
+const candidateSearch = ref('')
+const candidateHealth = ref('')
 const statusFilter = ref('pending')
 const statusOptions = [
   { label: 'Pendentes', value: 'pending' },
@@ -271,6 +326,19 @@ const statusOptions = [
   { label: 'Concluídas', value: 'done' },
 ]
 const statusLabel = computed(() => statusOptions.find((o) => o.value === statusFilter.value)?.label || '')
+
+const candidateHealthOptions = [
+  { label: 'Todos', value: '' },
+  { label: 'Parados', value: 'parado' },
+  { label: 'Fracos', value: 'fraco' },
+]
+
+const candidateColumns = [
+  { name: 'health', label: 'Saúde', field: 'health', align: 'left' },
+  { name: 'item', label: 'Anúncio', field: 'title', align: 'left' },
+  { name: 'pace', label: 'Ritmo', field: (r) => r.health_info?.units_per_week, align: 'left' },
+  { name: 'action', label: '', field: 'item_id', align: 'right' },
+]
 
 const columns = [
   { name: 'expand', label: '', field: 'expand' },
@@ -338,25 +406,44 @@ async function loadQueue() {
   }
 }
 
-async function runBatch() {
-  running.value = true
+async function loadCandidates() {
+  candidatesLoading.value = true
   error.value = ''
   try {
-    const { data } = await MercadoLivreService.runSeoReviewBatch({ limit: 30 })
-    lastRun.value = data
-    $q.notify({
-      type: 'positive',
-      message: `Lote gerado: ${data.queued} novos, ${data.refreshed} atualizados.`,
-      icon: 'playlist_add_check',
+    const params = { limit: 200 }
+    if (candidateSearch.value.trim()) params.search = candidateSearch.value.trim()
+    if (candidateHealth.value) params.health = candidateHealth.value
+    const { data } = await MercadoLivreService.getSeoReviewCandidates(params)
+    candidates.value = data.items || []
+  } catch (e) {
+    error.value = e?.response?.data?.detail || e?.message || 'Erro ao carregar candidatos.'
+  } finally {
+    candidatesLoading.value = false
+  }
+}
+
+async function reviewCandidate(candidate) {
+  reviewingItem.value = candidate.item_id
+  error.value = ''
+  try {
+    await MercadoLivreService.enqueueSeoReviewItems({
+      item_ids: [candidate.item_id],
+      reason: 'piloto de revisão individual',
     })
     statusFilter.value = 'pending'
-    await loadQueue()
+    await Promise.all([loadQueue(), loadCandidates()])
+    const row = rows.value.find((item) => item.item_id === candidate.item_id)
+    if (row) {
+      expanded.value = new Set([row.id])
+      await nextTick()
+      document.querySelector(`[data-row-key="${row.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    $q.notify({ type: 'positive', icon: 'fact_check', message: 'Revisão pronta. Confira a proposta abaixo.' })
   } catch (e) {
-    const msg = e?.response?.data?.detail || e?.message || 'Falha ao gerar o lote.'
-    error.value = msg
+    const msg = e?.response?.data?.detail || e?.message || 'Falha ao revisar o anúncio.'
     $q.notify({ type: 'negative', message: msg })
   } finally {
-    running.value = false
+    reviewingItem.value = null
   }
 }
 
@@ -413,10 +500,80 @@ async function rowAction(row, action) {
   }
 }
 
-onMounted(loadQueue)
+onMounted(() => {
+  loadCandidates()
+  loadQueue()
+})
 </script>
 
 <style scoped>
+.seo-review__pilot-note {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid #c7dedd;
+  border-left: 3px solid #0d9488;
+  border-radius: 10px;
+  background: linear-gradient(100deg, #f0fdfa 0%, #f8fafc 100%);
+  color: #335b5d;
+  font-size: 13px;
+}
+.seo-review__candidates :deep(.sb-card-body) {
+  padding: 22px;
+}
+.seo-review__section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+.seo-review__section-kicker {
+  color: #0d9488;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.seo-review__section-title {
+  margin: 4px 0 3px;
+  color: #122b31;
+  font-size: 20px;
+  line-height: 1.2;
+}
+.seo-review__section-copy {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+.seo-review__candidate-count {
+  flex-shrink: 0;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #ecfdf5;
+}
+.seo-review__candidate-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.seo-review__search {
+  flex: 1;
+  max-width: 440px;
+}
+@media (max-width: 720px) {
+  .seo-review__section-head,
+  .seo-review__candidate-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .seo-review__search {
+    max-width: none;
+  }
+}
 .seo-review__how :deep(.sb-card-body) {
   padding: 18px 22px;
 }

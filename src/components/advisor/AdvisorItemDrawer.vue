@@ -19,7 +19,7 @@
       <p v-if="revisaoEstado === 'erro'" class="adv-drawer__erro" role="alert">{{ revisaoMensagem }}</p>
       <p v-if="revisaoEstado === 'enviado'" class="adv-drawer__nota" role="status">
         Enfileirado para revisão — você decide o que aplicar em
-        <router-link :to="{ name: 'items-seo-review' }">Anúncios · Revisão SEO</router-link>.
+        <router-link :to="{ name: 'items-seo-review' }">Anúncios · Revisão</router-link>.
       </p>
     </div>
 

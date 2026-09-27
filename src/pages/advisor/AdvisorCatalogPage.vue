@@ -174,7 +174,7 @@
             <p v-if="revisaoErro" class="cat__detalheErro" role="alert">{{ revisaoErro }}</p>
             <p v-if="revisaoEnviada" class="cat__detalheOk" role="status">
               Enfileirado para revisão — você decide o que aplicar em
-              <router-link :to="{ name: 'items-seo-review' }">Anúncios · Revisão SEO</router-link>.
+              <router-link :to="{ name: 'items-seo-review' }">Anúncios · Revisão</router-link>.
             </p>
           </div>
         </div>

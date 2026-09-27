@@ -130,7 +130,16 @@ export default {
   },
 
   // ==========================================
-  // REVISÃO SEO — PAINEL DE DECISÃO SOB DEMANDA (REV-4/REV-5) — read-only
+  // REVISÃO SEO — PILOTO INDIVIDUAL (REV-2) — página separada de Promoções
+  getSeoReviewCandidates(params = {}) {
+    return api.get('/mercadolivre/seo-review/candidates/', { params })
+  },
+
+  enqueueSeoReviewItems(payload) {
+    return api.post('/mercadolivre/seo-review/enqueue/', payload)
+  },
+
+  // Lote legado: mantido para compatibilidade, mas não é acionado pelo piloto.
   // ==========================================
   // Botão "Gerar lote de hoje": roda o audit ao vivo dos anúncios parado/fraco
   // ativos e popula a fila com a proposta de revisão por anúncio. NÃO escreve no
