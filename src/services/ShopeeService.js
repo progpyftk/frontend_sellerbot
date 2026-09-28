@@ -10,8 +10,12 @@ export default {
     return api.get('/shopee/accounts/auth_url/', { params })
   },
 
+  getReconnectAuthUrl(accountId) {
+    return api.post(`/shopee/accounts/${accountId}/reconnect-auth-url/`)
+  },
+
   callback(data) {
-    // data: { partner_id, partner_key, code, shop_id, redirect_url? }
+    // Conta nova: partner_id/partner_key. Reconexão: account_id; a chave fica no backend.
     return api.post('/shopee/accounts/callback/', data)
   },
 
