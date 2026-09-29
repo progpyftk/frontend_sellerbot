@@ -67,7 +67,7 @@
           v-if="contaDaRegua"
           :conta="contaDaRegua" :reguas="reguas"
           :salvando="salvando === contaDaRegua.account_id"
-          :presets="PRESETS_REGUA" :salvar-campo="salvarReguaCampo" :aplicar-preset="aplicarPreset"
+          :presets="PRESETS_REGUA" :salvar="salvarRegua" :cancelar="cancelarRegua" :aplicar-preset="aplicarPreset"
           :titulo="contaDaRegua.account_nickname"
         />
         <p v-else class="an__data">Carregando os limites desta conta…</p>
@@ -296,7 +296,7 @@ const {
 // "mín." e botão "Limites desta conta") — mesma lógica/gravação da Automação.
 const {
   contas: contasAutom, reguas, salvando, PRESETS_REGUA,
-  carregar: carregarAutom, salvarReguaCampo, aplicarPreset,
+  carregar: carregarAutom, salvarRegua, cancelarRegua, aplicarPreset,
 } = useAdvisorAutomation();
 
 const reguaAberta = ref(false);

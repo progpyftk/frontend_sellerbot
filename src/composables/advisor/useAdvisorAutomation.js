@@ -26,9 +26,11 @@ export function useAdvisorAutomation() {
     erro.value = '';
     try {
       data.value = (await AdvisorService.getAutomation()).data;
+      return true;
     } catch (err) {
       erro.value = err?.response?.data?.detail
         || 'Não foi possível carregar o estado da automação.';
+      return false;
     } finally {
       carregando.value = false;
     }
@@ -46,8 +48,7 @@ export function useAdvisorAutomation() {
     aviso.value = '';
     try {
       await AdvisorService.patchAutomation({ account_id: accountId, ...payload });
-      await carregar();
-      aviso.value = mensagem;
+      if (await carregar()) aviso.value = mensagem;
     } catch (err) {
       erro.value = err?.response?.data?.error || 'Não foi possível salvar a mudança.';
     } finally {
@@ -129,6 +130,29 @@ export function useAdvisorAutomation() {
     sincronizarReguas();
   }
 
+  function cancelarRegua(conta) {
+    const atual = conta.regua || {};
+    reguas[conta.account_id] = Object.fromEntries(Object.entries(_CAMPO_PARA_CHAVE_CURTA)
+      .map(([campo, chave]) => [campo, atual[chave] ?? null]));
+  }
+
+  async function salvarRegua(conta) {
+    const draft = reguas[conta.account_id] || {};
+    const overrides = new Set(conta.regua_overrides || []);
+    const payload = {};
+    for (const [campo, chave] of Object.entries(_CAMPO_PARA_CHAVE_CURTA)) {
+      const raw = draft[campo];
+      const current = conta.regua?.[chave];
+      if (raw === null || raw === '') {
+        if (overrides.has(campo)) payload[campo] = null;
+      } else if (raw !== undefined && Number(raw) !== Number(current)) {
+        payload[campo] = Number(raw);
+      }
+    }
+    if (!Object.keys(payload).length) return;
+    await gravar(conta.account_id, payload, `${conta.account_nickname}: limites salvos.`);
+  }
+
   const PRESETS_REGUA = {
     conservador: {
       label: 'Conservador', floor_margin_pct: 35, floor_profit_brl: 25,
@@ -144,21 +168,16 @@ export function useAdvisorAutomation() {
     },
   };
 
-  /** Aplica um preset: só preenche os 4 campos principais no PAYLOAD de uma vez (1 gravação,
-   * não 4) — os campos avançados (giro alto, sinal SMART e os dois do relâmpago) não fazem
-   * parte de preset. */
-  async function aplicarPreset(conta, chave) {
+  /** Preenche o rascunho; a gravação só acontece após Salvar alterações. */
+  function aplicarPreset(conta, chave) {
     const preset = PRESETS_REGUA[chave];
     if (!preset) return;
-    const payload = {
+    Object.assign(reguas[conta.account_id], {
       floor_margin_pct: preset.floor_margin_pct,
       floor_profit_brl: preset.floor_profit_brl,
       target_margin_parado_pct: preset.target_margin_parado_pct,
       target_margin_medio_pct: preset.target_margin_medio_pct,
-    };
-    await gravar(conta.account_id, payload,
-      `${conta.account_nickname}: limites "${preset.label}" aplicados.`);
-    sincronizarReguas();
+    });
   }
 
   async function ligarDesligar(conta, ligar) {
@@ -231,6 +250,6 @@ export function useAdvisorAutomation() {
     data, carregando, erro, salvando, aviso, contas, levas, alertas,
     modoGlobal, killSwitch, travada, escrevendo, esperandoAval,
     carregar, sincronizarLevas, ligarDesligar, salvarLeva, aprovarLeva, retomar, pausarTudo,
-    reguas, sincronizarReguas, salvarReguaCampo, aplicarPreset, PRESETS_REGUA,
+    reguas, sincronizarReguas, salvarReguaCampo, salvarRegua, cancelarRegua, aplicarPreset, PRESETS_REGUA,
   };
 }

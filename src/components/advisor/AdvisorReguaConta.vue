@@ -23,7 +23,6 @@
             v-model.number="rascunho[campo.key]" type="number" dense outlined
             :suffix="campo.suffix" :prefix="campo.prefix" :label="campo.label"
             :aria-label="campo.label" :disable="salvando"
-            @blur="salvarCampo(conta, campo.key)"
           >
             <template v-if="campo.hint" #hint>{{ campo.hint }}</template>
           </q-input>
@@ -48,7 +47,6 @@
               v-model.number="rascunho[campo.key]" type="number" dense outlined
               :suffix="campo.suffix" :prefix="campo.prefix" :label="campo.label"
               :aria-label="campo.label" :disable="salvando"
-              @blur="salvarCampo(conta, campo.key)"
             >
               <template v-if="campo.hint" #hint>{{ campo.hint }}</template>
             </q-input>
@@ -65,6 +63,11 @@
           </div>
         </div>
       </details>
+      <div class="regua__acoes">
+        <q-btn unelevated no-caps color="primary" label="Salvar alterações" :disable="!alterada || salvando" :loading="salvando" @click="salvar(conta)" />
+        <q-btn flat no-caps label="Cancelar" :disable="!alterada || salvando" @click="cancelar(conta)" />
+        <span v-if="alterada" role="status">Alterações ainda não salvas</span>
+      </div>
     </div>
   </div>
 </template>
@@ -89,7 +92,8 @@ const props = defineProps({
   reguas: { type: Object, required: true },
   salvando: { type: Boolean, default: false },
   presets: { type: Object, required: true },
-  salvarCampo: { type: Function, required: true },
+  salvar: { type: Function, required: true },
+  cancelar: { type: Function, required: true },
   aplicarPreset: { type: Function, required: true },
   titulo: { type: String, default: '' },
 });
@@ -130,6 +134,18 @@ const CAMPOS_AVANCADOS = [
 ];
 
 const rascunho = computed(() => props.reguas?.[props.conta.account_id] || {});
+const CHAVES = {
+  floor_margin_pct: 'margin_pct', floor_profit_brl: 'profit_brl',
+  target_margin_parado_pct: 'target_parado_pct', target_margin_medio_pct: 'target_medio_pct',
+  high_turnover_margin_pct: 'high_turnover_pct', smart_signal_margin_pct: 'smart_signal_pct',
+  lightning_margin_pct: 'lightning_margin_pct', lightning_profit_brl: 'lightning_profit_brl',
+};
+const alterada = computed(() => Object.entries(CHAVES).some(([campo, chave]) => {
+  const value = rascunho.value[campo];
+  if (value === null || value === '') return (props.conta.regua_overrides || []).includes(campo);
+  if (value === undefined) return false;
+  return Number(value) !== Number(props.conta.regua?.[chave]);
+}));
 
 const presetOpcoes = computed(() => Object.entries(props.presets || {})
   .map(([value, p]) => ({ value, label: p.label })));
@@ -140,7 +156,6 @@ function ehOverride(campo) {
 
 function restaurar(campo) {
   rascunho.value[campo] = null;
-  props.salvarCampo(props.conta, campo);
 }
 </script>
 
@@ -159,6 +174,8 @@ function restaurar(campo) {
     gap: $space-3;
     max-width: 640px;
   }
+  &__acoes { display:flex; align-items:center; flex-wrap:wrap; gap:$space-2; }
+  &__acoes span { color:$text-muted; font-size:$text-xs-size; }
   &__campos {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -217,15 +217,24 @@ describe('AdvisorAutomationPage', () => {
     expect(wrapper.text()).toContain('lucro mínimo do relâmpago agora é 12 (R$)');
   });
 
-  it('um preset preenche os 4 campos principais numa única gravação', async () => {
+  it('um preset prepara os 4 campos e só grava depois de Salvar', async () => {
     const wrapper = await montar();
     await wrapper.vm.aplicarPreset(wrapper.vm.contas[0], 'conservador');
     await flushPromises();
-
+    expect(patchAutomation).not.toHaveBeenCalled();
+    await wrapper.vm.salvarRegua(wrapper.vm.contas[0]);
     expect(patchAutomation).toHaveBeenCalledWith({
       account_id: 'ACC1', floor_margin_pct: 35, floor_profit_brl: 25,
       target_margin_parado_pct: 35, target_margin_medio_pct: 45,
     });
+  });
+
+  it('Cancelar descarta o rascunho sem gravar', async () => {
+    const wrapper = await montar();
+    wrapper.vm.reguas.ACC1.floor_margin_pct = 35;
+    wrapper.vm.cancelarRegua(wrapper.vm.contas[0]);
+    expect(wrapper.vm.reguas.ACC1.floor_margin_pct).toBeNull();
+    expect(patchAutomation).not.toHaveBeenCalled();
   });
 
   it('contas com régua diferente avisam no card explicativo em vez de misturar os números', async () => {

@@ -84,7 +84,8 @@
                 :reguas="reguas"
                 :salvando="salvando === conta.account_id"
                 :presets="PRESETS_REGUA"
-                :salvar-campo="salvarReguaCampo"
+                :salvar="salvarRegua"
+                :cancelar="cancelarRegua"
                 :aplicar-preset="aplicarPreset"
               />
             </details>
@@ -215,7 +216,7 @@ const {
   data, carregando, erro, salvando, aviso, contas, levas, alertas,
   modoGlobal, killSwitch, travada, escrevendo, esperandoAval,
   carregar, sincronizarLevas, ligarDesligar, salvarLeva, aprovarLeva, retomar, pausarTudo,
-  reguas, sincronizarReguas, salvarReguaCampo, aplicarPreset, PRESETS_REGUA,
+  reguas, sincronizarReguas, salvarReguaCampo, salvarRegua, cancelarRegua, aplicarPreset, PRESETS_REGUA,
 } = useAdvisorAutomation();
 
 const confirmarPausa = ref(false);
