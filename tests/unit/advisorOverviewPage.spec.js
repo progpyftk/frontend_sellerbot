@@ -22,7 +22,7 @@ describe('AdvisorOverviewPage', () => {
   beforeEach(() => {
     getToday.mockReset();
     getCatalog.mockReset();
-    getCatalog.mockResolvedValue({ data: { summary: { ads: 10, promotion_coverage: { active: 3, scheduled_only: 2, without_promotion: 4, unconfirmed: 1 } }, snapshot: { by_account: { A: { account_nickname: 'Loja A', computed_at: '2026-09-28T12:00:00Z', stale: false } } } } });
+    getCatalog.mockResolvedValue({ data: { summary: { ads: 10, promotion_coverage: { active: 3, scheduled_only: 2, without_promotion: 4, unconfirmed: 1 }, work_owners: { user: 0, unknown: 1 } }, snapshot: { by_account: { A: { account_nickname: 'Loja A', computed_at: '2026-09-28T12:00:00Z', stale: false } } } } });
   });
 
   it('mostra execução registrada e unidades dos totais', async () => {
@@ -33,7 +33,7 @@ describe('AdvisorOverviewPage', () => {
       recuperacao: { anuncios_em_recuperacao: 1, cadeias_em_recuperacao: 1, itens: [
         { job_id: 7, item_id: 'MLB-PENDENTE', account_nickname: 'Loja A', status: 'queued', etapa: 'verify', proxima_execucao: null },
       ] },
-      failures: [],
+      failures: [{ exige_acao: true, item_id: 'MLB-PENDENTE' }],
     } });
     const wrapper = mount(AdvisorOverviewPage, { global: { stubs } });
     await flushPromises();
@@ -47,6 +47,8 @@ describe('AdvisorOverviewPage', () => {
     expect(wrapper.text()).toContain('Loja A: coleta em');
     expect(wrapper.text()).toContain('MLB-PENDENTE');
     expect(wrapper.text()).toContain('sem próxima tentativa registrada');
+    expect(wrapper.text()).toContain('Nenhuma decisão sua pendente aparece');
+    expect(wrapper.text()).toContain('falhas registradas sem decisão sua claramente vinculada');
   });
 
   it('não mostra totais como zero quando a agregação falha', async () => {

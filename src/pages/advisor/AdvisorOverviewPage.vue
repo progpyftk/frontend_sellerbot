@@ -22,10 +22,13 @@
           <router-link :to="{ name: 'promotions-advisor-anuncios' }">Abrir anúncios</router-link>
         </div>
       </section>
-      <p class="overview__scope" role="status" v-if="!today.facts_error">
+      <p class="overview__scope" role="status" v-if="catalog?.summary?.work_owners">
         {{ userActionCount
-          ? `${userActionCount} anúncio(s) têm decisão sua registrada como pendente; abra Atividade para ver o motivo.`
+          ? `${userActionCount} anúncio(s) têm decisão sua registrada como pendente; abra Anúncios para ver o motivo.`
           : 'Nenhuma decisão sua pendente aparece nos registros disponíveis.' }}
+      </p>
+      <p v-else-if="catalog && !catalogError" class="overview__scope" role="status">
+        Responsável pelas pendências ainda não classificado nesta coleta.
       </p>
     </template>
     <section class="overview__portfolio" aria-labelledby="portfolio-title">
@@ -65,8 +68,8 @@
         <article><strong>{{ total.aguardando_aval }}</strong><span>Aguardando aval da próxima leva</span></article>
         <article><strong>{{ total.bloqueados + total.recusados + total.nao_confirmados }}</strong><span>Outros resultados; veja motivos e detalhes</span></article>
       </section>
-      <q-banner v-if="(today.failures || []).some((f) => f.exige_acao)" class="bg-red-1 text-red-10 q-mt-md" rounded role="status">
-        Há falhas que exigem atenção. Abra Atividade para ver anúncios, motivos e próximo passo registrado.
+      <q-banner v-if="(today.failures || []).some((f) => f.exige_acao)" class="bg-orange-1 text-orange-10 q-mt-md" rounded role="status">
+        Há falhas registradas sem decisão sua claramente vinculada. Abra Atividade para ver anúncios e motivos.
       </q-banner>
       <section class="overview__pending" aria-labelledby="pending-title">
         <div class="overview__portfolioHead">
@@ -107,9 +110,7 @@ const catalogLoading = ref(false);
 const error = ref(false);
 const catalogError = ref(false);
 const coverage = computed(() => catalog.value?.summary?.promotion_coverage || {});
-const userActionCount = computed(() => new Set((today.value?.failures || [])
-  .filter((failure) => failure.exige_acao)
-  .map((failure) => `${failure.account_id || failure.account_nickname}:${failure.item_id}`)).size);
+const userActionCount = computed(() => catalog.value?.summary?.work_owners?.user ?? 0);
 const accountOptions = computed(() => [
   { label: 'Todas as contas', value: null },
   ...(catalog.value?.accounts || []).map((account) => ({

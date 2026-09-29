@@ -15,7 +15,7 @@ const catalog = {
     computed_at: '2026-09-28T12:00:00Z', promotion_state: { state: 'active', observed_at: '2026-09-28T12:00:00Z' },
     next_step: { label: 'Recuperação em aberto', chain_count: 1 },
     last_result: { state: 'accepted_unverified', at: '2026-09-28T12:01:00Z' } }],
-  summary: { ads: 8, promotion_coverage: { active: 3, scheduled_only: 1, without_promotion: 3, unconfirmed: 1 } },
+  summary: { ads: 8, promotion_coverage: { active: 3, scheduled_only: 1, without_promotion: 3, unconfirmed: 1 }, work_owners: { user: 0, unknown: 1 } },
   snapshot: { stale: false, by_account: { ACC1: { account_nickname: 'Loja A', computed_at: '2026-09-28T12:00:00Z', stale: false } } },
   accounts: [{ account_id: 'ACC1', account_nickname: 'Loja A' }],
 };
