@@ -32,6 +32,24 @@
       <q-banner v-if="(today.failures || []).some((f) => f.exige_acao)" class="bg-red-1 text-red-10 q-mt-md" rounded role="status">
         Há falhas que exigem atenção. Abra Atividade para ver anúncios, motivos e próximo passo registrado.
       </q-banner>
+      <section class="overview__pending" aria-labelledby="pending-title">
+        <div class="overview__portfolioHead">
+          <div>
+            <h2 id="pending-title">Recuperações em aberto</h2>
+            <p>{{ today.recuperacao?.anuncios_em_recuperacao ?? '—' }} anúncios em {{ today.recuperacao?.cadeias_em_recuperacao ?? '—' }} cadeias registradas.</p>
+          </div>
+          <router-link :to="{ name: 'promotions-advisor-activity' }">Ver atividade</router-link>
+        </div>
+        <p v-if="!today.recuperacao" class="overview__scope">Dados de recuperação indisponíveis nesta consulta.</p>
+        <ul v-else-if="recoveryOpen.length" class="overview__pendingList">
+          <li v-for="job in recoveryOpen.slice(0, 5)" :key="job.job_id">
+            <span><strong>{{ job.item_id }}</strong> · {{ job.account_nickname }}</span>
+            <span>Etapa {{ job.etapa || 'não informada' }} · {{ job.proxima_execucao ? `tentativa prevista para ${timeLabel(job.proxima_execucao)}` : 'sem próxima tentativa registrada' }}</span>
+          </li>
+        </ul>
+        <p v-else class="overview__scope">Nenhuma cadeia de recuperação aberta aparece nesta leitura.</p>
+        <p v-if="recoveryOpen.length > 5" class="overview__scope">Mais {{ recoveryOpen.length - 5 }} cadeias no registro de recuperação.</p>
+      </section>
       <p class="overview__scope">Os totais são por anúncio no dia de negócio ({{ today.day_window?.timezone || 'fuso não informado' }}). Motivos podem se sobrepor. A data de execução é a registrada pelo sistema.</p>
     </template>
       <section class="overview__portfolio" aria-labelledby="portfolio-title">
@@ -99,6 +117,10 @@ const snapshotScope = computed(() => {
   }).join(' · ');
 });
 const accounts = computed(() => Object.values(today.value?.by_account || {}));
+const recoveryOpen = computed(() => (today.value?.recuperacao?.itens || []).filter((job) => ['queued', 'processing'].includes(job.status)));
+function timeLabel(value) {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }).format(new Date(value));
+}
 const total = computed(() => accounts.value.reduce((acc, account) => {
   for (const k of ['alterados', 'ja_no_alvo', 'aguardando_aval', 'bloqueados', 'recusados', 'nao_confirmados']) {
     acc[k] += Number(account.today?.[k] || 0);
@@ -134,11 +156,15 @@ onMounted(load);
 .overview__metrics span { color:$text-muted; font-size:$text-small-size; }
 .overview__scope { margin-top:$space-4; font-size:$text-xs-size; }
 .overview__portfolio { margin-top:$space-6; }
+.overview__pending { margin-top:$space-5; padding:$space-5; border:1px solid $border; border-radius:$radius-md; background:$surface; }
+.overview__pendingList { list-style:none; padding:0; margin:$space-3 0 0; display:grid; gap:$space-2; }
+.overview__pendingList li { display:flex; justify-content:space-between; gap:$space-3; padding:$space-2 0; border-top:1px solid $border; }
+.overview__pendingList li span:last-child { color:$text-muted; }
 .overview__portfolioHead { display:flex; justify-content:space-between; align-items:center; gap:$space-3; }
 .overview__portfolioHead h2 { font-size:$text-h3-size; margin:0; }
 .overview__portfolioHead p { color:$text-muted; margin:$space-1 0 0; }
 .overview__portfolioHead a { color:$primary; font-weight:$font-semibold; white-space:nowrap; }
-@media(max-width:700px) { .overview__portfolioHead { align-items:flex-start; flex-direction:column; } }
+@media(max-width:700px) { .overview__portfolioHead,.overview__pendingList li { align-items:flex-start; flex-direction:column; } }
 @media(max-width:700px) { .overview__cycle { flex-direction:column; } .overview__metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:420px) { .overview__metrics { grid-template-columns:1fr; } }
 </style>

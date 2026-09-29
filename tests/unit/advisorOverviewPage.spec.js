@@ -27,6 +27,9 @@ describe('AdvisorOverviewPage', () => {
       day_window: { timezone: 'America/Sao_Paulo' },
       last_cycle: { status: 'partial', finished_at: '2026-09-28T12:00:00Z', items_processed: 2 },
       by_account: { A: { today: { alterados: 2, ja_no_alvo: 1, aguardando_aval: 3 } } },
+      recuperacao: { anuncios_em_recuperacao: 1, cadeias_em_recuperacao: 1, itens: [
+        { job_id: 7, item_id: 'MLB-PENDENTE', account_nickname: 'Loja A', status: 'queued', etapa: 'verify', proxima_execucao: null },
+      ] },
       failures: [],
     } });
     const wrapper = mount(AdvisorOverviewPage, { global: { stubs } });
@@ -38,6 +41,8 @@ describe('AdvisorOverviewPage', () => {
     expect(getCatalog).toHaveBeenCalledWith({ status: 'active', page_size: 1 });
     expect(wrapper.text()).toContain('Sem promoção ativa ou programada no retrato');
     expect(wrapper.text()).toContain('Loja A: coleta em');
+    expect(wrapper.text()).toContain('MLB-PENDENTE');
+    expect(wrapper.text()).toContain('sem próxima tentativa registrada');
   });
 
   it('não mostra totais como zero quando a agregação falha', async () => {

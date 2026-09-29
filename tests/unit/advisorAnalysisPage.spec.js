@@ -140,11 +140,11 @@ describe('AdvisorAnalysisPage', () => {
     const wrapper = await montar();
     const cabecalhos = wrapper.findAll('.adv-table__table thead th').map((th) => th.text());
     expect(cabecalhos).toContain('Anúncio');
-    expect(cabecalhos).toContain('Situação');
-    expect(cabecalhos).toContain('Sugestão estimada');
+    expect(cabecalhos).toContain('Situação da promoção');
+    expect(cabecalhos).toContain('Margem e lucro estimados');
     expect(cabecalhos).toContain('Última atuação');
     expect(cabecalhos).toContain('Preço ao comprador');
-    expect(cabecalhos).toContain('Promoção observada');
+    expect(cabecalhos).toContain('Próximo passo');
     expect(cabecalhos).toHaveLength(6);
     // PROMO-IA-49: Status virou badge no título e o SKU foi para a linha de apoio
     // (colunas próprias saíram para a tabela caber na tela)
@@ -187,8 +187,8 @@ describe('AdvisorAnalysisPage', () => {
     };
     const wrapper = await montar({ ...PAYLOAD, total: 1, results: [duplaRow] }, { item: 'MLB3' });
     const texto = wrapper.texto();
-    // decisão desmascarada em rótulo curto (PROMO-IA-49) — o texto completo vai no tooltip
-    expect(texto).toContain('Preço + revisão');
+    // a lista principal não apresenta o cálculo local como decisão do robô
+    expect(texto).not.toContain('Preço + revisão');
     // os mínimos são os da CONTA da linha, em formato compacto
     expect(texto).toContain('mín. 25% · R$ 15');
 

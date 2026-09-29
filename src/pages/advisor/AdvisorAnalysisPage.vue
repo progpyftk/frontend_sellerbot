@@ -3,7 +3,7 @@
        O pipeline do dono vira coluna: Classificação → Situação → Decisão → Resultado. -->
   <AdvisorShell
     active="anuncios"
-    pergunta="Consulte estado promocional, sugestão estimada, última atuação e situação financeira por anúncio."
+    pergunta="Consulte estado promocional, preço, estimativa financeira, última atuação e próximo passo por anúncio."
   >
     <template #actions>
       <q-btn flat dense no-caps icon="refresh" label="Atualizar" :loading="carregando" @click="carregar" />
@@ -182,7 +182,29 @@
             </div>
           </template>
 
-          <template #cell-preco="{ row }">{{ brl(row.buyer_price ?? row.price) }}</template>
+          <template #cell-preco="{ row }">
+            <div class="an__pipeline">
+              <span>{{ brl(row.buyer_price ?? row.price) }}</span>
+              <span class="an__data">{{ row.buyer_price == null ? 'Preço-base do anúncio' : 'Preço observado na promoção' }}</span>
+            </div>
+          </template>
+          <template #cell-margemLucro="{ row }">
+            <div class="an__pipeline">
+              <strong>{{ pct(row.margin_pct) }} · {{ brl(row.profit_unit) }}</strong>
+              <span class="an__data">Estimativa do retrato {{ dataCurta(row.computed_at) }}</span>
+              <button v-if="isBelowMin(row)" type="button" class="an__data an__minBotao"
+                      @click.stop="abrirRegua(row.account_id)">
+                mín. {{ Math.round(floorMarginOf(row)) }}% · R$ {{ Math.round(floorProfitOf(row)) }}
+              </button>
+            </div>
+          </template>
+          <template #cell-proximo="{ row }">
+            <div class="an__pipeline">
+              <span>{{ row.next_step?.label || 'Próximo passo indisponível' }}</span>
+              <span v-if="row.next_step?.next_attempt_at" class="an__data">Previsão {{ dataCurta(row.next_step.next_attempt_at) }}</span>
+              <span v-if="row.next_step?.chain_count > 1" class="an__data">{{ row.next_step.chain_count }} cadeias em aberto</span>
+            </div>
+          </template>
           <template #cell-ritmo="{ row }">
             <span :title="tituloRitmo(row)">
               {{ row.health_info?.units_per_week == null ? '—' : `${String(row.health_info.units_per_week).replace('.', ',')}/sem.` }}
@@ -205,8 +227,10 @@
           </template>
           <template #cell-promoAtiva="{ row }">
             <div class="an__pipeline">
-              <span>{{ row.active_promo?.promotion_name || (row.has_active_promo ? row.active_promo?.promotion_type : '—') }}</span>
-              <span v-if="row.active_promo?.start_date" class="an__data">desde {{ dataCurta(row.active_promo.start_date) }}</span>
+              <span v-if="row.has_active_promo">Ativa no retrato{{ row.active_promo?.promotion_name ? `: ${row.active_promo.promotion_name}` : '' }}</span>
+              <span v-else-if="row.scheduled_count">Programada no retrato</span>
+              <span v-else>Sem ativa ou programada no retrato</span>
+              <span class="an__data">Observado {{ dataCurta(row.active_promo?.observed_at || row.computed_at) }}</span>
             </div>
           </template>
           <template #cell-desconto="{ row }">{{ row.discount_pct == null ? '—' : pct(row.discount_pct) }}</template>
@@ -326,22 +350,22 @@ const router = useRouter();
 
 /**
  * Colunas do catálogo: dados para decisão ficam primeiro —
- * Classificação (1 valor) → Situação da venda → Sugestão estimada → Resultado —
+ * Situação promocional → preço ao comprador → estimativa → última ação → próximo passo —
  * O painel lateral preserva as análises financeiras e o ritmo detalhados. A tabela
  * mostra o preço observado ao comprador sem exigir rolagem horizontal.
  */
 const COLUNAS = [
   { key: 'anuncio', label: 'Anúncio', minWidth: 230 },
-  { key: 'situacao', label: 'Situação', minWidth: 140 },
-  { key: 'decisao', label: 'Sugestão estimada', minWidth: 150 },
-  { key: 'resultado', label: 'Última atuação', minWidth: 145 },
+  { key: 'promoAtiva', label: 'Situação da promoção', minWidth: 150 },
   { key: 'preco', label: 'Preço ao comprador', numeric: true, sortable: true, sortKey: 'price', minWidth: 125 },
-  { key: 'promoAtiva', label: 'Promoção observada', minWidth: 160 },
+  { key: 'margemLucro', label: 'Margem e lucro estimados', minWidth: 150 },
+  { key: 'resultado', label: 'Última atuação', minWidth: 145 },
+  { key: 'proximo', label: 'Próximo passo', minWidth: 190 },
 ];
 
 /** Cartão do mobile: o pipeline primeiro, depois o essencial financeiro. */
 const CAMPOS_CARTAO = COLUNAS.filter((c) => (
-  ['situacao', 'decisao', 'resultado', 'preco', 'promoAtiva'].includes(c.key)
+  ['promoAtiva', 'preco', 'margemLucro', 'resultado', 'proximo'].includes(c.key)
 ));
 
 /* ------------------------------------------------- pílulas e traduções -- */
@@ -442,7 +466,7 @@ function alternarRecorte(key) {
   recorte.value = recorte.value === key ? null : key;
 }
 
-const legendaTabela = 'Uma linha por anúncio. Situação e preço vêm do retrato mais recente; sugestão é estimada pela regra e não representa decisão ou execução do robô. Clique para ver o processo completo. Os valores financeiros são estimativas; o mínimo é conferido antes de qualquer escrita.';
+const legendaTabela = 'Uma linha por anúncio. Promoção, preço e cálculos vêm do retrato salvo, com data em cada linha; a última atuação é histórica. O próximo passo só traz tarefa vinculada quando há registro. Clique para ver o detalhe.';
 const leadLista = computed(() => (recorte.value
   ? `Recorte "${SITUATION_META[recorte.value]?.label || recorte.value}" — clique de novo no chip para ver todos.`
   : 'Clique numa linha para ver ofertadas, ativas, programadas, dados e histórico.'));

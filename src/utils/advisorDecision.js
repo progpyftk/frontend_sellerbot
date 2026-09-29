@@ -263,10 +263,10 @@ export const REGRA_SAUDE = {
  * foi bloqueado??": a resposta vive aqui e no tooltip da célula.
  */
 export const REGRA_RESULTADOS = {
-  confirmado: 'O robô alterou a promoção/preço no Mercado Livre e a mudança foi confirmada — o novo preço está no ar.',
-  aguardando: 'O robô enviou a alteração e o Mercado Livre ainda não confirmou. Ele confere de novo sozinho nas próximas execuções.',
-  recusado: 'O Mercado Livre recusou a alteração. O preço ficou como estava — nada mudou no anúncio.',
-  sem_confirmacao: 'A alteração foi enviada, mas até agora não veio nem confirmação nem recusa. O robô reconfere depois e fecha o resultado.',
+  confirmado: 'A alteração foi confirmada na data do registro. A situação atual da oferta vem do retrato separado.',
+  aguardando: 'O envio foi aceito, mas a confirmação ainda não consta. Consulte o próximo passo para saber se há verificação vinculada.',
+  recusado: 'O Mercado Livre recusou a alteração. Consulte o estado atual da oferta; pode ter ocorrido outra operação antes da recusa.',
+  sem_confirmacao: 'O envio não tem conclusão registrada. Consulte o próximo passo para saber se há verificação vinculada.',
   mantido: 'Nenhuma alteração foi enviada: o anúncio já estava no preço-alvo no momento da avaliação.',
   preparado: 'A intenção de escrita foi registrada, mas não existe comprovante de envio ao Mercado Livre.',
   falha: 'Há uma falha registrada. Sem código de recusa da plataforma, não atribuímos a falha ao Mercado Livre.',
