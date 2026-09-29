@@ -66,12 +66,23 @@ const routes = [
         component: () => import('pages/PromotionsAdsPage.vue')
       },
       {
-        // PROMO-IA-45: a superfície padrão do advisor passa a ser a tabela Análises
-        // (1 linha por anúncio + drawer de drill-down). `meta.menu` mantém o item do
-        // sidebar ativo nas rotas irmãs (a comparação era por `route.name` exato).
+        // Entrada responde primeiro o estado da operação; a tabela fica em Anúncios.
         path: 'promotions/advisor',
         name: "promotions-advisor",
+        component: () => import('pages/advisor/AdvisorOverviewPage.vue'),
+        meta: { menu: "promotions-advisor" },
+        beforeEnter: (to) => (to.query.item ? { name: 'promotions-advisor-anuncios', query: to.query } : true),
+      },
+      {
+        path: 'promotions/advisor/anuncios',
+        name: "promotions-advisor-anuncios",
         component: () => import('pages/advisor/AdvisorAnalysisPage.vue'),
+        meta: { menu: "promotions-advisor" },
+      },
+      {
+        path: 'promotions/advisor/atividade',
+        name: "promotions-advisor-activity",
+        component: () => import('pages/advisor/AdvisorActivityPage.vue'),
         meta: { menu: "promotions-advisor" },
       },
       {
@@ -81,9 +92,9 @@ const routes = [
         meta: { menu: "promotions-advisor" },
       },
       {
-        // Legado (PROMO-IA-22): a antiga aba Anúncios virou Análises.
-        path: 'promotions/advisor/anuncios',
-        redirect: { name: "promotions-advisor" },
+        // Alias legado do catálogo para a rota de Anúncios.
+        path: 'promotions/advisor/catalogo',
+        redirect: { name: "promotions-advisor-anuncios" },
       },
       {
         path: 'promotions/advisor/automacao',

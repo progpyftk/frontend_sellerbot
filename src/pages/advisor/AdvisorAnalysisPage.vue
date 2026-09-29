@@ -2,8 +2,8 @@
   <!-- PROMO-IA-45/48: aba Análises — tabela de análises, 1 linha por anúncio.
        O pipeline do dono vira coluna: Classificação → Situação → Decisão → Resultado. -->
   <AdvisorShell
-    active="analises"
-    pergunta="Como está cada anúncio e o que o robô decidiu?"
+    active="anuncios"
+    pergunta="Consulte estado promocional, sugestão estimada, última atuação e situação financeira por anúncio."
   >
     <template #actions>
       <q-btn flat dense no-caps icon="refresh" label="Atualizar" :loading="carregando" @click="carregar" />
@@ -77,8 +77,9 @@
         </p>
       </div>
 
-      <!-- Chips de recorte por situação (contagens da página carregada). -->
-      <div class="an__chips" role="status">
+      <!-- Facetas locais: deixam explícito que estes números são da página atual. -->
+      <div class="an__chips" role="group" :aria-label="`Distribuição da página carregada: ${linhas.length} anúncios`">
+        <span class="an__chipScope">Nesta página ({{ linhas.length }} anúncios):</span>
         <button
           v-for="chip in chips" :key="chip.key" type="button"
           class="an__chip" :class="{ 'is-on': recorte === chip.key }"
@@ -93,7 +94,7 @@
         </span>
       </div>
 
-      <AdvisorSection title="Análises realizadas pelo agente" :lead="leadLista" :tight="true">
+      <AdvisorSection title="Anúncios e estimativas atuais" :lead="leadLista" :tight="true">
         <template #action>
           <span class="an__meta">{{ linhasVisiveis.length }} nesta página · {{ total }} no catálogo</span>
         </template>
@@ -160,7 +161,7 @@
             </div>
           </template>
 
-          <!-- 3. DECISÃO DO AGENTE: rótulo curto (tooltip: regra + última ação). -->
+          <!-- 3. SUGESTÃO ESTIMADA: cálculo da regra local, não decisão registrada pelo robô. -->
           <template #cell-decisao="{ row }">
             <AdvisorStatusPill :status="DECISAO_PILL[suggestionOf(row)?.key] || 'neutral'"
                                :title="decisaoTitle(row)">
@@ -181,7 +182,7 @@
             </div>
           </template>
 
-          <template #cell-preco="{ row }">{{ brl(row.price) }}</template>
+          <template #cell-preco="{ row }">{{ brl(row.buyer_price ?? row.price) }}</template>
           <template #cell-ritmo="{ row }">
             <span :title="tituloRitmo(row)">
               {{ row.health_info?.units_per_week == null ? '—' : `${String(row.health_info.units_per_week).replace('.', ',')}/sem.` }}
@@ -324,33 +325,23 @@ const route = useRoute();
 const router = useRouter();
 
 /**
- * Colunas da tabela Análises (PROMO-IA-48/49): o pipeline do dono vora coluna —
- * Classificação (1 valor) → Situação da venda → Decisão do agente → Resultado —
- * seguido do retrato financeiro/operacional. Para CABER na tela (PROMO-IA-49):
- * Status virou badge no título do anúncio, SKU/MLB/conta na linha de apoio e o
- * início da promoção entrou dentro de "Promoção ativa" ("desde …").
+ * Colunas do catálogo: dados para decisão ficam primeiro —
+ * Classificação (1 valor) → Situação da venda → Sugestão estimada → Resultado —
+ * O painel lateral preserva as análises financeiras e o ritmo detalhados. A tabela
+ * mostra o preço observado ao comprador sem exigir rolagem horizontal.
  */
 const COLUNAS = [
-  { key: 'anuncio', label: 'Anúncio', minWidth: 190 },
-  { key: 'classificacao', label: 'Classificação', sortable: true, sortKey: 'computed', minWidth: 78 },
-  { key: 'situacao', label: 'Situação da venda', minWidth: 88 },
-  { key: 'decisao', label: 'Decisão do agente', minWidth: 88 },
-  { key: 'resultado', label: 'Resultado', minWidth: 88 },
-  { key: 'preco', label: 'Preço-base', numeric: true, sortable: true, sortKey: 'price', minWidth: 74 },
-  { key: 'ritmo', label: 'Ritmo de vendas', numeric: true, sortable: true, sortKey: 'ritmo', minWidth: 68 },
-  { key: 'margemBase', label: 'Margem-base', numeric: true, sortable: true, sortKey: 'base_margin', minWidth: 68 },
-  { key: 'margem', label: 'Margem em promo', numeric: true, sortable: true, sortKey: 'margin', minWidth: 74 },
-  { key: 'ofertadas', label: 'Ofertadas (nº)', numeric: true, sortable: true, sortKey: 'ofertadas', minWidth: 52 },
-  { key: 'promoAtiva', label: 'Promoção ativa', minWidth: 96 },
-  { key: 'desconto', label: 'Desconto ativo', numeric: true, sortable: true, sortKey: 'discount', minWidth: 62 },
-  { key: 'lucro', label: 'Lucro estimado', numeric: true, minWidth: 74 },
-  { key: 'frete', label: 'Frete estimado', numeric: true, minWidth: 68 },
-  { key: 'estoque', label: 'Estoque', numeric: true, sortable: true, sortKey: 'stock', minWidth: 54 },
+  { key: 'anuncio', label: 'Anúncio', minWidth: 230 },
+  { key: 'situacao', label: 'Situação', minWidth: 140 },
+  { key: 'decisao', label: 'Sugestão estimada', minWidth: 150 },
+  { key: 'resultado', label: 'Última atuação', minWidth: 145 },
+  { key: 'preco', label: 'Preço ao comprador', numeric: true, sortable: true, sortKey: 'price', minWidth: 125 },
+  { key: 'promoAtiva', label: 'Promoção observada', minWidth: 160 },
 ];
 
 /** Cartão do mobile: o pipeline primeiro, depois o essencial financeiro. */
 const CAMPOS_CARTAO = COLUNAS.filter((c) => (
-  ['classificacao', 'situacao', 'decisao', 'resultado', 'preco', 'margem'].includes(c.key)
+  ['situacao', 'decisao', 'resultado', 'preco', 'promoAtiva'].includes(c.key)
 ));
 
 /* ------------------------------------------------- pílulas e traduções -- */
@@ -367,7 +358,7 @@ const DECISAO_PILL = {
   sem_dados: 'bloqueado', aguardando: 'neutral',
 };
 const RESULT_PILL = {
-  confirmado: 'verificado', aguardando: 'aguardando', recusado: 'recusado',
+  confirmado: 'verificado', mantido: 'verificado', aguardando: 'aguardando', preparado: 'neutral', falha: 'recusado', recusado: 'recusado',
   sem_confirmacao: 'bloqueado', bloqueado: 'bloqueado', nada: 'neutral',
 };
 
@@ -387,7 +378,7 @@ const SITUACAO_CURTA = {
   sem_dados: 'Sem cálculo',
   baixo_giro: 'Poucas vendas',
   promo_ativa: 'Com promoção',
-  sem_promo: 'Sem promoção',
+  sem_promo: 'Sem ativa observada',
 };
 
 function statusLabel(s) {
@@ -451,7 +442,7 @@ function alternarRecorte(key) {
   recorte.value = recorte.value === key ? null : key;
 }
 
-const legendaTabela = 'Uma linha por anúncio — o pipeline: classificação, situação da venda, decisão do agente e resultado. Clique para ver o processo completo. Frete e margem são estimados por faixa de preço: em desconto profundo podem sair otimistas — a escrita cota o frete ao vivo e o mínimo é conferido antes de confirmar.';
+const legendaTabela = 'Uma linha por anúncio. Situação e preço vêm do retrato mais recente; sugestão é estimada pela regra e não representa decisão ou execução do robô. Clique para ver o processo completo. Os valores financeiros são estimativas; o mínimo é conferido antes de qualquer escrita.';
 const leadLista = computed(() => (recorte.value
   ? `Recorte "${SITUATION_META[recorte.value]?.label || recorte.value}" — clique de novo no chip para ver todos.`
   : 'Clique numa linha para ver ofertadas, ativas, programadas, dados e histórico.'));
@@ -572,6 +563,10 @@ onMounted(() => {
     align-items: center;
     gap: $space-2;
     margin-bottom: $space-3;
+  }
+  &__chipScope {
+    font-size: $text-xs-size;
+    color: $text-muted;
   }
   &__chip {
     display: inline-flex;

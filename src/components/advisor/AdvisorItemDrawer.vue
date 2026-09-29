@@ -1,9 +1,9 @@
 <template>
   <!-- PROMO-IA-45: drawer lateral de drill-down — sem popup, a tabela continua visível. -->
-  <aside class="adv-drawer" role="dialog" aria-label="Detalhe do anúncio">
+  <aside ref="drawer" class="adv-drawer" role="dialog" aria-modal="false" aria-labelledby="adv-drawer-title" tabindex="-1">
     <header class="adv-drawer__header">
       <div>
-        <strong class="adv-drawer__mlb">{{ item?.item_id || '—' }}</strong>
+        <strong id="adv-drawer-title" class="adv-drawer__mlb">{{ item?.item_id || 'Detalhe do anúncio' }}</strong>
         <span class="adv-drawer__titulo">{{ item?.title || '' }}</span>
         <span class="adv-drawer__conta">{{ item?.account_nickname || '' }}</span>
       </div>
@@ -126,7 +126,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { brl, pct } from 'src/utils/advisorDecision';
 
@@ -137,7 +137,20 @@ const props = defineProps({
   revisaoEstado: { type: String, default: '' },   // '' | enviando | enviado | erro
   revisaoMensagem: { type: String, default: '' },
 });
-defineEmits(['fechar', 'enviar-revisao']);
+const emit = defineEmits(['fechar', 'enviar-revisao']);
+const drawer = ref(null);
+let previousFocus = null;
+function onKeydown(event) { if (event.key === 'Escape') emit('fechar'); }
+onMounted(async () => {
+  previousFocus = document.activeElement;
+  await nextTick();
+  drawer.value?.focus();
+  window.addEventListener('keydown', onKeydown);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown);
+  if (previousFocus?.isConnected) previousFocus.focus();
+});
 
 const item = computed(() => props.detalhe?.item || null);
 const promos = computed(() => props.detalhe?.promotions || {});

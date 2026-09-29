@@ -141,13 +141,18 @@ describe('advisorDecision · sugestão da régua', () => {
 describe('advisorDecision · resultado da última escrita (PROMO-IA-48)', () => {
   it('mapeia o estado real do ledger para a linguagem do dono', () => {
     expect(resultOf({ last_result: { state: 'executed_verified', at: 'x' } }).label).toBe('Confirmado')
-    expect(resultOf({ last_result: { state: 'accepted_unverified' } }).label).toBe('Aguardando')
-    expect(resultOf({ last_result: { state: 'failed' } }).label).toBe('Recusado')
+    const mantido = resultOf({ last_result: { state: 'executed_verified', blocked_code: 'SKIP_ALREADY_AT_TARGET' } })
+    expect(mantido.label).toBe('Mantido no alvo')
+    expect(mantido.detail).toContain('Nenhuma alteração foi enviada')
+    expect(resultOf({ last_result: { state: 'accepted_unverified' } }).label).toBe('Aguardando confirmação')
+    expect(resultOf({ last_result: { state: 'failed', blocked_code: 'WRITE_REJECTED' } }).label).toBe('Recusado')
+    expect(resultOf({ last_result: { state: 'failed', blocked_code: 'ML_HTTP_500' } }).label).toBe('Falha registrada')
+    expect(resultOf({ last_result: { state: 'intent', sent_at: null } }).label).toBe('Preparado, não enviado')
     expect(resultOf({ last_result: { state: 'unknown' } }).label).toBe('Sem confirmação')
-    // "Bloqueado (proteção)" deixa claro que o ML NÃO bloqueou o anúncio — a
+    // "Proteção: não enviado" deixa claro que o ML NÃO bloqueou o anúncio — a
     // proteção segurou a escrita, com o motivo traduzido (PROMO-IA-49).
     const b = resultOf({ last_result: { state: 'blocked', blocked_code: 'SMART_READ_ONLY' } })
-    expect(b.label).toBe('Bloqueado (proteção)')
+    expect(b.label).toBe('Proteção: não enviado')
     expect(b.detail).toContain('só sinaliza, nunca escreve')
   })
 
@@ -241,9 +246,9 @@ describe('advisorDecision · janelas do ritmo (PROMO-IA-52)', () => {
 })
 
 describe('advisorDecision · legenda do resultado (PROMO-IA-51)', () => {
-  it('explica os 6 desfechos — e o "Bloqueado (proteção)" deixa claro que o ML não bloqueou', () => {
+  it('explica os 6 desfechos — e o "Proteção: não enviado" deixa claro que o ML não bloqueou', () => {
     expect(Object.keys(REGRA_RESULTADOS).sort()).toEqual(
-      ['aguardando', 'bloqueado', 'confirmado', 'nada', 'recusado', 'sem_confirmacao'].sort(),
+      ['aguardando', 'bloqueado', 'confirmado', 'falha', 'mantido', 'nada', 'preparado', 'recusado', 'sem_confirmacao'].sort(),
     )
     for (const [key, regra] of Object.entries(REGRA_RESULTADOS)) {
       expect(regra, `regra vazia para ${key}`).toBeTruthy()
@@ -253,8 +258,8 @@ describe('advisorDecision · legenda do resultado (PROMO-IA-51)', () => {
     expect(REGRA_RESULTADOS.bloqueado).toContain('proteção interna')
     expect(REGRA_RESULTADOS.bloqueado).toContain('nada foi enviado ao Mercado Livre')
     // O legendarário sai pronto para a tela, com o mesmo rótulo da tabela.
-    expect(LEGENDARIO_RESULTADOS).toHaveLength(6)
-    expect(LEGENDARIO_RESULTADOS.map((i) => i.label)).toContain('Bloqueado (proteção)')
+    expect(LEGENDARIO_RESULTADOS).toHaveLength(9)
+    expect(LEGENDARIO_RESULTADOS.map((i) => i.label)).toContain('Proteção: não enviado')
     for (const item of LEGENDARIO_RESULTADOS) {
       expect(item.regra, `legenda sem regra para ${item.key}`).toBeTruthy()
     }

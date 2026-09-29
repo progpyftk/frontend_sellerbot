@@ -68,7 +68,7 @@
                 :disable="salvando === conta.account_id || !conta.auto_write"
                 @blur="salvarLeva(conta)"
               >
-                <template #hint>Quantos anúncios o robô altera por vez antes de esperar o próximo aval.</template>
+                <template #hint>Tamanho máximo da primeira rodada; após o aval, as rodadas seguintes são automáticas.</template>
               </q-input>
             </div>
 
@@ -98,8 +98,8 @@
 
             <p v-if="conta.canary_pending && conta.auto_write" class="aut__canario">
               <q-icon name="verified_user" size="14px" aria-hidden="true" />
-              Primeira rodada esperando o seu aval: até sair, o robô não escreve por essa conta.
-              <q-btn unelevated dense no-caps color="primary" label="Aprovar a primeira rodada"
+              A primeira rodada é limitada a este tamanho. Depois de processá-la, novas rodadas aguardam seu aval.
+              <q-btn unelevated dense no-caps color="primary" label="Liberar próximas rodadas"
                      :loading="salvando === conta.account_id" @click="aprovarLeva(conta)" />
             </p>
 
@@ -124,8 +124,8 @@
           </div>
           <div>
             <dt><AdvisorStatusPill status="aguardando">Esperando seu aval</AdvisorStatusPill></dt>
-            <dd>Conta na primeira rodada: escrita ligada, mas o robô só altera uma rodada e espera
-              você aprovar a próxima — veja "Esperando você" na aba Hoje.</dd>
+            <dd>A primeira rodada limitada pode ser processada. Quando anúncios ficam parados para continuidade,
+              seu aval libera as rodadas seguintes — veja "Esperando você" em Atividade.</dd>
           </div>
           <div>
             <dt><AdvisorStatusPill status="bloqueado">Autorizada, mas travada</AdvisorStatusPill></dt>
@@ -181,7 +181,7 @@
           <div>
             <h4>A execução do dia</h4>
             <ul>
-              <li>Roda todo dia às <strong>09:00 (Brasília)</strong>; a próxima execução aparece no rodapé da aba <strong>Hoje</strong>.</li>
+              <li>A previsão de horário aparece somente quando o agendamento foi configurado e lido; veja a faixa superior do assistente.</li>
               <li>Cada escrita é conferida no Mercado Livre; o que não confirma é conferido de novo no dia seguinte.</li>
               <li>O ciclo nunca passa do orçamento de tempo: o que não coube entra no próximo.</li>
             </ul>
@@ -238,15 +238,15 @@ const reguaComum = computed(() => {
 });
 
 const GLOSSARIO = computed(() => [
-  { nome: 'Rodada', texto: 'Quantos anúncios o robô altera por vez antes de esperar o próximo aval.' },
+  { nome: 'Rodada', texto: 'Tamanho máximo da primeira rodada; após o aval, as rodadas seguintes são automáticas.' },
   {
     nome: 'Mínimo',
     texto: `Margem mínima e lucro mínimo por venda — configurável por conta em "Limites desta conta",
       acima (padrão da plataforma: ${FLOOR_MARGIN_PCT}% e ${brl(FLOOR_PROFIT_BRL)}). Nenhuma escrita
       passa por baixo, nem o robô nem uma ativação manual.`,
   },
-  { nome: 'Aval', texto: 'Sua aprovação para a próxima rodada: a primeira sempre espera você; depois disso o robô segue sozinho até o fim do dia.' },
-  { nome: 'Execução diária', texto: 'A rotina das 09:00 (Brasília) que lê o mercado e decide.' },
+  { nome: 'Aval', texto: 'Libera a continuidade após a primeira rodada limitada. A primeira pode ser executada antes desse aval; depois de liberado, o robô segue automaticamente.' },
+  { nome: 'Execução diária', texto: 'Rotina agendada que lê o mercado e decide. A interface só mostra horário previsto quando a configuração está disponível.' },
   { nome: 'Confirmada', texto: 'Escrita conferida no Mercado Livre — o preço realmente mudou.' },
   { nome: 'Aguardando confirmação', texto: 'O robô enviou e o Mercado Livre ainda não confirmou; ele confere de novo depois.' },
   { nome: 'Recusada', texto: 'O Mercado Livre não aceitou a mudança; o preço ficou como estava.' },
@@ -257,9 +257,9 @@ const GLOSSARIO = computed(() => [
 const tituloEstado = computed(() => {
   if (killSwitch.value) return 'A escrita está barrada pelo interruptor de emergência';
   if (!modoGlobal.value) return 'A escrita automática está desligada no ambiente';
-  if (!escrevendo.value.length) return 'Nenhuma conta está escrevendo agora';
+  if (!escrevendo.value.length) return 'Nenhuma conta está com escrita automática habilitada';
   const nomes = escrevendo.value.map((c) => c.account_nickname).join(', ');
-  return `${escrevendo.value.length} conta(s) escrevendo agora: ${nomes}`;
+  return `${escrevendo.value.length} conta(s) com escrita automática habilitada: ${nomes}`;
 });
 
 const detalheEstado = computed(() => {
@@ -271,15 +271,15 @@ const detalheEstado = computed(() => {
     const aval = esperandoAval.value.length
       ? ` ${esperandoAval.value.length} conta(s) já autorizada(s) só esperam o seu aval abaixo.`
       : '';
-    return 'Nenhuma conta vai escrever no próximo ciclo — ligue a escrita na conta que deve agir '
+    return 'Nenhuma conta está com escrita automática habilitada — ligue a escrita na conta que deve agir '
       + `sozinha.${aval}`;
   }
   const leva = Math.min(...escrevendo.value.map((c) => Number(c.wave_size) || 10));
   const aval = esperandoAval.value.length
     ? ` Outra(s) ${esperandoAval.value.length} conta(s) esperam o seu aval abaixo.`
     : '';
-  return `O robô altera no máximo uma rodada por vez (a menor rodada entre elas é de ${leva}) e espera `
-    + `o próximo aval.${aval}`;
+  return `A primeira rodada é limitada (menor limite configurado: ${leva} anúncios). Após seu aval, `
+    + `o robô continua automaticamente pelas rodadas seguintes.${aval}`;
 });
 
 const classeEstado = computed(() => ({
@@ -297,7 +297,8 @@ function estadoDaConta(conta) {
   if (conta.paused) return { label: 'Pausada', status: 'pausado' };
   if (!conta.auto_write) return { label: 'Só recomenda', status: 'desligado' };
   if (killSwitch.value || !modoGlobal.value) return { label: 'Autorizada, mas travada', status: 'bloqueado' };
-  if (conta.canary_pending) return { label: 'Esperando seu aval', status: 'aguardando' };
+  if (conta.canary_pending && Number(conta.today?.aguardando_aval || 0) > 0) return { label: 'Próxima leva aguardando aval', status: 'aguardando' };
+  if (conta.canary_pending) return { label: 'Primeira rodada limitada', status: 'aguardando' };
   return { label: 'Escrevendo', status: 'ligado' };
 }
 

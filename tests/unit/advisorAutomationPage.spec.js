@@ -72,7 +72,7 @@ describe('AdvisorAutomationPage', () => {
 
   it('diz quem escreve agora, pelo nome da conta', async () => {
     const texto = (await montar()).texto();
-    expect(texto).toContain('1 conta(s) escrevendo agora: MOGIVITTA');
+    expect(texto).toContain('1 conta(s) com escrita automática habilitada: MOGIVITTA');
   });
 
   it('com o kill switch ligado, avisa que nada é enviado', async () => {
@@ -86,15 +86,16 @@ describe('AdvisorAutomationPage', () => {
     expect(texto).toContain('Autorizada, mas travada');
   });
 
-  it('conta autorizada e parada no portão não conta como escrevendo', async () => {
+  it('canário libera primeira rodada limitada e só aguarda aval quando há anúncios parados', async () => {
     const payload = JSON.parse(JSON.stringify(PAYLOAD));
-    payload.by_account.ACC2.auto_write = true;   // autorizada, mas com canário pendente
+    payload.by_account.ACC2.auto_write = true;   // autorizada; a primeira rodada limitada pode rodar
+    payload.by_account.ACC2.today = { aguardando_aval: 4 };
 
     const wrapper = await montar(payload);
     const texto = wrapper.texto();
-    expect(texto).toContain('1 conta(s) escrevendo agora: MOGIVITTA');
-    expect(texto).toContain('esperam o seu aval');   // aviso de que há conta parada no portão
-    expect(wrapper.vm.escrevendo.map((c) => c.account_id)).toEqual(['ACC1']);
+    expect(texto).toContain('2 conta(s) com escrita automática habilitada');
+    expect(texto).toContain('esperam o seu aval');
+    expect(wrapper.vm.escrevendo.map((c) => c.account_id)).toEqual(['ACC1', 'ACC2']);
     expect(wrapper.vm.esperandoAval.map((c) => c.account_id)).toEqual(['ACC2']);
   });
 

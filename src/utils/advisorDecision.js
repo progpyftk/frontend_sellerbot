@@ -103,12 +103,15 @@ export function janelasRitmo(info) {
  */
 export const RESULT_META = {
   confirmado: { label: 'Confirmado', variant: 'green', icon: 'check_circle' },
-  aguardando: { label: 'Aguardando', variant: 'amber', icon: 'hourglass_top' },
+  aguardando: { label: 'Aguardando confirmação', variant: 'amber', icon: 'hourglass_top' },
+  preparado: { label: 'Preparado, não enviado', variant: 'slate', icon: 'schedule' },
+  falha: { label: 'Falha registrada', variant: 'red', icon: 'error_outline' },
   recusado: { label: 'Recusado', variant: 'red', icon: 'cancel' },
   sem_confirmacao: { label: 'Sem confirmação', variant: 'amber', icon: 'help_outline' },
   // "Bloqueado" sozinho soava como o ML ter bloqueado o ANÚNCIO — na verdade a
   // proteção do robô segurou a ESCRITA (nada foi ao ML). (PROMO-IA-49.)
-  bloqueado: { label: 'Bloqueado (proteção)', variant: 'slate', icon: 'shield' },
+  bloqueado: { label: 'Proteção: não enviado', variant: 'slate', icon: 'shield' },
+  mantido: { label: 'Mantido no alvo', variant: 'sky', icon: 'check_circle' },
   nada: { label: 'Sem escrita', variant: 'slate', icon: 'remove_circle_outline' },
 };
 
@@ -117,7 +120,6 @@ const RESULTADO_POR_ESTADO = {
   accepted_unverified: 'aguardando',
   sending: 'aguardando',
   intent: 'aguardando',
-  failed: 'recusado',
   unknown: 'sem_confirmacao',
   blocked: 'bloqueado',
 };
@@ -147,17 +149,28 @@ export function resultOf(row) {
       detail: 'O robô ainda não executou nenhuma escrita neste anúncio.',
     };
   }
-  const key = RESULTADO_POR_ESTADO[last.state] || 'sem_confirmacao';
+  const jaNoAlvo = last.blocked_code === 'SKIP_ALREADY_AT_TARGET';
+  let key = jaNoAlvo ? 'mantido' : (RESULTADO_POR_ESTADO[last.state] || 'sem_confirmacao');
+  if (last.state === 'intent' && !last.sent_at) key = 'preparado';
+  if (last.state === 'failed') key = last.blocked_code === 'WRITE_REJECTED' ? 'recusado' : 'falha';
   let detail;
-  if (key === 'bloqueado') {
+  if (key === 'preparado') {
+    detail = 'A intenção foi registrada, mas não há evidência de envio ao Mercado Livre.';
+  } else if (key === 'falha') {
+    detail = `Falha registrada${last.blocked_code ? ` (${last.blocked_code})` : ''}; a origem não foi classificada como recusa do Mercado Livre.`;
+  } else if (key === 'mantido') {
+    detail = 'Nenhuma alteração foi enviada: o anúncio já estava no preço-alvo.';
+  } else if (key === 'bloqueado') {
     const motivo = last.blocked_code ? (MOTIVO_BLOQUEIO[last.blocked_code] || last.blocked_code) : 'regra de proteção';
     detail = `Nada foi enviado ao Mercado Livre — a proteção do robô segurou a escrita. Motivo: ${motivo}.`;
   } else if (key === 'recusado') {
-    detail = 'O Mercado Livre recusou a alteração; o preço ficou como estava.';
+    detail = 'O Mercado Livre recusou a alteração; consulte o estado atual da oferta antes de concluir qual preço ficou vigente.';
   } else if (key === 'confirmado') {
     detail = 'Escrita confirmada no Mercado Livre.';
   } else if (key === 'aguardando') {
-    detail = 'Enviado ao Mercado Livre; a confirmação ainda não chegou.';
+    detail = last.state === 'sending'
+      ? 'O envio começou, mas não há resposta conclusiva.'
+      : 'O Mercado Livre aceitou o envio; a confirmação ainda está pendente.';
   } else {
     detail = 'Enviado mas sem confirmação até agora — o robô reconfere depois.';
   }
@@ -198,7 +211,7 @@ export const SITUATION_META = {
   sem_dados: { label: 'Sem cálculo de margem', variant: 'amber', icon: 'help_outline' },
   baixo_giro: { label: 'Poucas vendas', variant: 'amber', icon: 'trending_down' },
   promo_ativa: { label: 'Promoção ativa', variant: 'green', icon: 'check_circle' },
-  sem_promo: { label: 'Sem promoção', variant: 'slate', icon: 'remove_circle_outline' },
+  sem_promo: { label: 'Sem promoção ativa observada', variant: 'slate', icon: 'remove_circle_outline' },
 };
 
 export const SUGGESTION_META = {
@@ -223,7 +236,7 @@ export const REGRA_SITUACOES = {
   sem_dados: 'Não dá para calcular a margem: falta custo (CMV), frete ou tarifa confiável, ou o SKU não resolve no Tiny. Sem margem calculável, o robô não escreve.',
   baixo_giro: 'Venda fraca: Parado = zero vendas em 14 dias com promoção ativa; Fraco = menos de 1 unidade por semana na média de 30 dias. Poucas vendas quase nunca é só preço — a regra manda revisar o anúncio (busca, descrição e fotos) antes de aprofundar o desconto.',
   promo_ativa: 'Tem promoção ativa e a margem está acima do mínimo. O robô não precisa agir: se vende, está bom.',
-  sem_promo: 'Não há promoção ativa agora. Se as regras pedirem desconto, não existe oferta disponível para ativar no momento.',
+  sem_promo: 'Nenhuma promoção ativa aparece no retrato deste anúncio. A ausência de registro não comprova que não haja oferta vigente; confira a data da coleta.',
 };
 
 export const REGRA_ACOES = {
@@ -254,6 +267,9 @@ export const REGRA_RESULTADOS = {
   aguardando: 'O robô enviou a alteração e o Mercado Livre ainda não confirmou. Ele confere de novo sozinho nas próximas execuções.',
   recusado: 'O Mercado Livre recusou a alteração. O preço ficou como estava — nada mudou no anúncio.',
   sem_confirmacao: 'A alteração foi enviada, mas até agora não veio nem confirmação nem recusa. O robô reconfere depois e fecha o resultado.',
+  mantido: 'Nenhuma alteração foi enviada: o anúncio já estava no preço-alvo no momento da avaliação.',
+  preparado: 'A intenção de escrita foi registrada, mas não existe comprovante de envio ao Mercado Livre.',
+  falha: 'Há uma falha registrada. Sem código de recusa da plataforma, não atribuímos a falha ao Mercado Livre.',
   bloqueado: 'O robô protegeu a escrita: nada foi enviado ao Mercado Livre. O anúncio NÃO foi bloqueado pelo ML — é uma proteção interna (ex.: já houve escrita hoje neste anúncio, o preço é gerado pelo ML em anúncio SMART, há outra promoção viva, ou as vendas altas exigem margem maior). O motivo exato está no tooltip da célula.',
   nada: 'O robô ainda não executou nenhuma escrita neste anúncio — não há resultado para mostrar.',
 };

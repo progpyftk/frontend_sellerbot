@@ -9,7 +9,7 @@
         <span class="adv-shell__eyebrow">Mercado Livre</span>
         <h1 class="adv-shell__title">Assistente de promoções</h1>
       </div>
-      <nav class="adv-shell__tabs" aria-label="Superfícies do assistente">
+      <nav class="adv-shell__tabs" aria-label="Seções do assistente">
         <router-link
           v-for="tab in tabs"
           :key="tab.to"
@@ -30,7 +30,7 @@
     <!-- PROMO-IA-45: estado do robô sempre visível, em qualquer aba. -->
     <AdvisorStatusStrip />
 
-    <main class="adv-shell__body"><slot /></main>
+    <div class="adv-shell__body" role="region" aria-label="Conteúdo do assistente de promoções"><slot /></div>
   </q-page>
 </template>
 
@@ -38,14 +38,15 @@
 import AdvisorStatusStrip from 'src/components/advisor/AdvisorStatusStrip.vue';
 
 defineProps({
-  active: { type: String, required: true },      // analises | hoje | automacao
+  active: { type: String, required: true },      // visao-geral | anuncios | atividade | automacao
   pergunta: { type: String, default: '' },       // a pergunta que esta superfície responde
 });
 
 // PROMO-IA-45: Análises vira a primeira aba (o retrato completo por anúncio).
 const tabs = [
-  { name: 'analises', to: { name: 'promotions-advisor' }, label: 'Análises', icon: 'analytics' },
-  { name: 'hoje', to: { name: 'promotions-advisor-hoje' }, label: 'Hoje', icon: 'today' },
+  { name: 'visao-geral', to: { name: 'promotions-advisor' }, label: 'Visão geral', icon: 'space_dashboard' },
+  { name: 'anuncios', to: { name: 'promotions-advisor-anuncios' }, label: 'Anúncios', icon: 'inventory_2' },
+  { name: 'atividade', to: { name: 'promotions-advisor-activity' }, label: 'Atividade', icon: 'history' },
   { name: 'automacao', to: { name: 'promotions-advisor-automacao' }, label: 'Automação', icon: 'settings_suggest' },
 ];
 </script>

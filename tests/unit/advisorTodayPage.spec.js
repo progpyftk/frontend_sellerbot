@@ -102,9 +102,9 @@ describe('AdvisorTodayPage', () => {
     patchAutomation.mockResolvedValue({ data: { success: true } });
   });
 
-  it('mostra a navegação por superfície com Hoje ativo', async () => {
+  it('mostra a navegação por superfície com Atividade ativa', async () => {
     const texto = (await montar()).text();
-    expect(texto).toContain('Hoje');
+    expect(texto).toContain('Atividade');
     expect(texto).toContain('Anúncios');
     expect(texto).toContain('Automação');
   });
@@ -272,7 +272,7 @@ describe('AdvisorTodayPage', () => {
     payload.cycle_today = false;   // o ciclo de hoje morreu no timeout e não deixou registro
 
     const texto = (await montar(payload)).text();
-    expect(texto).toContain('O ciclo de hoje não deixou registro');
+    expect(texto).toContain('Este registro não pertence ao dia de hoje');
     // o registro de ontem é citado como histórico, nunca como o ciclo de hoje
     expect(texto).toContain('A última execução registrada foi em');
     expect(texto).not.toContain('escrita(s) confirmada(s) pelo Mercado Livre');
@@ -293,7 +293,7 @@ describe('AdvisorTodayPage', () => {
     };
 
     const texto = (await montar(payload)).text();
-    expect(texto).toContain('2 contas (1 escrevendo)');
+    expect(texto).toContain('2 contas (1 com escrita habilitada)');
     expect(texto).toContain('106 entraram no plano do dia nas contas que escrevem');
   });
 
@@ -321,21 +321,22 @@ describe('AdvisorTodayPage', () => {
     };
 
     const wrapper = await montar(payload);
-    expect(wrapper.text()).toContain('Esperando você');
+    expect(wrapper.text()).toContain('Continuidade da automação');
     expect(wrapper.text()).toContain('da conta MOGIVITTA');
-    expect(wrapper.text()).toContain('rodadas de 10');
+    expect(wrapper.text()).toContain('primeira rodada limitada');
 
     await wrapper.vm.aprovarLeva();
     expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', canary_approved: true });
   });
 
-  it('conta em modo canário sem anúncio no portão ainda mostra o aval', async () => {
+  it('conta em primeira rodada limitada sem itens parados não pede aval prematuro', async () => {
     const payload = JSON.parse(JSON.stringify(PAYLOAD));
     payload.by_account.ACC1.today.aguardando_aval = 0;
 
     const texto = (await montar(payload)).text();
-    expect(texto).toContain('Esperando você');
-    expect(texto).toContain('está na primeira rodada, esperando o seu aval');
+    expect(texto).toContain('Continuidade da automação');
+    expect(texto).toContain('primeira rodada limitada');
+    expect(texto).not.toContain('Liberar próximas rodadas');
   });
 
   it('diz QUAL erro o ciclo teve, não só quantos', async () => {

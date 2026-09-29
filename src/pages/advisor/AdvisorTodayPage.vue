@@ -1,6 +1,6 @@
 <template>
   <AdvisorShell
-    active="hoje"
+    active="atividade"
     pergunta="O que o robô fez hoje, o que espera por você e está tudo dentro do mínimo?"
   >
     <template #actions>
@@ -58,7 +58,7 @@
       <p v-else-if="errosDoCiclo" class="today__confirm" role="alert">
         <q-icon name="error_outline" size="16px" aria-hidden="true" />
         <strong>O ciclo de hoje terminou com {{ ciclo.errors_count }} erro(s).</strong>
-        As escritas confirmadas continuam valendo; o que ficou sem confirmação o robô confere de novo na próxima execução.
+        As escritas confirmadas continuam registradas; as pendências exigem consulta à atividade para verificar se há nova tentativa programada.
       </p>
 
       <p v-if="escrita.bloqueadaPorKillSwitch" class="today__confirm" role="alert">
@@ -81,7 +81,7 @@
                        :hint="`${escrita.nomes || 'nenhuma conta ligada'} · rodadas de ${escrita.leva}`" />
         <AdvisorMetric :value="total.ja_no_alvo" label="já estavam no preço-alvo" hint="nada a fazer" />
         <AdvisorMetric :value="total.nao_confirmados" label="aguardando confirmação do ML" hint="o robô confere de novo depois" />
-        <AdvisorMetric :value="total.recusados" label="recusados pelo Mercado Livre" hint="o preço não mudou" />
+        <AdvisorMetric :value="total.recusados" label="recusados pelo Mercado Livre" hint="confira o estado atual da oferta" />
         <AdvisorMetric :value="naoMexidosQueAvaliou" label="não mexeu (avaliados)" hint="por regra de proteção" />
       </div>
 
@@ -146,7 +146,16 @@
       <!-- PROMO-IA-76: o controle do último ciclo — o que pegou, o que deixou de fora e por quê -->
       <AdvisorSection v-if="controle.rodou" title="O que o robô fez no último ciclo"
                       :count="controle.escritos || undefined"
-                      lead="Quantas contas entraram, quantos anúncios foram avaliados e o que ficou de fora. O que ficou de fora não é erro: é a cadência e o orçamento do dia.">
+                      :lead="controle.escopo ? 'Último registro disponível por conta autorizada. O sistema não vincula estas linhas a um único ciclo agregado; os dados abaixo são parciais.' : 'Quantas contas entraram, quantos anúncios foram avaliados e o que ficou de fora. O que ficou de fora não é erro: é a cadência e o orçamento do dia.'">
+        <template v-if="controle.escopo">
+          <ul class="today__motivos">
+            <li v-for="linha in controle.contas" :key="linha.account_id">
+              Conta {{ linha.account_id }}: {{ linha.status }} · {{ linha.escritos_confirmados }} confirmações
+              <template v-if="linha.planejados != null"> · {{ linha.planejados }} planejados</template>
+            </li>
+          </ul>
+        </template>
+        <template v-else>
         <ul class="today__motivos">
           <li><strong>{{ controle.contas }}</strong> conta(s) no ciclo
             <template v-if="controle.contas_puladas.length">
@@ -181,6 +190,7 @@
         <p v-else-if="!controle.rodou" class="today__hint">
           O ciclo não registrou nada — o robô pode ter parado no meio (o log por conta mostra onde).
         </p>
+        </template>
       </AdvisorSection>
 
       <AdvisorSection v-if="historico.dias.length" title="Ontem e nos últimos 7 dias"
@@ -290,8 +300,8 @@
       </AdvisorSection>
 
       <!-- Espera de aval (só aparece quando existe) -->
-      <AdvisorSection v-if="contaCanario" title="Esperando você" :count="aguardandoAval || undefined" :lead="leadAval">
-        <q-btn unelevated no-caps color="primary" icon="check_circle" label="Aprovar a próxima rodada"
+      <AdvisorSection v-if="contaCanario" title="Continuidade da automação" :count="aguardandoAval || undefined" :lead="leadAval">
+        <q-btn v-if="aguardandoAval" unelevated no-caps color="primary" icon="check_circle" label="Liberar próximas rodadas"
                :loading="aprovando" @click="aprovarLeva" />
       </AdvisorSection>
 
@@ -337,23 +347,22 @@
         <span>
           <template v-if="ciclo && cicloHoje">
             última execução {{ hora(ciclo.started_at) }}, {{ duracao(ciclo.duration_seconds) }} ·
-            {{ ciclo.items_processed || 0 }} escrita(s) confirmada(s) pelo Mercado Livre
+            Último registro da conta {{ ciclo.account_ref || 'não identificada' }}: {{ ciclo.items_processed || 0 }} escrita(s) confirmada(s) pelo Mercado Livre
             <template v-if="ciclo.planned"> · {{ ciclo.planned }} no plano</template>
             <template v-if="ciclo.unreconciled"> · {{ ciclo.unreconciled }} aguardando confirmação</template>
             <template v-if="ciclo.errors_count && !falhas.length"> · {{ ciclo.errors_count }} erro(s)</template>
             · status {{ STATUS_LABEL[ciclo.status] || ciclo.status }}
           </template>
           <template v-else-if="ciclo">
-            <strong>O ciclo de hoje não deixou registro</strong> — provavelmente interrompido no limite
-            de tempo. A última execução registrada foi em {{ dataHora(ciclo.started_at) }}.
+            <strong>Este registro não pertence ao dia de hoje.</strong> A última execução registrada foi em {{ dataHora(ciclo.started_at) }}.
           </template>
           <template v-else>
-            <strong>Sem registro de ciclo</strong> — o job diário ainda não rodou nenhuma vez.
+            <strong>Sem registro de execução nas contas acessíveis.</strong> Não há conclusão por conta disponível nesta consulta.
           </template>
         </span>
         <span>
           próxima {{ proximo }} · suas {{ contas.length }} contas
-          ({{ contasQueEscrevem.length }} escrevendo) · {{ total.anuncios_ativos }} anúncios ativos ·
+          ({{ contasQueEscrevem.length }} com escrita habilitada) · {{ total.anuncios_ativos }} anúncios ativos ·
           {{ noPlanoEscrita }} entraram no plano do dia nas contas que escrevem
         </span>
       </div>
@@ -431,13 +440,12 @@ const leadAval = computed(() => {
   const leva = contaCanario.value.wave_size || escrita.value.leva;
   const conta = contaCanario.value.account_nickname;
   if (!aguardandoAval.value) {
-    return `A conta ${conta} está na primeira rodada, esperando o seu aval. `
-      + `Nenhum anúncio ficou parado hoje; ao aprovar, o robô pode escrever uma rodada de `
-      + `até ${leva} anúncios e espera o próximo aval.`;
+    return `A conta ${conta} pode processar uma primeira rodada limitada a ${leva} anúncios sem este aval. `
+      + `Nenhum anúncio está parado aguardando decisão agora; depois da primeira rodada, novas rodadas `
+      + `dependem da liberação de continuidade.`;
   }
-  return `${aguardandoAval.value} anúncios da conta ${conta} estão prontos e esperando o seu aval `
-    + `para a primeira rodada. Enquanto você não aprovar, o robô escreve no máximo uma rodada de ${leva} `
-    + `anúncios e espera o próximo aval.`;
+  return `${aguardandoAval.value} anúncios da conta ${conta} já estão parados aguardando liberação das próximas rodadas. `
+    + `A primeira rodada limitada (até ${leva} anúncios) pode ocorrer sem aval; ao liberar, o robô continua automaticamente.`;
 });
 
 /**
@@ -527,7 +535,7 @@ function dataHora(iso) {
 
 const proximo = computed(() => {
   const iso = data.value?.next_cycle_at;
-  if (!iso) return 'amanhã 09:00 (Brasília)';
+  if (!iso) return 'sem horário previsto';
   const fmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
   return `${fmt.format(new Date(iso))} (Brasília)`;
 });

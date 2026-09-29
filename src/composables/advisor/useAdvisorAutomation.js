@@ -185,7 +185,7 @@ export function useAdvisorAutomation() {
 
   async function aprovarLeva(conta) {
     await gravar(conta.account_id, { canary_approved: true },
-      `${conta.account_nickname}: primeira rodada aprovada — o robô pode escrever na próxima execução.`);
+      `${conta.account_nickname}: aval registrado para continuar após a primeira rodada limitada.`);
   }
 
   async function retomar(conta) {
@@ -208,17 +208,17 @@ export function useAdvisorAutomation() {
   }
 
   /**
-   * Contas que VÃO escrever no próximo ciclo: conta ligada + sem pausa + modo global + sem kill
-   * switch + **com o aval da primeira leva já dado**. Conta parada no portão do canário é
-   * "autorizada", não "escrevendo" — anunciá-la como ativa seria mentira sobre o que vai acontecer.
+   * Contas autorizadas para escrita. `canary_pending` permite a primeira rodada limitada;
+   * ele bloqueia somente as rodadas seguintes até o aval do dono.
    */
   const escrevendo = computed(() => contas.value.filter((conta) => (
-    conta.auto_write && !conta.paused && !conta.canary_pending && modoGlobal.value && !killSwitch.value
+    conta.auto_write && !conta.paused && modoGlobal.value && !killSwitch.value
   )));
 
-  /** Contas que só esperam o aval do dono para começar a escrever. */
+  /** Contas com anúncios efetivamente parados esperando o próximo aval. */
   const esperandoAval = computed(() => contas.value.filter((conta) => (
-    conta.auto_write && !conta.paused && conta.canary_pending && modoGlobal.value && !killSwitch.value
+    conta.auto_write && !conta.paused && conta.canary_pending
+    && Number(conta.today?.aguardando_aval || 0) > 0 && modoGlobal.value && !killSwitch.value
   )));
 
   const travada = computed(() => killSwitch.value || !modoGlobal.value);

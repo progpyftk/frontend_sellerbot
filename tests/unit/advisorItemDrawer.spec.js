@@ -7,6 +7,7 @@
  * correta dos buckets.
  */
 import { mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
 import { describe, expect, it } from 'vitest';
 
 import AdvisorItemDrawer from 'src/components/advisor/AdvisorItemDrawer.vue';
@@ -94,10 +95,28 @@ describe('AdvisorItemDrawer', () => {
     expect(comErro.text()).not.toContain('Dados do anúncio');
   });
 
+  it('leva foco ao abrir, fecha com Escape e devolve foco ao controle de origem', async () => {
+    const origem = document.createElement('button');
+    document.body.appendChild(origem);
+    origem.focus();
+    const wrapper = mount(AdvisorItemDrawer, {
+      attachTo: document.body,
+      props: { detalhe: DETALHE, carregando: false, erro: '' },
+      global: { stubs },
+    });
+    await nextTick();
+    expect(document.activeElement).toBe(wrapper.find('aside').element);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(wrapper.emitted('fechar')).toBeTruthy();
+    wrapper.unmount();
+    expect(document.activeElement).toBe(origem);
+    origem.remove();
+  });
+
   it('tem o botão de enviar para revisão e mostra o estado enviado (PROMO-IA-47, portado)', () => {
     const emviado = montar({ revisaoEstado: 'enviado' });
     expect(emviado.text()).toContain('Enviar para revisão');
-    expect(emviado.text()).toContain('Anúncios · Revisão SEO');
+    expect(emviado.text()).toContain('Anúncios · Revisão');
     const comErro = montar({ revisaoEstado: 'erro', revisaoMensagem: 'Fila cheia' });
     expect(comErro.text()).toContain('Fila cheia');
   });

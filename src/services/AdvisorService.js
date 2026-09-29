@@ -13,6 +13,11 @@ export default {
     return api.get('/mercadolivre/advisor/today/');
   },
 
+  /** Atividade: ledger paginado de tentativas e vínculos de recuperação. */
+  getActivity(params = {}) {
+    return api.get('/mercadolivre/advisor/activity/', { params });
+  },
+
   /** Superfície Automação: mesmo contrato do dia, usado para configurar. */
   getAutomation() {
     return api.get('/mercadolivre/advisor/automation/');

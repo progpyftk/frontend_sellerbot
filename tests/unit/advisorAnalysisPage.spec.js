@@ -136,14 +136,16 @@ describe('AdvisorAnalysisPage', () => {
     replace.mockReset();
   });
 
-  it('o pipeline do dono vira coluna: Classificação · Situação · Decisão · Resultado (PROMO-IA-48)', async () => {
+  it('o pipeline do dono vira coluna: Situação · Sugestão · Resultado (PROMO-IA-48)', async () => {
     const wrapper = await montar();
     const cabecalhos = wrapper.findAll('.adv-table__table thead th').map((th) => th.text());
-    expect(cabecalhos).toContain('Classificação');
-    expect(cabecalhos).toContain('Situação da venda');
-    expect(cabecalhos).toContain('Decisão do agente');
-    expect(cabecalhos).toContain('Resultado');
-    expect(cabecalhos).toContain('Estoque');
+    expect(cabecalhos).toContain('Anúncio');
+    expect(cabecalhos).toContain('Situação');
+    expect(cabecalhos).toContain('Sugestão estimada');
+    expect(cabecalhos).toContain('Última atuação');
+    expect(cabecalhos).toContain('Preço ao comprador');
+    expect(cabecalhos).toContain('Promoção observada');
+    expect(cabecalhos).toHaveLength(6);
     // PROMO-IA-49: Status virou badge no título e o SKU foi para a linha de apoio
     // (colunas próprias saíram para a tabela caber na tela)
     expect(wrapper.texto()).toContain('Ativo');
@@ -151,11 +153,8 @@ describe('AdvisorAnalysisPage', () => {
     expect(cabecalhos).not.toContain('Status');
     expect(cabecalhos).not.toContain('SKU');
     // "Análises 40" sumiu — título novo + contagem como meta à direita
-    expect(wrapper.texto()).toContain('Análises realizadas pelo agente');
+    expect(wrapper.texto()).toContain('Consulte estado promocional');
     expect(wrapper.texto()).toContain('2 nesta página · 2 no catálogo');
-    // classificação = UMA coisa (saúde) + a data compacta
-    expect(wrapper.texto()).toContain('Médio');
-    expect(wrapper.texto()).toContain('23/09');
     // vocabulário autoexplicativo do mínimo
     expect(wrapper.texto()).toContain('Só abaixo do mínimo de margem ou lucro');
   });
@@ -172,11 +171,12 @@ describe('AdvisorAnalysisPage', () => {
     expect(texto).toContain('Recusado');     // failed
   });
 
-  it('estoque zerado fica vermelho e o tooltip mostra os vendidos (PROMO-IA-48)', async () => {
-    const zerado = { ...LINHA, available_quantity: 0, sold_quantity: 9 };
-    const wrapper = await montar({ ...PAYLOAD, total: 1, results: [zerado] });
-    expect(wrapper.find('[title="Vendidos: 9"]').exists()).toBe(true);
-    expect(wrapper.find('.an__ruim').exists()).toBe(true);
+  it('mantém o catálogo resumido em seis colunas e deixa os dados operacionais no detalhe', async () => {
+    const wrapper = await montar();
+    const headers = wrapper.findAll('.adv-table__table thead th').map((th) => th.text());
+    expect(headers).toHaveLength(6);
+    expect(headers).not.toContain('Estoque');
+    expect(headers).not.toContain('Ritmo de vendas');
   });
 
   it('a dupla decide preço E revisão e a Situação traz os mínimos da CONTA (PROMO-IA-48)', async () => {
@@ -203,7 +203,7 @@ describe('AdvisorAnalysisPage', () => {
     expect(enqueueForReview).toHaveBeenCalledWith({
       item_ids: ['MLB3'], reason: 'abaixo do mínimo + poucas vendas',
     });
-    expect(wrapper.texto()).toContain('Anúncios · Revisão SEO');
+    expect(wrapper.texto()).toContain('Anúncios · Revisão');
   });
 
   it('uma linha por anúncio — 2 anúncios, 2 linhas', async () => {
@@ -264,8 +264,8 @@ describe('AdvisorAnalysisPage', () => {
     getCatalog.mockClear();
 
     const thPreco = wrapper.findAll('.adv-table__table thead th')
-      .find((th) => th.text().includes('Preço-base'));
-    expect(thPreco, 'cabeçalho de Preço-base deveria existir').toBeTruthy();
+      .find((th) => th.text().includes('Preço ao comprador'));
+    expect(thPreco, 'cabeçalho de preço ao comprador deveria existir').toBeTruthy();
     await thPreco.trigger('click');
     await aposDebounce();
     await flushPromises();
@@ -288,8 +288,9 @@ describe('AdvisorAnalysisPage', () => {
 
   it('a barra de estado do robô aparece junto da tabela (kill/escrita/próxima execução)', async () => {
     const texto = (await montar()).texto();
-    expect(texto).toContain('Escrevendo agora: MOGIVITTA');
-    expect(texto).toContain('próxima execução');
+    expect(texto).toContain('conta(s) com escrita automática habilitada');
+    expect(texto).not.toContain('Escrevendo agora');
+    expect(texto).toContain('próxima previsão');
     expect(texto).toContain('Pausar toda a escrita');
   });
 
@@ -306,10 +307,10 @@ describe('AdvisorAnalysisPage', () => {
     }));
   });
 
-  it('a legenda explica cada resultado — inclusive o "Bloqueado (proteção)" (PROMO-IA-51)', async () => {
+  it('a legenda explica cada resultado — inclusive o "Proteção: não enviado" (PROMO-IA-51)', async () => {
     const texto = (await montar()).texto();
     expect(texto).toContain('O que significa cada resultado');
-    expect(texto).toContain('Bloqueado (proteção)');
+    expect(texto).toContain('Proteção: não enviado');
     // a explicação central: a proteção segurou a escrita, o ML NÃO bloqueou o anúncio
     expect(texto).toContain('NÃO foi bloqueado pelo ML');
     expect(texto).toContain('nada foi enviado ao Mercado Livre');
@@ -325,7 +326,7 @@ describe('AdvisorAnalysisPage', () => {
   it('o tooltip do ritmo traz a janela de 30 dias (PROMO-IA-52)', async () => {
     const wrapper = await montar();
     const titulos = wrapper.findAll('[title]').map((el) => el.attributes('title'));
-    expect(titulos.some((t) => t && t.includes('vendas em 30 dias'))).toBe(true);
+    expect(titulos.some((t) => t && t.includes('vendas em 30 dias'))).toBe(false); // ritmo fica no detalhe para manter a lista curta
   });
 
   it('abre o editor de limites pelo chip "mín." da conta da linha (PROMO-IA-56)', async () => {
