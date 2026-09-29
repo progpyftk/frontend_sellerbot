@@ -355,12 +355,12 @@ const router = useRouter();
  * mostra o preço observado ao comprador sem exigir rolagem horizontal.
  */
 const COLUNAS = [
-  { key: 'anuncio', label: 'Anúncio', minWidth: 230 },
-  { key: 'promoAtiva', label: 'Situação da promoção', minWidth: 150 },
-  { key: 'preco', label: 'Preço ao comprador', numeric: true, sortable: true, sortKey: 'price', minWidth: 125 },
-  { key: 'margemLucro', label: 'Margem e lucro estimados', minWidth: 150 },
-  { key: 'resultado', label: 'Última atuação', minWidth: 145 },
-  { key: 'proximo', label: 'Próximo passo', minWidth: 190 },
+  { key: 'anuncio', label: 'Anúncio', minWidth: 180 },
+  { key: 'promoAtiva', label: 'Situação da promoção', minWidth: 130 },
+  { key: 'preco', label: 'Preço ao comprador', numeric: true, sortable: true, sortKey: 'price', minWidth: 110 },
+  { key: 'margemLucro', label: 'Margem e lucro estimados', minWidth: 130 },
+  { key: 'resultado', label: 'Última atuação', minWidth: 120 },
+  { key: 'proximo', label: 'Próximo passo', minWidth: 140 },
 ];
 
 /** Cartão do mobile: o pipeline primeiro, depois o essencial financeiro. */
@@ -644,11 +644,13 @@ onMounted(() => {
     flex-direction: column;
     gap: 2px;
     align-items: flex-start;
+    min-width: 0;
+    width: 100%;
   }
   &__data {
     font-size: $text-xs-size;
     color: $text-muted;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   // abaixo do mínimo da conta (margem/lucro) → vermelho

@@ -103,11 +103,13 @@ const ariaSort = (col) => {
   }
   &__table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: $text-small-size;
 
     th, td {
       text-align: left;
+      overflow-wrap: anywhere;
       padding: $space-2 $space-3;
       border-bottom: 1px solid $border;
       vertical-align: middle;
@@ -116,7 +118,7 @@ const ariaSort = (col) => {
       font-size: $text-xs-size;
       text-transform: uppercase;
       letter-spacing: .04em;
-      color: $text-muted;
+      color: $tint-slate-text;
       white-space: normal;   // cabeçalho longo quebra — a tabela fica mais estreita (PROMO-IA-49)
       background: $surface-2;
       position: sticky;
@@ -131,6 +133,7 @@ const ariaSort = (col) => {
     .is-numeric { text-align: right; font-variant-numeric: tabular-nums; }
     .is-sortable { cursor: pointer; }
     .is-active { color: $text-primary; }
+    :deep(.adv-pill) { max-width:100%; white-space:normal; }
   }
   &__sort {
     display: inline-flex;
@@ -153,7 +156,7 @@ const ariaSort = (col) => {
     gap: $space-2 $space-3;
     margin-top: $space-2;
   }
-  &__campo { display: flex; flex-direction: column; gap: 1px; }
+  &__campo { display: flex; flex-direction: column; gap: 1px; min-width:0; overflow-wrap:anywhere; }
   &__campoLabel {
     font-size: $text-xs-size;
     color: $text-muted;
@@ -179,6 +182,7 @@ const ariaSort = (col) => {
       li.is-open { background: $tint-teal-bg; }
     }
     &__cards header { display: flex; flex-direction: column; gap: 2px; }
+    &__cards :deep(.adv-pill) { max-width:100%; white-space:normal; }
   }
 }
 </style>

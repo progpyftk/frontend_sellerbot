@@ -76,7 +76,7 @@
               <summary>
                 Limites desta conta
                 <span class="aut__regua-resumo">
-                  mínimo de {{ pct(Number(conta.regua?.margin_pct)) }} de margem · {{ brl(Number(conta.regua?.profit_brl)) }} de lucro
+                  mínimo de {{ pct(conta.regua?.margin_pct) }} de margem · {{ brl(conta.regua?.profit_brl) }} de lucro
                 </span>
               </summary>
               <AdvisorReguaConta
@@ -120,7 +120,7 @@
       <AdvisorSection title="O que significa cada estado da conta" tight>
         <dl class="aut__legenda">
           <div>
-            <dt><AdvisorStatusPill status="ligado">Escrevendo</AdvisorStatusPill></dt>
+            <dt><AdvisorStatusPill status="ligado">Escrita habilitada</AdvisorStatusPill></dt>
             <dd>Escrita ligada, sem trava — o robô pode alterar preço nesta conta na próxima execução.</dd>
           </div>
           <div>
@@ -300,7 +300,7 @@ function estadoDaConta(conta) {
   if (killSwitch.value || !modoGlobal.value) return { label: 'Autorizada, mas travada', status: 'bloqueado' };
   if (conta.canary_pending && Number(conta.today?.aguardando_aval || 0) > 0) return { label: 'Próxima leva aguardando aval', status: 'aguardando' };
   if (conta.canary_pending) return { label: 'Primeira rodada limitada', status: 'aguardando' };
-  return { label: 'Escrevendo', status: 'ligado' };
+  return { label: 'Escrita habilitada', status: 'ligado' };
 }
 
 async function recarregar() {

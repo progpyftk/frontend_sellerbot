@@ -156,7 +156,7 @@ onMounted(load);
 .overview__metrics span { color:$text-muted; font-size:$text-small-size; }
 .overview__scope { margin-top:$space-4; font-size:$text-xs-size; }
 .overview__portfolio { margin-top:$space-6; }
-.overview__pending { margin-top:$space-5; padding:$space-5; border:1px solid $border; border-radius:$radius-md; background:$surface; }
+.overview__pending { margin-top:$space-5; padding:$space-5; padding-right:72px; border:1px solid $border; border-radius:$radius-md; background:$surface; }
 .overview__pendingList { list-style:none; padding:0; margin:$space-3 0 0; display:grid; gap:$space-2; }
 .overview__pendingList li { display:flex; justify-content:space-between; gap:$space-3; padding:$space-2 0; border-top:1px solid $border; }
 .overview__pendingList li span:last-child { color:$text-muted; }
@@ -166,5 +166,4 @@ onMounted(load);
 .overview__portfolioHead a { color:$primary; font-weight:$font-semibold; white-space:nowrap; }
 @media(max-width:700px) { .overview__portfolioHead,.overview__pendingList li { align-items:flex-start; flex-direction:column; } }
 @media(max-width:700px) { .overview__cycle { flex-direction:column; } .overview__metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media(max-width:420px) { .overview__metrics { grid-template-columns:1fr; } }
 </style>

@@ -19,12 +19,12 @@
     <q-btn v-if="indisponivel" flat dense no-caps icon="refresh" label="Tentar novamente" :loading="carregando" @click="carregar" />
     <q-btn
       v-if="contas.length && !confirmar"
-      outline dense no-caps size="sm" color="negative" icon="pause_circle"
+      outline dense no-caps size="sm" color="red-10" icon="pause_circle"
       label="Pausar toda a escrita" :loading="pausando" @click="confirmar = true"
     />
     <template v-if="confirmar">
       <span class="adv-strip__item">Desliga a escrita em <strong>todas as contas</strong> agora — as promoções aplicadas continuam no ar.</span>
-      <q-btn unelevated dense no-caps size="sm" color="negative" label="Confirmar pausa" :loading="pausando" @click="pausar" />
+      <q-btn unelevated dense no-caps size="sm" color="red-10" label="Confirmar pausa" :loading="pausando" @click="pausar" />
       <q-btn flat dense no-caps size="sm" label="Cancelar" @click="confirmar = false" />
     </template>
   </div>
@@ -119,7 +119,7 @@ onMounted(carregar);
   border-radius: $radius-md;
   background: $surface-2;
   font-size: $text-xs-size;
-  color: $text-muted;
+  color: $tint-slate-text;
 
   &--alerta {
     background: $tint-red-bg;

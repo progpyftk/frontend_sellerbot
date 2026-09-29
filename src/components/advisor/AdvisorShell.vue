@@ -35,7 +35,15 @@
 </template>
 
 <script setup>
+import { onBeforeUnmount, onMounted } from 'vue';
 import AdvisorStatusStrip from 'src/components/advisor/AdvisorStatusStrip.vue';
+
+let activeShells = 0;
+onMounted(() => { activeShells += 1; document.body.classList.add('advisor-page'); });
+onBeforeUnmount(() => {
+  activeShells -= 1;
+  if (activeShells === 0) document.body.classList.remove('advisor-page');
+});
 
 defineProps({
   active: { type: String, required: true },      // visao-geral | anuncios | atividade | automacao
@@ -57,7 +65,6 @@ const tabs = [
 .adv-shell {
   padding: $space-6 $space-8 $space-10;
 
-  @media (max-width: 599px) { padding: $space-4; }
 
   &__head {
     display: flex;
@@ -126,4 +133,12 @@ const tabs = [
     color: $text-muted;
   }
 }
+@media (max-width: 599px) {
+  .adv-shell { padding:$space-4; }
+  .adv-shell__tabs { flex:1 1 100%; min-width:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; }
+  .adv-shell__tab { min-width:0; justify-content:center; padding:$space-2; }
+  .adv-shell__actions { flex:1 1 100%; }
+  .adv-shell__question { display:none; }
+}
+:global(body.advisor-page .feedback-fab-container) { display:none; }
 </style>

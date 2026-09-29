@@ -3,8 +3,8 @@
     <p v-if="titulo" class="regua__topo">
       <strong>{{ titulo }}</strong>
       <span class="regua__resumo">
-        mínimo de {{ pct(Number(conta.regua?.margin_pct)) }} de margem ·
-        {{ brl(Number(conta.regua?.profit_brl)) }} de lucro
+        mínimo de {{ pct(conta.regua?.margin_pct) }} de margem ·
+        {{ brl(conta.regua?.profit_brl) }} de lucro
       </span>
     </p>
 
