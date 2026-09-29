@@ -1,6 +1,8 @@
 <template>
   <AdvisorShell active="visao-geral" pergunta="Veja o que o robô registrou, o que está pendente e como estão seus anúncios.">
     <template #actions>
+      <q-select v-model="selectedAccount" :options="accountOptions" dense outlined clearable emit-value map-options
+                label="Conta" aria-label="Conta da visão geral" class="overview__account" />
       <q-btn flat dense no-caps icon="refresh" label="Atualizar" :loading="loading" @click="load" />
     </template>
     <q-banner v-if="error" class="bg-red-1 text-red-10 q-mb-md" rounded role="alert">
@@ -20,6 +22,40 @@
           <router-link :to="{ name: 'promotions-advisor-anuncios' }">Abrir anúncios</router-link>
         </div>
       </section>
+      <p class="overview__scope" role="status" v-if="!today.facts_error">
+        {{ userActionCount
+          ? `${userActionCount} anúncio(s) têm decisão sua registrada como pendente; abra Atividade para ver o motivo.`
+          : 'Nenhuma decisão sua pendente aparece nos registros disponíveis.' }}
+      </p>
+    </template>
+    <section class="overview__portfolio" aria-labelledby="portfolio-title">
+      <div class="overview__portfolioHead">
+        <div>
+          <h2 id="portfolio-title">Promoções nos anúncios ativos</h2>
+          <p>Retrato salvo pelo sistema; uma promoção pode ter mudado depois da coleta.</p>
+        </div>
+        <router-link :to="{ name: 'promotions-advisor-anuncios' }">Examinar anúncios</router-link>
+      </div>
+      <q-banner v-if="catalogError" class="bg-red-1 text-red-10" rounded role="alert">
+        Não foi possível consultar a cobertura promocional. Os números não estão disponíveis.
+        <template #action><q-btn flat label="Tentar novamente" @click="loadCatalog" /></template>
+      </q-banner>
+      <p v-else-if="catalogLoading && !catalog" role="status">Carregando retrato dos anúncios…</p>
+      <template v-else-if="catalog">
+        <div class="overview__metrics" aria-label="Cobertura promocional observada">
+          <article><strong>{{ catalog.summary?.ads ?? '—' }}</strong><span>Anúncios ativos no catálogo</span></article>
+          <article><strong>{{ coverage.active ?? '—' }}</strong><span>Promoção ativa confirmada no retrato</span><router-link :to="coverageLink('active')">Ver anúncios</router-link></article>
+          <article><strong>{{ coverage.scheduled_only ?? '—' }}</strong><span>Somente promoção programada</span><router-link :to="coverageLink('scheduled_only')">Ver anúncios</router-link></article>
+          <article><strong>{{ coverage.without_promotion ?? '—' }}</strong><span>Sem promoção, com leitura completa</span><router-link :to="coverageLink('without_promotion')">Ver anúncios</router-link></article>
+          <article><strong>{{ coverage.unconfirmed ?? '—' }}</strong><span>Estado da promoção não confirmado</span><router-link :to="coverageLink('unconfirmed')">Ver anúncios</router-link></article>
+        </div>
+        <q-banner v-if="catalog.snapshot?.stale || catalog.snapshot?.empty || catalog.snapshot?.partial" class="bg-orange-1 text-orange-10 q-mt-md" rounded role="status">
+          Parte da coleta está ausente, incompleta ou desatualizada. Consulte os anúncios com estado não confirmado antes de concluir que estão sem promoção.
+        </q-banner>
+        <p class="overview__scope">{{ snapshotScope }}</p>
+      </template>
+    </section>
+    <template v-if="today">
       <q-banner v-if="today.facts_error" class="bg-orange-1 text-orange-10 q-mt-md" rounded role="status">
         A agregação dos números falhou. Os totais não estão disponíveis; isso não significa que o robô não fez nada.
       </q-banner>
@@ -52,60 +88,68 @@
       </section>
       <p class="overview__scope">Os totais são por anúncio no dia de negócio ({{ today.day_window?.timezone || 'fuso não informado' }}). Motivos podem se sobrepor. A data de execução é a registrada pelo sistema.</p>
     </template>
-      <section class="overview__portfolio" aria-labelledby="portfolio-title">
-        <div class="overview__portfolioHead">
-          <div>
-            <h2 id="portfolio-title">Promoções nos anúncios ativos</h2>
-            <p>Retrato salvo pelo sistema; uma promoção pode ter mudado depois da coleta.</p>
-          </div>
-          <router-link :to="{ name: 'promotions-advisor-anuncios' }">Examinar anúncios</router-link>
-        </div>
-        <q-banner v-if="catalogError" class="bg-red-1 text-red-10" rounded role="alert">
-          Não foi possível consultar a cobertura promocional. Os números não estão disponíveis.
-          <template #action><q-btn flat label="Tentar novamente" @click="loadCatalog" /></template>
-        </q-banner>
-        <p v-else-if="catalogLoading && !catalog" role="status">Carregando retrato dos anúncios…</p>
-        <template v-else-if="catalog">
-          <div class="overview__metrics" aria-label="Cobertura promocional observada">
-            <article><strong>{{ catalog.summary?.ads ?? '—' }}</strong><span>Anúncios ativos no catálogo</span></article>
-            <article><strong>{{ catalog.summary?.with_active_promo ?? '—' }}</strong><span>Com promoção ativa no retrato</span></article>
-            <article><strong>{{ catalog.summary?.scheduled_only ?? '—' }}</strong><span>Somente com promoção programada no retrato</span></article>
-            <article><strong>{{ catalog.summary?.without_active_or_scheduled_snapshot ?? '—' }}</strong><span>Sem promoção ativa ou programada no retrato</span></article>
-          </div>
-          <q-banner v-if="catalog.snapshot?.stale || catalog.snapshot?.empty" class="bg-orange-1 text-orange-10 q-mt-md" rounded role="status">
-            O retrato de uma ou mais contas está ausente ou desatualizado. Estes números não confirmam o estado atual das promoções.
-          </q-banner>
-          <p class="overview__scope">{{ snapshotScope }}</p>
-        </template>
-      </section>
   </AdvisorShell>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import AdvisorShell from 'src/components/advisor/AdvisorShell.vue';
 import AdvisorService from 'src/services/AdvisorService';
 
 const today = ref(null);
+const route = useRoute();
+const router = useRouter();
+const selectedAccount = ref(typeof route.query.account_id === 'string' ? route.query.account_id : null);
 const catalog = ref(null);
 const loading = ref(false);
 const catalogLoading = ref(false);
 const error = ref(false);
 const catalogError = ref(false);
+const coverage = computed(() => catalog.value?.summary?.promotion_coverage || {});
+const userActionCount = computed(() => new Set((today.value?.failures || [])
+  .filter((failure) => failure.exige_acao)
+  .map((failure) => `${failure.account_id || failure.account_nickname}:${failure.item_id}`)).size);
+const accountOptions = computed(() => [
+  { label: 'Todas as contas', value: null },
+  ...(catalog.value?.accounts || []).map((account) => ({
+    label: account.account_nickname, value: account.account_id,
+  })),
+]);
+function coverageLink(promotion_state) {
+  return { name: 'promotions-advisor-anuncios', query: {
+    promotion_state, account_id: selectedAccount.value || undefined,
+  } };
+}
+let todaySequence = 0;
+let catalogSequence = 0;
 async function load() {
+  const sequence = ++todaySequence;
   loading.value = true;
   error.value = false;
   loadCatalog();
-  try { today.value = (await AdvisorService.getToday()).data; } catch { error.value = true; today.value = null; }
-  finally { loading.value = false; }
+  try {
+    const response = await AdvisorService.getToday(selectedAccount.value ? { account_id: selectedAccount.value } : {});
+    if (sequence === todaySequence) today.value = response.data;
+  } catch { if (sequence === todaySequence) { error.value = true; today.value = null; } }
+  finally { if (sequence === todaySequence) loading.value = false; }
 }
 async function loadCatalog() {
+  const sequence = ++catalogSequence;
   catalogLoading.value = true;
   catalogError.value = false;
-  try { catalog.value = (await AdvisorService.getCatalog({ status: 'active', page_size: 1 })).data; }
-  catch { catalogError.value = true; catalog.value = null; }
-  finally { catalogLoading.value = false; }
+  const params = { status: 'active', page_size: 1 };
+  if (selectedAccount.value) params.account_id = selectedAccount.value;
+  try {
+    const response = await AdvisorService.getCatalog(params);
+    if (sequence === catalogSequence) catalog.value = response.data;
+  } catch { if (sequence === catalogSequence) { catalogError.value = true; catalog.value = null; } }
+  finally { if (sequence === catalogSequence) catalogLoading.value = false; }
 }
+watch(selectedAccount, (account_id) => {
+  router.replace({ query: { ...route.query, account_id: account_id || undefined } });
+  load();
+});
 const snapshotScope = computed(() => {
   const accounts = Object.values(catalog.value?.snapshot?.by_account || {});
   if (!accounts.length) return 'Horário da coleta não disponível.';
@@ -150,10 +194,13 @@ onMounted(load);
 .overview__cycle p,.overview__scope { color:$text-muted; margin:0; }
 .overview__actions { display:flex; flex-direction:column; gap:$space-2; white-space:nowrap; }
 .overview__actions a { color:$primary; font-weight:$font-semibold; }
+.overview__account { min-width:170px; }
 .overview__metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:$space-3; margin-top:$space-4; }
+.overview__portfolio .overview__metrics { grid-template-columns:repeat(5,minmax(0,1fr)); }
 .overview__metrics article { display:flex; flex-direction:column; gap:$space-2; padding:$space-4; border:1px solid $border; border-radius:$radius-md; background:$surface; }
 .overview__metrics strong { font-size:$text-h2-size; color:$text-primary; }
 .overview__metrics span { color:$text-muted; font-size:$text-small-size; }
+.overview__metrics a { color:$primary; font-size:$text-small-size; font-weight:$font-semibold; }
 .overview__scope { margin-top:$space-4; font-size:$text-xs-size; }
 .overview__portfolio { margin-top:$space-6; }
 .overview__pending { margin-top:$space-5; padding:$space-5; padding-right:72px; border:1px solid $border; border-radius:$radius-md; background:$surface; }
@@ -166,4 +213,5 @@ onMounted(load);
 .overview__portfolioHead a { color:$primary; font-weight:$font-semibold; white-space:nowrap; }
 @media(max-width:700px) { .overview__portfolioHead,.overview__pendingList li { align-items:flex-start; flex-direction:column; } }
 @media(max-width:700px) { .overview__cycle { flex-direction:column; } .overview__metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:700px) { .overview__portfolio .overview__metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 </style>

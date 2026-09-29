@@ -42,6 +42,15 @@ const DETALHE = {
       },
     }],
   },
+  promotion_state: { state: 'active' },
+  last_action: { state: 'executed_verified', at: '2026-09-22T10:00:00Z' },
+  next_step: { owner: 'none', label: 'Nenhuma pendência registrada' },
+  financials: {
+    execution_estimate: { at: '2026-09-21T10:00:00Z', price: 480, gate: { margin_pct: 30.9, profit: 148.12 } },
+    snapshot_estimate: { at: '2026-09-22T10:00:00Z', price: 480, margin_pct: 42.5, profit_unit: 204,
+      shipping_cost: 80, cmv_unit: 120 },
+    realized: null,
+  },
   agent_logs: [
     { created_at: '2026-09-06T21:53:00Z', acao: 'aprofundar', event_type: 'action',
       execution_status: 'executed', reason: 'parado sob promoção' },
@@ -66,7 +75,7 @@ describe('AdvisorItemDrawer', () => {
     expect(texto).toContain('Ativas');
     expect(texto).toContain('Programadas');
     expect(texto).toContain('Dados do anúncio');
-    expect(texto).toContain('Histórico');
+    expect(texto).toContain('Decisões registradas');
   });
 
   it('cada bucket mostra a promoção certa, com preço, desconto e margem', () => {
@@ -77,6 +86,15 @@ describe('AdvisorItemDrawer', () => {
     expect(texto).toContain('18,4%');   // margem da ativa
     expect(texto).toContain('25,0%');   // margem da programada
     expect(texto).toContain('5,0%');    // margem da ofertada
+  });
+
+  it('separa a estimativa da execução da estimativa posterior do retrato', () => {
+    const texto = montar().text();
+    expect(texto).toContain('Na execução');
+    expect(texto).toContain('30,9%');
+    expect(texto).toContain('No retrato');
+    expect(texto).toContain('42,5%');
+    expect(texto).toContain('Resultado realizado ainda não medido');
   });
 
   it('traz os dados do anúncio e o histórico com o motivo', () => {

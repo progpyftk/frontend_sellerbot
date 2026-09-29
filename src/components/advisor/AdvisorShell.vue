@@ -13,7 +13,7 @@
         <router-link
           v-for="tab in tabs"
           :key="tab.to"
-          :to="tab.to"
+          :to="tabRoute(tab)"
           class="adv-shell__tab"
           :class="{ 'adv-shell__tab--on': tab.name === active }"
           :aria-current="tab.name === active ? 'page' : undefined"
@@ -36,9 +36,17 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import AdvisorStatusStrip from 'src/components/advisor/AdvisorStatusStrip.vue';
 
 let activeShells = 0;
+const route = useRoute();
+function tabRoute(tab) {
+  const query = {};
+  if (route.query.account_id) query.account_id = route.query.account_id;
+  if (route.query.status) query.status = route.query.status;
+  return { ...tab.to, query };
+}
 onMounted(() => { activeShells += 1; document.body.classList.add('advisor-page'); });
 onBeforeUnmount(() => {
   activeShells -= 1;

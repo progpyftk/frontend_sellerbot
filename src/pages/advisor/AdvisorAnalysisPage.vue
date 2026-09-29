@@ -33,9 +33,16 @@
             v-model="filtros.conta" :options="contasOpcoes" dense outlined clearable emit-value map-options
             label="Conta" aria-label="Conta" class="an__select"
           />
+          <details class="an__filtrosAvancados">
+            <summary>Mais filtros{{ filtrosAtivos ? ` (${filtrosAtivos})` : '' }}</summary>
+            <div class="an__filtros">
           <q-select
             v-model="filtros.status" :options="statusOpcoes" dense outlined clearable emit-value map-options
             label="Status" aria-label="Status do anúncio no Mercado Livre" class="an__select"
+          />
+          <q-select
+            v-model="filtros.promocao" :options="promocaoOpcoes" dense outlined clearable emit-value map-options
+            label="Promoção" aria-label="Situação da promoção" class="an__select"
           />
           <q-select
             v-model="filtros.saude" :options="saudeOpcoes" dense outlined clearable emit-value map-options
@@ -48,33 +55,10 @@
           <q-toggle v-model="filtros.soDupla" dense
                     label="Abaixo do mínimo e poucas vendas"
                     title="Anúncios com venda abaixo do mínimo de margem ou lucro E poucas vendas (parado/fraco) — os que precisam de preço E de revisão." />
+            </div>
+          </details>
           <q-btn v-if="filtrosAtivos" flat dense no-caps icon="filter_alt_off" label="Limpar filtros" @click="limparFiltros" />
-          <q-btn flat dense no-caps icon="tune" label="Limites desta conta" @click="abrirRegua()" />
         </div>
-      </div>
-
-      <!-- PROMO-IA-56: os limites (margem e lucro por venda) se configuram nesta tela. -->
-      <div v-if="reguaAberta" class="an__reguaCard" role="dialog" aria-label="Limites desta conta">
-        <header class="an__reguaTopo">
-          <strong>Limites desta conta</strong>
-          <q-select
-            v-if="!filtros.conta" v-model="reguaContaId" :options="contasOpcoes"
-            dense outlined emit-value map-options label="Conta" class="an__select"
-          />
-          <q-btn flat dense no-caps icon="close" label="Fechar" @click="fecharRegua" />
-        </header>
-        <AdvisorReguaConta
-          v-if="contaDaRegua"
-          :conta="contaDaRegua" :reguas="reguas"
-          :salvando="salvando === contaDaRegua.account_id"
-          :presets="PRESETS_REGUA" :salvar="salvarRegua" :cancelar="cancelarRegua" :aplicar-preset="aplicarPreset"
-          :titulo="contaDaRegua.account_nickname"
-        />
-        <p v-else class="an__data">Carregando os limites desta conta…</p>
-        <p class="an__data">
-          Campos com "sua conta" têm ajuste próprio; "Restaurar padrão" volta ao valor padrão da
-          plataforma. O que mudar vale para a próxima análise e para as próximas escritas do robô.
-        </p>
       </div>
 
       <!-- Facetas locais: deixam explícito que estes números são da página atual. -->
@@ -150,14 +134,14 @@
                                  :title="situationOf(row)?.reason">
                 {{ SITUACAO_CURTA[situationOf(row)?.key] || situationOf(row)?.label || '—' }}
               </AdvisorStatusPill>
-              <!-- PROMO-IA-56: o "mín." abre o editor de limites da conta da linha. -->
-              <button
-                v-if="isBelowMin(row)" type="button" class="an__data an__minBotao"
-                :title="`${situationOf(row)?.reason} Clique para ajustar os limites desta conta.`"
-                @click.stop="abrirRegua(row.account_id)"
+              <router-link
+                v-if="isBelowMin(row)" class="an__data an__minBotao"
+                :to="{ name: 'promotions-advisor-automacao', query: { account_id: row.account_id } }"
+                :title="`${situationOf(row)?.reason} Ajustar os limites na configuração da conta.`"
+                @click.stop
               >
                 mín. {{ Math.round(floorMarginOf(row)) }}% · R$ {{ Math.round(floorProfitOf(row)) }}
-              </button>
+              </router-link>
             </div>
           </template>
 
@@ -184,18 +168,20 @@
 
           <template #cell-preco="{ row }">
             <div class="an__pipeline">
-              <span>{{ brl(row.buyer_price ?? row.price) }}</span>
-              <span class="an__data">{{ row.buyer_price == null ? 'Preço-base do anúncio' : 'Preço observado na promoção' }}</span>
+              <span>{{ brl(row.promotion_state?.state === 'active' ? row.buyer_price : row.price) }}</span>
+              <span class="an__data">{{ priceBasis(row) }}</span>
             </div>
           </template>
           <template #cell-margemLucro="{ row }">
             <div class="an__pipeline">
-              <strong>{{ pct(row.margin_pct) }} · {{ brl(row.profit_unit) }}</strong>
-              <span class="an__data">Estimativa do retrato {{ dataCurta(row.computed_at) }}</span>
-              <button v-if="isBelowMin(row)" type="button" class="an__data an__minBotao"
-                      @click.stop="abrirRegua(row.account_id)">
+              <strong v-if="row.promotion_state?.state !== 'unconfirmed'">{{ pct(row.margin_pct) }} · {{ brl(row.profit_unit) }}</strong>
+              <strong v-else>Margem atual não confirmada</strong>
+              <span class="an__data">{{ row.promotion_state?.state === 'unconfirmed' ? 'Cálculo histórico no detalhe' : `Estimativa do retrato ${dataCurta(row.computed_at)}` }}</span>
+              <router-link v-if="isBelowMin(row)" class="an__data an__minBotao"
+                           :to="{ name: 'promotions-advisor-automacao', query: { account_id: row.account_id } }"
+                           @click.stop>
                 mín. {{ Math.round(floorMarginOf(row)) }}% · R$ {{ Math.round(floorProfitOf(row)) }}
-              </button>
+              </router-link>
             </div>
           </template>
           <template #cell-proximo="{ row }">
@@ -227,10 +213,8 @@
           </template>
           <template #cell-promoAtiva="{ row }">
             <div class="an__pipeline">
-              <span v-if="row.has_active_promo">Ativa no retrato{{ row.active_promo?.promotion_name ? `: ${row.active_promo.promotion_name}` : '' }}</span>
-              <span v-else-if="row.scheduled_count">Programada no retrato</span>
-              <span v-else>Sem ativa ou programada no retrato</span>
-              <span class="an__data">Observado {{ dataCurta(row.active_promo?.observed_at || row.computed_at) }}</span>
+              <span>{{ promocaoLabel(row) }}</span>
+              <span class="an__data">{{ row.promotion_state?.observed_at ? `Observado ${dataCurta(row.promotion_state.observed_at)}` : 'Sem coleta registrada' }}</span>
             </div>
           </template>
           <template #cell-desconto="{ row }">{{ row.discount_pct == null ? '—' : pct(row.discount_pct) }}</template>
@@ -267,17 +251,16 @@
 
       <!-- PROMO-IA-51: o resultado não se explica sozinho — "Bloqueado (proteção)"
            já gerou dúvida do dono (a proteção segurou a escrita; o ML não bloqueou). -->
-      <AdvisorSection
-        title="O que significa cada resultado" tight
-        lead="A coluna Resultado mostra o que aconteceu de verdade com a última ação do robô no anúncio. Bloqueios por preço automático do ML (SMART) não são erro: o robô sinaliza e não escreve, por decisão — o preço é do algoritmo dele, e é esse preço automático que impede reajuste. Os critérios:"
-      >
+      <details class="an__glossarioDetalhes">
+        <summary>O que significa cada resultado</summary>
+        <p>A última atuação descreve o que aconteceu com a escrita do robô. Bloqueios por preço automático do Mercado Livre não são erro: o robô sinaliza e não escreve.</p>
         <dl class="an__legenda">
           <div v-for="item in LEGENDARIO_RESULTADOS" :key="item.key" class="an__legendaItem">
             <dt><AdvisorStatusPill :status="RESULT_PILL[item.key] || 'neutral'">{{ item.label }}</AdvisorStatusPill></dt>
             <dd>{{ item.regra }}</dd>
           </div>
         </dl>
-      </AdvisorSection>
+      </details>
     </template>
 
     <AdvisorItemDrawer
@@ -290,17 +273,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import AdvisorEmptyState from 'src/components/advisor/AdvisorEmptyState.vue';
 import AdvisorItemDrawer from 'src/components/advisor/AdvisorItemDrawer.vue';
-import AdvisorReguaConta from 'src/components/advisor/AdvisorReguaConta.vue';
 import AdvisorSection from 'src/components/advisor/AdvisorSection.vue';
 import AdvisorShell from 'src/components/advisor/AdvisorShell.vue';
 import AdvisorStatusPill from 'src/components/advisor/AdvisorStatusPill.vue';
 import AdvisorTable from 'src/components/advisor/AdvisorTable.vue';
-import { useAdvisorAutomation } from 'src/composables/advisor/useAdvisorAutomation';
 import { useAdvisorCatalog } from 'src/composables/advisor/useAdvisorCatalog';
 import AdvisorService from 'src/services/AdvisorService';
 import {
@@ -309,44 +290,30 @@ import {
   resultOf, situationOf, suggestionOf,
 } from 'src/utils/advisorDecision';
 
+const route = useRoute();
+const router = useRouter();
 const {
   linhas, total, carregando, erro, filtros, ordenacao, pagina, porPagina, expandido,
   contasOpcoes, saudeOpcoes, statusOpcoes, filtrosAtivos, temFiltroDeEscopo,
   totalPaginas, primeira, ultima, decisao,
   carregar, limparFiltros, ordenarPor,
-} = useAdvisorCatalog();
+} = useAdvisorCatalog({
+  conta: typeof route.query.account_id === 'string' ? route.query.account_id : null,
+  status: typeof route.query.status === 'string' ? route.query.status : 'active',
+  promocao: typeof route.query.promotion_state === 'string' ? route.query.promotion_state : null,
+}, 'attention');
 
-// PROMO-IA-56: régua de limites por conta configurável direto desta tela (popover do
-// "mín." e botão "Limites desta conta") — mesma lógica/gravação da Automação.
-const {
-  contas: contasAutom, reguas, salvando, PRESETS_REGUA,
-  carregar: carregarAutom, salvarRegua, cancelarRegua, aplicarPreset,
-} = useAdvisorAutomation();
-
-const reguaAberta = ref(false);
-const reguaContaId = ref(null);
-const contaDaRegua = computed(() => (
-  contasAutom.value.find((c) => c.account_id === reguaContaId.value) || null
-));
-
-async function abrirRegua(accountId) {
-  reguaContaId.value = accountId || filtros.conta || null;
-  reguaAberta.value = true;
-  await carregarAutom(); // estado fresco da política sempre que abrir
-  // Sem filtro/linha: a lista de contas só existe depois do GET — escolher a primeira
-  // depois do carregamento (antes disso ela está vazia).
-  if (!reguaContaId.value && contasAutom.value.length) {
-    reguaContaId.value = contasAutom.value[0].account_id;
-  }
-}
-
-async function fecharRegua() {
-  reguaAberta.value = false;
-  await carregar(); // o "mín." da tabela reflete na hora, sem recarregar à mão
-}
-
-const route = useRoute();
-const router = useRouter();
+watch(() => route.query.promotion_state, (state) => {
+  filtros.promocao = typeof state === 'string' ? state : null;
+});
+watch(() => [filtros.conta, filtros.status, filtros.promocao], ([account_id, status, promotion_state]) => {
+  router.replace({ query: {
+    ...route.query,
+    account_id: account_id || undefined,
+    status: status && status !== 'active' ? status : undefined,
+    promotion_state: promotion_state || undefined,
+  } });
+});
 
 /**
  * Colunas do catálogo: dados para decisão ficam primeiro —
@@ -371,6 +338,33 @@ const CAMPOS_CARTAO = COLUNAS.filter((c) => (
 /* ------------------------------------------------- pílulas e traduções -- */
 
 const STATUS_PILL = { active: 'verificado', paused: 'pausado', closed: 'neutral' };
+const promocaoOpcoes = [
+  { label: 'Ativa confirmada', value: 'active' },
+  { label: 'Somente programada', value: 'scheduled_only' },
+  { label: 'Sem promoção confirmada', value: 'without_promotion' },
+  { label: 'Estado não confirmado', value: 'unconfirmed' },
+];
+function promocaoLabel(row) {
+  const state = row.promotion_state?.state;
+  return {
+    active: 'Promoção ativa no retrato',
+    scheduled_only: 'Somente programada no retrato',
+    without_promotion: 'Sem promoção, leitura completa',
+    unconfirmed: 'Estado não confirmado',
+  }[state] || 'Estado promocional indisponível';
+}
+function priceBasis(row) {
+  if (row.promotion_state?.state === 'active'
+    && row.active_promo?.promotion_type === 'SELLER_COUPON_CAMPAIGN') {
+    return 'Preço com cupom, condicionado ao carrinho';
+  }
+  return ({
+    active: 'Preço observado na promoção',
+    scheduled_only: 'Preço-base cadastrado; oferta aguarda início',
+    without_promotion: 'Preço-base cadastrado; sem promoção na leitura',
+    unconfirmed: 'Preço-base cadastrado; desconto não confirmado',
+  })[row.promotion_state?.state] || 'Preço-base cadastrado';
+}
 const SAUDE_PILL = { parado: 'divergente', fraco: 'recusado', medio: 'aplicado', alto: 'verificado' };
 const SITUACAO_PILL = {
   bloqueado_piso: 'divergente', sem_dados: 'bloqueado', baixo_giro: 'recusado',
@@ -545,10 +539,18 @@ function dataCurta(iso) {
   }).format(d).replace(', ', ' ');
 }
 
+let mobileQuery;
+function ajustarPaginaMobile() { porPagina.value = mobileQuery?.matches ? 10 : 40; }
 onMounted(() => {
-  carregar();
+  if (window.matchMedia) {
+    mobileQuery = window.matchMedia('(max-width: 599px)');
+    ajustarPaginaMobile();
+    mobileQuery.addEventListener('change', ajustarPaginaMobile);
+  }
+  if (!mobileQuery?.matches) carregar();
   if (route.query.item) abrirDetalhe({ item_id: route.query.item });
 });
+onBeforeUnmount(() => mobileQuery?.removeEventListener('change', ajustarPaginaMobile));
 </script>
 
 <style scoped lang="scss">
@@ -577,6 +579,20 @@ onMounted(() => {
     flex-wrap: wrap;
     align-items: center;
     gap: $space-3;
+  }
+  &__filtrosAvancados {
+    flex: 1 1 100%;
+    summary { color: $primary; cursor: pointer; font-weight: $font-semibold; }
+    > .an__filtros { padding-top: $space-2; }
+  }
+  &__glossarioDetalhes {
+    padding: $space-4;
+    margin-bottom: $space-4;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    background: $surface;
+    summary { cursor: pointer; font-weight: $font-semibold; color: $text-primary; }
+    > p { margin: $space-3 0; color: $text-body; }
   }
   &__busca { flex: 1 1 260px; max-width: 380px; }
   &__select { min-width: 150px; }
@@ -702,28 +718,7 @@ onMounted(() => {
     dd { margin: 2px 0 0; font-size: $text-xs-size; color: $text-muted; line-height: 1.5; }
   }
 
-  // PROMO-IA-56: editor da régua de limites por conta, embutido nesta tela.
-  &__reguaCard {
-    display: flex;
-    flex-direction: column;
-    gap: $space-2;
-    padding: $space-3 $space-4;
-    background: $surface;
-    border: 1px solid $border;
-    border-radius: $radius-lg;
-    margin-bottom: $space-3;
-  }
-  &__reguaTopo {
-    display: flex;
-    align-items: center;
-    gap: $space-3;
-    font-size: $text-small-size;
-  }
   &__minBotao {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
     color: inherit;
     text-decoration: underline dotted;
   }

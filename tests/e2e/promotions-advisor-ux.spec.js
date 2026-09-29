@@ -12,9 +12,10 @@ const today = {
 const catalog = {
   success: true, total: 1, results: [{ account_id: 'ACC1', account_nickname: 'Loja A', item_id: 'MLB-PENDENTE', title: 'Adubo', sku: 'A1', status: 'active', price: 100,
     buyer_price: 80, margin_pct: 31, profit_unit: 20, has_active_promo: true, active_promo: { promotion_name: 'Oferta', observed_at: '2026-09-28T12:00:00Z' },
-    computed_at: '2026-09-28T12:00:00Z', next_step: { label: 'Recuperação em aberto', chain_count: 1 },
+    computed_at: '2026-09-28T12:00:00Z', promotion_state: { state: 'active', observed_at: '2026-09-28T12:00:00Z' },
+    next_step: { label: 'Recuperação em aberto', chain_count: 1 },
     last_result: { state: 'accepted_unverified', at: '2026-09-28T12:01:00Z' } }],
-  summary: { ads: 8, with_active_promo: 3, scheduled_only: 1, without_active_or_scheduled_snapshot: 4 },
+  summary: { ads: 8, promotion_coverage: { active: 3, scheduled_only: 1, without_promotion: 3, unconfirmed: 1 } },
   snapshot: { stale: false, by_account: { ACC1: { account_nickname: 'Loja A', computed_at: '2026-09-28T12:00:00Z', stale: false } } },
   accounts: [{ account_id: 'ACC1', account_nickname: 'Loja A' }],
 };
@@ -44,7 +45,8 @@ test('visão geral responde execução, cobertura e pendência em desktop e celu
   await expect(page.getByRole('heading', { name: 'Promoções nos anúncios ativos' })).toBeVisible();
   await expect(page.getByText('Anúncios alterados e confirmados hoje')).toBeVisible();
   await expect(page.getByText('MLB-PENDENTE')).toBeVisible();
-  await expect(page.getByText('Sem promoção ativa ou programada no retrato')).toBeVisible();
+  await expect(page.getByText('Sem promoção, com leitura completa')).toBeVisible();
+  await expect(page.getByText('Estado da promoção não confirmado')).toBeVisible();
   await expect(page.locator('.feedback-fab-container')).toBeHidden();
   if (process.env.PROMO114_SCREENSHOT) await page.screenshot({ path: `/tmp/promo114-overview-${test.info().project.name}.png`, fullPage: true });
   const overflow = await page.evaluate(() => ({ width: window.innerWidth, scroll: document.documentElement.scrollWidth,
@@ -71,7 +73,7 @@ test('catálogo distingue retrato, atuação e próximo passo', async ({ page })
   if (!test.info().project.name.includes('mobile')) await expect(page.getByRole('columnheader', { name: 'Próximo passo' })).toBeVisible();
   const list = test.info().project.name.includes('mobile') ? page.locator('.adv-table__cards') : page.locator('.adv-table__table');
   await expect(list.getByText('Recuperação em aberto').first()).toBeVisible();
-  await expect(list.getByText('Ativa no retrato: Oferta').first()).toBeVisible();
+  await expect(list.getByText('Promoção ativa no retrato').first()).toBeVisible();
   if (!test.info().project.name.includes('mobile')) {
     const tableFits = await page.locator('.adv-table__wrap').evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
     expect(tableFits).toBe(true);

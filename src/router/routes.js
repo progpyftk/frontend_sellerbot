@@ -88,7 +88,7 @@ const routes = [
       {
         path: 'promotions/advisor/hoje',
         name: "promotions-advisor-hoje",
-        component: () => import('pages/advisor/AdvisorTodayPage.vue'),
+        redirect: (to) => ({ name: 'promotions-advisor', query: to.query }),
         meta: { menu: "promotions-advisor" },
       },
       {

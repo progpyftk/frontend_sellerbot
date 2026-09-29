@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getActivity = vi.fn();
+vi.mock('vue-router', () => ({ useRoute: () => ({ query: {} }) }));
 vi.mock('src/services/AdvisorService', () => ({ default: { getActivity: (...args) => getActivity(...args) } }));
 import AdvisorActivityPage from 'src/pages/advisor/AdvisorActivityPage.vue';
 
@@ -25,7 +26,7 @@ describe('AdvisorActivityPage', () => {
     getActivity.mockResolvedValue({ data: {
       total: 1, scope: { accounts: [{ account_id: 'ACC1', account_nickname: 'Loja 1' }] },
       results: [{ account_id: 'ACC1', account_nickname: 'Loja 1', item_id: 'MLB1', title: 'Adubo', sku: 'A1',
-        action_id: 'uuid', attempt_no: 2, origin: 'automation', state: 'executed_verified', created_at: '2026-09-28T12:00:00Z',
+        action_id: 'uuid', attempt_no: 2, attempt_count: 2, origin: 'automation', state: 'executed_verified', created_at: '2026-09-28T12:00:00Z',
         deal_price: '70.00', financial_gate: { margin_pct: '31.2', profit: '20.00' } }],
     } });
     const wrapper = mount(AdvisorActivityPage, { global: { stubs } });
@@ -33,7 +34,9 @@ describe('AdvisorActivityPage', () => {
     expect(wrapper.text()).toContain('Adubo');
     expect(wrapper.text()).toContain('Confirmado');
     expect(wrapper.text()).toContain('no registro da tentativa');
-    expect(wrapper.text()).toContain('1 eventos registrados');
+    expect(wrapper.text()).toContain('1 decisão registrada');
+    expect(wrapper.text()).toContain('Registros desta decisão2');
+    expect(getActivity).toHaveBeenCalledWith(expect.objectContaining({ group: 'action' }));
   });
 
 });

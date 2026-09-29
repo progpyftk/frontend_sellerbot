@@ -4,8 +4,8 @@
  *
  * O que protege:
  * - cada campo diz se é "sua conta" (override) ou "padrão da plataforma";
- * - "Restaurar padrão" limpa o rascunho e grava `null` (backend volta ao default);
- * - blur em campo dispara `salvarCampo` com o nome do campo certo;
+ * - "Restaurar padrão" limpa apenas o rascunho até Salvar;
+ * - sair do campo não grava;
  * - o modelo pronto dispara `aplicarPreset` com a chave certa.
  */
 import { mount } from '@vue/test-utils';
@@ -49,7 +49,8 @@ const stubs = {
 };
 
 function montar({ overrides = ['floor_profit_brl'], rascunho = {} } = {}) {
-  const salvarCampo = vi.fn();
+  const salvar = vi.fn();
+  const cancelar = vi.fn();
   const aplicarPreset = vi.fn();
   const reguas = {
     ACC1: {
@@ -65,13 +66,14 @@ function montar({ overrides = ['floor_profit_brl'], rascunho = {} } = {}) {
       reguas,
       salvando: false,
       presets: PRESETS,
-      salvarCampo,
+      salvar,
+      cancelar,
       aplicarPreset,
       titulo: 'MOGIVITTA',
     },
     global: { stubs },
   });
-  return { wrapper, salvarCampo, aplicarPreset, reguas };
+  return { wrapper, salvar, cancelar, aplicarPreset, reguas };
 }
 
 describe('AdvisorReguaConta', () => {
@@ -83,16 +85,16 @@ describe('AdvisorReguaConta', () => {
     expect(selos.filter((t) => t === 'padrão da plataforma')).toHaveLength(7);
   });
 
-  it('"Restaurar padrão" só aparece nos campos com ajuste e grava null', async () => {
-    const { wrapper, salvarCampo, reguas } = montar();
+  it('"Restaurar padrão" só aparece nos campos com ajuste e prepara null sem gravar', async () => {
+    const { wrapper, salvar, reguas } = montar();
     const restaurar = wrapper.findAll('button').filter((b) => b.text().includes('Restaurar padrão'));
     expect(restaurar).toHaveLength(1);
 
     await restaurar[0].trigger('click');
     expect(reguas.ACC1.floor_profit_brl).toBeNull();
-    expect(salvarCampo).toHaveBeenCalledWith(
-      expect.objectContaining({ account_id: 'ACC1' }), 'floor_profit_brl',
-    );
+    expect(salvar).not.toHaveBeenCalled();
+    await wrapper.findAll('button').find((b) => b.text().includes('Salvar alterações')).trigger('click');
+    expect(salvar).toHaveBeenCalledWith(expect.objectContaining({ account_id: 'ACC1' }));
   });
 
   it('sem override nenhum, não há o que restaurar', () => {
@@ -100,14 +102,12 @@ describe('AdvisorReguaConta', () => {
     expect(wrapper.findAll('button').filter((b) => b.text().includes('Restaurar padrão'))).toHaveLength(0);
   });
 
-  it('blur num campo dispara salvarCampo com o nome do campo certo', async () => {
-    const { wrapper, salvarCampo } = montar();
+  it('blur num campo não grava', async () => {
+    const { wrapper, salvar } = montar();
     const alvo = wrapper.findAll('input')
       .find((i) => i.attributes('data-label') === 'Margem mínima');
     await alvo.trigger('blur');
-    expect(salvarCampo).toHaveBeenCalledWith(
-      expect.objectContaining({ account_id: 'ACC1' }), 'floor_margin_pct',
-    );
+    expect(salvar).not.toHaveBeenCalled();
   });
 
   it('o modelo pronto dispara aplicarPreset com a chave certa', async () => {
@@ -130,20 +130,18 @@ describe('AdvisorReguaConta', () => {
     expect(badges.filter((t) => t === 'padrão da plataforma')).toHaveLength(7);
   });
 
-  it('blur num campo do relâmpago grava com o nome do campo do payload', async () => {
-    const { wrapper, salvarCampo } = montar({
+  it('blur num campo do relâmpago não grava', async () => {
+    const { wrapper, salvar } = montar({
       overrides: ['floor_profit_brl', 'lightning_profit_brl'],
     });
     const alvo = wrapper.findAll('input')
       .find((i) => i.attributes('data-label') === 'Lucro mínimo por venda — Ofertas relâmpago');
     await alvo.trigger('blur');
-    expect(salvarCampo).toHaveBeenCalledWith(
-      expect.objectContaining({ account_id: 'ACC1' }), 'lightning_profit_brl',
-    );
+    expect(salvar).not.toHaveBeenCalled();
   });
 
-  it('"Restaurar padrão" no relance do relâmpago limpa o rascunho e grava null', async () => {
-    const { wrapper, salvarCampo, reguas } = montar({
+  it('"Restaurar padrão" no relâmpago limpa só o rascunho', async () => {
+    const { wrapper, salvar, reguas } = montar({
       overrides: ['floor_profit_brl', 'lightning_margin_pct'],
       rascunho: { lightning_margin_pct: 18 },
     });
@@ -151,8 +149,6 @@ describe('AdvisorReguaConta', () => {
     expect(restaurar).toHaveLength(2);
     await restaurar[1].trigger('click');
     expect(reguas.ACC1.lightning_margin_pct).toBeNull();
-    expect(salvarCampo).toHaveBeenCalledWith(
-      expect.objectContaining({ account_id: 'ACC1' }), 'lightning_margin_pct',
-    );
+    expect(salvar).not.toHaveBeenCalled();
   });
 });

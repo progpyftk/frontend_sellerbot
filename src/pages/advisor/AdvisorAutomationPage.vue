@@ -66,13 +66,18 @@
                 v-model="levas[conta.account_id]" type="number" dense outlined
                 label="Rodada (anúncios por vez)" class="aut__leva"
                 :disable="salvando === conta.account_id || !conta.auto_write"
-                @blur="salvarLeva(conta)"
               >
                 <template #hint>Tamanho máximo da primeira rodada; após o aval, as rodadas seguintes são automáticas.</template>
               </q-input>
+              <div v-if="Number(levas[conta.account_id]) !== Number(conta.wave_size)" class="aut__leva-acoes">
+                <q-btn unelevated no-caps dense color="primary" label="Salvar tamanho da rodada"
+                       :loading="salvando === conta.account_id" @click="salvarLeva(conta)" />
+                <q-btn flat no-caps dense label="Cancelar"
+                       @click="levas[conta.account_id] = conta.wave_size" />
+              </div>
             </div>
 
-            <details class="aut__regua-conta">
+            <details class="aut__regua-conta" :open="route.query.account_id === conta.account_id">
               <summary>
                 Limites desta conta
                 <span class="aut__regua-resumo">
@@ -203,6 +208,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
 import AdvisorEmptyState from 'src/components/advisor/AdvisorEmptyState.vue';
 import AdvisorReguaConta from 'src/components/advisor/AdvisorReguaConta.vue';
@@ -220,6 +226,7 @@ const {
 } = useAdvisorAutomation();
 
 const confirmarPausa = ref(false);
+const route = useRoute();
 
 /** Régua "representativa" para o card explicativo e o glossário: quando todas as contas
  * concordam (o caso comum — ninguém configurou nada ainda), mostra o valor real de todo mundo;
@@ -381,6 +388,7 @@ onMounted(async () => {
     gap: $space-2;
   }
   &__leva { width: 100%; max-width: 320px; }
+  &__leva-acoes { display: flex; flex-wrap: wrap; gap: $space-2; }
 
   // O rótulo do interruptor é a informação principal do cartão: não pode sair em letra miúda.
   &__linha :deep(.q-toggle__label) {

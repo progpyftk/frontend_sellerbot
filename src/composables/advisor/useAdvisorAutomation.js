@@ -48,7 +48,10 @@ export function useAdvisorAutomation() {
     aviso.value = '';
     try {
       await AdvisorService.patchAutomation({ account_id: accountId, ...payload });
-      if (await carregar()) aviso.value = mensagem;
+      if (await carregar()) {
+        aviso.value = mensagem;
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('advisor-automation-updated'));
+      }
     } catch (err) {
       erro.value = err?.response?.data?.error || 'Não foi possível salvar a mudança.';
     } finally {
@@ -217,8 +220,10 @@ export function useAdvisorAutomation() {
     aviso.value = '';
     try {
       await AdvisorService.patchAutomation({ pause_all: true });
-      await carregar();
-      aviso.value = 'Escrita desligada em todas as contas. As promoções já aplicadas continuam no ar.';
+      if (await carregar()) {
+        aviso.value = 'Escrita desligada em todas as contas. As promoções já aplicadas continuam no ar.';
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('advisor-automation-updated'));
+      }
     } catch (err) {
       erro.value = err?.response?.data?.error || 'Não foi possível pausar a escrita.';
     } finally {

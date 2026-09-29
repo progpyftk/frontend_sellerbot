@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getToday = vi.fn();
 const getCatalog = vi.fn();
+const replace = vi.fn();
+vi.mock('vue-router', () => ({ useRoute: () => ({ query: {} }), useRouter: () => ({ replace }) }));
 vi.mock('src/services/AdvisorService', () => ({ default: { getToday: (...args) => getToday(...args), getCatalog: (...args) => getCatalog(...args) } }));
 import AdvisorOverviewPage from 'src/pages/advisor/AdvisorOverviewPage.vue';
 
@@ -11,6 +13,7 @@ const stubs = {
   'q-icon': true,
   'q-btn': { template: '<button @click="$emit(\'click\')"><slot />{{ label }}</button>', props: ['label'] },
   'q-banner': { template: '<div><slot /><slot name="action" /></div>' },
+  'q-select': { template: '<select />', props: ['modelValue', 'options'] },
   'router-link': { template: '<a><slot /></a>' },
   AdvisorShell: { template: '<div><slot name="actions" /><slot /></div>', props: ['active', 'pergunta'] },
 };
@@ -19,7 +22,7 @@ describe('AdvisorOverviewPage', () => {
   beforeEach(() => {
     getToday.mockReset();
     getCatalog.mockReset();
-    getCatalog.mockResolvedValue({ data: { summary: { ads: 10, with_active_promo: 3, scheduled_only: 2, without_active_or_scheduled_snapshot: 5 }, snapshot: { by_account: { A: { account_nickname: 'Loja A', computed_at: '2026-09-28T12:00:00Z', stale: false } } } } });
+    getCatalog.mockResolvedValue({ data: { summary: { ads: 10, promotion_coverage: { active: 3, scheduled_only: 2, without_promotion: 4, unconfirmed: 1 } }, snapshot: { by_account: { A: { account_nickname: 'Loja A', computed_at: '2026-09-28T12:00:00Z', stale: false } } } } });
   });
 
   it('mostra execução registrada e unidades dos totais', async () => {
@@ -39,7 +42,8 @@ describe('AdvisorOverviewPage', () => {
     expect(wrapper.text()).toContain('Anúncios alterados e confirmados hoje');
     expect(wrapper.text()).toContain('Mantidos: já estavam no preço-alvo');
     expect(getCatalog).toHaveBeenCalledWith({ status: 'active', page_size: 1 });
-    expect(wrapper.text()).toContain('Sem promoção ativa ou programada no retrato');
+    expect(wrapper.text()).toContain('Sem promoção, com leitura completa');
+    expect(wrapper.text()).toContain('Estado da promoção não confirmado');
     expect(wrapper.text()).toContain('Loja A: coleta em');
     expect(wrapper.text()).toContain('MLB-PENDENTE');
     expect(wrapper.text()).toContain('sem próxima tentativa registrada');

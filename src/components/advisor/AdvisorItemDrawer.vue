@@ -27,6 +27,39 @@
     <p v-else-if="carregando" class="adv-drawer__nota" role="status">Carregando o retrato do anúncio…</p>
 
     <template v-else-if="detalhe">
+      <section class="adv-drawer__secao" aria-label="Situação atual do anúncio">
+        <h3>Situação atual</h3>
+        <p><strong>{{ promotionLabel }}</strong> · consultado {{ dataHora(detalhe.consulted_at) }}</p>
+        <p v-if="detalhe.observed_price?.amount != null">
+          Preço observado: <strong>{{ brl(detalhe.observed_price.amount) }}</strong>
+          <span v-if="detalhe.observed_price.condition === 'coupon_at_checkout'"> (cupom condicionado ao carrinho)</span>
+        </p>
+        <p v-else>Preço ao comprador não confirmado nesta consulta.</p>
+      </section>
+
+      <section class="adv-drawer__secao" aria-label="Última atuação e próximo passo">
+        <h3>Última atuação e próximo passo</h3>
+        <p>{{ lastAction.label }} <span v-if="lastAction.at">· {{ dataHora(lastAction.at) }}</span></p>
+        <p>{{ detalhe.next_step?.label || 'Próximo passo não registrado' }}</p>
+        <p v-if="detalhe.next_step?.owner">Responsável: {{ ownerLabel(detalhe.next_step.owner) }}</p>
+        <p v-if="detalhe.next_step?.next_attempt_at">Tentativa prevista: {{ dataHora(detalhe.next_step.next_attempt_at) }}</p>
+      </section>
+
+      <section class="adv-drawer__secao" aria-label="Bases dos cálculos financeiros">
+        <h3>Cálculos financeiros</h3>
+        <p class="adv-drawer__nota">Estimativas de momentos diferentes não são lucro realizado.</p>
+        <div v-if="detalhe.financials?.execution_estimate" class="adv-drawer__calc">
+          <strong>Na execução · {{ dataHora(detalhe.financials.execution_estimate.at) }}</strong>
+          <p>Preço {{ brl(detalhe.financials.execution_estimate.price) }} · margem {{ pct(detalhe.financials.execution_estimate.gate?.margin_pct) }} · lucro {{ brl(detalhe.financials.execution_estimate.gate?.profit) }}</p>
+        </div>
+        <div v-if="detalhe.financials?.snapshot_estimate" class="adv-drawer__calc">
+          <strong>No retrato · {{ dataHora(detalhe.financials.snapshot_estimate.at) }}</strong>
+          <p>Preço {{ brl(detalhe.financials.snapshot_estimate.price) }} · margem {{ pct(detalhe.financials.snapshot_estimate.margin_pct) }} · lucro {{ brl(detalhe.financials.snapshot_estimate.profit_unit) }}</p>
+          <p>Frete estimado {{ brl(detalhe.financials.snapshot_estimate.shipping_cost) }} · custo {{ brl(detalhe.financials.snapshot_estimate.cmv_unit) }}</p>
+        </div>
+        <p v-if="!detalhe.financials?.realized" class="adv-drawer__nota">Resultado realizado ainda não medido nesta visão.</p>
+      </section>
+
       <section class="adv-drawer__secao">
         <h3>Ofertadas <span v-if="ofertadas.length">({{ ofertadas.length }})</span></h3>
         <p v-if="!ofertadas.length" class="adv-drawer__nota">Nenhuma oferta disponível agora.</p>
@@ -111,7 +144,7 @@
       </section>
 
       <section class="adv-drawer__secao">
-        <h3>Histórico <span v-if="logs.length">({{ logs.length }})</span></h3>
+        <h3>Decisões registradas <span v-if="logs.length">({{ logs.length }})</span></h3>
         <p v-if="!logs.length" class="adv-drawer__nota">Nenhuma decisão registrada para este anúncio.</p>
         <ol class="adv-drawer__logs">
           <li v-for="(log, i) in logs" :key="i">
@@ -121,6 +154,19 @@
           </li>
         </ol>
       </section>
+      <section class="adv-drawer__secao" v-if="detalhe.activity?.results?.length">
+        <h3>Tentativas registradas ({{ detalhe.activity.total }})</h3>
+        <ol class="adv-drawer__logs">
+          <li v-for="event in detalhe.activity.results" :key="`${event.action_id}-${event.attempt_no}`">
+            <strong>{{ dataHora(event.created_at) }}</strong>
+            <span>{{ resultOf({ last_result: event }).label }} · tentativa {{ event.attempt_no }}</span>
+          </li>
+        </ol>
+        <router-link v-if="detalhe.activity.total > detalhe.activity.results.length"
+                     :to="{ name: 'promotions-advisor-activity', query: { item_id: item.item_id, account_id: item.account_id } }">
+          Ver histórico completo
+        </router-link>
+      </section>
     </template>
   </aside>
 </template>
@@ -128,7 +174,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
-import { brl, pct } from 'src/utils/advisorDecision';
+import { brl, pct, resultOf } from 'src/utils/advisorDecision';
 
 const props = defineProps({
   detalhe: { type: Object, default: null },
@@ -158,6 +204,16 @@ const ativas = computed(() => promos.value.active || []);
 const programadas = computed(() => promos.value.scheduled || []);
 const ofertadas = computed(() => promos.value.candidates || []);
 const logs = computed(() => props.detalhe?.agent_logs || []);
+const lastAction = computed(() => resultOf({ last_result: props.detalhe?.last_action }));
+const promotionLabel = computed(() => ({
+  active: 'Promoção ativa na leitura ao vivo',
+  scheduled_only: 'Somente promoção programada na leitura ao vivo',
+  without_promotion: 'Sem promoção ativa ou programada na leitura ao vivo',
+})[props.detalhe?.promotion_state?.state] || 'Estado promocional não confirmado');
+function ownerLabel(owner) {
+  return ({ robot: 'robô', sellerbot: 'plataforma SellerBot', marketplace: 'Mercado Livre',
+    user: 'você', none: 'nenhuma ação pendente', unknown: 'não identificado' })[owner] || 'não identificado';
+}
 
 const ritmo = computed(() => {
   const upw = item.value?.health_info?.units_per_week;
@@ -231,6 +287,8 @@ function dataHora(iso) {
       margin: 0 0 $space-2;
     }
   }
+  &__calc { border-left:2px solid $border; padding:$space-2 $space-3; margin:$space-3 0; background:$surface-2; }
+  &__calc p { margin:$space-1 0 0; }
 
   &__promos {
     list-style: none;

@@ -9,8 +9,8 @@ import { api } from 'src/boot/axios';
 
 export default {
   /** Superfície Hoje: baldes do dia, proteção, escritas confirmadas, ciclo e política por conta. */
-  getToday() {
-    return api.get('/mercadolivre/advisor/today/');
+  getToday(params = {}) {
+    return api.get('/mercadolivre/advisor/today/', { params });
   },
 
   /** Atividade: ledger paginado de tentativas e vínculos de recuperação. */

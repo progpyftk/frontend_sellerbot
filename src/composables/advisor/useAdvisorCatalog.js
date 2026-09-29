@@ -20,7 +20,7 @@ const PRESETS = {
   completo: 'Completo',
 };
 
-export function useAdvisorCatalog() {
+export function useAdvisorCatalog(initialFilters = {}, initialSort = '-sales') {
   const linhas = ref([]);
   const total = ref(0);
   const resumo = ref({});
@@ -32,15 +32,16 @@ export function useAdvisorCatalog() {
 
   const filtros = reactive({
     q: '',
-    conta: null,
-    status: null,
+    conta: initialFilters.conta || null,
+    status: initialFilters.status || 'active',
+    promocao: initialFilters.promocao || null,
     saude: null,
     soAbaixoDoPiso: false,
     soComPromocao: false,
     soDupla: false,
   });
 
-  const ordenacao = ref('-sales');
+  const ordenacao = ref(initialSort);
   const pagina = ref(1);
   const porPagina = ref(40);
   const preset = ref('assistente');
@@ -58,6 +59,7 @@ export function useAdvisorCatalog() {
     if (filtros.q) p.q = filtros.q;
     if (filtros.conta) p.account_id = filtros.conta;
     if (filtros.status) p.status = filtros.status;
+    if (filtros.promocao) p.promotion_state = filtros.promocao;
     if (filtros.saude) p.health = filtros.saude;
     if (filtros.soAbaixoDoPiso) p.below_floor = 'true';
     if (filtros.soComPromocao) p.has_promo = 'true';
@@ -150,12 +152,14 @@ export function useAdvisorCatalog() {
   /** Quantos filtros estão fora do padrão — a tela avisa para o dono não achar que sumiu anúncio. */
   const filtrosAtivos = computed(() => {
     let n = 0;
-    for (const valor of Object.values(filtros)) if (valor && valor !== '') n += 1;
+    for (const [key, valor] of Object.entries(filtros)) {
+      if (valor && valor !== '' && !(key === 'status' && valor === 'active')) n += 1;
+    }
     return n;
   });
 
   const temFiltroDeEscopo = computed(() => Boolean(
-    filtros.conta || filtros.status || filtros.saude || filtros.soAbaixoDoPiso
+    filtros.conta || (filtros.status && filtros.status !== 'active') || filtros.promocao || filtros.saude || filtros.soAbaixoDoPiso
     || filtros.soComPromocao || filtros.soDupla,
   ));
 
@@ -167,7 +171,8 @@ export function useAdvisorCatalog() {
   function limparFiltros() {
     filtros.q = '';
     filtros.conta = null;
-    filtros.status = null;
+    filtros.status = 'active';
+    filtros.promocao = null;
     filtros.saude = null;
     filtros.soAbaixoDoPiso = false;
     filtros.soComPromocao = false;

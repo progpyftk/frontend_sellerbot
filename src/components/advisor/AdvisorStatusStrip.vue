@@ -18,7 +18,7 @@
     </span>
     <q-btn v-if="indisponivel" flat dense no-caps icon="refresh" label="Tentar novamente" :loading="carregando" @click="carregar" />
     <q-btn
-      v-if="contas.length && !confirmar"
+      v-if="escrevendo.length && !confirmar"
       outline dense no-caps size="sm" color="red-10" icon="pause_circle"
       label="Pausar toda a escrita" :loading="pausando" @click="confirmar = true"
     />
@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 import AdvisorService from 'src/services/AdvisorService';
 
@@ -102,7 +102,11 @@ async function pausar() {
   }
 }
 
-onMounted(carregar);
+onMounted(() => {
+  carregar();
+  window.addEventListener('advisor-automation-updated', carregar);
+});
+onUnmounted(() => window.removeEventListener('advisor-automation-updated', carregar));
 </script>
 
 <style scoped lang="scss">

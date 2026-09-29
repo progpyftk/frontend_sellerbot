@@ -36,7 +36,6 @@ vi.mock('vue-router', () => ({
 }));
 
 import AdvisorAnalysisPage from 'src/pages/advisor/AdvisorAnalysisPage.vue';
-import AdvisorReguaConta from 'src/components/advisor/AdvisorReguaConta.vue';
 import { SITUATION_META } from 'src/utils/advisorDecision';
 
 const LINHA = {
@@ -56,6 +55,7 @@ const LINHA = {
     buyer_price: 70, discount_pct: 30,
     start_date: '2026-09-01T00:00:00Z', finish_date: null,
   },
+  promotion_state: { state: 'active', observed_at: '2026-09-22T10:00:00Z' },
   agent_last: { created_at: '2026-09-06T21:53:00Z', acao: 'aprofundar' },
   permalink: 'https://produto.mercadolivre.com.br/MLB-1',
 };
@@ -64,6 +64,7 @@ const LINHA_OK = {
   ...LINHA,
   item_id: 'MLB2', title: 'Adubo 1kg', below_floor: false, has_active_promo: false,
   active_promo: null, discount_pct: null, buyer_price: null, margin_pct: 42,
+  promotion_state: { state: 'unconfirmed', observed_at: null },
   base_margin_pct: 42, profit_unit: 30, candidates_count: 0, scheduled_count: 0,
   health: 'alto', health_info: { units_per_week: 4 }, computed_at: '2026-09-22T09:00:00Z',
 };
@@ -177,6 +178,15 @@ describe('AdvisorAnalysisPage', () => {
     expect(headers).toHaveLength(6);
     expect(headers).not.toContain('Estoque');
     expect(headers).not.toContain('Ritmo de vendas');
+  });
+
+  it('não apresenta desconto e margem antigos como atuais quando a coleta está sem confirmação', async () => {
+    const stale = { ...LINHA, item_id: 'MLB3', promotion_state: { state: 'unconfirmed', observed_at: '2026-09-20T10:00:00Z' } };
+    const wrapper = await montar({ ...PAYLOAD, total: 1, results: [stale] });
+    const texto = wrapper.texto();
+    expect(texto).toContain('Estado não confirmado');
+    expect(texto).toContain('Preço-base cadastrado; desconto não confirmado');
+    expect(texto).toContain('Margem atual não confirmada');
   });
 
   it('a dupla decide preço E revisão e a Situação traz os mínimos da CONTA (PROMO-IA-48)', async () => {
@@ -329,30 +339,9 @@ describe('AdvisorAnalysisPage', () => {
     expect(titulos.some((t) => t && t.includes('vendas em 30 dias'))).toBe(false); // ritmo fica no detalhe para manter a lista curta
   });
 
-  it('abre o editor de limites pelo chip "mín." da conta da linha (PROMO-IA-56)', async () => {
+  it('leva o ajuste de limites para a página de Automação', async () => {
     const wrapper = await montar();
-    const botao = wrapper.findAll('button').find((b) => b.text().includes('mín.'));
-    expect(botao).toBeTruthy();
-    await botao.trigger('click');
-    await flushPromises();
-
-    const editor = wrapper.findComponent(AdvisorReguaConta);
-    expect(editor.exists()).toBe(true);
-    expect(editor.props('conta').account_id).toBe('ACC1');
-  });
-
-  it('o botão "Limites desta conta" abre o editor e o Fechar recarrega o catálogo (PROMO-IA-56)', async () => {
-    const wrapper = await montar();
-    const abrir = wrapper.findAll('button').find((b) => b.text().includes('Limites desta conta'));
-    await abrir.trigger('click');
-    await flushPromises();
-    expect(wrapper.findComponent(AdvisorReguaConta).exists()).toBe(true);
-    expect(wrapper.text()).toContain('padrão da plataforma');
-
-    getCatalog.mockClear();
-    const fechar = wrapper.findAll('button').find((b) => b.text().includes('Fechar'));
-    await fechar.trigger('click');
-    await flushPromises();
-    expect(getCatalog).toHaveBeenCalled();
+    expect(wrapper.findAll('a').some((link) => link.text().includes('mín. 30% · R$ 20'))).toBe(true);
+    expect(wrapper.text()).not.toContain('Restaurar padrão');
   });
 });

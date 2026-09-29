@@ -10,10 +10,11 @@
  * - a régua e o glossário estão na tela, ao lado do controle (pedido explícito do dono).
  */
 import { flushPromises, mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getAutomation = vi.fn();
 const patchAutomation = vi.fn();
+vi.mock('vue-router', () => ({ useRoute: () => ({ query: {} }) }));
 
 vi.mock('src/services/AdvisorService', () => ({
   default: {
@@ -49,21 +50,24 @@ const stubs = {
   'q-icon': true,
   'q-btn': { template: '<button @click="$emit(\'click\')"><slot />{{ label }}</button>', props: ['label'] },
   'q-toggle': { template: '<input type="checkbox" />', props: ['modelValue', 'label'] },
-  'q-input': { template: '<input />', props: ['modelValue', 'label'] },
+  'q-input': { inheritAttrs: false, template: '<input />', props: ['modelValue', 'label', 'prefix', 'suffix'] },
   'q-select': true,
   'router-link': { template: '<a><slot /></a>' },
   'q-page': { template: '<div><slot /></div>' },
 };
 
+const wrappers = [];
 async function montar(payload = PAYLOAD) {
   getAutomation.mockResolvedValue({ data: payload });
   const wrapper = mount(AdvisorAutomationPage, { global: { stubs } });
+  wrappers.push(wrapper);
   await flushPromises();
   wrapper.texto = () => wrapper.element.textContent.replace(/\u00a0/g, ' ');
   return wrapper;
 }
 
 describe('AdvisorAutomationPage', () => {
+  afterEach(() => { wrappers.splice(0).forEach((wrapper) => wrapper.unmount()); });
   beforeEach(() => {
     getAutomation.mockReset();
     patchAutomation.mockReset();
@@ -124,7 +128,7 @@ describe('AdvisorAutomationPage', () => {
     await flushPromises();
 
     expect(patchAutomation).toHaveBeenCalledWith({ account_id: 'ACC1', auto_write: false });
-    expect(getAutomation).toHaveBeenCalledTimes(1);          // releu do servidor
+    expect(getAutomation).toHaveBeenCalledTimes(2);          // página e faixa relidas do servidor
     expect(wrapper.text()).toContain('o robô parou de escrever');
   });
 
