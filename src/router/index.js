@@ -7,6 +7,7 @@ import {
 } from "vue-router";
 import routes from "./routes";
 import { useStore } from "src/stores/store";
+import { authGuard } from "./authGuard";
 
 export default route(function (/* { store, ssrContext } */) {
   const createHistory = process.env.SERVER
@@ -16,44 +17,18 @@ export default route(function (/* { store, ssrContext } */) {
     : createWebHashHistory;
 
   const Router = createRouter({
-    scrollBehavior: () => ({ left: 0, top: 0 }),
+    // Deep-link com hash (ex.: /#mentoria da landing) pousa na seção;
+    // nenhuma outra rota do app usa hash (verificado no IDV-13).
+    scrollBehavior(to) {
+      if (to.hash) return { el: to.hash, top: 32 };
+      return { left: 0, top: 0 };
+    },
     routes,
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
-  // Guarda de navegação global
-  Router.beforeEach(async (to, from, next) => {
-    const store = useStore(); // Acessa o store Pinia
-
-    const requiresAuth = to.path.startsWith("/app"); // Rotas que exigem autenticação
-
-    // Usando a variável limpa que criamos no store para checar se tem token
-    const isLoggedIn = store.isAuthenticated;
-
-    // Se a rota exige login e ele não tá logado, manda pro /login
-    if (requiresAuth && !isLoggedIn) {
-      console.log("Usuário não está logado. Redirecionando para o login.");
-      return next("/login");
-    }
-
-    // Regra de Ouro: Se o usuário já está logado e tenta voltar pra tela de login, joga ele pro /app
-    if ((to.path === '/login' || to.path === '/signup') && isLoggedIn) {
-       return next('/app');
-    }
-
-    // Garante que currentUser.id está carregado (compatibilidade com sessões antigas sem id)
-    if (isLoggedIn && !store.currentUser?.id) {
-      await store.fetchCurrentUser();
-    }
-
-    // Krivus CRM: apenas staff
-    if (to.path.startsWith('/krivus') && !store.currentUser?.is_staff) {
-      return next('/app');
-    }
-
-    // Se passou por tudo, deixa a navegação seguir normalmente
-    next();
-  });
+  // Guarda de navegação global — regras em ./authGuard (testáveis sem router)
+  Router.beforeEach((to, from, next) => authGuard(to, from, next, useStore()));
 
   return Router;
 });

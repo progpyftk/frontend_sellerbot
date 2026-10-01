@@ -200,8 +200,9 @@ const registerUser = async () => {
     });
     notify("Bem-vindo! Seu cadastro foi concluído com sucesso.");
     // Redirecionar para a página de login após um breve delay
+    // (IDV-13: "/" agora é a landing pública — o destino do cadastro é o login)
     setTimeout(() => {
-      router.push("/");
+      router.push("/login");
     }, 1000);
   } catch (error) {
     handleRegistrationError(error);
