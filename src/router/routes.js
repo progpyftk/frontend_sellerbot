@@ -4,8 +4,8 @@ import { useStore } from "src/stores/store"; // Importa o store para verificar o
 const routes = [
   {
     path: "/",
-    name: "home",
-    redirect: { name: "login" },
+    name: "landing",
+    component: () => import("pages/LandingPage.vue"),
   },
   {
     path: "/signup",
