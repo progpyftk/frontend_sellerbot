@@ -1,7 +1,10 @@
 const { test, expect } = require('playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:9000';
+// E2E_BASE_URL e o override do playwright.config.js; BASE_URL mantem a
+// convencao dos specs a11y existentes (dashboard.spec.js).
+const BASE_URL =
+  process.env.BASE_URL || process.env.E2E_BASE_URL || 'http://localhost:9000';
 
 // IDV-13: acessibilidade da landing pública da Krivus (rota "/"), no padrão
 // de tests/a11y/dashboard.spec.js — zero violações critical/serious WCAG 2.x A/AA.

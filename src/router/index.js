@@ -30,5 +30,15 @@ export default route(function (/* { store, ssrContext } */) {
   // Guarda de navegação global — regras em ./authGuard (testáveis sem router)
   Router.beforeEach((to, from, next) => authGuard(to, from, next, useStore()));
 
+  // IDV-13 (revisão A2): o useMeta da landing injeta o título de marketing,
+  // mas o plugin Meta do Quasar não restaura o anterior ao desmontar — em
+  // navegação client-side (landing → Entrar → /login) o título vazava para o
+  // app inteiro. Nenhuma outra página define document.title (verificado),
+  // então fora da landing restauramos o padrão do template (index.html).
+  const TEMPLATE_TITLE = "SellerBot Frontend";
+  Router.afterEach((to) => {
+    if (to.name !== "landing") document.title = TEMPLATE_TITLE;
+  });
+
   return Router;
 });

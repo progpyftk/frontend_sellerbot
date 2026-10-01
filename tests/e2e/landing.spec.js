@@ -126,6 +126,17 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     await expect(page).toHaveURL(/\/app/)
   })
 
+  test('sair da landing restaura o título do template (revisão A2)', async ({ page }) => {
+    await page.addInitScript(() => localStorage.clear())
+    await page.goto('/')
+    await expect(page).toHaveTitle(/Krivus/)
+
+    await page.locator('.header-contact').click()
+
+    await expect(page).toHaveURL(/\/login$/)
+    await expect(page).toHaveTitle('SellerBot Frontend')
+  })
+
   test('regressão: anônimo em /app continua caindo no login', async ({ page }) => {
     await page.addInitScript(() => localStorage.clear())
     await page.goto('/app/dashboard')

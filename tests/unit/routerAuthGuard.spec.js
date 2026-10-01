@@ -71,6 +71,12 @@ describe('authGuard — rotas privadas preservadas', () => {
     expect(calls).toEqual(['/app'])
   })
 
+  it('logado em /signup: redireciona para /app', async () => {
+    const store = makeStore({ isAuthenticated: true, currentUser: { id: 1 } })
+    const calls = await runGuard({ path: '/signup', name: 'signup' }, store)
+    expect(calls).toEqual(['/app'])
+  })
+
   it('logado não-staff em /krivus: redireciona para /app', async () => {
     const store = makeStore({ isAuthenticated: true, currentUser: { id: 1, is_staff: false } })
     const calls = await runGuard({ path: '/krivus/clientes', name: 'krivus' }, store)
