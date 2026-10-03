@@ -153,17 +153,47 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     )
     expect(overflow).toBeLessThanOrEqual(0)
   })
-  test('análise de desconto recalcula o volume com teclado', async ({ page }) => {
+  test('calculadora relaciona custos, impostos e margem de contribuição', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.study-result')).toContainText('+50%');
-    await page.locator('#discount').focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.locator('output')).toHaveText('11%');
-    await expect(page.locator('.study-result')).toContainText('+57,9%');
-    await page.locator('#discount').fill('0');
-    await expect(page.locator('.study-result')).toContainText('+0%');
-    await page.locator('#discount').fill('25');
-    await expect(page.locator('.study-result')).toContainText('+500%');
+    const result = page.locator('.calculator-result');
+    await expect(result).toContainText('R$ 20,00');
+    await expect(result).toContainText('20,0%');
+    await page.locator('#margin-tax').fill('10');
+    await expect(result).toContainText('R$ 16,00');
+    await expect(result).toContainText('16,0%');
+    await page.locator('#margin-price').fill('200');
+    await expect(result).toContainText('R$ 90,00');
+    await expect(result).toContainText('45,0%');
+    await page.locator('#margin-other').fill('100');
+    await expect(result).toContainText('-R$ 10,00');
+    await expect(result).toContainText('-5,0%');
+    await expect(result).toContainText('superam o preço');
+  });
+
+  test('calculadora rejeita valores vazios, negativos e percentuais inválidos', async ({ page }) => {
+    await page.goto('/');
+    const result = page.locator('.calculator-result');
+    for (const value of ['', '0', '-1']) {
+      await page.locator('#margin-price').fill(value);
+      await expect(result).toContainText('Preencha valores válidos');
+    }
+    await page.locator('#margin-price').fill('100');
+    await page.locator('#margin-tax').fill('101');
+    await expect(result).toContainText('Preencha valores válidos');
+    await page.locator('#margin-tax').fill('6');
+    await page.locator('#margin-cost').fill('-1');
+    await expect(result).toContainText('Preencha valores válidos');
+    await expect(result).not.toContainText('NaN');
+  });
+
+  test('tributário conecta à calculadora e os quatro cases são apresentados', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('#tributario a[href="#margin-tax"]').click();
+    await expect(page.locator('#margin-tax')).toBeFocused();
+    for (const name of ['Doseverde', 'Livpro', 'Casadossuportes', 'GrampoFix']) {
+      await expect(page.locator('#cases')).toContainText(name);
+    }
+    await expect(page.locator('#tax-title')).toContainText('quem ganha');
   });
 
   test('skip link transfere foco e reduced motion desativa animação', async ({ page }) => {

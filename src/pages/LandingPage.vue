@@ -14,19 +14,10 @@
         <div class="hero-copy">
           <p class="eyebrow">MENTORIA · CONSULTORIA · TECNOLOGIA PRÓPRIA</p>
           <h1 id="hero-title">Vender mais<br>é só parte.<br><em>Enxergar o todo<br>é o que muda.</em></h1>
-          <p class="lead">Preço, publicidade, estoque e caixa decidem juntos o resultado. A Krivus conecta esses números à operação de quem vende no Mercado Livre e na Shopee.</p>
+          <p class="lead">Preço, impostos, publicidade, estoque e caixa decidem juntos o resultado. A Krivus conecta esses números à operação de quem vende no Mercado Livre e na Shopee.</p>
           <a class="button primary" :href="whatsapp.operation" data-offer="operacao">Conversar sobre minha operação <span aria-hidden="true">↗</span></a>
         </div>
-        <div class="hero-analysis" aria-label="SellerBot, tecnologia da Krivus. Análise conceitual de uma venda">
-          <div class="analysis-top"><div><strong>SellerBot</strong><span>Tecnologia desenvolvida pela Krivus</span></div></div>
-          <p class="analysis-label">POR TRÁS DE CADA VENDA</p>
-          <div class="sale-number"><span>Preço de venda</span><strong><small>R$</small> 100<span>,00</span></strong></div>
-          <svg class="sale-flow" viewBox="0 0 430 150" aria-hidden="true" focusable="false"><path class="flow-cost" d="M0 0 C190 0 180 80 430 80 L430 150 C175 150 165 70 0 70Z"/><path class="flow-result" d="M0 73 C175 73 190 0 430 0 L430 30 C195 30 175 103 0 103Z"/><path d="M0 82H430" stroke="currentColor" stroke-dasharray="2 8" opacity=".2"/></svg>
-          <div class="sale-breakdown"><div><span>Custos variáveis</span><strong>R$ 70</strong></div><div class="contribution"><span>Contribuição</span><strong>R$ 30</strong></div></div>
-          <p class="analysis-note">Comissão, impostos, frete, mídia e custo do produto entram na conta.</p>
-          <a class="analysis-question" href="#analise" @click="goToAnchor"><span>E se o preço cair 10%?</span><span aria-hidden="true">↓</span></a>
-          <p class="fine-print">Visualização conceitual · valores ilustrativos.<br>Contribuição antes das despesas fixas.</p>
-        </div>
+        <div class="hero-analysis"><MarginCalculator @navigate="goToAnchor" /></div>
         <div class="hero-bottom"><span>Experiência operacional</span><span>Visão de negócio</span><span>Tecnologia própria</span><a href="#metodo" @click="goToAnchor">Veja a operação por inteiro <span aria-hidden="true">↓</span></a></div>
       </div>
     </section>
@@ -40,18 +31,26 @@
       <div class="wrap section">
         <div class="system-heading"><div><p class="eyebrow">A VISÃO KRIVUS</p><h2 id="system-title">Sua operação não cabe<br>em um indicador.</h2></div><p>Preço muda a margem. Mídia muda a demanda. Reposição compromete caixa. Olhar cada área separadamente esconde parte do problema.</p></div>
         <div class="system-map" aria-label="Decisões conectadas na operação">
-          <div class="system-pair"><span class="relation-index">01</span><h3>Preço <span aria-hidden="true">↔</span> Mídia</h3><p>A contribuição define o espaço para investir.<br>A campanha precisa caber nessa conta.</p></div>
+          <div class="system-pair"><span class="relation-index">01</span><h3>Preço <span aria-hidden="true">↔</span> Tributos</h3><p>A carga efetiva muda a contribuição.<br>A margem precisa considerar essa diferença.</p></div>
           <div class="system-pair"><span class="relation-index">02</span><h3>Mídia <span aria-hidden="true">↔</span> Estoque</h3><p>A demanda exige disponibilidade.<br>Vender sem reposição interrompe o crescimento.</p></div>
           <div class="system-pair"><span class="relation-index">03</span><h3>Compras <span aria-hidden="true">↔</span> Caixa</h3><p>Estoque demais prende capital.<br>O prazo da compra precisa conversar com o repasse.</p></div>
           <div class="system-outcome"><span>UMA LEITURA CONJUNTA</span><strong>Resultado.</strong><p>O efeito de cada decisão na empresa inteira.</p></div>
         </div>
-        <div class="technology"><div><span class="eyebrow">EXPERIÊNCIA → MÉTODO → SOFTWARE</span><h3>O conhecimento<br>também virou tecnologia.</h3></div><div><p>Desenvolvemos o <strong>SellerBot</strong> para apoiar análises e a operação de marketplaces. É tecnologia própria construída a partir de problemas que conhecemos na prática.</p><p class="muted">Financeiro, tributário, logística e importação entram quando afetam a decisão. A ferramenta apoia; o contexto da empresa orienta o próximo passo.</p></div></div>
+        <div class="technology"><div><span class="eyebrow">EXPERIÊNCIA → MÉTODO → SOFTWARE</span><h3>O conhecimento<br>também virou tecnologia.</h3></div><div><p>Desenvolvemos o <strong>SellerBot</strong> para apoiar análises e a operação de marketplaces. É tecnologia própria construída a partir de problemas que conhecemos na prática.</p><p class="muted">Dados e ferramentas apoiam a análise. A decisão considera o contexto da empresa.</p></div></div>
       </div>
     </section>
 
-    <section id="analise" class="section wrap evidence" aria-labelledby="evidence-title">
-      <div class="evidence-copy"><p class="eyebrow">UMA DECISÃO, EM NÚMEROS</p><h2 id="evidence-title">Um desconto<br>pequeno.<br>Uma decisão<br><em>grande.</em></h2><p>De R$ 100 para R$ 90, a queda no preço é de 10%. Com R$ 70 de custos constantes, a contribuição por venda cai de R$ 30 para R$ 20.</p><p>Para manter a mesma contribuição total, seria necessário vender <strong>50% mais unidades.</strong></p><p class="muted">A análise não termina no desconto: demanda, reposição e caixa precisam sustentar esse volume.</p><div class="proof-pending"><span>CASO REAL · RESERVA EDITORIAL</span><p>[INSERIR DADO REAL]</p><small>Operação, período, decisão e resultado autorizado.</small></div></div>
-      <ContributionStudy />
+    <section id="tributario" class="tax-section" aria-labelledby="tax-title">
+      <div class="wrap section tax-grid">
+        <div><p class="eyebrow">REFORMA TRIBUTÁRIA · DECISÃO DE NEGÓCIO</p><h2 id="tax-title">O tributário decide<br>quem ganha<br><em>o jogo.</em></h2><p>O mesmo preço pode deixar margens diferentes. Regime, produto e fornecedores precisam entrar na decisão.</p><a class="text-link" href="#margin-tax" @click="goToAnchor">Simular o impacto na margem <span aria-hidden="true">↑</span></a></div>
+        <div class="tax-decisions"><h3>A reforma também<br>muda a conversa.</h3><dl><div><dt>Preço e margem</dt><dd>Projetar a carga efetiva antes de definir descontos.</dd></div><div><dt>Compras e créditos</dt><dd>Avaliar fornecedores e possibilidades de crédito conforme a operação.</dd></div><div><dt>Regime e caixa</dt><dd>Comparar cenários de recolhimento de IBS e CBS com a contabilidade.</dd></div></dl><p class="tax-note">IBS: Imposto sobre Bens e Serviços. CBS: Contribuição sobre Bens e Serviços. Transição e créditos dependem do regime e da operação.</p><a class="tax-source" href="https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/agosto/cgsn-atualiza-regras-do-simples-nacional-para-adequacao-a-reforma-tributaria-do-consumo">Reforma e Simples Nacional · Receita Federal <span aria-hidden="true">↗</span></a></div>
+      </div>
+    </section>
+
+    <section id="cases" class="section wrap cases" aria-labelledby="cases-title">
+      <div class="cases-heading"><div><p class="eyebrow">OPERAÇÕES REAIS</p><h2 id="cases-title">A prática está<br>por trás do método.</h2></div><p>Operações conectadas ao SellerBot. Contextos diferentes, dados concretos.</p></div>
+      <div class="case-list"><article v-for="example in cases" :key="example.name"><h3>{{ example.name }}</h3><span>{{ example.topic }}</span><p>{{ example.context }}</p></article></div>
+      <p class="case-note">Resultados de cada case: [INSERIR DADO REAL].</p>
     </section>
 
     <section class="services section" aria-labelledby="services-title">
@@ -76,7 +75,7 @@
 <script setup>
 import { useMeta } from 'quasar';
 import KrivusLogo from 'src/components/landing/KrivusLogo.vue';
-import ContributionStudy from 'src/components/landing/ContributionStudy.vue';
+import MarginCalculator from 'src/components/landing/MarginCalculator.vue';
 
 defineOptions({ name: 'LandingPage' });
 const title = 'Krivus — Mentoria e consultoria para e-commerce e marketplaces';
@@ -99,6 +98,13 @@ const whatsapp = {
   mentoring: contact('Olá, quero avaliar a mentoria Krivus para minha empresa. Vendo em: ___. Minha principal dificuldade hoje é: ___.'),
   consulting: contact('Olá, quero conversar sobre consultoria Krivus. Vendo em: ___. Preciso de apoio na execução de: ___.'),
 };
+// Nomes autorizados pelo dono; contextos sustentados no acervo, sem métricas inventadas.
+const cases = [
+  { name: 'Doseverde', topic: 'PREÇO E PROMOÇÕES', context: 'Análise de desconto com produto real para discutir contribuição e volume.' },
+  { name: 'Livpro', topic: 'MERCADO LIVRE E SHOPEE', context: 'Dados dos dois canais conectados ao SellerBot para acompanhar a operação.' },
+  { name: 'Casadossuportes', topic: 'PRECIFICAÇÃO POR CANAL', context: 'Revisão de preços e custos considerando as condições de cada marketplace.' },
+  { name: 'GrampoFix', topic: 'ANÚNCIOS E PROMOÇÕES', context: 'Operação conectada ao SellerBot para análise de anúncios e promoções.' },
+];
 const questions = [
   { title: 'Preciso vender nos dois marketplaces?', answer: 'Não. A análise considera os canais em que sua empresa opera e suas condições específicas.' },
   { title: 'Quem participa da mentoria?', answer: 'Você e as pessoas que decidem e executam. São dez encontros ao longo de cinco meses; as prioridades partem do diagnóstico.' },
