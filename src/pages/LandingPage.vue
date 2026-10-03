@@ -20,18 +20,19 @@
         </div>
         <div class="hero-analysis"><MarginCalculator @navigate="goToAnchor" /></div>
         <section id="cases" class="hero-cases" aria-labelledby="cases-title"><h2 id="cases-title">CASES E OPERAÇÕES</h2><div class="case-brands"><div v-for="example in cases" :key="example.name"><strong>{{ example.name }}</strong><span>{{ example.topic }}</span></div></div></section>
+      <div class="hero-product"><div class="hero-product-caption"><span>SELLERBOT POR DENTRO</span><a href="#ferramentas" @click="goToAnchor">Explorar ferramentas ↗</a></div><ProductCapture src="/images/sellerbot/tendencia.webp" label="Publicidade e evolução diária" alt="Tela real de publicidade do SellerBot com indicadores e gráfico diário de investimento. Dados demonstrativos." :height="975" /></div>
       </div>
     </section>
 
     <section id="ferramentas" class="section wrap tools-section" aria-labelledby="tools-title">
-      <div class="tools-heading"><div><p class="eyebrow">SELLERBOT · TECNOLOGIA DA KRIVUS</p><h2 id="tools-title">Ferramentas que entram<br>na operação.</h2></div><p>Ads, promoções, preços e anúncios.<br>Explore o que nossa tecnologia apoia.</p></div>
+      <div class="tools-heading"><div><p class="eyebrow">SELLERBOT · TECNOLOGIA DA KRIVUS</p><h2 id="tools-title">Veja o SellerBot<br><em>em operação.</em></h2></div><p>Escolha uma ferramenta.<br>Veja a interface por dentro.</p></div>
       <SellerBotTools />
     </section>
 
     <section id="tributario" class="tax-section" aria-labelledby="tax-title">
       <div class="wrap section tax-grid">
         <div><p class="eyebrow">DIAGNÓSTICO DA KRIVUS</p><h2 id="tax-title">O tributário decide<br>quem ganha<br><em>o jogo.</em></h2><a class="text-link" href="#margin-tax" @click="goToAnchor">Simular o impacto na margem <span aria-hidden="true">↑</span></a></div>
-        <div class="tax-decisions"><h3>Tributos e saúde da empresa.</h3><p>Margem, caixa, estoque, compras e carga tributária na mesma análise. Diagnóstico e prioridades para a sua operação.</p><div class="tax-areas"><span>Resultado e caixa</span><span>Regime e créditos</span><span>Estoque e capital</span></div><p class="tax-note">Na reforma tributária, cenários de IBS e CBS são avaliados com a contabilidade. IBS: Imposto sobre Bens e Serviços. CBS: Contribuição sobre Bens e Serviços.</p><a class="tax-source" href="https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/agosto/cgsn-atualiza-regras-do-simples-nacional-para-adequacao-a-reforma-tributaria-do-consumo">Reforma tributária · Receita Federal <span aria-hidden="true">↗</span></a></div>
+        <div class="tax-decisions"><h3>Tributos e saúde da empresa.</h3><p>Margem, caixa, estoque, compras e carga tributária na mesma análise. Diagnóstico e prioridades para a sua operação.</p><ProductCapture src="/images/sellerbot/precos.webp" label="Composição da margem" alt="Cascata da margem no SellerBot, do faturamento à contribuição após impostos e custos. Dados demonstrativos." :width="840" :height="509" /><p class="tax-note">Na reforma tributária, cenários de IBS e CBS são avaliados com a contabilidade. IBS: Imposto sobre Bens e Serviços. CBS: Contribuição sobre Bens e Serviços.</p><a class="tax-source" href="https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/agosto/cgsn-atualiza-regras-do-simples-nacional-para-adequacao-a-reforma-tributaria-do-consumo">Reforma tributária · Receita Federal <span aria-hidden="true">↗</span></a></div>
       </div>
     </section>
 
@@ -57,6 +58,7 @@ import { useMeta } from 'quasar';
 import KrivusLogo from 'src/components/landing/KrivusLogo.vue';
 import MarginCalculator from 'src/components/landing/MarginCalculator.vue';
 import SellerBotTools from 'src/components/landing/SellerBotTools.vue';
+import ProductCapture from 'src/components/landing/ProductCapture.vue';
 
 defineOptions({ name: 'LandingPage' });
 const title = 'Krivus — Mentoria e consultoria para e-commerce e marketplaces';

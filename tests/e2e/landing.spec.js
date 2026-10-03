@@ -210,12 +210,30 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
       ['Criação de anúncios', 'Da ficha à publicação'],
     ];
     for (const [label, title] of choices) {
-      const button = page.getByRole('button', { name: new RegExp(label) });
+      const button = page.getByRole('group', { name: 'Explorar ferramentas do SellerBot' }).getByRole('button', { name: new RegExp(label) });
       await button.click();
       await expect(button).toHaveAttribute('aria-pressed', 'true');
       await expect(selected).toContainText(title);
     }
     await expect(page.getByText('A venda entrou.', { exact: false })).toHaveCount(0);
+  });
+
+  test('capturas do produto carregam e ampliam com retorno de foco', async ({ page }) => {
+    await page.goto('/');
+    const open = page.getByRole('button', { name: 'Ampliar Publicidade e evolução diária' });
+    await open.scrollIntoViewIfNeeded();
+    const image = open.locator('img');
+    await expect.poll(() => image.evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
+    await open.click();
+    await expect(page.getByRole('region', { name: 'Publicidade e evolução diária em tamanho ampliado' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(open).toBeFocused();
+    for (const label of ['IA em Ads', 'Promoções', 'Precificação', 'Criação de anúncios']) {
+      await page.getByRole('group', { name: 'Explorar ferramentas do SellerBot' }).getByRole('button', { name: new RegExp(label) }).click();
+      const screenshot = page.locator('#tool-detail img');
+      await screenshot.scrollIntoViewIfNeeded();
+      await expect.poll(() => screenshot.evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
+    }
   });
 
   test('skip link transfere foco e reduced motion desativa animação', async ({ page }) => {
