@@ -34,7 +34,7 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
 
     await page.goto('/')
 
-    await expect(page.locator('#hero-title')).toContainText('Enxergar o todo')
+    await expect(page.locator('#hero-title')).toContainText('IA na operação')
     expect(new URL(page.url()).pathname).toBe('/')
     expect(userRequests).toEqual([])
   })
@@ -156,34 +156,37 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
   test('calculadora relaciona custos, impostos e margem de contribuição', async ({ page }) => {
     await page.goto('/');
     const result = page.locator('.calculator-result');
-    await expect(result).toContainText('R$ 20,00');
-    await expect(result).toContainText('20,0%');
+    await expect(result).toContainText('R$ 5,00');
+    await expect(result).toContainText('5,0%');
     await page.locator('#margin-tax').fill('10');
-    await expect(result).toContainText('R$ 16,00');
-    await expect(result).toContainText('16,0%');
+    await expect(result).toContainText('R$ 6,00');
+    await expect(result).toContainText('6,0%');
     await page.locator('#margin-price').fill('200');
-    await expect(result).toContainText('R$ 90,00');
-    await expect(result).toContainText('45,0%');
+    await expect(result).toContainText('R$ 82,00');
+    await expect(result).toContainText('41,0%');
     await page.locator('#margin-other').fill('100');
-    await expect(result).toContainText('-R$ 10,00');
-    await expect(result).toContainText('-5,0%');
+    await expect(result).toContainText('-R$ 18,00');
+    await expect(result).toContainText('-9,0%');
     await expect(result).toContainText('superam o preço');
   });
 
-  test('calculadora rejeita valores vazios, negativos e percentuais inválidos', async ({ page }) => {
+  test('sliders mostram valores, respondem ao teclado e respeitam limites', async ({ page }) => {
     await page.goto('/');
-    const result = page.locator('.calculator-result');
-    for (const value of ['', '0', '-1']) {
-      await page.locator('#margin-price').fill(value);
-      await expect(result).toContainText('Preencha valores válidos');
-    }
-    await page.locator('#margin-price').fill('100');
-    await page.locator('#margin-tax').fill('101');
-    await expect(result).toContainText('Preencha valores válidos');
-    await page.locator('#margin-tax').fill('6');
-    await page.locator('#margin-cost').fill('-1');
-    await expect(result).toContainText('Preencha valores válidos');
-    await expect(result).not.toContainText('NaN');
+    await expect(page.locator('input[type="range"]')).toHaveCount(7);
+    const tax = page.locator('#margin-tax');
+    await expect(tax).toHaveValue('11');
+    await tax.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(tax).toHaveValue('11.5');
+    await expect(page.locator('label[for="margin-tax"] output')).toHaveText('11,5%');
+    await expect(page.locator('.calculator-result')).toContainText('R$ 4,50');
+    await page.locator('#margin-price').focus();
+    await page.keyboard.press('Home');
+    await expect(page.locator('#margin-price')).toHaveValue('1');
+    await expect(page.locator('.calculator-result')).not.toContainText('NaN');
+    await page.keyboard.press('End');
+    await expect(page.locator('#margin-price')).toHaveValue('1000');
+    await expect(page.locator('.calculator-result')).not.toContainText('Infinity');
   });
 
   test('tributário conecta à calculadora e os quatro cases são apresentados', async ({ page }) => {
@@ -194,6 +197,25 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
       await expect(page.locator('#cases')).toContainText(name);
     }
     await expect(page.locator('#tax-title')).toContainText('quem ganha');
+  });
+
+  test('ferramentas do SellerBot mudam ao selecionar e cases aparecem na abertura', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#inicio #cases')).toBeAttached();
+    const selected = page.locator('#tool-detail');
+    await expect(selected).toContainText('Campanhas com diagnóstico');
+    const choices = [
+      ['Promoções', 'Desconto com critério'],
+      ['Precificação', 'O preço começa nos custos'],
+      ['Criação de anúncios', 'Da ficha à publicação'],
+    ];
+    for (const [label, title] of choices) {
+      const button = page.getByRole('button', { name: new RegExp(label) });
+      await button.click();
+      await expect(button).toHaveAttribute('aria-pressed', 'true');
+      await expect(selected).toContainText(title);
+    }
+    await expect(page.getByText('A venda entrou.', { exact: false })).toHaveCount(0);
   });
 
   test('skip link transfere foco e reduced motion desativa animação', async ({ page }) => {
