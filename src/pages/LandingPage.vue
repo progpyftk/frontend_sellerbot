@@ -1,121 +1,123 @@
 <template>
 <div class="landing">
-<a class="skip" href="#conteudo" @click="goToAnchor">Pular para o conteúdo</a>
-<div class="opening">
-<header class="header wrap">
-  <a class="brand" href="#inicio" aria-label="Krivus — início" @click="goToAnchor"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 431 132" aria-hidden="true" focusable="false"><svg x="0" y="8" width="112" height="112" xmlns="http://www.w3.org/2000/svg" viewBox="230 140 460 430"><path fill="currentColor" d="M248 232L343 174Q353 167 364 175L418 214Q426 220 426 232V286L293 375V286Q293 271 280 264L248 245Q240 239 248 232Z"/><path fill="currentColor" d="M252 416L558 226Q564 222 571 222H663Q675 224 669 236L312 473Q300 481 288 476L249 452Q232 440 244 423Z"/><path fill="currentColor" d="M385 449L487 379L628 480Q637 488 630 496L551 545Q540 553 527 545Z"/></svg><g transform="translate(132 0)"><path fill="currentColor" transform="translate(0 100) scale(0.05 -0.05)" d="M138 0L140 1440L400 1440L400 560L781 1080L1099 1080L695 540L1130 0L794 0L400 520L400 0Z"/><path fill="currentColor" transform="translate(53.6 100) scale(0.05 -0.05)" d="M140 0L140 1080L367 1080L367 817L341 851Q361 906 395.5 951Q430 996 479 1026Q518 1051 565 1065.5Q612 1080 662 1083.5Q712 1087 761 1080L761 841Q714 855 653.5 850Q593 845 543 819Q495 794 462.5 755Q430 716 414 664.5Q398 613 398 550L398 0Z"/><path fill="currentColor" transform="translate(93.25833333333333 100) scale(0.05 -0.05)" d="M160 1237L160 1468L416 1468L416 1237ZM160 0L160 1080L416 1080L416 0Z"/><path fill="currentColor" transform="translate(121.17500000000001 100) scale(0.05 -0.05)" d="M432 0L40 1080L297 1080L561 315L824 1080L1081 1080L689 0Z"/><path fill="currentColor" transform="translate(176.32500000000002 100) scale(0.05 -0.05)" d="M543 -31Q420 -31 341 10Q262 51 217 115.5Q172 180 151.5 250.5Q131 321 125.5 382Q120 443 120 476L120 1080L380 1080L380 565Q380 521 385.5 461.5Q391 402 414 344Q437 286 486 248Q535 210 622 210Q663 210 705 223Q747 236 783 270Q819 304 841 367Q863 430 863 529L1013 461Q1013 328 960 216Q907 104 803 36.5Q699 -31 543 -31ZM895 0L895 347L863 347L863 1080L1122 1080L1122 0Z"/><path fill="currentColor" transform="translate(238.5 100) scale(0.05 -0.05)" d="M560 -30Q357 -30 232 61.5Q107 153 80 319L342 359Q360 281 422 236.5Q484 192 578 192Q658 192 702 223Q746 254 746 310Q746 344 729 365Q712 386 655 406Q598 426 479 458Q345 493 265.5 534.5Q186 576 151 634Q116 692 116 774Q116 877 168.5 952.5Q221 1028 317 1069Q413 1110 543 1110Q670 1110 767.5 1071Q865 1032 925.5 960Q986 888 999 791L737 744Q729 808 680 845.5Q631 883 548 889Q468 893 419.5 865.5Q371 838 371 787Q371 757 391 736.5Q411 716 473.5 695.5Q536 675 662 643Q788 610 864 567.5Q940 525 974 466Q1008 407 1008 323Q1008 158 889 64Q770 -30 560 -30Z"/></g></svg></a>
-  <nav aria-label="Navegação principal">
-    <a href="#mentoria" @click="goToAnchor">Mentoria</a><a href="#consultoria" @click="goToAnchor">Consultoria</a><a href="#perguntas" @click="goToAnchor">Dúvidas</a>
-  </nav>
-  <router-link class="header-contact" to="/login">Entrar no SellerBot <span aria-hidden="true">↗</span></router-link>
-</header>
-<section class="hero" id="inicio" aria-labelledby="hero-title">
-  <div class="wrap hero-copy">
-    <p class="eyebrow">ESPECIALISTAS EM E-COMMERCE E MARKETPLACES</p>
-    <h1 id="hero-title">Vender mais no marketplace.<br><em>Escalar de verdade.</em></h1>
-    <p class="lead">Mentoria e consultoria para empresas que querem crescer no Mercado Livre e na Shopee com decisão — não no achismo.</p>
-    <p>Na mentoria, orientamos e acompanhamos a execução da sua equipe. Na consultoria, assumimos as atividades acordadas para estruturar ou gerir a operação.</p>
-    <div class="actions"><a class="button primary" data-offer="mentoria" href="https://wa.me/5511998180409?text=Ol%C3%A1%2C%20quero%20conhecer%20a%20mentoria%20da%20Krivus.">Conversar sobre a mentoria <span aria-hidden="true">↗</span></a><a class="text-link" href="#consultoria" @click="goToAnchor">Conhecer a consultoria</a></div>
-    <p class="hero-strip"><strong>5</strong> meses de programa<span aria-hidden="true">·</span><strong>10</strong> encontros<span aria-hidden="true">·</span>sua equipe participa</p>
-  </div>
-</section>
-</div>
-<main id="conteudo">
-<section class="signal-band" aria-label="Áreas de atuação"><div class="wrap signals"><span>Mercado Livre</span><span>Shopee</span><span>Financeiro</span><span>Tributário</span><span>Importação</span></div></section>
-<section class="section wrap" aria-labelledby="challenge-title">
-  <div class="section-heading"><p class="eyebrow">O PRÓXIMO PASSO COMEÇA PELA GESTÃO</p><h2 id="challenge-title">Vender é uma parte.<br>Entender o que fica é outra.</h2></div>
-  <div class="problem-grid"><article><span class="index">01 / PREÇO</span><h3>O desconto aumentou as vendas. E a contribuição?</h3><p>Analisar custos e condições ajuda a definir o preço e o limite de cada promoção.</p></article><article><span class="index">02 / PUBLICIDADE</span><h3>A campanha vende. O investimento faz sentido?</h3><p>Relacionar mídia, margem e estoque permite avaliar onde concentrar o esforço.</p></article><article><span class="index">03 / OPERAÇÃO</span><h3>O faturamento cresce. Por que o caixa aperta?</h3><p>Compras, repasses, despesas e prazos precisam entrar na mesma conversa.</p></article></div>
-</section>
-<section class="section wrap" id="pilares" aria-labelledby="pillars-title">
-  <div class="section-heading"><p class="eyebrow">A BASE DAS DECISÕES</p><h2 id="pillars-title">Resultado, tributos e compras.<br>Uma operação vista por inteiro.</h2><p class="lead">Três frentes que orientam o preço, o investimento e o próximo passo do seu negócio.</p></div>
-  <div class="problem-grid"><article><span class="index">01 / FINANCEIRO</span><h3>Entender o resultado.<br>Planejar o caixa.</h3><p>Conciliação, resultado gerencial, previsão de caixa e capital de giro para decidir quanto investir e o que comprar.</p></article><article><span class="index">02 / TRIBUTÁRIO</span><h3>Trazer os tributos<br>para a decisão.</h3><p>Documentos e premissas conectados a preço, margem e compras, com validações dos profissionais responsáveis.</p></article><article><span class="index">03 / IMPORTAÇÃO</span><h3>Avaliar a oportunidade<br>antes de comprometer capital.</h3><p>Produto, fornecedores, requisitos, custo posto e prazo até receber pelas vendas. Um estudo para decidir se, quando e como avançar.</p></article></div>
-</section>
-<section class="mentoring section" id="mentoria" aria-labelledby="mentoring-title">
-  <div class="wrap split">
-    <div><p class="eyebrow">NOSSA MENTORIA</p><h2 id="mentoring-title">Direção para você.<br>Um plano para<br>a sua equipe.</h2><p class="lead">Cinco meses para analisar sua operação, escolher prioridades e acompanhar as mudanças na prática.</p><p>Você participa com as pessoas que decidem e executam. Os encontros trabalham os dados e os desafios da sua empresa, com orientação para transformar análise em ação.</p><a class="button primary" data-offer="mentoria" href="https://wa.me/5511998180409?text=Ol%C3%A1%2C%20quero%20avaliar%20se%20a%20mentoria%20Krivus%20faz%20sentido%20para%20minha%20empresa.">Entender se a mentoria é para mim <span aria-hidden="true">↗</span></a></div>
-    <div class="mentoring-right">
-      <aside class="journey-card" aria-labelledby="journey-title">
-        <div class="card-top"><span class="eyebrow">MENTORIA PARA A SUA EMPRESA</span><span class="dot" aria-hidden="true"></span></div>
-        <h3 id="journey-title">A sua empresa.<br>As suas prioridades.</h3>
-        <div class="program-numbers"><div><strong>5</strong><span>meses</span></div><div><strong>10</strong><span>encontros</span></div><div><strong>Equipe</strong><span>decisor e executores juntos</span></div></div>
-        <ol class="journey"><li><span>01</span><div><b>Entender os números</b><p>Diagnóstico e prioridades da operação.</p></div></li><li><span>02</span><div><b>Tomar decisões</b><p>Análise aplicada aos desafios do negócio.</p></div></li><li><span>03</span><div><b>Implementar e revisar</b><p>Sua equipe executa. Nós acompanhamos.</p></div></li></ol>
-        <p class="card-note">Dois encontros por mês, com uma trilha construída a partir do seu diagnóstico.</p>
-      </aside>
-      <div class="deliverables"><h3>O que construímos com você</h3><ul class="check-list"><li>Diagnóstico da operação e dos dados disponíveis.</li><li>Prioridades e indicadores para acompanhar.</li><li>Dez encontros com análise e decisões.</li><li>Materiais e exercícios aplicados à sua realidade.</li><li>Plano de ação com responsáveis e próximos passos.</li><li>Revisão intermediária e plano de continuidade.</li></ul><p class="note">A implementação é feita por você e sua equipe. O escopo de canais, suporte e ferramentas é definido na proposta.</p></div>
+  <a class="skip" href="#conteudo" @click="goToAnchor">Pular para o conteúdo</a>
+  <header class="header dark">
+    <div class="wrap header-inner">
+      <a class="brand" href="#inicio" aria-label="Krivus — início" @click="goToAnchor"><KrivusLogo /></a>
+      <nav aria-label="Navegação principal"><a href="#metodo" @click="goToAnchor">Nossa visão</a><a href="#mentoria" @click="goToAnchor">Mentoria</a><a href="#consultoria" @click="goToAnchor">Consultoria</a></nav>
+      <router-link class="header-contact" to="/login">Entrar no SellerBot <span aria-hidden="true">↗</span></router-link>
     </div>
-  </div>
-</section>
-<section class="section wrap" id="jornada" aria-labelledby="topics-title">
-  <div class="section-heading"><p class="eyebrow">TEMAS QUE ENTRAM NA CONVERSA</p><h2 id="topics-title">Uma visão completa.<br>Uma prioridade de cada vez.</h2><p class="lead">A trilha parte deste repertório e se adapta ao estágio da sua empresa. Os temas de maior impacto podem ocupar mais encontros.</p></div>
-  <div class="topic-grid"><article><span class="index">MERCADO LIVRE</span><h3>Preço, promoções<br>e publicidade.</h3><p>Custos, frete, condições comerciais e campanhas analisados em conjunto.</p></article><article><span class="index">SHOPEE</span><h3>Variações, descontos<br>e campanhas.</h3><p>Preço efetivo, catálogo e investimento considerando as condições do canal.</p></article><article><span class="index">CATÁLOGO</span><h3>Imagens e oferta<br>mais claras.</h3><p>Ficha, atributos, apresentação e informações que ajudam o comprador a escolher.</p></article><article><span class="index">LOGÍSTICA</span><h3>Estoque, reposição<br>e fulfillment.</h3><p>Comparação de custos e alternativas de armazenagem e envio, incluindo Full quando aplicável.</p></article><article><span class="index">GESTÃO</span><h3>Margem, resultado<br>e caixa.</h3><p>Conciliação, demonstração de resultados gerencial e rotina financeira.</p></article><article><span class="index">EXPANSÃO</span><h3>Fornecedores, compras<br>e importação.</h3><p>Preparação de decisões e validações com os profissionais responsáveis, conforme a necessidade.</p></article></div>
-  <details class="curriculum"><summary>Conhecer a sequência de referência dos dez encontros <span aria-hidden="true">+</span></summary><ol><li>Diagnóstico econômico e prioridades.</li><li>Financeiro: resultado, conciliação e caixa.</li><li>Tributário: premissas, documentos e decisões.</li><li>Mercado Livre: preço, promoção e oferta.</li><li>Shopee: preço efetivo e revisão intermediária.</li><li>Publicidade: orçamento e retorno econômico.</li><li>Capital de giro, compras e logística.</li><li>Importação: produto, fornecedor e viabilidade operacional.</li><li>Importação: custo posto, caixa e decisão de investimento.</li><li>Encerramento, autonomia e plano de noventa dias.</li></ol><p class="note">Financeiro e tributário entram no início. Dois encontros são dedicados à importação quando ela faz sentido para a empresa; em outros casos, aprofundamos compras nacionais e capital de giro. A trilha é montada para cada empresa.</p></details>
-</section>
-<section class="fit section" aria-labelledby="fit-title"><div class="wrap split"><div><p class="eyebrow">PARA QUEM É</p><h2 id="fit-title">Você já tem uma operação.<br>Agora quer decidir<br>com mais segurança.</h2></div><div><p class="lead">A mentoria faz sentido quando existe um desafio real e alguém para colocar as decisões em prática.</p><ul class="check-list"><li>Sua empresa vende em pelo menos um dos canais.</li><li>Você quer entender melhor os números e as prioridades.</li><li>Há disponibilidade para organizar dados e executar ações.</li><li>O decisor participa do acompanhamento.</li></ul><p>Se o seu momento pede implantação ou execução pela Krivus, podemos conversar sobre consultoria.</p></div></div></section>
-<section class="section wrap" id="consultoria" aria-labelledby="consulting-title">
-  <div class="section-heading"><p class="eyebrow">CONSULTORIA KRIVUS</p><h2 id="consulting-title">Conhecimento aplicado<br>à execução da sua operação.</h2><p class="lead">Para empresas que precisam estruturar uma frente ou delegar atividades, definimos um projeto ou acompanhamento contínuo com entregas e responsabilidades claras.</p></div>
-  <div class="consulting-grid"><article><span class="index">PROJETO</span><h3>Implantação<br>e melhoria.</h3><p>Estruturação de canais, catálogo, rotinas financeiras e processos; estudos tributários e de importação conforme a necessidade e o escopo contratado.</p><p class="note">Entregas, etapas e critérios de conclusão definidos na proposta.</p></article><article><span class="index">ACOMPANHAMENTO</span><h3>Gestão<br>contínua.</h3><p>Execução das atividades acordadas, acompanhando resultado, caixa, preços, campanhas e estoque. Projetos de importação têm etapas e responsabilidades próprias.</p><p class="note">Contas, volume, rotinas e responsabilidades delimitados.</p></article></div>
-  <a class="button outline" data-offer="consultoria" href="https://wa.me/5511998180409?text=Ol%C3%A1%2C%20quero%20conversar%20sobre%20consultoria%20Krivus%20para%20minha%20opera%C3%A7%C3%A3o.">Conversar sobre consultoria <span aria-hidden="true">↗</span></a>
-</section>
-<section class="difference section" aria-labelledby="difference-title"><div class="wrap"><p class="eyebrow">ESCOLHA PELO QUE A EMPRESA PRECISA</p><h2 id="difference-title">Como cada formato funciona.</h2><div class="comparison"><article><span class="pill">MENTORIA PARA A SUA EMPRESA</span><h3>Você executa.<br>Nós orientamos<br>e revisamos.</h3><p>Cinco meses e dez encontros para trabalhar decisões e desenvolver a gestão da sua empresa.</p><a href="#mentoria" @click="goToAnchor">Ver a mentoria <span aria-hidden="true">↗</span></a></article><article><span class="pill">CONSULTORIA</span><h3>Definimos o escopo.<br>A Krivus assume<br>a execução acordada.</h3><p>Projeto ou gestão contínua para as atividades que sua operação precisa implementar ou delegar.</p><a href="#consultoria" @click="goToAnchor">Ver a consultoria <span aria-hidden="true">↗</span></a></article></div></div></section>
-<section class="section wrap method" aria-labelledby="method-title"><div><p class="eyebrow">EXPERIÊNCIA + DADOS + TECNOLOGIA</p><h2 id="method-title">A ferramenta apoia.<br>A decisão tem contexto.</h2></div><div><p class="lead">A Krivus combina experiência em operações próprias, análise de dados e acompanhamento próximo.</p><p>O SellerBot, nossa plataforma, apoia análises e rotinas conforme os recursos disponíveis para cada operação. O trabalho começa pelo problema do negócio e pelos dados que ajudam a entendê-lo.</p><p>Preço, publicidade, estoque e caixa são discutidos com suas relações e limites. Cada decisão recebe um próximo passo e uma forma de acompanhamento.</p></div></section>
-<section class="section wrap faq" id="perguntas" aria-labelledby="faq-title"><div class="section-heading"><p class="eyebrow">PERGUNTAS FREQUENTES</p><h2 id="faq-title">Antes de começarmos.</h2></div>
-  <details><summary>Quem da minha empresa pode participar?</summary><p>O programa é dedicado à sua empresa, não a uma única pessoa. Você participa com as pessoas responsáveis pelas decisões e pela execução, conforme o escopo combinado.</p></details>
-  <details><summary>Preciso vender no Mercado Livre e na Shopee?</summary><p>Não. O programa pode priorizar o canal em que sua empresa atua. A trilha é definida no diagnóstico e pode aprofundar os temas mais relevantes para a operação.</p></details>
-  <details><summary>Quem faz as mudanças na minha conta?</summary><p>Na mentoria, você e sua equipe executam as ações, com orientação e revisão da Krivus. Na consultoria, a Krivus assume as atividades especificadas na proposta.</p></details>
-  <details><summary>O que acontece entre os encontros?</summary><p>Sua equipe implementa o plano e reúne as evidências para a próxima revisão. O canal, os limites e as condições de suporte são definidos na proposta.</p></details>
-  <details><summary>A mentoria inclui todos os temas da página?</summary><p>Os temas formam o repertório do programa. A seleção e a profundidade dependem do diagnóstico: algumas empresas precisam de mais tempo em publicidade, outras em preço, caixa ou logística.</p></details>
-  <details><summary>O acesso ao SellerBot está incluído?</summary><p>O uso da plataforma, das ferramentas e de eventuais integrações é definido conforme a proposta. A orientação também pode trabalhar com relatórios dos canais e dados fornecidos pela empresa.</p></details>
-  <details><summary>Como funcionam tributário e importação?</summary><p>Trabalhamos a análise de gestão, a viabilidade e a organização das decisões. Validações e atos contábeis, fiscais ou aduaneiros ficam com os profissionais responsáveis pela operação.</p></details>
-  <details><summary>Qual é o investimento?</summary><p>Na conversa inicial, entendemos a operação e verificamos a adequação do serviço. Você recebe uma proposta com investimento, formato e condições. A consultoria é dimensionada conforme as atividades e a complexidade.</p></details>
-  <details><summary>Há garantia de aumento de vendas?</summary><p>Os resultados dependem da operação, da implementação, dos recursos e das condições de mercado. O compromisso é com as análises, o acompanhamento e as entregas definidas na proposta.</p></details>
-</section>
-<section class="closing" id="conversar" aria-labelledby="closing-title"><div class="wrap"><p class="eyebrow">VAMOS ENTENDER O SEU MOMENTO</p><h2 id="closing-title">Qual decisão da sua operação<br>precisa ficar mais clara?</h2><p>Conte-nos em quais canais você vende, qual é o principal desafio e se busca orientação ou execução.</p><div class="actions"><a class="button light" data-offer="mentoria" href="https://wa.me/5511998180409?text=Ol%C3%A1%2C%20quero%20conhecer%20a%20mentoria%20da%20Krivus.">Quero conhecer a mentoria <span aria-hidden="true">↗</span></a><a class="text-link" data-offer="consultoria" href="https://wa.me/5511998180409?text=Ol%C3%A1%2C%20preciso%20de%20consultoria%20para%20implanta%C3%A7%C3%A3o%20ou%20gest%C3%A3o.">Preciso de consultoria <span aria-hidden="true">↗</span></a></div><p class="contact-note">A conversa continua no WhatsApp: +55 11 99818-0409.</p></div></section>
-</main>
-<footer class="wrap footer"><span>Krivus · Mentoria e consultoria para e-commerce e marketplaces.</span><a href="#inicio" @click="goToAnchor">Voltar ao início ↑</a></footer>
+  </header>
+  <main id="conteudo" tabindex="-1">
+    <section id="inicio" class="hero dark" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">MENTORIA · CONSULTORIA · TECNOLOGIA PRÓPRIA</p>
+          <h1 id="hero-title">Vender mais<br>é só parte.<br><em>Enxergar o todo<br>é o que muda.</em></h1>
+          <p class="lead">Preço, publicidade, estoque e caixa decidem juntos o resultado. A Krivus conecta esses números à operação de quem vende no Mercado Livre e na Shopee.</p>
+          <a class="button primary" :href="whatsapp.operation" data-offer="operacao">Conversar sobre minha operação <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="hero-analysis" aria-label="SellerBot, tecnologia da Krivus. Análise conceitual de uma venda">
+          <div class="analysis-top"><div><strong>SellerBot</strong><span>Tecnologia desenvolvida pela Krivus</span></div></div>
+          <p class="analysis-label">POR TRÁS DE CADA VENDA</p>
+          <div class="sale-number"><span>Preço de venda</span><strong><small>R$</small> 100<span>,00</span></strong></div>
+          <svg class="sale-flow" viewBox="0 0 430 150" aria-hidden="true" focusable="false"><path class="flow-cost" d="M0 0 C190 0 180 80 430 80 L430 150 C175 150 165 70 0 70Z"/><path class="flow-result" d="M0 73 C175 73 190 0 430 0 L430 30 C195 30 175 103 0 103Z"/><path d="M0 82H430" stroke="currentColor" stroke-dasharray="2 8" opacity=".2"/></svg>
+          <div class="sale-breakdown"><div><span>Custos variáveis</span><strong>R$ 70</strong></div><div class="contribution"><span>Contribuição</span><strong>R$ 30</strong></div></div>
+          <p class="analysis-note">Comissão, impostos, frete, mídia e custo do produto entram na conta.</p>
+          <a class="analysis-question" href="#analise" @click="goToAnchor"><span>E se o preço cair 10%?</span><span aria-hidden="true">↓</span></a>
+          <p class="fine-print">Visualização conceitual · valores ilustrativos.<br>Contribuição antes das despesas fixas.</p>
+        </div>
+        <div class="hero-bottom"><span>Experiência operacional</span><span>Visão de negócio</span><span>Tecnologia própria</span><a href="#metodo" @click="goToAnchor">Veja a operação por inteiro <span aria-hidden="true">↓</span></a></div>
+      </div>
+    </section>
+
+    <section class="problem section wrap" aria-labelledby="problem-title">
+      <div><p class="eyebrow">O NÚMERO QUE NÃO CONTA TUDO</p><h2 id="problem-title">A venda entrou.<br>O resultado<br>acompanhou?</h2><p>A promoção movimenta pedidos. A campanha ganha volume. A compra parece boa. Mas o caixa continua apertado.</p></div>
+      <div class="questions"><div><span>01 / DESCONTO</span><p>Quanto precisa vender a mais<br>para compensar a margem menor?</p></div><div><span>02 / PUBLICIDADE</span><p>Depois da mídia, do frete e dos impostos,<br>quanto realmente ficou?</p></div><div><span>03 / ESTOQUE</span><p>O que falta para vender?<br>O que sobra imobilizando caixa?</p></div></div>
+    </section>
+
+    <section id="metodo" class="system-section" aria-labelledby="system-title">
+      <div class="wrap section">
+        <div class="system-heading"><div><p class="eyebrow">A VISÃO KRIVUS</p><h2 id="system-title">Sua operação não cabe<br>em um indicador.</h2></div><p>Preço muda a margem. Mídia muda a demanda. Reposição compromete caixa. Olhar cada área separadamente esconde parte do problema.</p></div>
+        <div class="system-map" aria-label="Decisões conectadas na operação">
+          <div class="system-pair"><span class="relation-index">01</span><h3>Preço <span aria-hidden="true">↔</span> Mídia</h3><p>A contribuição define o espaço para investir.<br>A campanha precisa caber nessa conta.</p></div>
+          <div class="system-pair"><span class="relation-index">02</span><h3>Mídia <span aria-hidden="true">↔</span> Estoque</h3><p>A demanda exige disponibilidade.<br>Vender sem reposição interrompe o crescimento.</p></div>
+          <div class="system-pair"><span class="relation-index">03</span><h3>Compras <span aria-hidden="true">↔</span> Caixa</h3><p>Estoque demais prende capital.<br>O prazo da compra precisa conversar com o repasse.</p></div>
+          <div class="system-outcome"><span>UMA LEITURA CONJUNTA</span><strong>Resultado.</strong><p>O efeito de cada decisão na empresa inteira.</p></div>
+        </div>
+        <div class="technology"><div><span class="eyebrow">EXPERIÊNCIA → MÉTODO → SOFTWARE</span><h3>O conhecimento<br>também virou tecnologia.</h3></div><div><p>Desenvolvemos o <strong>SellerBot</strong> para apoiar análises e a operação de marketplaces. É tecnologia própria construída a partir de problemas que conhecemos na prática.</p><p class="muted">Financeiro, tributário, logística e importação entram quando afetam a decisão. A ferramenta apoia; o contexto da empresa orienta o próximo passo.</p></div></div>
+      </div>
+    </section>
+
+    <section id="analise" class="section wrap evidence" aria-labelledby="evidence-title">
+      <div class="evidence-copy"><p class="eyebrow">UMA DECISÃO, EM NÚMEROS</p><h2 id="evidence-title">Um desconto<br>pequeno.<br>Uma decisão<br><em>grande.</em></h2><p>De R$ 100 para R$ 90, a queda no preço é de 10%. Com R$ 70 de custos constantes, a contribuição por venda cai de R$ 30 para R$ 20.</p><p>Para manter a mesma contribuição total, seria necessário vender <strong>50% mais unidades.</strong></p><p class="muted">A análise não termina no desconto: demanda, reposição e caixa precisam sustentar esse volume.</p><div class="proof-pending"><span>CASO REAL · RESERVA EDITORIAL</span><p>[INSERIR DADO REAL]</p><small>Operação, período, decisão e resultado autorizado.</small></div></div>
+      <ContributionStudy />
+    </section>
+
+    <section class="services section" aria-labelledby="services-title">
+      <div class="wrap"><p class="eyebrow">COMO TRABALHAMOS</p><h2 id="services-title">A mesma visão.<br>Duas formas de trabalhar.</h2>
+        <div class="service-grid">
+          <article id="mentoria" class="mentoring" tabindex="-1"><span class="service-label">01 / MENTORIA</span><h3>Sua equipe executa.<br><em>A Krivus orienta.</em></h3><p>Cinco meses para trabalhar os dados da sua empresa, escolher prioridades e acompanhar as decisões. O decisor participa com as pessoas responsáveis pela execução.</p><div class="program"><span><strong>5</strong> meses</span><span><strong>10</strong> encontros</span><span><strong>Sua equipe</strong> participa</span></div><p class="service-deliverables">Diagnóstico e prioridades. Plano de ação com responsáveis. Revisão do que mudou e dos próximos passos.</p><a class="button primary" :href="whatsapp.mentoring" data-offer="mentoria">Avaliar a mentoria <span aria-hidden="true">↗</span></a></article>
+          <article id="consultoria" class="consulting" tabindex="-1"><span class="service-label">02 / CONSULTORIA</span><h3>Escopo definido.<br>A Krivus executa.</h3><p>Para estruturar, melhorar ou acompanhar a operação com atividades, responsáveis e entregas contratados.</p><p>Do estudo de preço à organização de campanhas, do catálogo à análise de gestão: o projeto parte da necessidade da empresa.</p><a class="text-link" :href="whatsapp.consulting" data-offer="consultoria">Conversar sobre consultoria <span aria-hidden="true">↗</span></a></article>
+        </div>
+        <p class="service-note">Temas, ferramentas, canais e suporte são definidos na proposta. Tributário e importação incluem análise de gestão; validações técnicas cabem aos profissionais responsáveis.</p>
+      </div>
+    </section>
+
+    <section class="section wrap process" aria-labelledby="process-title"><div><p class="eyebrow">PRIMEIRO A EMPRESA. DEPOIS O PLANO.</p><h2 id="process-title">Entender.<br>Escolher.<br>Agir.</h2><p>Para empresas que já vendem e querem conectar crescimento, margem e gestão.</p></div><ol><li><span>01</span><div><h3>Conhecer a operação</h3><p>Canais, dados disponíveis e decisões que estão travando o negócio.</p></div></li><li><span>02</span><div><h3>Escolher prioridades</h3><p>Definir o problema, o formato e as entregas que fazem sentido.</p></div></li><li><span>03</span><div><h3>Executar e revisar</h3><p>Acompanhar mudanças com responsáveis e critérios claros.</p></div></li></ol></section>
+
+    <section id="perguntas" class="section wrap faq" aria-labelledby="faq-title"><div><p class="eyebrow">ANTES DA CONVERSA</p><h2 id="faq-title">O que você<br>precisa saber.</h2></div><div><details v-for="question in questions" :key="question.title"><summary>{{ question.title }}<span aria-hidden="true">+</span></summary><p>{{ question.answer }}</p></details></div></section>
+    <section id="conversar" class="closing" aria-labelledby="closing-title"><div class="wrap"><p class="eyebrow">A PRÓXIMA DECISÃO COMEÇA AQUI</p><h2 id="closing-title">Qual decisão<br>não pode continuar<br>no achismo?</h2><div class="closing-bottom"><p>Conte-nos onde você vende e o que precisa entender melhor. A conversa começa pela operação.</p><div><a class="button light" :href="whatsapp.operation" data-offer="operacao">Conversar sobre minha operação <span aria-hidden="true">↗</span></a><p class="contact-note">WhatsApp · +55 11 99818-0409</p></div></div></div></section>
+  </main>
+  <footer class="wrap footer"><a class="brand" href="#inicio" aria-label="Krivus — voltar ao início" @click="goToAnchor"><KrivusLogo /></a><span>Experiência operacional. Dados. Tecnologia.</span><a href="#inicio" @click="goToAnchor">Voltar ao início <span aria-hidden="true">↑</span></a></footer>
 </div>
 </template>
 
 <script setup>
-import { useMeta } from "quasar";
+import { useMeta } from 'quasar';
+import KrivusLogo from 'src/components/landing/KrivusLogo.vue';
+import ContributionStudy from 'src/components/landing/ContributionStudy.vue';
 
-defineOptions({ name: "LandingPage" });
-
-useMeta({
-  title: "Krivus — Mentoria e consultoria para e-commerce e marketplaces",
-  meta: {
-    description: {
-      name: "description",
-      content:
-        "Mentoria e consultoria para empresas que vendem no Mercado Livre e na Shopee. Programa de cinco meses com a sua equipe e consultoria com escopo definido.",
-    },
-    robots: { name: "robots", content: "noindex,nofollow" },
-  },
-});
-
-// Âncoras internas: scroll suave respeitando prefers-reduced-motion, sem
-// disparar navegação do vue-router (replaceState não dispara popstate).
+defineOptions({ name: 'LandingPage' });
+const title = 'Krivus — Mentoria e consultoria para e-commerce e marketplaces';
+const description = 'Mentoria e consultoria para empresas que vendem no Mercado Livre e na Shopee. Experiência operacional, dados e tecnologia própria para conectar preço, mídia, estoque e caixa.';
+// O domínio canônico permanece pendente; não inferir URL de produção do host da prévia.
+useMeta({ title, meta: {
+  description: { name: 'description', content: description },
+  robots: { name: 'robots', content: 'noindex,nofollow' },
+  ogTitle: { property: 'og:title', content: title },
+  ogDescription: { property: 'og:description', content: description },
+  ogType: { property: 'og:type', content: 'website' },
+  ogLocale: { property: 'og:locale', content: 'pt_BR' },
+  twitterCard: { name: 'twitter:card', content: 'summary' },
+  twitterTitle: { name: 'twitter:title', content: title },
+  twitterDescription: { name: 'twitter:description', content: description },
+}, script: { organization: { type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'Organization', name: 'Krivus', telephone: '+55-11-99818-0409' }) } } });
+const contact = (message) => `https://wa.me/5511998180409?text=${encodeURIComponent(message)}`;
+const whatsapp = {
+  operation: contact('Olá, quero conversar sobre minha operação com a Krivus. Vendo em: ___. Minha principal dificuldade hoje é: ___.'),
+  mentoring: contact('Olá, quero avaliar a mentoria Krivus para minha empresa. Vendo em: ___. Minha principal dificuldade hoje é: ___.'),
+  consulting: contact('Olá, quero conversar sobre consultoria Krivus. Vendo em: ___. Preciso de apoio na execução de: ___.'),
+};
+const questions = [
+  { title: 'Preciso vender nos dois marketplaces?', answer: 'Não. A análise considera os canais em que sua empresa opera e suas condições específicas.' },
+  { title: 'Quem participa da mentoria?', answer: 'Você e as pessoas que decidem e executam. São dez encontros ao longo de cinco meses; as prioridades partem do diagnóstico.' },
+  { title: 'Quem muda anúncios e campanhas?', answer: 'Na mentoria, a execução é da sua equipe, com orientação e revisão. Na consultoria, executamos as atividades contratadas.' },
+  { title: 'O SellerBot está incluído?', answer: 'O acesso, as integrações e as ferramentas utilizadas são definidos na proposta. Também podemos trabalhar com relatórios dos canais e dados da empresa.' },
+  { title: 'Como é definido o investimento?', answer: 'Depois de entender a operação, apresentamos o formato, o escopo, o investimento e as condições. Resultados dependem da execução e do contexto do negócio.' },
+];
+/** Move a leitura e o foco à seção, sem disparar o roteador ou hidratar sessão. */
 function goToAnchor(event) {
-  const href = event.currentTarget.getAttribute("href");
-  if (!href || !href.startsWith("#")) return;
-  const target = document.querySelector(href);
+  const target = document.querySelector(event.currentTarget.getAttribute('href'));
   if (!target) return;
   event.preventDefault();
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-  history.replaceState(null, "", href);
+  if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  history.replaceState(null, '', event.currentTarget.getAttribute('href'));
 }
 </script>
-
 <style>
 @font-face{font-family:Manrope;src:url('../assets/fonts/Manrope.ttf') format('truetype');font-weight:200 800;font-display:swap}
 </style>
-
-<style scoped>
-.landing{--paper:#edf4f7;--ink:#152d43;--accent:#a51e55;--muted:#4c6272;--line:#bcced9;--surface:#dfe9ef;--night:#101e2b;--pink:#f28ab4;color-scheme:light}
-*{box-sizing:border-box}#conteudo,#inicio,#mentoria,#consultoria,#perguntas,#pilares,#jornada,#conversar{scroll-margin-top:32px}.landing{position:relative;min-height:100vh;background:var(--paper);color:var(--ink);font:16px/1.7 Manrope,Arial,sans-serif}a{color:inherit;text-underline-offset:5px}p{margin:0 0 22px}h1,h2,h3{font-family:Manrope,Arial,sans-serif;color:var(--ink);font-weight:650;letter-spacing:-.045em;line-height:1.13;margin:0 0 24px}h1{font-size:clamp(42px,4.8vw,70px)}h2{font-size:clamp(32px,3.3vw,48px)}h3{font-size:25px}em{color:var(--accent);font-style:normal}.wrap{width:min(1180px,calc(100% - 64px));margin:auto}.section{padding-top:96px;padding-bottom:96px}.eyebrow{font-size:11px;letter-spacing:.13em;font-weight:800;color:var(--accent);margin-bottom:22px}.lead{font-size:21px;line-height:1.6;letter-spacing:-.015em}.note{font-size:14px;color:var(--muted)}.opening{background:var(--night);color:var(--paper)}.opening .header{border-bottom-color:#2b4557}.header{display:flex;align-items:center;justify-content:space-between;padding:24px 0;border-bottom:1px solid var(--line);gap:28px}.brand{display:flex;flex-shrink:0}.brand svg{width:150px;height:auto;display:block}.header nav{display:flex;gap:28px}.header a{text-decoration:none;font-size:14px;font-weight:650}.header-contact{color:var(--pink)}.hero{padding:76px 0 80px}.hero-copy>p{max-width:640px}.opening .eyebrow{color:var(--pink)}.hero h1{color:var(--paper)}.hero em{color:var(--pink)}.hero-copy p{color:#c2d3de}.hero .lead{font-size:21px;color:var(--paper)}.hero .text-link{color:var(--pink)}.actions{display:flex;flex-wrap:wrap;gap:20px 28px;align-items:center;margin-top:30px}.button{display:inline-flex;gap:20px;justify-content:center;align-items:center;padding:16px 22px;border-radius:7px;text-decoration:none;font-size:14px;font-weight:750;min-height:52px;line-height:1.45;border:1px solid transparent;transition:background .15s}.button span{font-size:20px}.primary{background:var(--accent);color:white}.primary:hover{background:#871b48}.outline{border-color:var(--ink)}.outline:hover{background:var(--surface)}.light{background:var(--paper);color:var(--ink)}.text-link{font-size:14px;font-weight:750}.hero-strip{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 14px;margin:36px 0 0;font-size:13px;font-weight:650;letter-spacing:.02em;color:#c2d3de}.hero-strip strong{font-size:26px;color:var(--paper);letter-spacing:-.04em;font-weight:700}.hero-strip span[aria-hidden]{opacity:.5}.journey-card{padding:32px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 16px 45px #152d4310}.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;gap:15px}.card-top .eyebrow{margin:0;font-size:10px}.dot{width:9px;height:9px;background:var(--accent);border-radius:50%}.journey-card h3{font-size:34px}.program-numbers{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:12px;margin:28px 0;padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.program-numbers strong{font-size:44px;line-height:1.1;letter-spacing:-.05em;display:block}.program-numbers span{font-size:12px;display:block;line-height:1.5;margin-top:8px;max-width:100px;color:var(--muted)}.journey{padding:0;list-style:none;margin:24px 0}.journey li{display:flex;gap:18px;margin:0 0 24px}.journey li>span{font-size:12px;color:var(--accent);padding-top:3px}.journey b{font-size:15px}.journey p{margin:4px 0 0;color:var(--muted);font-size:13px}.card-note{margin:0;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:20px}.signal-band{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.signals{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:22px 0;font-size:13px;font-weight:650}.section-heading{max-width:780px;margin-bottom:44px}.section-heading .lead{max-width:760px}.problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}.problem-grid article{border-top:2px solid var(--ink);padding-top:25px}.index{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--accent);margin-bottom:22px}.problem-grid p{color:var(--muted);font-size:15px;margin-bottom:0}.mentoring{background:var(--surface)}.split{display:grid;grid-template-columns:1fr 1fr;gap:85px;align-items:start}.mentoring .button{margin-top:10px}.mentoring-right{display:grid;gap:28px}.deliverables{padding:38px;border:1px solid #96adbc;border-radius:14px}.deliverables h3{font-size:27px}.check-list{padding:0;list-style:none;margin:24px 0}.check-list li{padding-left:24px;margin:0 0 18px;position:relative}.check-list li:before{content:'↗';position:absolute;left:0;color:var(--accent);font-weight:700}.deliverables .note{margin:22px 0 0;border-top:1px solid #96adbc;padding-top:22px}.topic-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}.topic-grid article{padding:32px 28px 32px 0;border-top:1px solid var(--line)}.topic-grid p{font-size:15px;color:var(--muted);max-width:310px;margin-bottom:0}.topic-grid h3{font-size:27px}.curriculum{border:1px solid var(--line);border-radius:8px;padding:22px 26px;margin-top:24px}.curriculum summary{display:flex;justify-content:space-between;gap:20px;font-weight:700}.curriculum summary span{color:var(--accent);font-size:22px}.curriculum ol{columns:2;gap:36px;padding-left:22px;margin:25px 0}.curriculum li{break-inside:avoid;margin-bottom:12px;padding-left:7px;font-size:14px}.curriculum .note{margin:24px 0 0}.fit{background:var(--night);color:var(--paper)}.fit h2{color:var(--paper)}.fit .eyebrow,.fit .check-list li:before{color:var(--pink)}.consulting-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-bottom:28px}.consulting-grid article{padding-top:30px;border-top:1px solid var(--line)}.consulting-grid h3{font-size:36px}.consulting-grid p{max-width:470px}.consulting-grid .note{margin:0}.difference{background:var(--surface)}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:38px}.comparison article{border-top:1px solid #96adbc;padding:32px 0 0}.pill{font-size:10px;font-weight:800;letter-spacing:.1em;display:inline-block;border:1px solid #96adbc;padding:7px 12px;border-radius:50px;margin-bottom:24px}.comparison h3{font-size:32px}.comparison p{max-width:440px}.comparison a{color:var(--accent);font-weight:750;font-size:14px}.method{display:grid;grid-template-columns:1fr 1fr;gap:85px;border-bottom:1px solid var(--line)}.faq{max-width:950px}.faq details{padding:24px 0;border-bottom:1px solid var(--line)}summary{cursor:pointer;line-height:1.5}summary:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:5px}.faq summary{font-size:18px;font-weight:650}.faq details p{margin:18px 0 0;color:var(--muted);max-width:750px}.closing{background:var(--accent);color:white;padding:90px 0}.closing h2{color:white}.closing .eyebrow{color:#fbd9e6}.closing h2{font-size:clamp(34px,4vw,55px)}.closing p{max-width:630px}.closing .contact-note{font-size:13px;margin:25px 0 0;color:#fbd9e6}.closing a:focus-visible{outline-color:white}.opening a:focus-visible{outline-color:var(--pink)}.footer{display:flex;justify-content:space-between;gap:20px;padding:30px 0;font-size:12px;color:var(--muted)}.skip{position:absolute;top:-100px;left:20px;background:white;padding:12px;z-index:2}.skip:focus{top:10px}
-@media(max-width:1000px){.hero{padding:60px 0 64px}.journey-card{padding:25px}.split,.method{gap:45px}.hero h1{font-size:50px}.header nav{gap:20px}}
-@media(max-width:760px){.wrap{width:calc(100% - 40px)}.header{flex-wrap:wrap;gap:18px;padding:18px 0}.header .brand svg{width:125px}.header nav{order:3;width:100%;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px}.header-contact{margin-left:auto}.hero{padding:45px 0 50px}.hero h1{font-size:clamp(39px,8.5vw,60px)}.hero .lead{font-size:18px}.journey-card{max-width:520px;width:100%}.journey-card h3{font-size:32px}.section{padding-top:58px;padding-bottom:58px}.split,.problem-grid,.consulting-grid,.comparison,.method{grid-template-columns:1fr;gap:34px}.signals{justify-content:flex-start;gap:10px 25px;font-size:12px}.lead{font-size:18px}.section-heading{margin-bottom:30px}.deliverables{padding:25px}.topic-grid{grid-template-columns:1fr 1fr}.topic-grid article{padding:25px 16px 25px 0}.topic-grid h3{font-size:23px}.topic-grid p{font-size:14px}.curriculum{padding:20px}.curriculum ol{columns:1}.consulting-grid{gap:30px}.comparison{gap:36px}.closing{padding:58px 0}.footer{flex-direction:column;gap:12px}.faq summary{font-size:16px}}
-@media(max-width:380px){.topic-grid{grid-template-columns:1fr}.button{width:100%;gap:12px;padding:15px}.header-contact{font-size:12px}.program-numbers strong{font-size:40px}}
-@media(prefers-reduced-motion:reduce){.landing *{transition:none!important}}
-@media print{.header,.actions,.footer,.skip{display:none}.section{padding:30px 0}.hero{padding:20px 0}.wrap{width:100%}h2,h3{break-after:avoid}article,details{break-inside:avoid}}
-</style>
+<style scoped src="./landing.css"></style>

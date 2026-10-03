@@ -34,7 +34,7 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
 
     await page.goto('/')
 
-    await expect(page.locator('#hero-title')).toContainText('Escalar de verdade')
+    await expect(page.locator('#hero-title')).toContainText('Enxergar o todo')
     expect(new URL(page.url()).pathname).toBe('/')
     expect(userRequests).toEqual([])
   })
@@ -105,14 +105,14 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
       .toBeLessThan(200)
   })
 
-  test('cinco chamadas de WhatsApp com data-offer', async ({ page }) => {
+  test('quatro chamadas contextuais de WhatsApp com data-offer', async ({ page }) => {
     await page.addInitScript(() => localStorage.clear())
     await page.goto('/')
 
     const waLinks = page.locator('a[href*="wa.me/5511998180409"][data-offer]')
-    await expect(waLinks).toHaveCount(5)
-    await expect(page.locator('a[data-offer="mentoria"]')).toHaveCount(3)
-    await expect(page.locator('a[data-offer="consultoria"]')).toHaveCount(2)
+    await expect(waLinks).toHaveCount(4)
+    await expect(page.locator('a[data-offer="mentoria"]')).toHaveCount(1)
+    await expect(page.locator('a[data-offer="consultoria"]')).toHaveCount(1)
   })
 
   test('usuário logado vê a landing e "Entrar" leva ao app', async ({ page }) => {
@@ -153,4 +153,27 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     )
     expect(overflow).toBeLessThanOrEqual(0)
   })
+  test('análise de desconto recalcula o volume com teclado', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.study-result')).toContainText('+50%');
+    await page.locator('#discount').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('output')).toHaveText('11%');
+    await expect(page.locator('.study-result')).toContainText('+57,9%');
+    await page.locator('#discount').fill('0');
+    await expect(page.locator('.study-result')).toContainText('+0%');
+    await page.locator('#discount').fill('25');
+    await expect(page.locator('.study-result')).toContainText('+500%');
+  });
+
+  test('skip link transfere foco e reduced motion desativa animação', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.keyboard.press('Tab');
+    await expect(page.locator('.skip')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('main')).toBeFocused();
+    expect(await page.locator('.hero-copy').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+  });
+
 })
