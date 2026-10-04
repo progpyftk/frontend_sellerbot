@@ -280,7 +280,7 @@
           :sub="'Margem ' + pct(op?.lucro_liquido, op?.gmv)"
           :delta="deltaFmt(op?.vs_prev?.lucro_liquido)"
           :sparkline-data="sparklineData('lucro_liquido')"
-          sparkline-color="#0f766e"
+          sparkline-color="#a51e55"
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
@@ -950,7 +950,7 @@
                     <div class="margin-bar-wrap">
                       <div class="margin-bar-fill" :style="{
                         width: Math.max(0, Math.min(100, p.gross_margin_pct)) + '%',
-                        background: p.gross_margin_pct > 20 ? '#0d9488' : p.gross_margin_pct > 0 ? '#f59e0b' : '#ef4444'
+                        background: p.gross_margin_pct > 20 ? '#a51e55' : p.gross_margin_pct > 0 ? '#f59e0b' : '#ef4444'
                       }"></div>
                       <span>{{ p.gross_margin_pct }}%</span>
                     </div>
@@ -1043,7 +1043,7 @@
                 :y="flexSvgY(d.flex_orders_count)"
                 :width="flexBarW"
                 :height="Math.max(2, (FLEX_H - FLEX_PAD_B) - flexSvgY(d.flex_orders_count))"
-                :fill="d.flex_orders_count > 0 ? '#0d9488' : '#e8edf3'"
+                :fill="d.flex_orders_count > 0 ? '#a51e55' : '#e8edf3'"
                 rx="2"
                 opacity="0.85"
               />
@@ -1051,7 +1051,7 @@
               <text v-if="d.flex_orders_count > 0 && flexBarW > 20"
                 :x="flexBarX(i) + flexBarW / 2"
                 :y="flexSvgY(d.flex_orders_count) - 4"
-                text-anchor="middle" font-size="9" fill="#0d9488" font-weight="600">
+                text-anchor="middle" font-size="9" fill="#a51e55" font-weight="600">
                 {{ d.flex_orders_count }}
               </text>
             </g>
@@ -1154,10 +1154,10 @@
                   :x="50 + i * 90 + 10" :y="weekdayBarY(d.avg)"
                   :width="60"
                   :height="Math.max(2, 155 - weekdayBarY(d.avg))"
-                  :fill="d.isTop ? '#0d9488' : '#cbd5e1'"
+                  :fill="d.isTop ? '#a51e55' : '#cbd5e1'"
                   rx="4" />
                 <text :x="50 + i * 90 + 40" :y="weekdayBarY(d.avg) - 5"
-                  text-anchor="middle" font-size="10" :fill="d.isTop ? '#0d9488' : '#64748b'" font-weight="600">
+                  text-anchor="middle" font-size="10" :fill="d.isTop ? '#a51e55' : '#64748b'" font-weight="600">
                   {{ weekdayFmt(d.avg) }}
                 </text>
                 <text :x="50 + i * 90 + 40" y="170"
@@ -1459,7 +1459,7 @@ const knownTiktokAccounts = ref([])
 const activeStatuses = ref([])  // e.g. ['paid', 'pending']
 
 // Nova paleta de cores — tons mais sóbrios e harmoniosos (Redesign Jul/2026)
-const ACCOUNT_COLORS = ['#2a78d6','#008300','#e87ba4','#eda100','#1baf7a','#eb6834','#4a3aa7','#e34948']
+const ACCOUNT_COLORS = ['#152d43','#a51e55','#658aa1','#f28ab4','#8a6175','#486675','#b65579','#7c9cae']
 
 function buildAccountKey(marketplace, id) { return `${marketplace}:${id}` }
 
@@ -1861,11 +1861,11 @@ const tabs = [
 ]
 
 const chartMetrics = [
-  { key: 'gmv', label: 'GMV', color: '#2a78d6' },           // blue
-  { key: 'net_revenue', label: 'Rec. Líquida', color: '#008300' },  // green
-  { key: 'gross_profit', label: 'Margem Contrib. Antes do Ads', color: '#e87ba4' },  // magenta
-  { key: 'lucro_liquido', label: 'Margem Contrib. Após Ads', color: '#eda100' },  // yellow
-  { key: 'ads_cost', label: 'Ads', color: '#1baf7a' },       // aqua
+  { key: 'gmv', label: 'GMV', color: '#152d43' },           // blue
+  { key: 'net_revenue', label: 'Rec. Líquida', color: '#658aa1' },  // green
+  { key: 'gross_profit', label: 'Margem Contrib. Antes do Ads', color: '#b1547b' },  // magenta
+  { key: 'lucro_liquido', label: 'Margem Contrib. Após Ads', color: '#a51e55' },  // yellow
+  { key: 'ads_cost', label: 'Ads', color: '#8a6175' },       // aqua
 ]
 
 const datePresets = [
@@ -3740,7 +3740,7 @@ watch(selectedAccountKeys, () => {
   border-radius: 20px;
   background: #f0fdfb;
   border: 1px solid #99f6e4;
-  color: #0d9488;
+  color: #a51e55;
   font-size: 11px;
   font-weight: 600;
 }
@@ -3770,7 +3770,7 @@ watch(selectedAccountKeys, () => {
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(13, 148, 136, .08);
+  box-shadow: 0 8px 24px rgba(165, 30, 85, .08);
 }
 
 .kpi-card::before {
@@ -3785,7 +3785,7 @@ watch(selectedAccountKeys, () => {
 .kpi-gmv::before    { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
 .kpi-net::before    { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
 .kpi-gp::before     { background: linear-gradient(90deg, #10b981, #34d399); }
-.kpi-ll::before     { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
+.kpi-ll::before     { background: linear-gradient(90deg, #a51e55, #2dd4bf); }
 .kpi-ads::before    { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 .kpi-orders::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
 .kpi-units::before  { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
@@ -3810,7 +3810,7 @@ watch(selectedAccountKeys, () => {
 }
 
 .kpi-highlight {
-  color: #0d9488;
+  color: #a51e55;
 }
 
 .kpi-warn {
@@ -3836,7 +3836,7 @@ watch(selectedAccountKeys, () => {
 }
 
 .delta-pos {
-  color: #0d9488;
+  color: #a51e55;
 }
 
 .delta-neg {
@@ -3883,7 +3883,7 @@ watch(selectedAccountKeys, () => {
 }
 
 .tab-btn--on {
-  background: #0d9488;
+  background: #a51e55;
   color: white;
 }
 
@@ -4115,7 +4115,7 @@ watch(selectedAccountKeys, () => {
 }
 
 .pos {
-  color: #0d9488;
+  color: #a51e55;
   font-weight: 600;
 }
 
@@ -4219,7 +4219,7 @@ watch(selectedAccountKeys, () => {
 
 .cnpj-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(13,148,136,.08);
+  box-shadow: 0 8px 24px rgba(165,30,85,.08);
 }
 
 .cnpj-header {
@@ -4272,7 +4272,7 @@ watch(selectedAccountKeys, () => {
 
 .gmv-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #0d9488, #2dd4bf);
+  background: linear-gradient(90deg, #a51e55, #2dd4bf);
   border-radius: 4px;
   transition: width $transition-slow;
 }
@@ -4396,7 +4396,7 @@ watch(selectedAccountKeys, () => {
 }
 
 .tg-btn--on {
-  background: #0d9488;
+  background: #a51e55;
   color: white;
 }
 
@@ -4505,20 +4505,20 @@ watch(selectedAccountKeys, () => {
 }
 
 .acct-pill:hover:not(.acct-pill--on) {
-  border-color: #0d9488;
-  color: #0d9488;
+  border-color: #a51e55;
+  color: #a51e55;
   background: #f0fdf9;
 }
 
 .acct-pill--on {
-  background: #0d9488;
-  border-color: #0d9488;
+  background: #a51e55;
+  border-color: #a51e55;
   color: #fff;
   font-weight: 600;
 }
 
 /* ── Flex tab ────────────────────────────────────────────────────────────── */
-.kpi-flex-orders::before { background: linear-gradient(90deg, #0d9488, #34d399); }
+.kpi-flex-orders::before { background: linear-gradient(90deg, #a51e55, #34d399); }
 
 .flex-bar-svg {
   display: block;
@@ -4537,7 +4537,7 @@ watch(selectedAccountKeys, () => {
 
 .flex-bar-fill {
   height: 6px;
-  background: linear-gradient(90deg, #0d9488, #2dd4bf);
+  background: linear-gradient(90deg, #a51e55, #2dd4bf);
   border-radius: 3px;
   flex-shrink: 0;
   transition: width $transition-slow;
@@ -4637,8 +4637,8 @@ watch(selectedAccountKeys, () => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #f0fdfa;
-  color: #0d9488;
+  background: #f8e8ef;
+  color: #a51e55;
   border: 1px solid #99f6e4;
   border-radius: 20px;
   padding: 2px 8px;
@@ -4673,7 +4673,7 @@ watch(selectedAccountKeys, () => {
 }
 .daily-table thead th.col-date { text-align: left; }
 .daily-table thead th.col-num { text-align: right; }
-.daily-table thead th.col-ll { color: #0d9488; }
+.daily-table thead th.col-ll { color: #a51e55; }
 .daily-table thead th.col-ads { color: #f59e0b; }
 .desktop-only-label { display: inline; }
 .mobile-only-label { display: none; }
@@ -4691,8 +4691,8 @@ watch(selectedAccountKeys, () => {
 /* Row states */
 .dt-row { cursor: pointer; transition: background $transition-fast; }
 .dt-row:hover td { background: #f8fffe; }
-.dt-row--open td { background: #f0fdfa; font-weight: 600; }
-.dt-row--open .dt-expand-btn { color: #0d9488; }
+.dt-row--open td { background: #f8e8ef; font-weight: 600; }
+.dt-row--open .dt-expand-btn { color: #a51e55; }
 .dt-row--neg td { background: #fff8f8; }
 .dt-row--neg:hover td { background: #fff0f0; }
 
@@ -4710,7 +4710,7 @@ watch(selectedAccountKeys, () => {
 
 /* Value styles */
 .dt-gmv { color: #1e293b; font-weight: 600; }
-.dt-pos { color: #0d9488; font-weight: 600; }
+.dt-pos { color: #a51e55; font-weight: 600; }
 .dt-neg { color: #ef4444; font-weight: 600; }
 .dt-warn { color: #f59e0b; }
 .dt-warn-text { color: #f59e0b; }
@@ -4762,7 +4762,7 @@ watch(selectedAccountKeys, () => {
   color: #e2e8f0;
   font-weight: 700;
   font-size: 13px;
-  border-top: 2px solid #0d9488;
+  border-top: 2px solid #a51e55;
   border-bottom: none;
   position: sticky;
   bottom: 0;
@@ -4783,7 +4783,7 @@ watch(selectedAccountKeys, () => {
   color: #94a3b8;
   vertical-align: middle;
 }
-.day-row--expanded .day-expand-icon { color: #0d9488; }
+.day-row--expanded .day-expand-icon { color: #a51e55; }
 .day-acct-row td {
   background: #f8fafc;
   font-size: 11.5px;
@@ -4798,7 +4798,7 @@ watch(selectedAccountKeys, () => {
 }
 
 /* ── TACoS badge ────────────────────────────────────────────────────────── */
-.tacos-ok   { color: #0d9488; font-weight: 600; }
+.tacos-ok   { color: #a51e55; font-weight: 600; }
 .tacos-med  { color: #f59e0b; font-weight: 600; }
 .tacos-high { color: #ef4444; font-weight: 600; }
 
@@ -4929,7 +4929,7 @@ tr.pareto-line-95 td {
   font-weight: 700;
   font-size: 12px;
 }
-.conv-high { color: #0d9488; }
+.conv-high { color: #a51e55; }
 .conv-med  { color: #f59e0b; }
 .conv-low  { color: #ef4444; }
 
@@ -5082,7 +5082,7 @@ tr.pareto-line-95 td {
   min-width: 160px;
   max-width: 300px;
 }
-.acct-picker-btn:hover { border-color: #0d9488; }
+.acct-picker-btn:hover { border-color: #a51e55; }
 .acct-chip-inline { display: inline-flex; align-items: center; gap: 3px; }
 .acct-chip-more  { font-size: 11px; color: #64748b; margin-left: 2px; }
 
@@ -5152,7 +5152,7 @@ tr.pareto-line-95 td {
   gap: 5px;
   padding: 6px 10px;
   background: #f0fdf4;
-  color: #0d9488;
+  color: #a51e55;
   font-size: 11px;
   border-top: 1px solid #e2e8f0;
 }
@@ -5209,7 +5209,7 @@ tr.pareto-line-95 td {
   min-height: 100vh;
   padding: 20px 20px 40px;
   color: #374151;
-  font-family: 'Inter', 'Roboto', sans-serif;
+  font-family: 'Manrope', 'Roboto', sans-serif;
 }
 .dash-main-layout {
   display: flex;
@@ -5291,16 +5291,16 @@ tr.pareto-line-95 td {
   gap: 4px;
   padding: 5px 12px;
   border-radius: 20px;
-  border: 1.5px solid #0d9488;
+  border: 1.5px solid #a51e55;
   background: #f0fdf9;
-  color: #0d9488;
+  color: #a51e55;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: background $transition-base;
 }
-.chart-filter-btn:active { background: #ccfbf1; }
+.chart-filter-btn:active { background: #f8e8ef; }
 
 /* Agregado / Por Conta toggle */
 .chart-mode-toggle {
@@ -5328,7 +5328,7 @@ tr.pareto-line-95 td {
 .cmt-btn:hover { color: #0f172a; }
 .cmt-btn--on {
   background: #fff;
-  color: #0d9488;
+  color: #a51e55;
   font-weight: 700;
   box-shadow: 0 1px 4px rgba(0,0,0,.1);
 }
@@ -5345,7 +5345,7 @@ tr.pareto-line-95 td {
   margin-left: 2px;
   transition: color $transition-fast;
 }
-.cmt-help-icon:hover { color: #0d9488; }
+.cmt-help-icon:hover { color: #a51e55; }
 
 /* Tooltip de hints do gráfico */
 .cht-tip { display: flex; flex-direction: column; gap: 7px; padding: 2px 0; }
@@ -5371,13 +5371,13 @@ tr.pareto-line-95 td {
 }
 .chart-mode-bar-badge--agg {
   background: rgba(99, 102, 241, .08);
-  color: #4f46e5;
+  color: #a51e55;
   border: 1px solid rgba(99, 102, 241, .18);
 }
 .chart-mode-bar-badge--acc {
-  background: rgba(13, 148, 136, .08);
-  color: #0d9488;
-  border: 1px solid rgba(13, 148, 136, .2);
+  background: rgba(165, 30, 85, .08);
+  color: #a51e55;
+  border: 1px solid rgba(165, 30, 85, .2);
 }
 .chart-mode-bar-badge--week {
   background: rgba(245, 158, 11, .08);
@@ -5410,9 +5410,9 @@ tr.pareto-line-95 td {
 }
 .chart-metric-pill:hover { border-color: #94a3b8; color: #374151; }
 .chart-metric-pill--on {
-  background: color-mix(in srgb, var(--pill-color, #0d9488) 12%, white);
-  border-color: var(--pill-color, #0d9488);
-  color: var(--pill-color, #0d9488);
+  background: color-mix(in srgb, var(--pill-color, #a51e55) 12%, white);
+  border-color: var(--pill-color, #a51e55);
+  color: var(--pill-color, #a51e55);
   font-weight: 700;
 }
 
@@ -5556,7 +5556,7 @@ tr.pareto-line-95 td {
 .rh-value {
   font-size: 18px;
   font-weight: 800;
-  color: #0d9488;
+  color: #a51e55;
   margin-bottom: 4px;
 }
 .rh-loser {
@@ -5907,7 +5907,7 @@ tr.pareto-line-95 td {
   margin-bottom: $space-1;
 }
 .buyer-bar-seg { transition: width $transition-base; }
-.buyer-bar--new { background: #0f766e; }
+.buyer-bar--new { background: #a51e55; }
 .buyer-bar--ret { background: #94a3b8; }
 .buyer-legend {
   display: flex;
@@ -5926,6 +5926,6 @@ tr.pareto-line-95 td {
   height: 6px;
   border-radius: 50%;
 }
-.buyer-dot--new { background: #0f766e; }
+.buyer-dot--new { background: #a51e55; }
 .buyer-dot--ret { background: #94a3b8; }
 </style>

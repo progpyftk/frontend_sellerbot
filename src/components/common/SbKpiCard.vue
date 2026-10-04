@@ -52,7 +52,7 @@ const props = defineProps({
   /** dados para sparkline (array de números) */
   sparklineData: { type: Array, default: null },
   /** cor do sparkline (hex) */
-  sparklineColor: { type: String, default: '#0f766e' },
+  sparklineColor: { type: String, default: '#a51e55' },
 });
 
 // Sem dado de comparação (null/undefined/'—'), o pill não renderiza —
@@ -145,7 +145,7 @@ const sparklinePath = computed(() => {
     width: 2.5px;
     background: $border;
   }
-  &--teal::before   { background: #0f766e; }
+  &--teal::before   { background: #a51e55; }
   &--green::before  { background: #16a34a; }
   &--amber::before  { background: #d97706; }
   &--red::before    { background: #dc2626; }

@@ -4,22 +4,22 @@
 // ============================================================
 
 // ── MARCA ──
-$primary   : #0f766e;   // teal-700 — cor SellerBot (mais profundo)
-$secondary : #115e59;   // teal-800 — hover/secondary
-$accent    : #f59e0b;   // amber-500 — destaque, ★
+$primary   : #a51e55;   // framboesa — identidade Krivus
+$secondary : #152d43;   // navy — estrutura
+$accent    : #f28ab4;   // rosa — destaque
 
 // ── SUPERFÍCIE (LIGHT-ONLY) ──
-$background   : #f8fafb;  // off-white suave — fundo da página (reduz fadiga)
+$background   : #edf4f7;  // off-white suave — fundo da página (reduz fadiga)
 $surface      : #ffffff;  // cards, modais, header
-$surface-2    : #f1f5f9;  // slate-100 — hovers, áreas alternadas
-$border       : #e2e8f0;  // slate-200 — bordas
-$border-strong: #cbd5e1;  // slate-300
+$surface-2    : #dfe9ef;  // slate-100 — hovers, áreas alternadas
+$border       : #b8cbd6;  // slate-200 — bordas
+$border-strong: #93aebb;  // slate-300
 
 // ── TEXTO ──
-$text-primary   : #0f172a;  // slate-900 — títulos
-$text-body      : #334155;  // slate-700 — corpo
-$text-muted     : #64748b;  // slate-500 — labels
-$text-disabled  : #94a3b8;  // slate-400
+$text-primary   : #101e2b;  // slate-900 — títulos
+$text-body      : #152d43;  // slate-700 — corpo
+$text-muted     : #4c6272;  // slate-500 — labels
+$text-disabled  : #526b7b;  // slate-400
 
 // ── SEMÂNTICA ──
 $positive : #16a34a;  // green-600 — lucro, sucesso
@@ -28,12 +28,12 @@ $info     : #0284c7;  // sky-600 — info neutro
 $warning  : #d97706;  // amber-600 — atenção
 
 // ── DADOS (gráficos e KPIs — máximo 6 cores) ──
-$data-primary  : #0f766e;  // teal-700 — Lucro / Métrica principal
-$data-secondary: #0284c7;  // sky-600 — Receita Líquida
-$data-tertiary : #6366f1;  // indigo-500 — GMV
-$data-quaternary: #8b5cf6; // violet-500 — Pedidos
+$data-primary  : #a51e55;  // framboesa — Lucro / Métrica principal
+$data-secondary: #152d43;  // navy — Receita Líquida
+$data-tertiary : #658aa1;  // azul médio — GMV
+$data-quaternary: #b1547b; // rosa profundo — Pedidos
 $data-quinary  : #f59e0b;  // amber-500 — Ads / Custo
-$data-neutral  : #64748b;  // slate-500 — Neutro / Secundário
+$data-neutral  : #4c6272;  // slate-500 — Neutro / Secundário
 
 // ── MARKETPLACES (cores externas — usar só quando o marketplace é o tema) ──
 $ml-amber       : #FFE600;     // Mercado Livre amarelo (logo)

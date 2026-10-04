@@ -68,8 +68,8 @@ $tint-indigo-bg : #e0e7ff;  $tint-indigo-text : #3730a3;
 $tint-slate-bg  : #f1f5f9;  $tint-slate-text  : #475569;
 
 // ── TIPOGRAFIA ──
-// Fonte: Inter (carregada em index.html)
-$font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+// Fonte local Manrope, compartilhada com a marca Krivus.
+$font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 $font-mono:   'JetBrains Mono', 'SF Mono', Menlo, monospace;
 
 // Escala tipográfica (tamanhos — prefixo -size para evitar colisão com cores)
@@ -93,10 +93,10 @@ $transition-slow:  300ms ease;
 
 // ── CORES DE DADOS (para gráficos e KPIs) ──
 $data-colors: (
-  primary:    #0f766e,  // teal-700 — Lucro
-  secondary:  #0284c7,  // sky-600 — Receita
-  tertiary:   #6366f1,  // indigo-500 — GMV
-  quaternary: #8b5cf6,  // violet-500 — Pedidos
+  primary:    #a51e55,  // framboesa — Lucro
+  secondary:  #152d43,  // navy — Receita
+  tertiary:   #658aa1,  // azul médio — GMV
+  quaternary: #b1547b,  // rosa profundo — Pedidos
   quinary:    #f59e0b,  // amber-500 — Ads
   neutral:    #64748b,  // slate-500 — Neutro
 );

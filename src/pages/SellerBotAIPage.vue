@@ -1447,7 +1447,7 @@ onBeforeUnmount(stopActiveStream)
 }
 
 .model-active {
-  background: rgba(13, 148, 136, 0.08);
+  background: rgba(165, 30, 85, 0.08);
 }
 
 .model-cost {
@@ -1507,7 +1507,7 @@ onBeforeUnmount(stopActiveStream)
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(13, 148, 136, .1), rgba(45, 212, 191, .1));
+  background: linear-gradient(135deg, rgba(165, 30, 85, .1), rgba(45, 212, 191, .1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1548,7 +1548,7 @@ onBeforeUnmount(stopActiveStream)
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #0d9488;
+  color: #a51e55;
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -1577,10 +1577,10 @@ onBeforeUnmount(stopActiveStream)
 }
 
 .suggestion-chip:hover {
-  background: rgba(13, 148, 136, 0.06);
-  border-color: #0d9488;
-  color: #0f766e;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.08);
+  background: rgba(165, 30, 85, 0.06);
+  border-color: #a51e55;
+  color: #a51e55;
+  box-shadow: 0 2px 8px rgba(165, 30, 85, 0.08);
 }
 
 .message {
@@ -1605,7 +1605,7 @@ onBeforeUnmount(stopActiveStream)
 }
 
 .message--user .message-avatar {
-  background: rgba(13, 148, 136, .1);
+  background: rgba(165, 30, 85, .1);
 }
 
 .message--assistant .message-avatar {
@@ -1682,16 +1682,16 @@ onBeforeUnmount(stopActiveStream)
   color: #059669;
 }
 .trail-step--active .trail-dot {
-  background: #0d9488;
+  background: #a51e55;
   color: #fff;
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  box-shadow: 0 0 0 3px rgba(165, 30, 85, 0.15);
 }
 .trail-text {
   flex: 1;
   line-height: 1.4;
 }
 .trail-step--active .trail-text {
-  color: #0f766e;
+  color: #a51e55;
   font-weight: 500;
 }
 .trail-elapsed {
@@ -1839,7 +1839,7 @@ onBeforeUnmount(stopActiveStream)
 }
 
 .message--user .message-text {
-  background: linear-gradient(135deg, #0d9488, #2dd4bf);
+  background: linear-gradient(135deg, #a51e55, #2dd4bf);
   color: #fff;
   border-radius: 12px;
   border-top-right-radius: 4px;
@@ -2038,7 +2038,7 @@ onBeforeUnmount(stopActiveStream)
   display: inline-block;
   width: 2px;
   height: 1em;
-  background: #0d9488;
+  background: #a51e55;
   margin-left: 2px;
   vertical-align: text-bottom;
   animation: blink 0.7s step-end infinite;
@@ -2115,7 +2115,7 @@ onBeforeUnmount(stopActiveStream)
 }
 .history-new-btn:hover {
   background: #f0fdf4;
-  border-color: #0d9488;
+  border-color: #a51e55;
 }
 
 .history-panel-list {
@@ -2158,8 +2158,8 @@ onBeforeUnmount(stopActiveStream)
 }
 .history-item:hover { background: #f3f4f6; }
 .history-item--active {
-  background: rgba(13, 148, 136, 0.08);
-  color: #0d9488;
+  background: rgba(165, 30, 85, 0.08);
+  color: #a51e55;
 }
 .history-item-icon { flex-shrink: 0; opacity: 0.45; }
 .history-item-title {
@@ -2170,7 +2170,7 @@ onBeforeUnmount(stopActiveStream)
 }
 .history-item--active .history-item-title {
   font-weight: 600;
-  color: #0d9488;
+  color: #a51e55;
 }
 .history-item-delete {
   display: none;

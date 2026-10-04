@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'Manrope';
+  src: url('../assets/fonts/Manrope.ttf') format('truetype');
+  font-weight: 200 800;
+  font-display: swap;
+}
 // app global css in SCSS form
 
 @import './tokens.scss';
@@ -178,4 +184,13 @@ $side-props: (p: padding, pt: padding-top, pr: padding-right, pb: padding-bottom
   font-weight: 500;
   letter-spacing: .2px;
   color: #8a94a6;
+}
+
+/* Identidade Krivus nas ações do SellerBot; cores semânticas ficam independentes. */
+#sb-layout {
+  --q-primary: #a51e55;
+  --q-secondary: #152d43;
+  --q-accent: #f28ab4;
+  .text-teal, .text-teal-7, .text-teal-8, .text-teal-9 { color: #a51e55 !important; }
+  .bg-teal, .bg-teal-7, .bg-teal-8, .bg-teal-9 { background: #a51e55 !important; }
 }

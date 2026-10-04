@@ -313,13 +313,13 @@ const redirectToLogin = () => router.push("/login")
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  background: linear-gradient(135deg, #a51e55, #a51e55);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.30);
+  box-shadow: 0 4px 12px rgba(165, 30, 85, 0.30);
 }
 
 .brand-name {
@@ -375,8 +375,8 @@ const redirectToLogin = () => router.push("/login")
 /* Raiz que é destino (FINT-19): a mesma linha das outras seções, mas leva à tela em vez de
    expandir — o estado ativo usa o mesmo vocabulário do item de menu. */
 .nav-section--active { background: #f0fdf9; }
-.nav-section--active .nav-section-label { color: #0f766e; }
-.nav-section--active .nav-section-icon { background: #ccfbf1; color: #0f766e; }
+.nav-section--active .nav-section-label { color: #a51e55; }
+.nav-section--active .nav-section-icon { background: #f8e8ef; color: #a51e55; }
 
 .nav-section-icon {
   display: flex;
@@ -466,7 +466,7 @@ const redirectToLogin = () => router.push("/login")
 
 .nav-item--active {
   background: #f0fdf9; /* teal-50 */
-  color: #0f766e;
+  color: #a51e55;
 }
 
 .nav-item--active::before {
@@ -478,7 +478,7 @@ const redirectToLogin = () => router.push("/login")
   width: 3px;
   height: 60%;
   border-radius: 0 3px 3px 0;
-  background: #0d9488;
+  background: #a51e55;
 }
 
 .nav-item--top {
@@ -500,8 +500,8 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .nav-item--active .nav-icon-wrap {
-  background: #ccfbf1;
-  color: #0d9488;
+  background: #f8e8ef;
+  color: #a51e55;
 }
 
 .nav-item:hover:not(.nav-item--active) .nav-icon-wrap {
@@ -526,7 +526,7 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .nav-item--active .nav-label {
-  color: #0f766e;
+  color: #a51e55;
   font-weight: 600;
 }
 
@@ -563,7 +563,7 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .sidebar-avatar {
-  border: 2px solid #ccfbf1;
+  border: 2px solid #f8e8ef;
   flex-shrink: 0;
 }
 
@@ -625,7 +625,7 @@ const redirectToLogin = () => router.push("/login")
 }
 .menu-toggle:hover {
   background: #f0fdf9;
-  color: #0d9488;
+  color: #a51e55;
 }
 
 /* User chip */
@@ -651,13 +651,13 @@ const redirectToLogin = () => router.push("/login")
   cursor: pointer;
 }
 .user-chip-inner:hover {
-  border-color: #0d9488;
+  border-color: #a51e55;
   background: #f0fdf9;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.10);
+  box-shadow: 0 2px 8px rgba(165, 30, 85, 0.10);
 }
 
 .chip-avatar {
-  border: 1.5px solid #ccfbf1;
+  border: 1.5px solid #f8e8ef;
   flex-shrink: 0;
 }
 
@@ -694,7 +694,7 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .dd-avatar {
-  border: 2px solid #0d9488;
+  border: 2px solid #a51e55;
 }
 
 .dd-name {
@@ -721,15 +721,15 @@ const redirectToLogin = () => router.push("/login")
   padding: 6px 18px;
   border-radius: 8px;
   border: none;
-  background: #0d9488;
+  background: #a51e55;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+  box-shadow: 0 2px 8px rgba(165, 30, 85, 0.25);
   transition: background 150ms ease;
 }
-.header-login-btn:hover { background: #0f766e; }
+.header-login-btn:hover { background: #a51e55; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    MOBILE

@@ -118,7 +118,7 @@ function cardsDaEmpresa(item) {
   const n = numerosDaVisaoGeral(item)
   return [
     { label: 'Receita bruta', valor: formatarMoeda(n.receita_bruta), sub: 'livro contábil do período' },
-    { label: '(−) Impostos sobre a receita', valor: formatarMoeda(n.impostos_sobre_a_receita), sub: 'DAS declarado (DRE-7)', variant: 'amber' },
+    { label: '(−) Impostos sobre a receita', valor: formatarMoeda(n.impostos_sobre_a_receita), sub: 'DAS declarado no período', variant: 'amber' },
     { label: '= Receita líquida', valor: formatarMoeda(n.receita_liquida), variant: 'sky' },
     {
       label: 'Margem de contribuição',
