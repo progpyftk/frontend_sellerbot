@@ -2190,7 +2190,7 @@ const reactivateItem = (row) => {
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   letter-spacing: -0.5px;
 }
 
@@ -2311,7 +2311,7 @@ const reactivateItem = (row) => {
   white-space: nowrap;
 }
 .fb-tbtn:hover { background: #f5f7fa; }
-.fb-tbtn--active { border-color: #a51e55; color: #a51e55; background: #f0faf9; }
+.fb-tbtn--active { border-color: #a51e55; color: #a51e55; background: #fdf2f7; }
 .fb-adv-badge {
   background: #a51e55; color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 10px;
@@ -2338,7 +2338,7 @@ const reactivateItem = (row) => {
   overflow: visible;
 }
 .fb-combo:hover { border-color: #c8cdd6; }
-.fb-combo--on   { border-color: #a51e55; background: #f0faf9; }
+.fb-combo--on   { border-color: #a51e55; background: #fdf2f7; }
 .fb-combo-btn {
   display: flex; align-items: center; gap: 5px;
   height: 30px; padding: 0 10px 0 9px;
@@ -2361,12 +2361,12 @@ const reactivateItem = (row) => {
   background: #a51e55; border: none; cursor: pointer;
   color: #fff; margin-right: 5px; flex-shrink: 0;
 }
-.fb-combo-clear:hover { background: #0a7a72; }
+.fb-combo-clear:hover { background: #7f1642; }
 
 /* ── Filter menu ── */
 .fb-menu { border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,.1) !important; }
 .fb-menu-item { transition: background .1s; }
-.fb-menu-item--on { background: #f0faf9 !important; }
+.fb-menu-item--on { background: #fdf2f7 !important; }
 .fb-menu-item-label { font-size: 13px; }
 
 /* ── Filter index ── */
@@ -2382,10 +2382,10 @@ const reactivateItem = (row) => {
 .fb-index-pill {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 12px;
-  background: #e0f2f0; color: #a51e55; font-size: 11px; font-weight: 500;
+  background: #fbe0ec; color: #a51e55; font-size: 11px; font-weight: 500;
   cursor: pointer; transition: background .1s;
 }
-.fb-index-pill:hover { background: #ccebe8; }
+.fb-index-pill:hover { background: #f7c1d6; }
 
 
 /* ── Advanced filters inline ── */
@@ -2416,7 +2416,7 @@ const reactivateItem = (row) => {
   cursor: pointer; transition: all .15s;
 }
 .fadv-radio input { display: none; }
-.fadv-radio--on { border-color: #a51e55; background: #f0faf9; color: #a51e55; }
+.fadv-radio--on { border-color: #a51e55; background: #fdf2f7; color: #a51e55; }
 .fadv-range-row { display: flex; align-items: center; gap: 6px; }
 .fadv-range-sep { color: #9aa0ac; font-size: 11px; }
 .fadv-input {

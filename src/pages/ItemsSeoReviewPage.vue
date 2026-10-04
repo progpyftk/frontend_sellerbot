@@ -511,11 +511,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  border: 1px solid #c7dedd;
+  border: 1px solid #b8cbd6;
   border-left: 3px solid #a51e55;
   border-radius: 10px;
   background: linear-gradient(100deg, #fdf2f7 0%, #edf4f7 100%);
-  color: #335b5d;
+  color: #4c6272;
   font-size: 13px;
 }
 .seo-review__candidates :deep(.sb-card-body) {
@@ -537,7 +537,7 @@ onMounted(() => {
 }
 .seo-review__section-title {
   margin: 4px 0 3px;
-  color: #122b31;
+  color: #101e2b;
   font-size: 20px;
   line-height: 1.2;
 }

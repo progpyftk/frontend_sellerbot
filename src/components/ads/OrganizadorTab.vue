@@ -1342,7 +1342,7 @@ const dataBr = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
     display: inline-flex;
     align-items: center;
     gap: $space-1;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
     font-size: $text-xs-size;
     color: $text-body;
   }
@@ -1412,7 +1412,7 @@ const dataBr = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
   }
 
   &__sobreItens {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
     font-size: $text-xs-size;
     color: $text-muted;
   }

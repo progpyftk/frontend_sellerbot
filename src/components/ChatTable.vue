@@ -103,7 +103,7 @@ const formatCell = (val) => {
 .cell--number {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  font-family: 'SF Mono', 'Fira Mono', monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 12.5px;
 }
 

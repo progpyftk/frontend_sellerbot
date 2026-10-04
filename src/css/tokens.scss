@@ -70,7 +70,7 @@ $tint-slate-bg  : #f1f5f9;  $tint-slate-text  : #475569;
 // ── TIPOGRAFIA ──
 // Fonte local Manrope, compartilhada com a marca Krivus.
 $font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-$font-mono:   'JetBrains Mono', 'SF Mono', Menlo, monospace;
+$font-mono:   'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 
 // Escala tipográfica (tamanhos — prefixo -size para evitar colisão com cores)
 $text-h1-size: 28px;

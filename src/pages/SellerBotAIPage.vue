@@ -1849,7 +1849,7 @@ onBeforeUnmount(stopActiveStream)
   background: rgba(0, 0, 0, .1);
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 12px;
 }
 
@@ -2025,7 +2025,7 @@ onBeforeUnmount(stopActiveStream)
   background: rgba(0, 0, 0, .06);
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 12px;
 }
 

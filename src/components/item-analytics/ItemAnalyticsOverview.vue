@@ -58,7 +58,7 @@ async function copyId() {
 .context-title { overflow: hidden; color: #101e2b; font-size: 16px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .context-meta { flex-wrap: wrap; gap: 6px; color: #4c6272; font-size: 11px; margin-top: 6px; }
 .context-actions { flex-direction: column; align-items: flex-end; gap: 4px; }
-.context-id { color: #4c6272; font-family: monospace; font-size: 11px; gap: 2px; }
+.context-id { color: #4c6272; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 11px; gap: 2px; }
 .inventory-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .inventory-grid > :only-child { grid-column: 1 / -1; }
 @media (max-width: 700px) { .item-context { align-items: flex-start; flex-direction: column; } .context-actions { align-items: flex-start; } .inventory-grid { grid-template-columns: 1fr; } }

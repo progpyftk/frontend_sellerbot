@@ -303,7 +303,7 @@ watch(() => props.itemId, () => load(), { immediate: true })
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 10px;
 }
 </style>

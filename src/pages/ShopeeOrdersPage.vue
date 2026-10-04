@@ -1680,7 +1680,7 @@ onMounted(() => {
 .badge-mono {
   background: #dfe9ef; color: #4c6272;
   padding: 1px 5px; border-radius: 5px;
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   letter-spacing: -0.5px; font-size: 11px;
 }
 .badge-mono:hover { background: #b8cbd6; }
@@ -1773,7 +1773,7 @@ onMounted(() => {
 /* SKU inline na linha da tabela */
 .sku-inline {
   display: inline-block;
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 10px; color: #6b8498;
   letter-spacing: -0.3px;
 }
@@ -1782,7 +1782,7 @@ onMounted(() => {
 .badge-sku {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 2px 6px; border-radius: 5px;
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 10.5px; font-weight: 600; letter-spacing: -0.3px;
   background: #dfe9ef; color: #4c6272;
 }
@@ -1889,7 +1889,7 @@ onMounted(() => {
   flex-shrink: 0;
 }
 .dialog-eyebrow { font-size: 10px; font-weight: 700; color: #6b8498; text-transform: uppercase; letter-spacing: .5px; }
-.detail-order-id { font-size: 18px; font-weight: 700; color: #101e2b; margin-top: 4px; font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
+.detail-order-id { font-size: 18px; font-weight: 700; color: #101e2b; margin-top: 4px; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
 .detail-meta { font-size: 12px; color: #4c6272; margin-top: 2px; }
 .detail-body { flex: 1; overflow-y: auto; padding-bottom: 20px; }
 
@@ -1993,7 +1993,7 @@ onMounted(() => {
 .fadv-btn-apply:hover { background: #7f1642; }
 
 /* ── Utilities ─────────────────────────────────────────────── */
-.font-mono { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; letter-spacing: -0.5px; }
+.font-mono { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; letter-spacing: -0.5px; }
 .ellipsis  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Transitions ───────────────────────────────────────────── */

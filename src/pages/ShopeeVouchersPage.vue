@@ -994,7 +994,7 @@ function usageColor(pct) {
 .sv-name { font-size: 13px; color: #444; font-weight: 500; }
 
 .sv-code-row { display: flex; align-items: center; gap: 4px; }
-.sv-code { font-family: monospace; font-size: 11.5px; font-weight: 700; color: #4c6272; background: #dfe9ef; padding: 1px 7px; border-radius: 5px; letter-spacing: .5px; }
+.sv-code { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 11.5px; font-weight: 700; color: #4c6272; background: #dfe9ef; padding: 1px 7px; border-radius: 5px; letter-spacing: .5px; }
 
 .sv-min { font-size: 11px; color: #888; }
 
@@ -1053,7 +1053,7 @@ function usageColor(pct) {
 /* ── Detail ── */
 .sv-detail-value { font-size: 32px; font-weight: 800; color: #e65100; text-align: center; padding: 16px 0 4px; }
 .sv-detail-code-block { display: flex; align-items: center; justify-content: center; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0; }
-.sv-detail-code { font-family: monospace; font-size: 20px; font-weight: 700; background: #f5f5f5; padding: 6px 18px; border-radius: 8px; letter-spacing: 2px; border: 2px dashed #ddd; color: #1a1a2e; }
+.sv-detail-code { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 20px; font-weight: 700; background: #f5f5f5; padding: 6px 18px; border-radius: 8px; letter-spacing: 2px; border: 2px dashed #ddd; color: #1a1a2e; }
 .sv-detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .sv-detail-table td { padding: 9px 16px; border-bottom: 1px solid #f5f5f5; }
 .sv-dt-lbl { color: #aaa; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; width: 130px; }

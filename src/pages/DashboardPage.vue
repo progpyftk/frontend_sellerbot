@@ -3738,7 +3738,7 @@ watch(selectedAccountKeys, () => {
   gap: 4px;
   padding: 3px 9px;
   border-radius: 20px;
-  background: #f0fdfb;
+  background: #fdf2f7;
   border: 1px solid #f7c1d6;
   color: #a51e55;
   font-size: 11px;
@@ -4230,7 +4230,7 @@ watch(selectedAccountKeys, () => {
   font-size: 13px;
   font-weight: 600;
   color: #1a1f36;
-  font-family: monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 }
 
 .cnpj-accounts {
@@ -4775,7 +4775,7 @@ watch(selectedAccountKeys, () => {
 
 /* Expandable daily rows (legacy — mantidos para outras tabelas) */
 .day-row { transition: background $transition-fast; }
-.day-row--expanded td { background: #f0fdfb !important; font-weight: 600; }
+.day-row--expanded td { background: #fdf2f7 !important; font-weight: 600; }
 .day-expand-icon {
   display: inline-flex;
   align-items: center;
@@ -5209,7 +5209,7 @@ tr.pareto-line-95 td {
   min-height: 100vh;
   padding: 20px 20px 40px;
   color: #374151;
-  font-family: 'Manrope', 'Roboto', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 .dash-main-layout {
   display: flex;

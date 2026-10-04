@@ -226,7 +226,7 @@ watch(() => props.refreshToken, (value, previous) => { if (value !== previous) r
 .review-kpi strong { font-size: 24px; line-height: 1.1; color: #101e2b; }
 .review-kpi small { color: #4c6272; }
 .alias-description, .evidence-value { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.font-mono { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
 .review-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .review-detail-grid div { padding: 10px; border-radius: 8px; background: #edf4f7; }
 .review-detail-grid span, .review-detail-grid strong { display: block; }

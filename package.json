@@ -12,6 +12,7 @@
     "build": "quasar build"
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@quasar/extras": "^1.16.12",
     "@tiptap/extension-placeholder": "^3.26.0",
     "@tiptap/extension-table": "^3.26.0",

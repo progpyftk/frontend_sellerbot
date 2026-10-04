@@ -1230,7 +1230,7 @@ onMounted(loadAccounts)
 
 <style scoped>
 /* ── Page ─────────────────────────────────────────────────────────────── */
-.shopee-items-page { background: #edf4f7; font-family: 'Roboto', sans-serif; }
+.shopee-items-page { background: #edf4f7; font-family: 'Manrope', sans-serif; }
 
 /* ── Header ──────────────────────────────────────────────────────────── */
 .page-header { background: #fff; padding: 14px 20px; border-bottom: 1.5px solid #b8cbd6; }
@@ -1301,13 +1301,13 @@ onMounted(loadAccounts)
    linhas — era o que os 56px faziam. Veja DASH-21 na sprint de sticky. */
 :deep(.shopee-table thead tr th) { position: sticky; top: 0; z-index: 1; background: #edf4f7; font-size: 11px; font-weight: 700; color: #4c6272; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1.5px solid #b8cbd6; }
 :deep(.shopee-table tbody tr.hover-row:hover) { background: #fdf2f7 !important; }
-:deep(.shopee-table tbody tr.row-selected) { background: #e6fdf8 !important; }
+:deep(.shopee-table tbody tr.row-selected) { background: #fdf2f7 !important; }
 :deep(.shopee-table tbody tr.row-active) { background: #fdf2f7 !important; border-left: 3px solid #a51e55; }
 :deep(.shopee-table tbody td) { border-bottom: 1px solid #dfe9ef; min-height: 65px; height: auto; vertical-align: middle; }
 
 /* ── Células ─────────────────────────────────────────────────────────── */
 .item-name { font-size: 13px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.badge-mono { background: #dfe9ef; color: #4c6272; padding: 1px 5px; border-radius: 5px; font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; letter-spacing: -0.5px; font-size: 11px; display: inline-flex; align-items: center; }
+.badge-mono { background: #dfe9ef; color: #4c6272; padding: 1px 5px; border-radius: 5px; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; letter-spacing: -0.5px; font-size: 11px; display: inline-flex; align-items: center; }
 .badge-mono:hover { background: #b8cbd6; }
 .shop-badge { color: #EE4D2D; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
 .price-main { color: #EE4D2D; }
@@ -1379,7 +1379,7 @@ onMounted(loadAccounts)
 .dd-kv-key { color: #6b8498; font-weight: 600; min-width: 90px; flex-shrink: 0; }
 .dd-kv-val { color: #101e2b; display: flex; align-items: center; }
 .dd-kv-val.cursor-pointer:hover { color: #a51e55; }
-.dd-inline-input { flex: 1; height: 28px; padding: 0 8px; border: 1.5px solid #a51e55; border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; color: #101e2b; background: #fdf2f7; outline: none; }
+.dd-inline-input { flex: 1; height: 28px; padding: 0 8px; border: 1.5px solid #a51e55; border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; color: #101e2b; background: #fdf2f7; outline: none; }
 
 /* ── Métricas stats ───────────────────────────────────────────────────── */
 .dd-stats-row { display: flex; gap: 0; flex-wrap: wrap; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #b8cbd6; }
@@ -1440,7 +1440,7 @@ onMounted(loadAccounts)
 .var-inline-input--price { width: 72px; text-align: right; }
 .var-inline-input--stock { width: 56px; text-align: right; }
 .var-edit-hint { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: #4c6272; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 6px 10px; }
-.font-mono { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; letter-spacing: -0.5px; }
+.font-mono { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; letter-spacing: -0.5px; }
 
 /* ── Advanced filters ──────────────────────────────────────────────────── */
 .fadv-panel { display: flex; flex-direction: column; border-radius: 0 !important; }

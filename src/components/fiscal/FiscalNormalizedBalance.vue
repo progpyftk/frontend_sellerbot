@@ -502,7 +502,7 @@ defineExpose({ load })
 .normalized-balance__banner--bad { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
 .normalized-balance__banner--empty { background: #edf4f7; border-color: #b8cbd6; color: #4c6272; }
 .normalized-pending-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; }
-.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.font-mono { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
 .text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .border-bottom { border-bottom: 1px solid #dfe9ef; }
 .normalized-table :deep(.q-table__middle) { overflow-x: auto; }

@@ -414,7 +414,7 @@ onMounted(loadMlAccounts)
 }
 .count-badge {
   font-size: 12px; font-weight: 600; color: #a51e55;
-  background: #e0f2f1; border-radius: 12px; padding: 3px 12px;
+  background: #fbe0ec; border-radius: 12px; padding: 3px 12px;
   white-space: nowrap;
 }
 
@@ -464,7 +464,7 @@ onMounted(loadMlAccounts)
   align-items: center; gap: 10px;
 }
 
-.text-mono { font-family: monospace; }
+.text-mono { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
 
 @media (max-width: 600px) {
   .page-header { padding: 10px 12px; }

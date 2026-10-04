@@ -824,7 +824,7 @@ async function renderEvolutionChart() {
 
   const traces = [
     { x: months, y: gmv, name: 'GMV', type: 'scatter', mode: 'lines+markers', line: { color: '#7f1642' } },
-    { x: months, y: orders, name: 'Pedidos', type: 'bar', yaxis: 'y2', marker: { color: '#7dd3c0' }, opacity: 0.6 },
+    { x: months, y: orders, name: 'Pedidos', type: 'bar', yaxis: 'y2', marker: { color: '#f7a8c8' }, opacity: 0.6 },
   ]
 
   const shapes = []

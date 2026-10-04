@@ -343,7 +343,7 @@ defineExpose({ reloadAll })
 </script>
 
 <style scoped>
-.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.font-mono { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
 .text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .review-kpi { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid #b8cbd6; border-radius: 10px; background: #fff; }
 .review-kpi span { color: #4c6272; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }

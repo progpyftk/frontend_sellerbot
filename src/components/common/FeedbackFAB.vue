@@ -383,7 +383,7 @@ async function submit() {
   border: 1px solid #b8cbd6;
   border-radius: 6px;
   padding: 3px 8px;
-  font-family: monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 }
 
 .feedback-dialog-footer {

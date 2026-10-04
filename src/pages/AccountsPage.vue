@@ -1635,7 +1635,7 @@ onMounted(() => {
 }
 
 .token-preview {
-  font-family: monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 12px;
   color: #9aa0ac;
 }

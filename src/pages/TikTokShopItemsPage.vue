@@ -550,13 +550,13 @@ onMounted(() => {
 .badge-mono {
   background: #dfe9ef; color: #4c6272;
   padding: 1px 5px; border-radius: 5px;
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   letter-spacing: -0.5px; font-size: 11px;
 }
 .border-grey { border: 1px solid #b8cbd6; }
 .sku-inline {
   display: inline-block;
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 10px; color: #6b8498;
   letter-spacing: -0.3px;
 }

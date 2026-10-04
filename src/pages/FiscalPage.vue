@@ -1668,7 +1668,7 @@ onUnmounted(() => {
 }
 
 .font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 }
 
 .text-ellipsis {

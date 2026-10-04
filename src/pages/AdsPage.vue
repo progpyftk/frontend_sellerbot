@@ -989,7 +989,7 @@ watch(activeTab, (tab) => {
 @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
 .stat-icon {
   width: 32px; height: 32px; border-radius: 8px;
-  background: #f0f9f8; display: flex; align-items: center; justify-content: center;
+  background: #fdf2f7; display: flex; align-items: center; justify-content: center;
   color: #a51e55; flex-shrink: 0;
 }
 .stat-card--spend  .stat-icon { background: #f0f2f5; color: #101e2b; }

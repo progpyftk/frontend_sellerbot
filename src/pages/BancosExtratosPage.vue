@@ -1048,7 +1048,7 @@ onMounted(async () => {
 }
 
 .font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 }
 
 .termometro-barra {

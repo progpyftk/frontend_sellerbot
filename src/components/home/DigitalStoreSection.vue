@@ -265,7 +265,7 @@ export default defineComponent({
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 28px;
   padding: 36px 40px;
-  background: linear-gradient(135deg, #fdf2f7, #e6fffa);
+  background: linear-gradient(135deg, #fdf2f7, #fdf2f7);
   border-radius: 20px;
   border: 1px solid #f7c1d6;
 }
