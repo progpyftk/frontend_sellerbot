@@ -1,11 +1,14 @@
-# Capturas do SellerBot — IDV-36
+# Capturas do SellerBot — IDV-37
 
-Capturas das páginas Vue reais do frontend em `19e0dfb`, realizadas em 03/10/2026 com Playwright em ambiente local. Respostas de API demonstrativas interceptadas no navegador: nenhum acesso a conta, banco ou escrita no marketplace. Contas, SKUs, produtos e valores são exemplos; a landing identifica isso nas legendas. Não representam resultado de cliente.
+Interfaces Vue reais capturadas em ambiente local em 04/10/2026 após aplicar a paleta Krivus ao aplicativo. Respostas de API demonstrativas interceptadas apenas no navegador: nenhum acesso a contas, banco ou escrita no marketplace. Os exemplos não são resultados dos clientes; a landing identifica os dados demonstrativos.
 
-- `ads.webp`: `/app/ads`, indicadores e diagnóstico por campanha.
-- `tendencia.webp`: mesma página, aba Tendência.
-- `promocoes.webp`: `/app/promotions/advisor`, execução e cobertura.
-- `precos.webp`: `/app/financeiro/margem`, recorte da cascata de custos. Trata-se de composição de margem, não screenshot de um módulo autônomo de precificação.
-- `anuncios.webp`: `/app/sellerbot-ai`, atalhos e mensagem em rascunho. Nada foi enviado ou publicado.
+- `dashboard.webp`: gráfico real de `/app/dashboard`, setembro/2026, sem suavização, faturamento e contribuição após Ads.
+- `ads.webp`: `/app/ads`, quatro campanhas com diferentes custos, metas e diagnósticos.
+- `promocoes.webp`: cobertura de `/app/promotions/advisor`, 148 anúncios distribuídos em 92 ativos, 11 agendados, 38 sem promoção e 7 não confirmados.
+- `precos.webp`: cascata de `/app/financeiro/margem`; composição de custos, não screenshot de módulo autônomo de precificação.
+- `saude.webp`: visão financeira real do aplicativo, incluindo resultado após despesas e variação de caixa; cenário demonstrativo, sem apuração tributária de cliente.
+- `anuncios.webp`: SellerBot AI, mensagem em rascunho; nada enviado ou publicado.
 
-Codificação WebP pelo canvas do Chromium, qualidade 88%, sem alteração visual da interface. Dimensões fornecidas nos componentes; carregamento diferido e ampliação por diálogo. Atualizar as capturas quando a interface do produto mudar.
+Cenário demonstrativo coerente: 2.817 pedidos, GMV R$324.449,90, ticket R$115,18, publicidade R$15.676,07 e receita atribuída às campanhas R$139.513,46 (ACoS 11,24%; TACoS 4,83%). Custos: taxas R$47.163,78; impostos R$35.689,50; frete R$24.819,18; embalagem R$3.568,97; produto R$139.475,67. Contribuição após Ads R$58.056,73. Soma das campanhas = total de Ads; cascata = contribuição do dashboard. Série diária com variação de volume, ticket e custos. Percentuais seguem a base de cada interface, sem modificar fórmulas de negócio do aplicativo.
+
+WebP 88%, codificado pelo Chromium sem retoque da interface; capturas recortadas nos componentes, dimensões explícitas e ampliação acessível. Atualizar as imagens quando o produto mudar.

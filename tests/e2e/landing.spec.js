@@ -105,12 +105,12 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
       .toBeLessThan(200)
   })
 
-  test('quatro chamadas contextuais de WhatsApp com data-offer', async ({ page }) => {
+  test('cinco chamadas contextuais de WhatsApp com data-offer', async ({ page }) => {
     await page.addInitScript(() => localStorage.clear())
     await page.goto('/')
 
     const waLinks = page.locator('a[href*="wa.me/5511998180409"][data-offer]')
-    await expect(waLinks).toHaveCount(4)
+    await expect(waLinks).toHaveCount(5)
     await expect(page.locator('a[data-offer="mentoria"]')).toHaveCount(1)
     await expect(page.locator('a[data-offer="consultoria"]')).toHaveCount(1)
   })
@@ -153,87 +153,36 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     )
     expect(overflow).toBeLessThanOrEqual(0)
   })
-  test('calculadora relaciona custos, impostos e margem de contribuição', async ({ page }) => {
+  test('dashboard substitui calculadora e cada análise tem sua seção', async ({ page }) => {
     await page.goto('/');
-    const result = page.locator('.calculator-result');
-    await expect(result).toContainText('R$ 5,00');
-    await expect(result).toContainText('5,0%');
-    await page.locator('#margin-tax').fill('10');
-    await expect(result).toContainText('R$ 6,00');
-    await expect(result).toContainText('6,0%');
-    await page.locator('#margin-price').fill('200');
-    await expect(result).toContainText('R$ 82,00');
-    await expect(result).toContainText('41,0%');
-    await page.locator('#margin-other').fill('100');
-    await expect(result).toContainText('-R$ 18,00');
-    await expect(result).toContainText('-9,0%');
-    await expect(result).toContainText('superam o preço');
-  });
-
-  test('sliders mostram valores, respondem ao teclado e respeitam limites', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('input[type="range"]')).toHaveCount(7);
-    const tax = page.locator('#margin-tax');
-    await expect(tax).toHaveValue('11');
-    await tax.focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(tax).toHaveValue('11.5');
-    await expect(page.locator('label[for="margin-tax"] output')).toHaveText('11,5%');
-    await expect(page.locator('.calculator-result')).toContainText('R$ 4,50');
-    await page.locator('#margin-price').focus();
-    await page.keyboard.press('Home');
-    await expect(page.locator('#margin-price')).toHaveValue('1');
-    await expect(page.locator('.calculator-result')).not.toContainText('NaN');
-    await page.keyboard.press('End');
-    await expect(page.locator('#margin-price')).toHaveValue('1000');
-    await expect(page.locator('.calculator-result')).not.toContainText('Infinity');
-  });
-
-  test('tributário conecta à calculadora e os quatro cases são apresentados', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('#tributario a[href="#margin-tax"]').click();
-    await expect(page.locator('#margin-tax')).toBeFocused();
-    for (const name of ['Doseverde', 'Livpro', 'Casadossuportes', 'GrampoFix']) {
-      await expect(page.locator('#cases')).toContainText(name);
+    await expect(page.locator('input[type="range"]')).toHaveCount(0);
+    await expect(page.locator('.hero-dashboard img')).toHaveAttribute('src', '/images/sellerbot/dashboard.webp');
+    for (const id of ['analise-ads', 'analise-promocoes', 'analise-precos', 'analise-anuncios']) {
+      const section = page.locator(`#${id}`);
+      await expect(section.getByRole('heading', { level: 2 })).toBeVisible();
+      await section.locator('img').scrollIntoViewIfNeeded();
+      await expect.poll(() => section.locator('img').evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
     }
-    await expect(page.locator('#tax-title')).toContainText('quem ganha');
-  });
-
-  test('ferramentas do SellerBot mudam ao selecionar e cases aparecem na abertura', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('#inicio #cases')).toBeAttached();
-    const selected = page.locator('#tool-detail');
-    await expect(selected).toContainText('Campanhas com diagnóstico');
-    const choices = [
-      ['Promoções', 'Desconto com critério'],
-      ['Precificação', 'O preço começa nos custos'],
-      ['Criação de anúncios', 'Da ficha à publicação'],
-    ];
-    for (const [label, title] of choices) {
-      const button = page.getByRole('group', { name: 'Explorar ferramentas do SellerBot' }).getByRole('button', { name: new RegExp(label) });
-      await button.click();
-      await expect(button).toHaveAttribute('aria-pressed', 'true');
-      await expect(selected).toContainText(title);
+    await expect(page.locator('#tributario a[data-offer="tributario"]')).toHaveAttribute('href', /wa\.me/);
+    for (const id of ['case-doseverde', 'case-livpro', 'case-casadossuportes', 'case-grampofix']) {
+      const story = page.locator(`#${id}`);
+      await expect(story.getByRole('heading', { level: 3 })).toBeVisible();
+      await expect(story.locator('.story-work')).toContainText('NO TRABALHO');
     }
-    await expect(page.getByText('A venda entrou.', { exact: false })).toHaveCount(0);
   });
 
-  test('capturas do produto carregam e ampliam com retorno de foco', async ({ page }) => {
+  test('histórias têm âncoras e capturas ampliam com retorno de foco', async ({ page }) => {
     await page.goto('/');
-    const open = page.getByRole('button', { name: 'Ampliar Publicidade e evolução diária' });
+    await page.locator('.hero-case-links a[href="#case-doseverde"]').click();
+    await expect(page.locator('#case-doseverde')).toBeFocused();
+    const open = page.getByRole('button', { name: 'Ampliar Dashboard da operação', exact: true });
     await open.scrollIntoViewIfNeeded();
-    const image = open.locator('img');
-    await expect.poll(() => image.evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
+    await expect.poll(() => open.locator('img').evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
     await open.click();
-    await expect(page.getByRole('region', { name: 'Publicidade e evolução diária em tamanho ampliado' })).toBeVisible();
+    const close = page.getByRole('button', { name: 'Fechar imagem ampliada' });
+    await expect(close).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(open).toBeFocused();
-    for (const label of ['IA em Ads', 'Promoções', 'Precificação', 'Criação de anúncios']) {
-      await page.getByRole('group', { name: 'Explorar ferramentas do SellerBot' }).getByRole('button', { name: new RegExp(label) }).click();
-      const screenshot = page.locator('#tool-detail img');
-      await screenshot.scrollIntoViewIfNeeded();
-      await expect.poll(() => screenshot.evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
-    }
   });
 
   test('skip link transfere foco e reduced motion desativa animação', async ({ page }) => {
