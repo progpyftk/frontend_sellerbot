@@ -21,7 +21,7 @@
 
     <!-- ══════════ LOADING ═════════════════════════════════════════════════ -->
     <div v-if="loading" class="loading-center">
-      <q-spinner-dots color="teal" size="48px" />
+      <q-spinner-dots color="primary" size="48px" />
       <div class="loading-text">Carregando dados...</div>
     </div>
 
@@ -115,7 +115,7 @@
                 </button>
 
                 <span v-if="chartLoading || loadingAccountData" class="chart-loading-badge">
-                  <q-spinner-dots size="14px" color="teal" />
+                  <q-spinner-dots size="14px" color="primary" />
                 </span>
 
                 <!-- Seletor de métrica (modo Por Conta e Semana) -->
@@ -188,7 +188,7 @@
               <!-- Loading overlay — bloqueia interação enquanto dados por conta carregam -->
               <transition name="chart-overlay-fade">
                 <div v-if="loadingAccountData" class="plotly-loading-overlay">
-                  <q-spinner-dots size="36px" color="teal" />
+                  <q-spinner-dots size="36px" color="primary" />
                   <div class="plotly-loading-text">Carregando dados por conta…</div>
                 </div>
               </transition>
@@ -230,7 +230,7 @@
           variant="indigo"
           :delta="deltaFmt(op?.vs_prev?.gmv)"
           :sparkline-data="sparklineData('gmv')"
-          sparkline-color="#6366f1"
+          sparkline-color="#658aa1"
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
@@ -521,7 +521,7 @@
                     </tr>
                     <tr v-if="!dayAccountRows(d.date).length" class="dt-acct-row">
                       <td colspan="9" class="dt-loading-hint">
-                        <q-spinner-dots size="12px" color="teal" />
+                        <q-spinner-dots size="12px" color="primary" />
                         Carregando dados por conta…
                       </td>
                     </tr>
@@ -563,7 +563,7 @@
           </div>
 
           <div v-if="stockLoading" class="loading-center" style="min-height: 120px;">
-            <q-spinner-dots color="teal" size="32px" />
+            <q-spinner-dots color="primary" size="32px" />
           </div>
 
           <template v-else-if="stockData">
@@ -619,7 +619,7 @@
         <div class="table-card">
           <div class="table-header-row">
             <div class="table-title">
-              <q-icon name="leaderboard" size="16px" class="q-mr-xs text-teal-7" />
+              <q-icon name="leaderboard" size="16px" class="q-mr-xs text-primary" />
               Ranking de Contas — {{ dateFrom }} → {{ dateTo }}
             </div>
             <div class="table-controls">
@@ -937,7 +937,7 @@
                       <div class="pareto-bar-bg">
                         <div class="pareto-bar-fill"
                           :style="{ width: paretoAccum(i) + '%',
-                            background: paretoAccum(i) <= 80 ? '#6366f1' : paretoAccum(i) <= 95 ? '#f59e0b' : '#94a3b8' }">
+                            background: paretoAccum(i) <= 80 ? '#658aa1' : paretoAccum(i) <= 95 ? '#f59e0b' : '#6b8498' }">
                         </div>
                       </div>
                       <span class="pareto-pct">{{ paretoAccum(i) }}%</span>
@@ -1018,7 +1018,7 @@
         <div class="chart-card q-mt-md" v-if="flexDailyData.length">
           <div class="chart-header">
             <div class="chart-title">
-              <q-icon name="electric_bike" size="16px" class="q-mr-xs text-teal-7" />
+              <q-icon name="electric_bike" size="16px" class="q-mr-xs text-primary" />
               Pedidos Flex por Dia
             </div>
             <div class="chart-title muted" style="font-size:12px; font-weight:400">
@@ -1067,7 +1067,7 @@
             <text v-for="(tick, i) in flexYTicks" :key="'fy'+i"
               :x="FLEX_PAD - 4"
               :y="flexSvgY(tick) + 4"
-              text-anchor="end" font-size="9" fill="#64748b">
+              text-anchor="end" font-size="9" fill="#4c6272">
               {{ tick }}
             </text>
           </svg>
@@ -1077,7 +1077,7 @@
         <div class="table-card q-mt-md" v-if="flexByAccount.length">
           <div class="table-header-row">
             <div class="table-title">
-              <q-icon name="store" size="14px" class="q-mr-xs text-teal-7" />
+              <q-icon name="store" size="14px" class="q-mr-xs text-primary" />
               Flex por Conta
             </div>
             <div class="muted" style="font-size:12px">
@@ -1127,7 +1127,7 @@
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-title">
-              <q-icon name="event_note" size="16px" class="q-mr-xs text-teal-7" />
+              <q-icon name="event_note" size="16px" class="q-mr-xs text-primary" />
               Padrão de Vendas por Dia da Semana
             </div>
             <div class="chart-metric-toggles">
@@ -1154,10 +1154,10 @@
                   :x="50 + i * 90 + 10" :y="weekdayBarY(d.avg)"
                   :width="60"
                   :height="Math.max(2, 155 - weekdayBarY(d.avg))"
-                  :fill="d.isTop ? '#a51e55' : '#cbd5e1'"
+                  :fill="d.isTop ? '#a51e55' : '#93aebb'"
                   rx="4" />
                 <text :x="50 + i * 90 + 40" :y="weekdayBarY(d.avg) - 5"
-                  text-anchor="middle" font-size="10" :fill="d.isTop ? '#a51e55' : '#64748b'" font-weight="600">
+                  text-anchor="middle" font-size="10" :fill="d.isTop ? '#a51e55' : '#4c6272'" font-weight="600">
                   {{ weekdayFmt(d.avg) }}
                 </text>
                 <text :x="50 + i * 90 + 40" y="170"
@@ -1171,7 +1171,7 @@
               </g>
               <text v-for="(t, i) in weekdayYTicks" :key="'wyl'+i"
                 x="44" :y="weekdayBarY(t) + 4"
-                text-anchor="end" font-size="9" fill="#64748b">{{ weekdayFmt(t) }}</text>
+                text-anchor="end" font-size="9" fill="#4c6272">{{ weekdayFmt(t) }}</text>
             </svg>
           </div>
         </div>
@@ -1180,7 +1180,7 @@
         <div class="chart-card q-mt-md">
           <div class="chart-header">
             <div class="chart-title">
-              <q-icon name="compare_arrows" size="16px" class="q-mr-xs text-teal-7" />
+              <q-icon name="compare_arrows" size="16px" class="q-mr-xs text-primary" />
               Comparar Dias da Semana — últimas ocorrências
             </div>
             <div class="chart-metric-toggles" style="gap:6px;flex-wrap:wrap">
@@ -1233,7 +1233,7 @@
               <!-- Y labels -->
               <text v-for="(t, i) in wdYTicks" :key="'wdyl'+i"
                 :x="WD_PAD - 4" :y="wdSvgY(t) + 4"
-                text-anchor="end" font-size="9" fill="#64748b">{{ weekdayFmt(t) }}</text>
+                text-anchor="end" font-size="9" fill="#4c6272">{{ weekdayFmt(t) }}</text>
             </svg>
 
             <!-- Legenda -->
@@ -1290,14 +1290,14 @@
       <div v-show="activeTab === 'sazonalidade' && activeMarketplace !== 'shopee'" class="tab-content">
 
         <div class="saz-intro">
-          <q-icon name="compare_arrows" size="16px" class="q-mr-xs text-indigo-5" />
+          <q-icon name="compare_arrows" size="16px" class="q-mr-xs text-secondary" />
           Comparação do período selecionado com o <strong>mesmo período do ano anterior</strong>.
           Use o preset <strong>Mês</strong> para comparar este mês vs mês do ano passado.
         </div>
 
         <!-- KPI comparativo -->
         <div v-if="loadingLastYear" class="loading-center" style="min-height:120px">
-          <q-spinner-dots color="teal" size="32px" />
+          <q-spinner-dots color="primary" size="32px" />
         </div>
         <template v-else>
           <div class="saz-kpi-grid">
@@ -1336,7 +1336,7 @@
           <div class="chart-card q-mt-md" v-if="lastYearOp && chartData.length">
             <div class="chart-header">
               <div class="chart-title">
-                <q-icon name="timeline" size="16px" class="q-mr-xs text-indigo-5" />
+                <q-icon name="timeline" size="16px" class="q-mr-xs text-secondary" />
                 GMV Diário — Ano Atual vs Ano Anterior
               </div>
             </div>
@@ -1345,39 +1345,39 @@
                 @mousemove="onSazMouseMove" @mouseleave="sazHoveredIdx = -1">
                 <defs>
                   <linearGradient id="saz-grad-curr" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#6366f1" stop-opacity="0.18"/>
-                    <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+                    <stop offset="0%" stop-color="#658aa1" stop-opacity="0.18"/>
+                    <stop offset="100%" stop-color="#658aa1" stop-opacity="0"/>
                   </linearGradient>
                   <linearGradient id="saz-grad-prev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.12"/>
-                    <stop offset="100%" stop-color="#94a3b8" stop-opacity="0"/>
+                    <stop offset="0%" stop-color="#6b8498" stop-opacity="0.12"/>
+                    <stop offset="100%" stop-color="#6b8498" stop-opacity="0"/>
                   </linearGradient>
                 </defs>
 
                 <!-- Grid lines -->
                 <line v-for="gl in sazGridLines" :key="gl" :x1="SAZ_PAD" :y1="gl" :x2="SAZ_W - SAZ_PAD" :y2="gl"
-                  stroke="#e2e8f0" stroke-width="0.5" />
+                  stroke="#b8cbd6" stroke-width="0.5" />
 
                 <!-- Área ano anterior -->
                 <path v-if="sazPathPrev" :d="sazPathPrev.area" fill="url(#saz-grad-prev)" />
-                <path v-if="sazPathPrev" :d="sazPathPrev.line" fill="none" stroke="#94a3b8" stroke-width="1.5"
+                <path v-if="sazPathPrev" :d="sazPathPrev.line" fill="none" stroke="#6b8498" stroke-width="1.5"
                   stroke-dasharray="4,3" stroke-linecap="round" />
 
                 <!-- Área ano atual -->
                 <path v-if="sazPathCurr" :d="sazPathCurr.area" fill="url(#saz-grad-curr)" />
-                <path v-if="sazPathCurr" :d="sazPathCurr.line" fill="none" stroke="#6366f1" stroke-width="2"
+                <path v-if="sazPathCurr" :d="sazPathCurr.line" fill="none" stroke="#658aa1" stroke-width="2"
                   stroke-linecap="round" />
 
                 <!-- Legenda inline -->
-                <line :x1="SAZ_PAD + 8" :y1="14" :x2="SAZ_PAD + 26" :y2="14" stroke="#6366f1" stroke-width="2"/>
-                <text :x="SAZ_PAD + 30" y="18" font-size="9" fill="#6366f1" font-family="sans-serif">Ano atual</text>
-                <line :x1="SAZ_PAD + 90" :y1="14" :x2="SAZ_PAD + 108" :y2="14" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/>
-                <text :x="SAZ_PAD + 112" y="18" font-size="9" fill="#94a3b8" font-family="sans-serif">Ano anterior</text>
+                <line :x1="SAZ_PAD + 8" :y1="14" :x2="SAZ_PAD + 26" :y2="14" stroke="#658aa1" stroke-width="2"/>
+                <text :x="SAZ_PAD + 30" y="18" font-size="9" fill="#658aa1" font-family="sans-serif">Ano atual</text>
+                <line :x1="SAZ_PAD + 90" :y1="14" :x2="SAZ_PAD + 108" :y2="14" stroke="#6b8498" stroke-width="1.5" stroke-dasharray="4,3"/>
+                <text :x="SAZ_PAD + 112" y="18" font-size="9" fill="#6b8498" font-family="sans-serif">Ano anterior</text>
 
                 <!-- Tooltip crosshair -->
                 <template v-if="sazHoveredIdx >= 0 && sazHoveredIdx < chartData.length">
                   <line :x1="sazXPos(sazHoveredIdx)" y1="20" :x2="sazXPos(sazHoveredIdx)" :y2="SAZ_H - 20"
-                    stroke="#6366f1" stroke-width="0.8" stroke-dasharray="3,2" />
+                    stroke="#658aa1" stroke-width="0.8" stroke-dasharray="3,2" />
                 </template>
               </svg>
 
@@ -1385,11 +1385,11 @@
               <div v-if="sazHoveredIdx >= 0 && sazHoveredIdx < chartData.length" class="saz-tooltip">
                 <div class="saz-tt-date">{{ chartData[sazHoveredIdx]?.date }}</div>
                 <div class="saz-tt-row">
-                  <span class="saz-tt-dot" style="background:#6366f1"></span>
+                  <span class="saz-tt-dot" style="background:#658aa1"></span>
                   Atual: <strong>{{ fmt(chartData[sazHoveredIdx]?.gmv) }}</strong>
                 </div>
                 <div class="saz-tt-row" v-if="lastYearChartData[sazHoveredIdx]">
-                  <span class="saz-tt-dot" style="background:#94a3b8"></span>
+                  <span class="saz-tt-dot" style="background:#6b8498"></span>
                   Anterior: <strong>{{ fmt(lastYearChartData[sazHoveredIdx]?.gmv) }}</strong>
                 </div>
               </div>
@@ -2686,7 +2686,7 @@ async function renderPlotlyChart() {
     } else if (chartMode.value === 'weekday') {
       const wd     = weekdayPlotlyData.value
       const meta   = chartMetrics.find(m => m.key === weekdayChartMetric.value)
-      const color  = meta?.color || '#6366f1'
+      const color  = meta?.color || '#658aa1'
       const isMonetary = weekdayChartMetric.value !== 'orders_count'
 
       const maxAvg = Math.max(...wd.map(d => d.avg))
@@ -2703,7 +2703,7 @@ async function renderPlotlyChart() {
           ? (isMonetary ? 'R$' + (d.avg >= 1000 ? (d.avg/1000).toFixed(1)+'k' : Math.round(d.avg)) : Math.round(d.avg))
           : ''),
         textposition: 'outside',
-        textfont: { size: 11, color: '#64748b' },
+        textfont: { size: 11, color: '#4c6272' },
         hovertemplate: '<b>%{x}</b><br>Média: <b>' + (isMonetary ? 'R$%{y:,.0f}' : '%{y:.0f}') + '</b><br>Amostras: %{customdata}<extra></extra>',
         customdata: wd.map(d => d.count),
       })
@@ -2847,7 +2847,7 @@ async function renderPlotlyChart() {
           xshift: 10,
           font: {
             size: 11,
-            color: t.line?.color || '#64748b',
+            color: t.line?.color || '#4c6272',
             family: 'Inter, sans-serif',
           },
           bgcolor: 'rgba(255,255,255,0.85)',
@@ -2884,9 +2884,9 @@ async function renderPlotlyChart() {
 
       hovermode: isWeekdayMode ? 'closest' : 'x unified',
       hoverlabel: {
-        bgcolor: '#1e293b',
-        bordercolor: '#334155',
-        font: { size: isMobile ? 11 : 12, color: '#f1f5f9', family: 'Inter, sans-serif' },
+        bgcolor: '#152d43',
+        bordercolor: '#152d43',
+        font: { size: isMobile ? 11 : 12, color: '#dfe9ef', family: 'Inter, sans-serif' },
         align: 'left',
       },
 
@@ -2901,7 +2901,7 @@ async function renderPlotlyChart() {
         tickformat: nPts <= 14 ? '%d/%m' : (nPts <= 60 ? '%d/%m' : '%b/%y'),
         gridcolor: '#eef0f4',
         linecolor: '#e0e5ed',
-        tickfont: { size: isMobile ? 9 : 10, color: '#94a3b8', family: 'Inter, sans-serif' },
+        tickfont: { size: isMobile ? 9 : 10, color: '#6b8498', family: 'Inter, sans-serif' },
         showgrid: true,
         gridwidth: 1,
         tickangle: isMobile ? -45 : (nPts > 20 ? -35 : 0),
@@ -2918,7 +2918,7 @@ async function renderPlotlyChart() {
         tickprefix: normalizeChart.value ? '' : 'R$',
         ticksuffix: normalizeChart.value ? '%' : '',
         tickformat: isMobile ? (normalizeChart.value ? '.0f' : '~s') : '',
-        tickfont: { size: isMobile ? 9 : 10, color: '#94a3b8', family: 'Inter, sans-serif' },
+        tickfont: { size: isMobile ? 9 : 10, color: '#6b8498', family: 'Inter, sans-serif' },
         hoverformat: ',.0f',
         zeroline: false,
         automargin: true,
@@ -3040,7 +3040,7 @@ function deltaIcon(v) {
 // ── Dias da Semana — constantes ──────────────────────────────────────────
 const WEEKDAYS = [
   { key: 'dom', label: 'Dom', color: '#ef4444' },
-  { key: 'seg', label: 'Seg', color: '#6366f1' },
+  { key: 'seg', label: 'Seg', color: '#658aa1' },
   { key: 'ter', label: 'Ter', color: '#0ea5e9' },
   { key: 'qua', label: 'Qua', color: '#10b981' },
   { key: 'qui', label: 'Qui', color: '#f59e0b' },
@@ -3627,7 +3627,7 @@ watch(selectedAccountKeys, () => {
    Superfície neutra; cor só no live-dot e no semântico pos/neg. */
 .today-banner {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 14px;
   padding: 12px 16px;
   margin-bottom: 20px;
@@ -3660,12 +3660,12 @@ watch(selectedAccountKeys, () => {
 .today-label-text {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: #101e2b;
 }
 
 .today-label-caption {
   font-size: 10px;
-  color: #94a3b8;
+  color: #6b8498;
 }
 
 .live-dot {
@@ -3704,14 +3704,14 @@ watch(selectedAccountKeys, () => {
 
 .today-kpi-label {
   font-size: 11px;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.3;
 }
 
 .today-kpi-val {
   font-size: 15px;
   font-weight: 600;
-  color: #0f172a;
+  color: #101e2b;
   letter-spacing: -0.01em;
 }
 
@@ -3739,7 +3739,7 @@ watch(selectedAccountKeys, () => {
   padding: 3px 9px;
   border-radius: 20px;
   background: #f0fdfb;
-  border: 1px solid #99f6e4;
+  border: 1px solid #f7c1d6;
   color: #a51e55;
   font-size: 11px;
   font-weight: 600;
@@ -3782,15 +3782,15 @@ watch(selectedAccountKeys, () => {
   height: 3px;
 }
 
-.kpi-gmv::before    { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+.kpi-gmv::before    { background: linear-gradient(90deg, #658aa1, #8b5cf6); }
 .kpi-net::before    { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
 .kpi-gp::before     { background: linear-gradient(90deg, #10b981, #34d399); }
-.kpi-ll::before     { background: linear-gradient(90deg, #a51e55, #2dd4bf); }
+.kpi-ll::before     { background: linear-gradient(90deg, #a51e55, #f28ab4); }
 .kpi-ads::before    { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 .kpi-orders::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
 .kpi-units::before  { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
 .kpi-roas::before   { background: linear-gradient(90deg, #0ea5e9, #06b6d4); }
-.kpi-margin::before { background: linear-gradient(90deg, #2dd4bf, #34d399); }
+.kpi-margin::before { background: linear-gradient(90deg, #f28ab4, #34d399); }
 .kpi-canc::before   { background: linear-gradient(90deg, #ef4444, #f87171); }
 
 .kpi-label {
@@ -3980,8 +3980,8 @@ watch(selectedAccountKeys, () => {
 
 .line-tooltip {
   position: absolute;
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: #101e2b;
+  border: 1px solid #152d43;
   border-radius: 12px;
   padding: 12px 16px;
   z-index: 20;
@@ -3994,10 +3994,10 @@ watch(selectedAccountKeys, () => {
 .tooltip-date {
   font-size: 11px;
   font-weight: 700;
-  color: #cbd5e1;
+  color: #93aebb;
   margin-bottom: 7px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid #152d43;
 }
 
 .tooltip-row {
@@ -4016,14 +4016,14 @@ watch(selectedAccountKeys, () => {
 
 .tooltip-label {
   font-size: 11px;
-  color: #94a3b8;
+  color: #6b8498;
   flex: 1;
 }
 
 .tooltip-val {
   font-size: 11px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #dfe9ef;
 }
 
 /* ── Tables ────────────────────────────────────────────────────────────── */
@@ -4272,7 +4272,7 @@ watch(selectedAccountKeys, () => {
 
 .gmv-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #a51e55, #2dd4bf);
+  background: linear-gradient(90deg, #a51e55, #f28ab4);
   border-radius: 4px;
   transition: width $transition-slow;
 }
@@ -4351,7 +4351,7 @@ watch(selectedAccountKeys, () => {
 
 .inline-bar-fill {
   height: 6px;
-  background: linear-gradient(90deg, #6366f1, #818cf8);
+  background: linear-gradient(90deg, #658aa1, #818cf8);
   border-radius: 3px;
   flex-shrink: 0;
 }
@@ -4507,7 +4507,7 @@ watch(selectedAccountKeys, () => {
 .acct-pill:hover:not(.acct-pill--on) {
   border-color: #a51e55;
   color: #a51e55;
-  background: #f0fdf9;
+  background: #fdf2f7;
 }
 
 .acct-pill--on {
@@ -4537,7 +4537,7 @@ watch(selectedAccountKeys, () => {
 
 .flex-bar-fill {
   height: 6px;
-  background: linear-gradient(90deg, #a51e55, #2dd4bf);
+  background: linear-gradient(90deg, #a51e55, #f28ab4);
   border-radius: 3px;
   flex-shrink: 0;
   transition: width $transition-slow;
@@ -4616,7 +4616,7 @@ watch(selectedAccountKeys, () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px 14px;
-  border-bottom: 1.5px solid #f1f5f9;
+  border-bottom: 1.5px solid #dfe9ef;
 }
 .daily-table-title {
   display: flex;
@@ -4624,14 +4624,14 @@ watch(selectedAccountKeys, () => {
   gap: 8px;
   font-size: 14px;
   font-weight: 700;
-  color: #1e293b;
+  color: #152d43;
 }
 .daily-table-meta {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #94a3b8;
+  color: #6b8498;
 }
 .daily-filter-badge {
   display: inline-flex;
@@ -4639,7 +4639,7 @@ watch(selectedAccountKeys, () => {
   gap: 4px;
   background: #f8e8ef;
   color: #a51e55;
-  border: 1px solid #99f6e4;
+  border: 1px solid #f7c1d6;
   border-radius: 20px;
   padding: 2px 8px;
   font-size: 11px;
@@ -4661,8 +4661,8 @@ watch(selectedAccountKeys, () => {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .7px;
-  color: #94a3b8;
-  background: #f8fafc;
+  color: #6b8498;
+  background: #edf4f7;
   border-bottom: 1.5px solid #e8edf3;
   white-space: nowrap;
   /* `top: 0` pelo mesmo motivo de `.data-table th`: quem rola e o
@@ -4681,7 +4681,7 @@ watch(selectedAccountKeys, () => {
 
 .daily-table td {
   padding: 9px 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
   white-space: nowrap;
   color: #374151;
 }
@@ -4700,31 +4700,31 @@ watch(selectedAccountKeys, () => {
 .dt-expand-btn {
   display: inline-flex;
   align-items: center;
-  color: #cbd5e1;
+  color: #93aebb;
   margin-right: 6px;
   vertical-align: middle;
   transition: color $transition-fast;
 }
-.dt-row:hover .dt-expand-btn { color: #94a3b8; }
+.dt-row:hover .dt-expand-btn { color: #6b8498; }
 .dt-date-label { vertical-align: middle; }
 
 /* Value styles */
-.dt-gmv { color: #1e293b; font-weight: 600; }
+.dt-gmv { color: #152d43; font-weight: 600; }
 .dt-pos { color: #a51e55; font-weight: 600; }
 .dt-neg { color: #ef4444; font-weight: 600; }
 .dt-warn { color: #f59e0b; }
 .dt-warn-text { color: #f59e0b; }
-.dt-empty { color: #cbd5e1; }
+.dt-empty { color: #93aebb; }
 .dt-tacos-badge { font-size: 12px; padding: 1px 0; }
 
 /* Account breakdown rows */
 .dt-acct-row td {
   background: #fafbfc;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
   font-size: 12px;
 }
 .dt-acct-row:last-of-type td { border-bottom: 2px solid #e8edf3; }
-.dt-sub { color: #64748b; }
+.dt-sub { color: #4c6272; }
 .dt-acct-indent {
   display: inline-flex;
   align-items: center;
@@ -4753,13 +4753,13 @@ watch(selectedAccountKeys, () => {
   gap: 7px;
   padding-left: 40px !important;
   font-size: 11px;
-  color: #94a3b8;
+  color: #6b8498;
 }
 
 /* Total row */
 .dt-total-row td {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: #152d43;
+  color: #b8cbd6;
   font-weight: 700;
   font-size: 13px;
   border-top: 2px solid #a51e55;
@@ -4768,8 +4768,8 @@ watch(selectedAccountKeys, () => {
   bottom: 0;
   z-index: 2;
 }
-.dt-total-row .dt-gmv { color: #f1f5f9; }
-.dt-total-row .dt-pos { color: #2dd4bf; }
+.dt-total-row .dt-gmv { color: #dfe9ef; }
+.dt-total-row .dt-pos { color: #f28ab4; }
 .dt-total-row .dt-neg { color: #fca5a5; }
 .dt-total-row .dt-warn { color: #fcd34d; }
 
@@ -4780,16 +4780,16 @@ watch(selectedAccountKeys, () => {
   display: inline-flex;
   align-items: center;
   margin-right: 4px;
-  color: #94a3b8;
+  color: #6b8498;
   vertical-align: middle;
 }
 .day-row--expanded .day-expand-icon { color: #a51e55; }
 .day-acct-row td {
-  background: #f8fafc;
+  background: #edf4f7;
   font-size: 11.5px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
 }
-.day-acct-row:last-of-type td { border-bottom: 2px solid #e2e8f0; }
+.day-acct-row:last-of-type td { border-bottom: 2px solid #b8cbd6; }
 .day-acct-indent {
   display: inline-flex;
   align-items: center;
@@ -4853,7 +4853,7 @@ watch(selectedAccountKeys, () => {
   transition: all $transition-base;
 }
 .wd-pill:hover:not(.wd-pill--on) {
-  border-color: #94a3b8;
+  border-color: #6b8498;
   color: #374151;
 }
 .wd-pill--on { font-weight: 700; }
@@ -4876,7 +4876,7 @@ watch(selectedAccountKeys, () => {
 .pareto-bar-bg {
   width: 54px;
   height: 6px;
-  background: #f1f5f9;
+  background: #dfe9ef;
   border-radius: 3px;
   overflow: hidden;
   flex-shrink: 0;
@@ -4889,13 +4889,13 @@ watch(selectedAccountKeys, () => {
 .pareto-pct {
   font-size: 11px;
   font-weight: 600;
-  color: #475569;
+  color: #4c6272;
   min-width: 34px;
   text-align: right;
 }
 /* Linha de corte — borda inferior tracejada na linha onde o acumulado cruza 80% e 95% */
 tr.pareto-line-80 td {
-  border-bottom: 2px dashed #6366f1 !important;
+  border-bottom: 2px dashed #658aa1 !important;
   position: relative;
 }
 tr.pareto-line-80::after {
@@ -4903,7 +4903,7 @@ tr.pareto-line-80::after {
   position: absolute;
   right: 8px;
   font-size: 10px;
-  color: #6366f1;
+  color: #658aa1;
   font-weight: 700;
 }
 tr.pareto-line-95 td {
@@ -4918,11 +4918,11 @@ tr.pareto-line-95 td {
   font-size: 12px;
 }
 .conv-visits {
-  color: #64748b;
+  color: #4c6272;
   font-size: 11px;
 }
 .conv-arrow {
-  color: #94a3b8;
+  color: #6b8498;
   font-size: 10px;
 }
 .conv-rate {
@@ -4936,12 +4936,12 @@ tr.pareto-line-95 td {
 /* ── Sazonalidade ───────────────────────────────────────────────────────── */
 .saz-intro {
   font-size: 13px;
-  color: #64748b;
+  color: #4c6272;
   margin-bottom: 16px;
   padding: 10px 14px;
-  background: #f8fafc;
+  background: #edf4f7;
   border-radius: 8px;
-  border-left: 3px solid #6366f1;
+  border-left: 3px solid #658aa1;
 }
 .saz-kpi-grid {
   display: grid;
@@ -4951,14 +4951,14 @@ tr.pareto-line-95 td {
 }
 .saz-kpi-card {
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 10px;
   padding: 12px 14px;
   box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 .saz-kpi-label {
   font-size: 11px;
-  color: #94a3b8;
+  color: #6b8498;
   text-transform: uppercase;
   letter-spacing: .4px;
   margin-bottom: 8px;
@@ -4978,17 +4978,17 @@ tr.pareto-line-95 td {
 }
 .saz-year-label {
   font-size: 10px;
-  color: #94a3b8;
+  color: #6b8498;
   margin-bottom: 2px;
 }
 .saz-value {
   font-size: 15px;
   font-weight: 700;
-  color: #1e293b;
+  color: #152d43;
 }
 .saz-value--prev {
   font-size: 13px;
-  color: #64748b;
+  color: #4c6272;
   font-weight: 600;
 }
 .saz-delta {
@@ -5003,12 +5003,12 @@ tr.pareto-line-95 td {
 }
 .saz-arrow {
   font-size: 9px;
-  color: #94a3b8;
+  color: #6b8498;
   margin-top: 2px;
 }
 .saz-no-data {
   font-size: 11px;
-  color: #94a3b8;
+  color: #6b8498;
   font-style: italic;
 }
 .saz-chart-wrap {
@@ -5037,7 +5037,7 @@ tr.pareto-line-95 td {
   font-weight: 700;
   margin-bottom: 4px;
   font-size: 11px;
-  color: #94a3b8;
+  color: #6b8498;
 }
 .saz-tt-row {
   display: flex;
@@ -5057,7 +5057,7 @@ tr.pareto-line-95 td {
   align-items: center;
   gap: 8px;
   padding: 40px 20px;
-  color: #94a3b8;
+  color: #6b8498;
   font-size: 13px;
   text-align: center;
 }
@@ -5072,7 +5072,7 @@ tr.pareto-line-95 td {
   gap: 6px;
   padding: 5px 12px;
   background: #fff;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #b8cbd6;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
@@ -5084,7 +5084,7 @@ tr.pareto-line-95 td {
 }
 .acct-picker-btn:hover { border-color: #a51e55; }
 .acct-chip-inline { display: inline-flex; align-items: center; gap: 3px; }
-.acct-chip-more  { font-size: 11px; color: #64748b; margin-left: 2px; }
+.acct-chip-more  { font-size: 11px; color: #4c6272; margin-left: 2px; }
 
 .acct-picker-dropdown {
   position: absolute;
@@ -5092,14 +5092,14 @@ tr.pareto-line-95 td {
   right: 0;
   z-index: 200;
   background: #fff;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #b8cbd6;
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,.1);
   min-width: 240px;
   padding: 8px 0 0;
 }
 .acct-group { padding: 0 10px 8px; }
-.acct-group + .acct-group { border-top: 1px solid #f1f5f9; padding-top: 8px; }
+.acct-group + .acct-group { border-top: 1px solid #dfe9ef; padding-top: 8px; }
 .acct-group-header { margin-bottom: 4px; }
 .acct-group-check {
   display: flex;
@@ -5131,7 +5131,7 @@ tr.pareto-line-95 td {
   color: #374151;
   cursor: pointer;
 }
-.acct-item:hover { background: #f8fafc; }
+.acct-item:hover { background: #edf4f7; }
 .acct-dot {
   width: 10px;
   height: 10px;
@@ -5154,23 +5154,23 @@ tr.pareto-line-95 td {
   background: #f0fdf4;
   color: #a51e55;
   font-size: 11px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #b8cbd6;
 }
 .acct-picker-footer {
   padding: 6px 10px 8px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid #dfe9ef;
   text-align: right;
 }
 .acct-picker-close {
   font-size: 11px;
-  color: #64748b;
+  color: #4c6272;
   background: none;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 5px;
   padding: 3px 10px;
   cursor: pointer;
 }
-.acct-picker-close:hover { background: #f8fafc; }
+.acct-picker-close:hover { background: #edf4f7; }
 
 /* ── Comparative mode banner ────────────────────────────────────────────── */
 .comparative-banner {
@@ -5275,7 +5275,7 @@ tr.pareto-line-95 td {
 }
 .chart-period-tag {
   font-size: 11px;
-  color: #94a3b8;
+  color: #6b8498;
   font-weight: 500;
 }
 .chart-header-actions {
@@ -5292,7 +5292,7 @@ tr.pareto-line-95 td {
   padding: 5px 12px;
   border-radius: 20px;
   border: 1.5px solid #a51e55;
-  background: #f0fdf9;
+  background: #fdf2f7;
   color: #a51e55;
   font-size: 12px;
   font-weight: 600;
@@ -5306,7 +5306,7 @@ tr.pareto-line-95 td {
 .chart-mode-toggle {
   display: flex;
   gap: 2px;
-  background: #f1f5f9;
+  background: #dfe9ef;
   border-radius: 9px;
   padding: 3px;
 }
@@ -5318,14 +5318,14 @@ tr.pareto-line-95 td {
   border-radius: 7px;
   font-size: 11.5px;
   font-weight: 500;
-  color: #64748b;
+  color: #4c6272;
   border: none;
   background: transparent;
   cursor: pointer;
   transition: all $transition-base;
   white-space: nowrap;
 }
-.cmt-btn:hover { color: #0f172a; }
+.cmt-btn:hover { color: #101e2b; }
 .cmt-btn--on {
   background: #fff;
   color: #a51e55;
@@ -5340,7 +5340,7 @@ tr.pareto-line-95 td {
 
 /* Help icon no toggle */
 .cmt-help-icon {
-  color: #94a3b8;
+  color: #6b8498;
   cursor: pointer;
   margin-left: 2px;
   transition: color $transition-fast;
@@ -5350,7 +5350,7 @@ tr.pareto-line-95 td {
 /* Tooltip de hints do gráfico */
 .cht-tip { display: flex; flex-direction: column; gap: 7px; padding: 2px 0; }
 .cht-tip-row { display: flex; align-items: flex-start; gap: 6px; font-size: 12px; line-height: 1.4; }
-.cht-tip-muted { font-size: 10.5px; color: #94a3b8; }
+.cht-tip-muted { font-size: 10.5px; color: #6b8498; }
 .cht-tip-divider { height: 1px; background: rgba(255,255,255,.15); margin: 2px 0; }
 
 /* Barra de modo ativo (abaixo do header, acima do gráfico) */
@@ -5386,7 +5386,7 @@ tr.pareto-line-95 td {
 }
 .chart-mode-bar-hint {
   font-weight: 400;
-  color: #64748b;
+  color: #4c6272;
   font-size: 10.5px;
   margin-left: 2px;
 }
@@ -5402,13 +5402,13 @@ tr.pareto-line-95 td {
   border-radius: 20px;
   font-size: 11px;
   font-weight: 500;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
+  border: 1.5px solid #b8cbd6;
+  background: #edf4f7;
+  color: #4c6272;
   cursor: pointer;
   transition: all $transition-base;
 }
-.chart-metric-pill:hover { border-color: #94a3b8; color: #374151; }
+.chart-metric-pill:hover { border-color: #6b8498; color: #374151; }
 .chart-metric-pill--on {
   background: color-mix(in srgb, var(--pill-color, #a51e55) 12%, white);
   border-color: var(--pill-color, #a51e55);
@@ -5423,7 +5423,7 @@ tr.pareto-line-95 td {
   gap: 6px;
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
 }
 .chart-controls-per-account {
   flex-direction: column;
@@ -5438,7 +5438,7 @@ tr.pareto-line-95 td {
 .chart-ctrl-label {
   font-size: 11px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #6b8498;
   text-transform: uppercase;
   letter-spacing: .5px;
   min-width: 56px;
@@ -5457,7 +5457,7 @@ tr.pareto-line-95 td {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #64748b;
+  color: #4c6272;
   margin-top: 4px;
 }
 
@@ -5495,7 +5495,7 @@ tr.pareto-line-95 td {
 }
 .plotly-loading-text {
   font-size: 12px;
-  color: #64748b;
+  color: #4c6272;
   font-weight: 500;
   letter-spacing: .01em;
 }
@@ -5518,11 +5518,11 @@ tr.pareto-line-95 td {
   border-radius: 50%;
   font-size: 11px;
   font-weight: 700;
-  background: #f1f5f9;
-  color: #64748b;
+  background: #dfe9ef;
+  color: #4c6272;
 }
 .rank-gold   { background: #fef3c7; color: #d97706; }
-.rank-silver { background: #f1f5f9; color: #64748b; }
+.rank-silver { background: #dfe9ef; color: #4c6272; }
 .rank-bronze { background: #fef0e7; color: #c2410c; }
 
 .ranking-highlights {
@@ -5540,7 +5540,7 @@ tr.pareto-line-95 td {
 .rh-label {
   font-size: 11px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #6b8498;
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: .5px;
@@ -5550,7 +5550,7 @@ tr.pareto-line-95 td {
   align-items: center;
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: #152d43;
   margin-bottom: 2px;
 }
 .rh-value {
@@ -5908,7 +5908,7 @@ tr.pareto-line-95 td {
 }
 .buyer-bar-seg { transition: width $transition-base; }
 .buyer-bar--new { background: #a51e55; }
-.buyer-bar--ret { background: #94a3b8; }
+.buyer-bar--ret { background: #6b8498; }
 .buyer-legend {
   display: flex;
   flex-wrap: wrap;
@@ -5927,5 +5927,5 @@ tr.pareto-line-95 td {
   border-radius: 50%;
 }
 .buyer-dot--new { background: #a51e55; }
-.buyer-dot--ret { background: #94a3b8; }
+.buyer-dot--ret { background: #6b8498; }
 </style>

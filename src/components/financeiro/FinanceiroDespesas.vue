@@ -45,7 +45,7 @@
         <q-btn
           unelevated
           no-caps
-          color="teal-8"
+          color="primary"
           text-color="white"
           icon="add"
           label="Nova despesa"
@@ -201,7 +201,7 @@
           <q-btn
             unelevated
             no-caps
-            color="teal-8"
+            color="primary"
             text-color="white"
             label="Salvar"
             :loading="salvando"

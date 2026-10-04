@@ -96,18 +96,18 @@ module.exports = configure(function (ctx) {
     framework: {
       config: {
         brand: {
-          // SellerBot v2 — Design System oficial
-          primary: "#0d9488",   // teal-600
-          secondary: "#0f766e", // teal-700
-          accent: "#f59e0b",    // amber-500
-          dark: "#0f172a",      // slate-900
+          // Identidade Krivus (Ártico + Framboesa) — espelha src/css/quasar.variables.scss
+          primary: "#a51e55",   // framboesa
+          secondary: "#152d43", // navy
+          accent: "#f28ab4",    // rosa
+          dark: "#101e2b",
 
           positive: "#16a34a",  // green-600
           negative: "#dc2626",  // red-600
           info: "#0284c7",      // sky-600
           warning: "#d97706",   // amber-600
 
-          background: "#f8fafc", // slate-50
+          background: "#edf4f7",
         },
       },
 

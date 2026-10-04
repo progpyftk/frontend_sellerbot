@@ -222,7 +222,7 @@
             class="fd-metric-item"
             :class="{ 'fd-metric-item--on': activeMetrics.includes(m.key) && chartMode === 'metrics' }"
           >
-            <span class="fd-metric-pip" :style="{ background: activeMetrics.includes(m.key) && chartMode === 'metrics' ? m.color : '#e2e8f0' }"></span>
+            <span class="fd-metric-pip" :style="{ background: activeMetrics.includes(m.key) && chartMode === 'metrics' ? m.color : '#b8cbd6' }"></span>
             <span class="fd-metric-label">{{ m.label }}</span>
             <q-icon
               v-if="activeMetrics.includes(m.key) && chartMode === 'metrics'"
@@ -298,8 +298,8 @@ const orderStatuses = [
   { key: 'paid', label: 'Pago', color: '#16a34a' },
   { key: 'pending', label: 'Pagamento Pendente', color: '#f59e0b' },
   { key: 'preparing', label: 'Em Preparação', color: '#0284c7' },
-  { key: 'shipped', label: 'Enviado', color: '#6366f1' },
-  { key: 'delivered', label: 'Entregue', color: '#0f766e' },
+  { key: 'shipped', label: 'Enviado', color: '#658aa1' },
+  { key: 'delivered', label: 'Entregue', color: '#7f1642' },
   { key: 'canceled', label: 'Cancelado', color: '#dc2626' },
 ];
 

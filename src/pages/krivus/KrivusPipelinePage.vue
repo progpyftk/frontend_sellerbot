@@ -249,7 +249,7 @@ onMounted(() => {
 <style lang="scss" scoped>
 @import 'src/css/tokens';
 
-.krivus-page { background: #f8fafc; }
+.krivus-page { background: #edf4f7; }
 .pipeline-container { max-width: 100%; padding: $space-6; }
 
 .board {
@@ -261,7 +261,7 @@ onMounted(() => {
 
 .column {
   flex: 0 0 260px;
-  background: #f1f5f9;
+  background: #dfe9ef;
   border-radius: $radius-lg;
   padding: $space-3;
   min-height: 200px;
@@ -276,7 +276,7 @@ onMounted(() => {
 .column-title { font-size: $text-small-size; font-weight: $font-semibold; color: $text-primary; }
 .column-count {
   font-size: 11px; font-weight: 700; color: $text-muted;
-  background: #e2e8f0; border-radius: 999px; padding: 1px 8px;
+  background: #b8cbd6; border-radius: 999px; padding: 1px 8px;
 }
 
 .column-body { display: flex; flex-direction: column; gap: $space-2; min-height: 60px; }
@@ -284,7 +284,7 @@ onMounted(() => {
 
 .client-card {
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: $radius-md;
   padding: $space-3;
   cursor: grab;
@@ -303,13 +303,13 @@ onMounted(() => {
 .card-docs { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
 .card-doc {
   display: flex; align-items: center; gap: 4px;
-  font-size: 11px; color: #0f766e;
-  background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: $radius-sm;
+  font-size: 11px; color: #7f1642;
+  background: #fdf2f7; border: 1px solid #fbe0ec; border-radius: $radius-sm;
   padding: 2px 6px; cursor: pointer;
   transition: background $transition-fast;
 }
-.card-doc:hover { background: #ccfbf1; }
-.card-doc--rascunho { color: $text-muted; background: #f8fafc; border-color: #e2e8f0; }
+.card-doc:hover { background: #fbe0ec; }
+.card-doc--rascunho { color: $text-muted; background: #edf4f7; border-color: #b8cbd6; }
 .card-doc-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .card-footer { display: flex; align-items: center; margin-top: 4px; }

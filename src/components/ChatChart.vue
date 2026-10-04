@@ -1,7 +1,7 @@
 <template>
   <div class="chat-chart-wrapper">
     <div class="chart-header">
-      <q-icon name="bar_chart" size="14px" color="teal-7" />
+      <q-icon name="bar_chart" size="14px" color="primary" />
       <span class="chart-title">{{ chartData.title }}</span>
     </div>
     <div class="chart-canvas-wrapper">

@@ -71,7 +71,7 @@
           :color="filtersOpen ? 'primary' : 'grey-7'"
           @click="filtersOpen = !filtersOpen"
         >
-          <q-badge v-if="activeFilterChips.length" color="teal" floating>{{ activeFilterChips.length }}</q-badge>
+          <q-badge v-if="activeFilterChips.length" color="primary" floating>{{ activeFilterChips.length }}</q-badge>
         </q-btn>
         <q-btn flat dense no-caps size="sm" label="Expandir" @click="expandTick++" />
         <q-btn flat dense no-caps size="sm" label="Recolher" @click="collapseTick++" />
@@ -175,7 +175,7 @@
       <q-chip
         v-for="chip in activeFilterChips"
         :key="chip.key"
-        dense removable color="teal-1" text-color="teal-9"
+        dense removable color="primary" text-color="primary"
         @remove="chip.clear()"
       >
         {{ chip.label }}
@@ -640,7 +640,7 @@ function onRemoveOne ({ row, promo }) {
   $q.dialog({
     title: 'Remover promoção',
     message: `Remover <b>${promo.typeLabel || promo.promotion_type}</b> de <b>${row.title}</b>?`
-      + '<br><span style="font-size:12px;color:#64748b">O Mercado Livre confirma em alguns minutos.</span>',
+      + '<br><span style="font-size:12px;color:#4c6272">O Mercado Livre confirma em alguns minutos.</span>',
     html: true, cancel: 'Cancelar', ok: { label: 'Remover', color: 'negative', noCaps: true },
   }).onOk(async () => {
     try {
@@ -670,7 +670,7 @@ function onEditActive ({ row, promo }) {
   $q.dialog({
     title: 'Editar desconto ativo',
     message: `Novo % de desconto para <b>${promo.typeLabel || promo.promotion_type}</b> em <b>${row.title}</b>.`
-      + '<br><span style="font-size:12px;color:#64748b">O Mercado Livre não edita direto: o SellerBot remove o desconto '
+      + '<br><span style="font-size:12px;color:#4c6272">O Mercado Livre não edita direto: o SellerBot remove o desconto '
       + 'atual e reativa com o novo % na sequência. Leva ~15-20s.</span>',
     html: true, cancel: 'Cancelar',
     prompt: {

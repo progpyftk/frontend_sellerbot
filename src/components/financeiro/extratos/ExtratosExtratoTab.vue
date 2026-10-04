@@ -42,7 +42,7 @@
 <q-btn
   unelevated
   no-caps
-  color="teal-8"
+  color="primary"
   text-color="white"
   icon="search"
   label="Buscar transações"
@@ -60,7 +60,7 @@
   no-caps
   unelevated
   dense
-  toggle-color="teal-8"
+  toggle-color="primary"
   color="grey-2"
   text-color="grey-8"
   @update:model-value="ctx.loadTransacoes"
@@ -83,7 +83,7 @@
     v-if="ctx.resumo.pendentes > 0"
     outline
     no-caps
-    color="teal-8"
+    color="primary"
     icon="groups"
     :label="`Resolver por contraparte${ctx.contrapartesPendentes ? ` (${ctx.contrapartesPendentes})` : ''}`"
     :disable="!ctx.extratoFilters.conta"
@@ -92,7 +92,7 @@
   <q-btn
     outline
     no-caps
-    color="teal-8"
+    color="primary"
     icon="auto_fix_high"
     label="Reclassificar automaticamente"
     :loading="ctx.reclassificando"
@@ -181,7 +181,7 @@ label="Líquido"
   </div>
 
   <!-- BARRA DE CLASSIFICAÇÃO EM LOTE -->
-  <q-banner v-if="ctx.selecionadas.length" rounded class="bg-teal-1 text-teal-10 q-mb-md">
+  <q-banner v-if="ctx.selecionadas.length" rounded class="bg-primary text-primary q-mb-md">
     <template #avatar><q-icon name="playlist_add_check" size="28px" /></template>
     <div class="row items-center q-col-gutter-md">
       <div class="col-12 col-md-4 text-body2">
@@ -204,7 +204,7 @@ categoria e aplique em todas de uma vez.
   <q-btn
     unelevated
     no-caps
-    color="teal-8"
+    color="primary"
     text-color="white"
     icon="done_all"
     label="Classificar selecionadas"
@@ -247,7 +247,7 @@ categoria e aplique em todas de uma vez.
           :model-value="todasSelecionadas"
           :indeterminate="algumaSelecionada && !todasSelecionadas"
           dense
-          color="teal-8"
+          color="primary"
           aria-label="Selecionar todas as transações"
           @update:model-value="alternarTodas"
         />
@@ -257,7 +257,7 @@ categoria e aplique em todas de uma vez.
         <q-checkbox
           :model-value="estaSelecionada(linha)"
           dense
-          color="teal-8"
+          color="primary"
           :aria-label="`Selecionar a transação ${linha.id}`"
           @update:model-value="(marcado) => alternarLinha(linha, marcado)"
         />
@@ -319,7 +319,7 @@ categoria e aplique em todas de uma vez.
             v-if="linha.mc || linha.fora_do_resultado || ctx.ajudaDaCategoria(linha.classificacao)"
             class="row items-center q-gutter-xs q-mt-xs"
           >
-            <q-badge v-if="linha.mc" color="teal-1" text-color="teal-9" class="text-bold">
+            <q-badge v-if="linha.mc" color="primary" text-color="primary" class="text-bold">
               custo variável
             </q-badge>
             <q-badge
@@ -341,7 +341,7 @@ categoria e aplique em todas de uma vez.
         <div class="text-center" data-sem-clique>
           <q-toggle
             v-model="linha.conciliado"
-            color="teal-8"
+            color="primary"
             :disable="ctx.savingTransacoes.has(linha.id)"
             @update:model-value="ctx.saveTransacao(linha)"
           />

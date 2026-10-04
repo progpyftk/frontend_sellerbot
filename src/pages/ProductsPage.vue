@@ -12,7 +12,7 @@
       </div>
       <div class="header-right">
         <q-btn
-          unelevated color="teal-7" icon="sync" label="Sincronizar do Tiny"
+          unelevated color="primary" icon="sync" label="Sincronizar do Tiny"
            :loading="syncing" :disable="!canWrite || !selectedCnpj" size="sm"
           @click="syncProducts"
         >
@@ -37,12 +37,12 @@
           style="min-width: 260px"
           @update:model-value="onAccountChange"
         >
-          <template v-slot:prepend><q-icon name="business" color="teal-7" /></template>
+          <template v-slot:prepend><q-icon name="business" color="primary" /></template>
           <template v-slot:option="scope">
             <q-item v-bind="scope.itemProps">
               <q-item-section>
                 <q-item-label>{{ formatCNPJ(scope.opt.cnpj) }}</q-item-label>
-                <q-item-label caption :class="scope.opt.is_connected ? 'text-teal-7' : 'text-grey-5'">
+                <q-item-label caption :class="scope.opt.is_connected ? 'text-primary' : 'text-grey-5'">
                   {{ scope.opt.is_connected ? 'Conectado' : 'Desconectado' }}
                 </q-item-label>
               </q-item-section>
@@ -62,7 +62,7 @@
           style="min-width: 240px; flex: 1"
           @update:model-value="loadProducts()"
         >
-          <template v-slot:prepend><q-icon name="search" color="teal-7" /></template>
+          <template v-slot:prepend><q-icon name="search" color="primary" /></template>
         </q-input>
 
         <div v-if="totalCount !== null" class="count-badge">
@@ -73,7 +73,7 @@
       <!-- Legenda -->
       <div class="legend-row">
            <span v-if="canWrite" class="legend-item">
-          <q-icon name="edit" size="12px" class="q-mr-xs text-teal-6" />
+          <q-icon name="edit" size="12px" class="q-mr-xs text-primary" />
           Clique no custo para editar
         </span>
         <span class="legend-item">
@@ -401,7 +401,7 @@ onMounted(loadMlAccounts)
 .header-icon  {
   width: 36px; height: 36px; border-radius: 10px; display: flex;
   align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #0d9488, #2dd4bf); color: #fff;
+  background: linear-gradient(135deg, #a51e55, #f28ab4); color: #fff;
 }
 .header-eyebrow { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
 .header-title   { font-size: 17px; font-weight: 700; color: #1a1f36; }
@@ -413,7 +413,7 @@ onMounted(loadMlAccounts)
   margin-bottom: 10px;
 }
 .count-badge {
-  font-size: 12px; font-weight: 600; color: #0d9488;
+  font-size: 12px; font-weight: 600; color: #a51e55;
   background: #e0f2f1; border-radius: 12px; padding: 3px 12px;
   white-space: nowrap;
 }
@@ -441,22 +441,22 @@ onMounted(loadMlAccounts)
   cursor: pointer; border-radius: 4px; padding: 2px 4px;
   transition: background .15s;
 }
-.editable-cell:hover { background: #f0fdf9; }
+.editable-cell:hover { background: #fdf2f7; }
 .editable-cell:hover .edit-icon { opacity: 1; }
 
-.edit-icon { color: #0d9488; opacity: 0; transition: opacity .15s; }
+.edit-icon { color: #a51e55; opacity: 0; transition: opacity .15s; }
 
 .cost-input {
-  width: 90px; border: 1.5px solid #0d9488; border-radius: 5px;
+  width: 90px; border: 1.5px solid #a51e55; border-radius: 5px;
   padding: 2px 6px; font-size: 13px; text-align: right;
-  font-family: inherit; outline: none; background: #f0fdf9;
+  font-family: inherit; outline: none; background: #fdf2f7;
   color: #1a1f36;
 }
 
 .cost-val   { color: #4b5263; font-size: 13px; }
 .cost-zero  { color: #ef4444; font-size: 13px; }
 .cost-empty { color: #9aa0ac; }
-.avg-cost-val { font-weight: 700; color: #0d9488; font-size: 13px; }
+.avg-cost-val { font-weight: 700; color: #a51e55; font-size: 13px; }
 
 .empty-state {
   text-align: center; padding: 60px 24px; color: #9aa0ac;

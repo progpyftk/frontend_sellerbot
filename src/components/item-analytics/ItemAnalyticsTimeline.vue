@@ -8,7 +8,7 @@
         </div>
         <q-btn-toggle
           :model-value="mode"
-          no-caps unelevated toggle-color="teal-8"
+          no-caps unelevated toggle-color="primary"
           :options="modeOptions"
           @update:model-value="emit('update:mode', $event)"
         />
@@ -16,10 +16,10 @@
     </template>
     <div v-if="loading" class="timeline-state"><SbEmptyState variant="loading" title="Carregando histórico" message="Normalizando as séries do período." /></div>
     <SbEmptyState v-else-if="error" variant="error" title="Histórico indisponível" :message="error">
-      <template #action><q-btn outline color="teal-8" label="Tentar novamente" @click="emit('retry')" /></template>
+      <template #action><q-btn outline color="primary" label="Tentar novamente" @click="emit('retry')" /></template>
     </SbEmptyState>
     <SbEmptyState v-else-if="chartError" variant="error" title="Gráfico indisponível" :message="chartError">
-      <template #action><q-btn outline color="teal-8" label="Tentar novamente" @click="chartError = ''; renderChart()" /></template>
+      <template #action><q-btn outline color="primary" label="Tentar novamente" @click="chartError = ''; renderChart()" /></template>
     </SbEmptyState>
     <div v-else-if="!hasData" class="timeline-state">
       <SbEmptyState v-if="isCombine && noMetricSelected" title="Selecione métricas" message="Marque ao menos uma métrica para montar a comparação." />
@@ -107,16 +107,16 @@ const modeOptions = ANALYTICS_MODES.map((value) => ({ value, ...modePresentation
 const modeDefinitions = {
   traffic: { label: 'tráfego', traces: [
     { key: 'visits', label: 'Visitas', color: '#0284c7', axis: 'y', format: 'count' },
-    { key: 'orders_count', label: 'Pedidos', color: '#0f766e', axis: 'y', format: 'count' },
+    { key: 'orders_count', label: 'Pedidos', color: '#7f1642', axis: 'y', format: 'count' },
     { key: 'conversion_rate', label: 'Conversão', color: '#f59e0b', axis: 'y2', format: 'percent' },
   ] },
   price: { label: 'preço e promoção', traces: [
-    { key: 'price', label: 'Preço', color: '#6366f1', axis: 'y', format: 'currency' },
+    { key: 'price', label: 'Preço', color: '#658aa1', axis: 'y', format: 'currency' },
     { key: 'has_promotion', label: 'Com promoção', color: '#f59e0b', axis: 'y2', format: 'boolean' },
   ] },
   stock: { label: 'estoque e logística', traces: [
-    { key: 'available_quantity', label: 'Estoque informado', color: '#64748b', axis: 'y', format: 'count' },
-    { key: 'fulfillment_available_quantity', label: 'Full disponível', color: '#0f766e', axis: 'y', format: 'count' },
+    { key: 'available_quantity', label: 'Estoque informado', color: '#4c6272', axis: 'y', format: 'count' },
+    { key: 'fulfillment_available_quantity', label: 'Full disponível', color: '#7f1642', axis: 'y', format: 'count' },
     { key: 'fulfillment_total_quantity', label: 'Full total', color: '#8b5cf6', axis: 'y', format: 'count' },
   ] },
 }
@@ -249,12 +249,12 @@ async function renderChart() {
       height: 330,
       margin: { l: 48, r: axis.y3 ? 92 : axis.y2 ? 56 : 20, t: 12, b: 42 },
       paper_bgcolor: '#ffffff', plot_bgcolor: '#ffffff',
-      font: { family: 'Inter, sans-serif', color: '#64748b', size: 11 },
+      font: { family: 'Inter, sans-serif', color: '#4c6272', size: 11 },
       hovermode: 'x unified',
       legend: { orientation: 'h', y: 1.1, x: 0, font: { size: 11 } },
       shapes,
-      xaxis: { gridcolor: '#f1f5f9', zeroline: false, type: 'date' },
-      yaxis: { gridcolor: '#f1f5f9', zeroline: false, title: axisTitle, rangemode: rangeMode, range: range || undefined },
+      xaxis: { gridcolor: '#dfe9ef', zeroline: false, type: 'date' },
+      yaxis: { gridcolor: '#dfe9ef', zeroline: false, title: axisTitle, rangemode: rangeMode, range: range || undefined },
     }
     if (axis.y2) {
       layout.yaxis2 = { overlaying: 'y', side: 'right', showgrid: false, title: isNormalized ? '' : axis.y2, rangemode: rangeMode, range: range || undefined }
@@ -276,20 +276,20 @@ onBeforeUnmount(() => { if (plotlyContainer.value && window.Plotly) window.Plotl
 <style lang="scss" scoped>
 .timeline-card :deep(.sb-card-header) { padding-bottom: 12px; }
 .timeline-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
-.card-eyebrow { color: #0f766e; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.card-title { color: #0f172a; font-size: 15px; font-weight: 700; margin-top: 3px; }
+.card-eyebrow { color: #7f1642; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.card-title { color: #101e2b; font-size: 15px; font-weight: 700; margin-top: 3px; }
 .timeline-state { min-height: 280px; display: grid; place-items: center; }
-.chart-meta { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 11px; margin-bottom: 2px; }
-.metric-panel { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 10px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px; }
+.chart-meta { display: flex; align-items: center; gap: 8px; color: #4c6272; font-size: 11px; margin-bottom: 2px; }
+.metric-panel { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 10px; padding: 10px 12px; background: #edf4f7; border: 1px solid #b8cbd6; border-radius: 9px; }
 .metric-group { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
-.metric-group-title { color: #0f766e; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; min-width: 58px; }
+.metric-group-title { color: #7f1642; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; min-width: 58px; }
 .metric-chips { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: center; }
 .metric-chip { display: inline-flex; align-items: center; gap: 2px; cursor: pointer; border-radius: 6px; padding: 1px 6px; }
-.metric-chip.is-active { background: #f1f5f9; }
+.metric-chip.is-active { background: #dfe9ef; }
 .metric-chip.is-disabled { opacity: .5; cursor: not-allowed; }
-.metric-chip-label { color: #334155; font-size: 12px; }
-.metric-chip-hint { color: #94a3b8; }
-.metric-tools { display: flex; align-items: center; gap: 8px; margin-top: 4px; border-top: 1px dashed #e2e8f0; padding-top: 8px; }
+.metric-chip-label { color: #152d43; font-size: 12px; }
+.metric-chip-hint { color: #6b8498; }
+.metric-tools { display: flex; align-items: center; gap: 8px; margin-top: 4px; border-top: 1px dashed #b8cbd6; padding-top: 8px; }
 .normalize-hint { color: #92400e; font-size: 11px; background: #fffbeb; border-radius: 6px; padding: 3px 7px; }
 .plotly-container { width: 100%; min-height: 330px; }
 .missing-days { display: flex; align-items: center; gap: 5px; color: #92400e; font-size: 11px; background: #fffbeb; border-radius: 7px; padding: 7px 9px; }

@@ -29,7 +29,7 @@
       <!-- Passo 1: dados -->
       <q-card-section v-else-if="step === 'form'">
         <div class="row items-center q-mb-md">
-          <q-chip dense icon="description" color="teal-1" text-color="teal-9" :label="template.nome" />
+          <q-chip dense icon="description" color="primary" text-color="primary" :label="template.nome" />
           <q-btn v-if="templates.length > 1" flat dense size="sm" no-caps label="trocar" color="grey-6" @click="step = 'pick'" />
         </div>
 
@@ -297,7 +297,7 @@ async function downloadPdf() {
 .review-editor {
   max-height: 55vh;
   overflow-y: auto;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: $radius-md;
   padding: $space-2;
 }

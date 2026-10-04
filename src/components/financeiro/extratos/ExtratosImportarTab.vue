@@ -45,7 +45,7 @@
         <q-btn
           unelevated
           no-caps
-          color="teal-8"
+          color="primary"
           text-color="white"
           icon="cloud_upload"
           label="Importar arquivo"
@@ -86,7 +86,7 @@
           flat
           dense
           no-caps
-          color="teal-8"
+          color="primary"
           icon="table_view"
           label="Abrir aba Extrato"
           @click="emit('abrir-extrato')"

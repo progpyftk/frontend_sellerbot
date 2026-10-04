@@ -15,7 +15,7 @@
           v-model="filters.marketplace" :options="marketplaceOptions" emit-value map-options
           clearable label="Marketplace" outlined dense class="col-12 col-sm-3"
         />
-        <q-btn color="teal-7" label="Consultar" icon="search" :loading="loading" class="col-12 col-sm-3" @click="load" />
+        <q-btn color="primary" label="Consultar" icon="search" :loading="loading" class="col-12 col-sm-3" @click="load" />
       </div>
     </SbCard>
 
@@ -27,7 +27,7 @@
       class="q-mb-md"
     >
       <template #action>
-        <q-btn color="teal-7" label="Tentar novamente" @click="load" />
+        <q-btn color="primary" label="Tentar novamente" @click="load" />
       </template>
     </SbEmptyState>
 

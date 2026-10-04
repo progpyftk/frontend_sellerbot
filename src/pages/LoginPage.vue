@@ -186,23 +186,23 @@ const goToSignup = () => {
 </script>
 
 <style lang="scss" scoped>
-.sb-auth-layout { background: #f8fafc; }
+.sb-auth-layout { background: #edf4f7; }
 .sb-auth-page {
   min-height: calc(100vh - 68px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 32px 16px;
-  background: #f8fafc;
+  background: #edf4f7;
   background-image:
-    radial-gradient(ellipse 600px 400px at 50% 0%, rgba(13, 148, 136, 0.06), transparent 60%);
+    radial-gradient(ellipse 600px 400px at 50% 0%, rgba(165,30,85, 0.06), transparent 60%);
 }
 
 .login-card {
   width: 100%;
   max-width: 420px;
   border-radius: 16px !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1px solid #b8cbd6 !important;
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06) !important;
   overflow: hidden;
   background: #ffffff;
@@ -216,26 +216,26 @@ const goToSignup = () => {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  background: linear-gradient(135deg, #a51e55, #b1547b);
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.25);
+  box-shadow: 0 6px 16px rgba(165,30,85, 0.25);
 }
 
 .sb-auth-title {
   font-size: 22px;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   margin: 0 0 4px;
   letter-spacing: -0.4px;
 }
 
 .sb-auth-sub {
   font-size: 13px;
-  color: #64748b;
+  color: #4c6272;
   margin: 0;
 }
 
@@ -243,11 +243,11 @@ const goToSignup = () => {
   border-radius: 8px !important;
   padding: 10px 20px !important;
   font-weight: 600 !important;
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(165,30,85, 0.25) !important;
 }
 
 .sb-auth-foot {
-  color: #64748b;
+  color: #4c6272;
   font-size: 13px;
   margin-right: 4px;
 }

@@ -32,7 +32,7 @@ defineProps({
 <style lang="scss" scoped>
 .sb-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 14px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   overflow: hidden;
@@ -45,7 +45,7 @@ defineProps({
   &--hover:hover {
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     transform: translateY(-1px);
-    border-color: #cbd5e1;
+    border-color: #93aebb;
   }
 }
 
@@ -54,13 +54,13 @@ defineProps({
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
 }
 
 .sb-card-title {
   font-size: 15px;
   font-weight: 600;
-  color: #0f172a;
+  color: #101e2b;
 }
 
 .sb-card-actions {
@@ -71,7 +71,7 @@ defineProps({
 }
 
 .sb-card-footer {
-  border-top: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-top: 1px solid #dfe9ef;
+  background: #edf4f7;
 }
 </style>

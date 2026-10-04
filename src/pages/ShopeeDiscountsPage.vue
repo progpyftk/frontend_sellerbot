@@ -202,7 +202,7 @@
 
         <q-card-section class="col-auto q-py-sm q-px-md row justify-between bg-grey-1 items-center" style="border-top:1px solid #eee">
           <div class="row items-center q-gutter-sm">
-              <q-btn v-if="canWrite && activeDiscount?.status !== 'expired'" unelevated color="teal-7" icon="add"
+              <q-btn v-if="canWrite && activeDiscount?.status !== 'expired'" unelevated color="primary" icon="add"
               label="Adicionar Itens" size="sm" @click="openAddItems(activeDiscount)" />
           </div>
           <div class="row items-center q-gutter-sm">
@@ -248,7 +248,7 @@
     <!-- ── ADD ITEMS DIALOG ── -->
     <q-dialog v-model="addItemsOpen" maximized position="right">
       <q-card class="column" style="width: 700px; max-width: 98vw;">
-        <q-card-section class="row items-center q-py-sm bg-teal-7 text-white">
+        <q-card-section class="row items-center q-py-sm bg-primary text-white">
           <q-icon name="playlist_add" class="q-mr-sm" />
           <span class="text-subtitle1 text-weight-bold">Adicionar Itens — {{ addItemsDiscount?.discount_name }}</span>
           <q-space /><q-btn flat round dense icon="close" v-close-popup @click="addItemsOpen = false" />
@@ -257,7 +257,7 @@
         <q-card-section class="col-auto row items-center q-gutter-sm q-pt-sm">
           <q-input v-model="addItemSearch" label="Buscar item" outlined dense clearable
             placeholder="Nome ou ID do item" style="min-width: 200px;" />
-          <q-btn flat color="teal-7" icon="refresh" size="sm" @click="loadAddItems()" />
+          <q-btn flat color="primary" icon="refresh" size="sm" @click="loadAddItems()" />
           <q-space />
           <span class="text-caption text-grey-6">{{ filteredItems.length }} itens disponíveis</span>
         </q-card-section>
@@ -271,7 +271,7 @@
         </q-card-section>
 
         <q-card-section v-if="addItemsLoading" class="col flex-center">
-          <q-spinner-dots color="teal-7" size="28px" />
+          <q-spinner-dots color="primary" size="28px" />
         </q-card-section>
 
         <q-card-section v-else class="col scroll q-pa-none">
@@ -322,7 +322,7 @@
           <span class="text-caption text-grey-6">{{ selectedAddItems.size }} item(ns) selecionado(s)</span>
           <div class="row q-gutter-sm">
             <q-btn flat label="Cancelar" v-close-popup @click="addItemsOpen = false" />
-            <q-btn unelevated color="teal-7" label="Adicionar ao Desconto" :loading="addItemsSaving"
+            <q-btn unelevated color="primary" label="Adicionar ao Desconto" :loading="addItemsSaving"
               :disable="!selectedAddItems.size" @click="submitAddItems()" />
           </div>
         </q-card-section>
@@ -780,7 +780,7 @@ function discountClass(pct) {
 .sd-items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .sd-items-table thead th { background: #fafafa; color: #888; font-weight: 600; font-size: 11px; text-transform: uppercase; padding: 8px 12px; border-bottom: 1px solid #eee; letter-spacing: .4px; }
 .sd-item-row td, .sd-model-row td { padding: 8px 12px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
-.sd-item-row--selected { background: #f0fdfa !important; }
+.sd-item-row--selected { background: #fdf2f7 !important; }
 .sd-item-row--selected td { background: transparent !important; }
 .sd-item-row--parent td { background: #fafafa; padding-top: 10px; padding-bottom: 4px; }
 .sd-model-row td { background: #fff; color: #555; font-size: 12px; }

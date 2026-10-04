@@ -150,8 +150,8 @@ const sparklinePath = computed(() => {
   &--amber::before  { background: #d97706; }
   &--red::before    { background: #dc2626; }
   &--sky::before    { background: #0284c7; }
-  &--indigo::before { background: #6366f1; }
-  &--slate::before  { background: #94a3b8; }
+  &--indigo::before { background: #658aa1; }
+  &--slate::before  { background: #6b8498; }
 }
 
 .sb-kpi-label {

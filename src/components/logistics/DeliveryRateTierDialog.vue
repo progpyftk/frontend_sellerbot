@@ -64,7 +64,7 @@
               </td>
               <td class="text-right no-wrap">
                 <q-btn
-                  flat dense color="teal-7" :label="tier.id ? 'Salvar' : 'Criar'"
+                  flat dense color="primary" :label="tier.id ? 'Salvar' : 'Criar'"
                   :loading="saving" :disable="saving" @click="saveTier(tier)"
                 />
                 <q-btn
@@ -87,7 +87,7 @@
       <q-separator />
 
       <q-card-actions align="between">
-        <q-btn flat color="teal-7" icon="add" label="Nova faixa" :disable="loading" @click="addTier" />
+        <q-btn flat color="primary" icon="add" label="Nova faixa" :disable="loading" @click="addTier" />
         <q-btn flat label="Concluído" v-close-popup />
       </q-card-actions>
     </q-card>

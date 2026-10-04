@@ -30,7 +30,7 @@
       <div class="differentials">
         <div v-for="d in differentials" :key="d.label" class="diff-item">
           <div class="diff-icon">
-            <q-icon :name="d.icon" size="22px" color="teal-6" />
+            <q-icon :name="d.icon" size="22px" color="primary" />
           </div>
           <div>
             <strong>{{ d.label }}</strong>
@@ -52,8 +52,8 @@ export default defineComponent({
       services: [
         {
           icon: 'foundation',
-          iconBg: 'rgba(13,148,136,.1)',
-          iconColor: '#0d9488',
+          iconBg: 'rgba(165,30,85,.1)',
+          iconColor: '#a51e55',
           title: 'Estruturação Inicial',
           desc: 'Do zero ao operacional. Configuramos toda a infraestrutura para sua empresa vender online com segurança e profissionalismo.',
           items: [
@@ -66,8 +66,8 @@ export default defineComponent({
         },
         {
           icon: 'manage_accounts',
-          iconBg: 'rgba(13,148,136,.13)',
-          iconColor: '#0d9488',
+          iconBg: 'rgba(165,30,85,.13)',
+          iconColor: '#a51e55',
           title: 'Gestão Contínua',
           desc: 'Um time dedicado operando sua loja todos os dias. Você foca no seu negócio principal, a gente cuida dos marketplaces.',
           items: [
@@ -81,7 +81,7 @@ export default defineComponent({
         {
           icon: 'smart_toy',
           iconBg: 'rgba(45,212,191,.1)',
-          iconColor: '#14b8a6',
+          iconColor: '#b1547b',
           title: 'SellerBot — Nossa Ferramenta',
           desc: 'Plataforma proprietária para gestão inteligente de multicontas no Mercado Livre e Shopee com dados financeiros em tempo real.',
           items: [
@@ -95,7 +95,7 @@ export default defineComponent({
         {
           icon: 'settings_suggest',
           iconBg: 'rgba(99,102,241,.1)',
-          iconColor: '#6366f1',
+          iconColor: '#658aa1',
           title: 'Integração de ERP',
           desc: 'Conectamos sua operação B2B ao mundo B2C sem duplicar trabalho — fluxo de dados e estoque totalmente unificado.',
           items: [
@@ -131,7 +131,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .services-section {
-  background: #f8fafc;
+  background: #edf4f7;
   padding: 96px 0;
 }
 
@@ -152,14 +152,14 @@ export default defineComponent({
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
-  color: #0d9488;
+  color: #a51e55;
   margin-bottom: 12px;
 }
 
 .section-title {
   font-size: clamp(1.75rem, 3.5vw, 2.4rem);
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   margin: 0 0 16px;
   letter-spacing: -.7px;
   line-height: 1.2;
@@ -170,7 +170,7 @@ export default defineComponent({
 
 .section-sub {
   font-size: 1.05rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.72;
   max-width: 580px;
   margin: 0 auto;
@@ -185,7 +185,7 @@ export default defineComponent({
 
 .service-card {
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 16px;
   padding: 30px;
   position: relative;
@@ -197,8 +197,8 @@ export default defineComponent({
   }
 
   &.card--highlight {
-    border-color: #0d9488;
-    box-shadow: 0 0 0 1px #0d9488, 0 8px 24px rgba(13,148,136,.1);
+    border-color: #a51e55;
+    box-shadow: 0 0 0 1px #a51e55, 0 8px 24px rgba(165,30,85,.1);
   }
 }
 
@@ -215,13 +215,13 @@ export default defineComponent({
 .card-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   margin: 0 0 10px;
 }
 
 .card-desc {
   font-size: .88rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.65;
   margin: 0 0 18px;
 }
@@ -236,7 +236,7 @@ export default defineComponent({
 
   li {
     font-size: .84rem;
-    color: #475569;
+    color: #4c6272;
     display: flex;
     align-items: flex-start;
     gap: 8px;
@@ -250,7 +250,7 @@ export default defineComponent({
   position: absolute;
   top: 18px;
   right: 18px;
-  background: #0d9488;
+  background: #a51e55;
   color: #fff;
   font-size: .67rem;
   font-weight: 700;
@@ -265,9 +265,9 @@ export default defineComponent({
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 28px;
   padding: 36px 40px;
-  background: linear-gradient(135deg, #f0fdf9, #e6fffa);
+  background: linear-gradient(135deg, #fdf2f7, #e6fffa);
   border-radius: 20px;
-  border: 1px solid #99f6e4;
+  border: 1px solid #f7c1d6;
 }
 
 .diff-item {
@@ -280,7 +280,7 @@ export default defineComponent({
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: rgba(13,148,136,.12);
+  background: rgba(165,30,85,.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -291,13 +291,13 @@ export default defineComponent({
   display: block;
   font-size: .92rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   margin-bottom: 4px;
 }
 
 .diff-item p {
   font-size: .84rem;
-  color: #64748b;
+  color: #4c6272;
   margin: 0;
   line-height: 1.55;
 }

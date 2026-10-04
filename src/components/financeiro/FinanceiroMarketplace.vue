@@ -30,7 +30,7 @@
         <div class="col-12 col-md-4">
           <q-btn
             unelevated
-            color="teal-8"
+            color="primary"
             text-color="white"
             icon="refresh"
             label="Atualizar"

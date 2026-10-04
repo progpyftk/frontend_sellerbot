@@ -266,7 +266,7 @@ async function submit() {
   align-items: center;
   gap: 14px;
   padding: 20px 20px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
 }
 
 .dialog-icon-wrap {
@@ -284,18 +284,18 @@ async function submit() {
 .dialog-title {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
 }
 
 .dialog-subtitle {
   font-size: 12px;
-  color: #94a3b8;
+  color: #6b8498;
   margin-top: 1px;
 }
 
 .dialog-close {
   margin-left: auto;
-  color: #94a3b8 !important;
+  color: #6b8498 !important;
 }
 
 .feedback-dialog-body {
@@ -314,7 +314,7 @@ async function submit() {
 .field-label {
   font-size: 12px;
   font-weight: 700;
-  color: #475569;
+  color: #4c6272;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -332,20 +332,20 @@ async function submit() {
   gap: 4px;
   padding: 10px 6px 8px;
   border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #b8cbd6;
   background: #fff;
   cursor: pointer;
   transition: all 150ms ease;
 
   &:hover {
-    border-color: #cbd5e1;
-    background: #f8fafc;
+    border-color: #93aebb;
+    background: #edf4f7;
   }
 
   &--active {
-    border-color: #0d9488;
-    background: #f0fdf9;
-    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.12);
+    border-color: #a51e55;
+    background: #fdf2f7;
+    box-shadow: 0 0 0 2px rgba(165,30,85, 0.12);
   }
 }
 
@@ -357,9 +357,9 @@ async function submit() {
 .type-chip-label {
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: #4c6272;
   .type-chip--active & {
-    color: #0f766e;
+    color: #7f1642;
   }
 }
 
@@ -378,9 +378,9 @@ async function submit() {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #94a3b8;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  color: #6b8498;
+  background: #edf4f7;
+  border: 1px solid #b8cbd6;
   border-radius: 6px;
   padding: 3px 8px;
   font-family: monospace;
@@ -392,7 +392,7 @@ async function submit() {
   align-items: center;
   gap: 10px;
   padding: 14px 20px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid #dfe9ef;
   background: #fafbfc;
 }
 

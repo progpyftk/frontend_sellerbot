@@ -12,7 +12,7 @@
     <div v-if="loading" class="list-state"><SbEmptyState variant="loading" title="Carregando anúncios" message="Buscando os dados do período." /></div>
     <div v-else-if="error" class="list-state">
       <SbEmptyState variant="error" title="Não foi possível carregar" :message="error">
-        <template #action><q-btn outline color="teal-8" label="Tentar novamente" @click="emit('retry')" /></template>
+        <template #action><q-btn outline color="primary" label="Tentar novamente" @click="emit('retry')" /></template>
       </SbEmptyState>
     </div>
     <div v-else-if="!items.length" class="list-state">
@@ -44,7 +44,7 @@
     </div>
 
     <div v-if="pagination.pages > 1" class="list-pagination">
-      <q-pagination :model-value="pagination.page" :max="pagination.pages" max-pages="5" direction-links color="teal-8" @update:model-value="emit('page', $event)" />
+      <q-pagination :model-value="pagination.page" :max="pagination.pages" max-pages="5" direction-links color="primary" @update:model-value="emit('page', $event)" />
     </div>
   </aside>
 </template>
@@ -75,21 +75,21 @@ const inventoryLabel = (item) => {
 </script>
 
 <style lang="scss" scoped>
-.item-list-panel { width: 340px; flex: 0 0 340px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.item-list-panel { width: 340px; flex: 0 0 340px; background: #fff; border: 1px solid #b8cbd6; border-radius: 14px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .list-heading { display: flex; justify-content: space-between; align-items: flex-start; padding: 18px 16px 10px; }
-.list-title { color: #0f172a; font-size: 16px; font-weight: 700; }
-.list-count { color: #64748b; font-size: 12px; margin-top: 3px; }
+.list-title { color: #101e2b; font-size: 16px; font-weight: 700; }
+.list-count { color: #4c6272; font-size: 12px; margin-top: 3px; }
 .items-scroll { min-height: 0; overflow-y: auto; padding: 4px 8px 8px; }
-.item-row { width: 100%; display: flex; gap: 10px; padding: 11px 8px; border: 0; border-bottom: 1px solid #f1f5f9; background: #fff; color: inherit; text-align: left; cursor: pointer; border-radius: 9px; }
-.item-row:hover { background: #f8fafc; }
-.item-row--active { background: #f0fdfa; box-shadow: inset 3px 0 #0f766e; }
-.item-thumb { width: 42px; height: 42px; flex: 0 0 42px; border: 1px solid #e2e8f0; border-radius: 8px; object-fit: cover; }
-.item-thumb--empty { display: grid; place-items: center; background: #f8fafc; color: #94a3b8; }
+.item-row { width: 100%; display: flex; gap: 10px; padding: 11px 8px; border: 0; border-bottom: 1px solid #dfe9ef; background: #fff; color: inherit; text-align: left; cursor: pointer; border-radius: 9px; }
+.item-row:hover { background: #edf4f7; }
+.item-row--active { background: #fdf2f7; box-shadow: inset 3px 0 #7f1642; }
+.item-thumb { width: 42px; height: 42px; flex: 0 0 42px; border: 1px solid #b8cbd6; border-radius: 8px; object-fit: cover; }
+.item-thumb--empty { display: grid; place-items: center; background: #edf4f7; color: #6b8498; }
 .item-row-body { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.item-row-title { overflow: hidden; color: #0f172a; font-size: 13px; font-weight: 600; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
-.item-row-meta, .item-row-stock { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; color: #64748b; font-size: 11px; }
-.item-row-stock { color: #475569; }
-.list-pagination { display: flex; justify-content: center; padding: 10px; border-top: 1px solid #f1f5f9; }
+.item-row-title { overflow: hidden; color: #101e2b; font-size: 13px; font-weight: 600; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+.item-row-meta, .item-row-stock { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; color: #4c6272; font-size: 11px; }
+.item-row-stock { color: #4c6272; }
+.list-pagination { display: flex; justify-content: center; padding: 10px; border-top: 1px solid #dfe9ef; }
 .list-state { overflow-y: auto; }
 @media (max-width: 767px) {
   .item-list-panel { position: fixed; z-index: 20; inset: 0; width: min(380px, 92vw); border-radius: 0 16px 16px 0; transform: translateX(-105%); transition: transform 180ms ease; box-shadow: 14px 0 35px rgba(15, 23, 42, .16); }

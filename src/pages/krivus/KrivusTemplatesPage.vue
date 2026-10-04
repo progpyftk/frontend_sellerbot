@@ -149,7 +149,7 @@ onMounted(load)
 <style lang="scss" scoped>
 @import 'src/css/tokens';
 
-.krivus-page { background: #f8fafc; }
+.krivus-page { background: #edf4f7; }
 .krivus-container { max-width: 1100px; margin: 0 auto; padding: $space-6 $space-6 $space-12; }
 .page-subtitle { color: $text-muted; font-size: $text-small-size; margin-top: -12px; }
 .page-subtitle code { background: $tint-teal-bg; color: $tint-teal-text; padding: 1px 4px; border-radius: 4px; font-size: 12px; }

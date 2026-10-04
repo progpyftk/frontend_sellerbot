@@ -22,7 +22,7 @@
             />
             <q-btn
               unelevated
-              color="teal-8"
+              color="primary"
               text-color="white"
               icon="add"
               label="Nova conexão"
@@ -39,8 +39,8 @@
           dense
           no-caps
           align="left"
-          active-color="teal-8"
-          indicator-color="teal-8"
+          active-color="primary"
+          indicator-color="primary"
           class="bancos-tabs"
         >
           <q-tab name="conexoes" icon="account_balance" label="Conexões" />
@@ -1020,7 +1020,7 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .bancos-page {
-  background: #f8fafc;
+  background: #edf4f7;
   min-height: 100%;
 }
 
@@ -1030,7 +1030,7 @@ onMounted(async () => {
 }
 
 .tabs-wrapper {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #b8cbd6;
 }
 
 .bancos-tabs {
@@ -1040,11 +1040,11 @@ onMounted(async () => {
 }
 
 .border-bottom {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
 }
 
 .border-top {
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid #dfe9ef;
 }
 
 .font-mono {
@@ -1069,7 +1069,7 @@ onMounted(async () => {
 }
 
 .contraparte-item {
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid #b8cbd6;
+  background: #edf4f7;
 }
 </style>

@@ -51,7 +51,7 @@
                     v-for="cor in coresSugeridas"
                     :key="cor"
                     class="color-swatch"
-                    :style="`background:${cor}; outline: ${form.cor_hex === cor ? '2px solid #1e293b' : 'none'}`"
+                    :style="`background:${cor}; outline: ${form.cor_hex === cor ? '2px solid #152d43' : 'none'}`"
                     @click="form.cor_hex = cor"
                   />
                 </div>
@@ -132,7 +132,7 @@ const model = defineModel({ type: Boolean, default: false })
 const emit = defineEmits(['created'])
 const $q = useQuasar()
 
-const coresSugeridas = ['#0d9488', '#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b']
+const coresSugeridas = ['#a51e55', '#0ea5e9', '#658aa1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#4c6272']
 
 const stageOptions = [
   { label: 'Lead', value: 'lead' },
@@ -153,7 +153,7 @@ function freshForm() {
     // Lead recém-cadastrado ainda não tem contrato — hoje é o default são
     // (o backend exige a data; pedir isso no cadastro de lead é fricção).
     data_inicio: new Date().toISOString().split('T')[0],
-    mensalidade: 0, cor_hex: '#0d9488',
+    mensalidade: 0, cor_hex: '#a51e55',
     ml_accounts: [], shopee_accounts: [],
     current_stage: 'lead', lead_origem: null, valor_proposta_enviada: null,
     cnpj: '', razao_social: '', endereco: '',

@@ -54,18 +54,18 @@ const inventoryVariant = computed(() => ({ fresh: 'green', stale: 'amber', error
 
 <style lang="scss" scoped>
 .inventory-card { min-height: 150px; }
-.inventory-card--full { border-color: #99f6e4; background: linear-gradient(135deg, #fff 0%, #f0fdfa 100%); }
+.inventory-card--full { border-color: #f7c1d6; background: linear-gradient(135deg, #fff 0%, #fdf2f7 100%); }
 .inventory-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.card-eyebrow { color: #0f766e; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.card-title { color: #0f172a; font-size: 15px; font-weight: 700; margin-top: 3px; }
+.card-eyebrow { color: #7f1642; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.card-title { color: #101e2b; font-size: 15px; font-weight: 700; margin-top: 3px; }
 .inventory-values { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
 .inventory-main { display: flex; align-items: baseline; gap: 7px; }
-.inventory-value { color: #0f172a; font-size: 30px; font-weight: 700; letter-spacing: -.04em; }
-.inventory-unit { color: #64748b; font-size: 12px; }
+.inventory-value { color: #101e2b; font-size: 30px; font-weight: 700; letter-spacing: -.04em; }
+.inventory-unit { color: #4c6272; font-size: 12px; }
 .inventory-breakdown { display: flex; gap: 16px; }
-.inventory-breakdown div { display: flex; flex-direction: column; gap: 3px; color: #64748b; font-size: 11px; }
-.inventory-breakdown strong { color: #334155; font-size: 15px; }
-.inventory-footnote { display: flex; align-items: center; gap: 5px; color: #64748b; font-size: 11px; margin-top: 16px; }
+.inventory-breakdown div { display: flex; flex-direction: column; gap: 3px; color: #4c6272; font-size: 11px; }
+.inventory-breakdown strong { color: #152d43; font-size: 15px; }
+.inventory-footnote { display: flex; align-items: center; gap: 5px; color: #4c6272; font-size: 11px; margin-top: 16px; }
 .inventory-error { display: flex; gap: 5px; color: #991b1b; font-size: 11px; line-height: 1.35; margin-top: 8px; }
 @media (max-width: 600px) { .inventory-values { align-items: flex-start; flex-direction: column; gap: 10px; } }
 </style>

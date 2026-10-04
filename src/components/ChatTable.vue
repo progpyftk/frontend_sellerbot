@@ -66,7 +66,7 @@ const formatCell = (val) => {
 }
 
 .chat-table thead tr {
-  background: linear-gradient(135deg, #f0fdf9, #f8fafc);
+  background: linear-gradient(135deg, #fdf2f7, #edf4f7);
   border-bottom: 2px solid #d1fae5;
 }
 
@@ -75,7 +75,7 @@ const formatCell = (val) => {
   text-align: left;
   font-weight: 700;
   font-size: 12px;
-  color: #0d9488;
+  color: #a51e55;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   white-space: nowrap;

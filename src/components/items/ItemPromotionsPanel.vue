@@ -33,7 +33,7 @@
       <tbody>
         <tr v-if="loading">
           <td colspan="5" class="text-center text-caption text-grey-6 q-pa-md">
-            <q-spinner-dots color="indigo" size="2em" /> Consultando o Mercado Livre...
+            <q-spinner-dots color="secondary" size="2em" /> Consultando o Mercado Livre...
           </td>
         </tr>
         <tr v-else-if="!promotions.length">
@@ -303,7 +303,7 @@ watch(() => props.itemId, () => load(), { immediate: true })
 }
 
 .font-mono {
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 10px;
 }
 </style>

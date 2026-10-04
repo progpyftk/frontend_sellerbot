@@ -30,7 +30,7 @@
         </q-item-section>
         <q-item-section side>
           <div class="row items-center q-gutter-xs">
-            <q-badge v-if="scope.opt.mc" color="teal-1" text-color="teal-9" class="text-bold">
+            <q-badge v-if="scope.opt.mc" color="primary" text-color="primary" class="text-bold">
               custo variável
             </q-badge>
             <q-badge
@@ -96,6 +96,6 @@ function filtrar(valor, update) {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #0f766e;
+  color: #7f1642;
 }
 </style>

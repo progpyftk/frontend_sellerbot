@@ -38,7 +38,7 @@
           </div>
         </div>
 
-        <q-btn flat round icon="refresh" color="teal-7" :loading="loading" @click="load" size="sm">
+        <q-btn flat round icon="refresh" color="primary" :loading="loading" @click="load" size="sm">
           <q-tooltip>Atualizar</q-tooltip>
         </q-btn>
       </div>
@@ -488,7 +488,7 @@
             <span class="header-count q-ml-xs" v-if="campAds.length">{{ campAds.length }}</span>
           </div>
           <div v-if="campAdsLoading" class="q-pa-md text-center">
-            <q-spinner color="teal-6" />
+            <q-spinner color="primary" />
           </div>
           <div v-else-if="campAds.length" class="camp-ads-list">
             <div v-for="ad in campAds" :key="ad.ad_group_id" class="camp-ad-row">
@@ -978,9 +978,9 @@ watch(activeTab, (tab) => {
 .stat-card--pos    { border-left: 3px solid #a51e55; }
 .stat-card--warn   { border-left: 3px solid #f59e0b; }
 .stat-card--neg    { border-left: 3px solid #ef4444; }
-.stat-card--neutral{ border-left: 3px solid #6366f1; }
+.stat-card--neutral{ border-left: 3px solid #658aa1; }
 .stat-card--teal   { border-left: 3px solid #a51e55; }
-.stat-card--spend  { border-left: 3px solid #0f172a; }
+.stat-card--spend  { border-left: 3px solid #101e2b; }
 .stat-card--skeleton {
   background: linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);
   background-size: 200% 100%; animation: shimmer 1.2s infinite;
@@ -992,8 +992,8 @@ watch(activeTab, (tab) => {
   background: #f0f9f8; display: flex; align-items: center; justify-content: center;
   color: #a51e55; flex-shrink: 0;
 }
-.stat-card--spend  .stat-icon { background: #f0f2f5; color: #0f172a; }
-.stat-card--neutral .stat-icon { background: #eef2ff; color: #6366f1; }
+.stat-card--spend  .stat-icon { background: #f0f2f5; color: #101e2b; }
+.stat-card--neutral .stat-icon { background: #eef2ff; color: #658aa1; }
 .stat-card--neg    .stat-icon { background: #fef2f2; color: #ef4444; }
 .stat-card--warn   .stat-icon { background: #fffbeb; color: #f59e0b; }
 .stat-body { min-width: 0; }
@@ -1185,7 +1185,7 @@ watch(activeTab, (tab) => {
 .bar-chart-bars { display: flex; align-items: flex-end; gap: 3px; flex: 1; height: 100%; border-left: 1px solid #e8edf3; padding: 0 4px 0 8px; }
 .bar-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 40px; height: 100%; justify-content: flex-end; cursor: pointer; }
 .bar { width: 100%; border-radius: 4px 4px 0 0; transition: height .3s; background: #a51e55; min-height: 3px; }
-.bar--acos         { background: #6366f1; }
+.bar--acos         { background: #658aa1; }
 .bar--clicks       { background: #f59e0b; }
 .bar--total_amount { background: #f28ab4; }
 .bar-label         { font-size: 9px; color: #9aa0ac; margin-top: 4px; white-space: nowrap; }

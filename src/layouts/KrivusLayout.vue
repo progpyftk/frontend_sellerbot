@@ -198,13 +198,13 @@ onMounted(() => {
 @import 'src/css/tokens.scss';
 
 #krivus-layout {
-  background: #f8fafc;
+  background: #edf4f7;
 }
 
 /* ── Sidebar (mesmo padrão visual do MainLayout) ── */
 :deep(.sidebar) {
   background: #ffffff !important;
-  border-right: 1px solid #e2e8f0 !important;
+  border-right: 1px solid #b8cbd6 !important;
 }
 
 .sidebar-brand {
@@ -219,23 +219,23 @@ onMounted(() => {
   position: absolute;
   bottom: 0; left: 16px; right: 16px;
   height: 1px;
-  background: #f1f5f9;
+  background: #dfe9ef;
 }
 
 .brand-mark {
   width: 38px; height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  background: linear-gradient(135deg, #a51e55, #b1547b);
   display: flex; align-items: center; justify-content: center;
   color: #fff; flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.30);
+  box-shadow: 0 4px 12px rgba(165,30,85, 0.30);
 }
 
-.brand-name { font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: -0.4px; line-height: 1; }
-.brand-sub { font-size: 10px; color: #94a3b8; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+.brand-name { font-size: 16px; font-weight: 800; color: #101e2b; letter-spacing: -0.4px; line-height: 1; }
+.brand-sub { font-size: 10px; color: #6b8498; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
 
-.back-btn { font-size: 12px !important; font-weight: 600 !important; color: #64748b !important; justify-content: flex-start !important; }
-.back-btn:hover { color: #0f766e !important; }
+.back-btn { font-size: 12px !important; font-weight: 600 !important; color: #4c6272 !important; justify-content: flex-start !important; }
+.back-btn:hover { color: #7f1642 !important; }
 
 .client-search {
   :deep(.q-field__control) { border-radius: 8px; }
@@ -244,10 +244,10 @@ onMounted(() => {
 .sidebar-scroll { height: calc(100% - 220px); }
 .sidebar-nav { padding: 8px 10px; }
 
-.nav-sep { height: 1px; background: #f1f5f9; margin: 10px 4px; }
+.nav-sep { height: 1px; background: #dfe9ef; margin: 10px 4px; }
 .nav-clients-label {
   font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-  color: #94a3b8; padding: 6px 10px 4px;
+  color: #6b8498; padding: 6px 10px 4px;
 }
 
 .nav-item {
@@ -257,31 +257,31 @@ onMounted(() => {
   transition: background 150ms ease, color 150ms ease;
   text-align: left; margin: 1px 0; position: relative;
 }
-.nav-item:hover:not(.nav-item--active) { background: #f8fafc; }
-.nav-item--active { background: #f0fdf9; color: #0f766e; }
+.nav-item:hover:not(.nav-item--active) { background: #edf4f7; }
+.nav-item--active { background: #fdf2f7; color: #7f1642; }
 .nav-item--active::before {
   content: ''; position: absolute; left: -11px; top: 50%; transform: translateY(-50%);
-  width: 3px; height: 60%; border-radius: 0 3px 3px 0; background: #0d9488;
+  width: 3px; height: 60%; border-radius: 0 3px 3px 0; background: #a51e55;
 }
 .nav-item--top { margin-bottom: 2px; }
 
 .nav-icon-wrap {
   width: 28px; height: 28px; border-radius: 7px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  background: #f1f5f9; color: #475569;
+  background: #dfe9ef; color: #4c6272;
   transition: background 150ms ease, color 150ms ease;
 }
 .nav-icon-wrap--dot { background: transparent; }
 .client-dot { width: 10px; height: 10px; border-radius: 50%; display: block; }
 
-.nav-item--active .nav-icon-wrap { background: #ccfbf1; color: #0d9488; }
-.nav-item:hover:not(.nav-item--active) .nav-icon-wrap { background: #e2e8f0; color: #0f172a; }
+.nav-item--active .nav-icon-wrap { background: #fbe0ec; color: #a51e55; }
+.nav-item:hover:not(.nav-item--active) .nav-icon-wrap { background: #b8cbd6; color: #101e2b; }
 
 .nav-label {
-  font-size: 13px; font-weight: 500; color: #334155; flex: 1;
+  font-size: 13px; font-weight: 500; color: #152d43; flex: 1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.nav-item--active .nav-label { color: #0f766e; font-weight: 600; }
+.nav-item--active .nav-label { color: #7f1642; font-weight: 600; }
 
 .nav-badge {
   background: #dc2626; color: #fff; font-size: 10px; font-weight: 700;
@@ -290,20 +290,20 @@ onMounted(() => {
 
 .sidebar-footer {
   position: absolute; bottom: 0; left: 0; right: 0;
-  border-top: 1px solid #f1f5f9; padding: 12px 16px; background: #fff;
+  border-top: 1px solid #dfe9ef; padding: 12px 16px; background: #fff;
 }
 .sidebar-user { display: flex; align-items: center; gap: 10px; }
-.sidebar-user-name { font-size: 13px; font-weight: 600; color: #0f172a; }
-.sidebar-user-role { font-size: 11px; color: #94a3b8; }
+.sidebar-user-name { font-size: 13px; font-weight: 600; color: #101e2b; }
+.sidebar-user-role { font-size: 11px; color: #6b8498; }
 
 /* ── Header (mobile) ── */
 .krivus-header {
   background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #b8cbd6;
   box-shadow: none;
 }
 .menu-toggle {
-  border: none; background: transparent; color: #475569; cursor: pointer;
+  border: none; background: transparent; color: #4c6272; cursor: pointer;
   padding: 8px; border-radius: 8px; display: flex;
 }
 </style>

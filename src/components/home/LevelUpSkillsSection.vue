@@ -17,7 +17,7 @@
           <div class="step-header">
             <div class="step-num">{{ String(idx + 1).padStart(2, '0') }}</div>
             <div class="step-icon">
-              <q-icon :name="step.icon" size="20px" color="teal-6" />
+              <q-icon :name="step.icon" size="20px" color="primary" />
             </div>
           </div>
           <h3 class="step-title">{{ step.title }}</h3>
@@ -41,7 +41,7 @@
         />
         <div class="img-overlay">
           <div class="overlay-text">
-            <q-icon name="verified" size="18px" color="teal-4" />
+            <q-icon name="verified" size="18px" color="primary" />
             Time dedicado da Krivus operando junto com você em cada etapa
           </div>
         </div>
@@ -114,7 +114,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .howto-section {
-  background: #f0fdf9;
+  background: #fdf2f7;
   padding: 96px 0;
 }
 
@@ -135,14 +135,14 @@ export default defineComponent({
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
-  color: #0d9488;
+  color: #a51e55;
   margin-bottom: 12px;
 }
 
 .section-title {
   font-size: clamp(1.75rem, 3vw, 2.4rem);
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   margin: 0 0 16px;
   letter-spacing: -.7px;
   line-height: 1.2;
@@ -153,7 +153,7 @@ export default defineComponent({
 
 .section-sub {
   font-size: 1rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.72;
   max-width: 580px;
   margin: 0 auto;
@@ -174,7 +174,7 @@ export default defineComponent({
     left: 60px;
     right: 60px;
     height: 2px;
-    background: linear-gradient(90deg, #0d9488, #2dd4bf);
+    background: linear-gradient(90deg, #a51e55, #f28ab4);
     opacity: .25;
     pointer-events: none;
     z-index: 0;
@@ -197,7 +197,7 @@ export default defineComponent({
 .step-num {
   font-size: 1.4rem;
   font-weight: 900;
-  color: rgba(13,148,136,.2);
+  color: rgba(165,30,85,.2);
   line-height: 1;
   letter-spacing: -1px;
   min-width: 36px;
@@ -207,23 +207,23 @@ export default defineComponent({
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(13,148,136,.12);
+  background: rgba(165,30,85,.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(13,148,136,.2);
+  border: 2px solid rgba(165,30,85,.2);
 }
 
 .step-title {
   font-size: 1.08rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   margin: 0 0 10px;
 }
 
 .step-desc {
   font-size: .88rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.65;
   margin: 0 0 14px;
 }
@@ -238,7 +238,7 @@ export default defineComponent({
 
   li {
     font-size: .83rem;
-    color: #475569;
+    color: #4c6272;
     padding-left: 14px;
     position: relative;
     line-height: 1.4;
@@ -247,7 +247,7 @@ export default defineComponent({
       content: '·';
       position: absolute;
       left: 0;
-      color: #0d9488;
+      color: #a51e55;
       font-weight: 700;
     }
   }
@@ -259,8 +259,8 @@ export default defineComponent({
   gap: 5px;
   font-size: .76rem;
   font-weight: 700;
-  color: #0d9488;
-  background: rgba(13,148,136,.1);
+  color: #a51e55;
+  background: rgba(165,30,85,.1);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -295,7 +295,7 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #f1f5f9;
+  color: #dfe9ef;
   font-size: .88rem;
   font-weight: 600;
 }

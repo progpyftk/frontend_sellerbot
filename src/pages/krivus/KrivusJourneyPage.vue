@@ -51,7 +51,7 @@
         <SbKpiCard
           label="GMV" variant="teal" :prefix="'R$'"
           :value="formatNumber(stats.total_gmv)" sub="últimos 30 dias"
-          :sparkline-data="gmvSparkline" sparkline-color="#0f766e"
+          :sparkline-data="gmvSparkline" sparkline-color="#7f1642"
         />
         <SbKpiCard
           label="Pedidos" variant="sky"
@@ -98,8 +98,8 @@
                 dense clickable
                 size="sm"
                 icon="description"
-                color="teal-1"
-                text-color="teal-9"
+                color="primary"
+                text-color="primary"
                 :label="doc.titulo"
                 @click="openDocument(doc)"
               />
@@ -263,7 +263,7 @@
                 v-for="cor in coresSugeridas"
                 :key="cor"
                 class="color-swatch"
-                :style="`background:${cor}; outline: ${editForm.cor_hex === cor ? '2px solid #1e293b' : 'none'}`"
+                :style="`background:${cor}; outline: ${editForm.cor_hex === cor ? '2px solid #152d43' : 'none'}`"
                 @click="editForm.cor_hex = cor"
               />
             </div>
@@ -385,7 +385,7 @@
           <q-btn unelevated color="primary" label="Salvar" size="sm" :loading="savingMilestone" @click="saveMilestoneDrawer" />
         </div>
 
-        <q-input v-model="activeMilestone.titulo" borderless class="milestone-title-input q-mb-sm" placeholder="Título do marco" input-style="font-size:20px; font-weight:700; color:#0f172a" />
+        <q-input v-model="activeMilestone.titulo" borderless class="milestone-title-input q-mb-sm" placeholder="Título do marco" input-style="font-size:20px; font-weight:700; color:#101e2b" />
 
         <div class="row q-gutter-sm q-mb-lg items-center">
           <q-input v-model="activeMilestone.data" type="date" dense outlined style="width:150px" />
@@ -442,7 +442,7 @@
       <q-card style="max-width: 860px; width: 100%">
         <q-card-section class="row items-center q-pb-none">
           <q-input v-model="activeDoc.titulo" borderless placeholder="Título do documento" style="font-size:18px; font-weight:600; flex:1" />
-          <q-chip :label="activeDoc.tipo" dense color="teal-1" text-color="teal-9" />
+          <q-chip :label="activeDoc.tipo" dense color="primary" text-color="primary" />
           <q-btn flat round icon="close" color="grey" v-close-popup />
         </q-card-section>
         <q-card-section>
@@ -611,14 +611,14 @@ const categoriaOptions = [
   { label: 'Outro', value: 'outro' },
 ]
 const categoriaColors = {
-  onboarding: '#0284c7', contrato: '#6366f1', lancamento: '#16a34a',
-  conquista: '#d97706', reuniao: '#8b5cf6', encerramento: '#dc2626', outro: '#94a3b8',
+  onboarding: '#0284c7', contrato: '#658aa1', lancamento: '#16a34a',
+  conquista: '#d97706', reuniao: '#8b5cf6', encerramento: '#dc2626', outro: '#6b8498',
 }
 const categoriaVariantMap = {
   onboarding: 'sky', contrato: 'indigo', lancamento: 'green',
   conquista: 'amber', reuniao: 'indigo', encerramento: 'red', outro: 'slate',
 }
-function categoriaColor(cat) { return categoriaColors[cat] || '#94a3b8' }
+function categoriaColor(cat) { return categoriaColors[cat] || '#6b8498' }
 function categoriaVariant(cat) { return categoriaVariantMap[cat] || 'slate' }
 
 const interactionTipoOptions = [
@@ -709,7 +709,7 @@ const editForm = ref(null)
 const savingClient = ref(false)
 const mlAccounts = ref([])
 const shopeeAccounts = ref([])
-const coresSugeridas = ['#0d9488', '#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b']
+const coresSugeridas = ['#a51e55', '#0ea5e9', '#658aa1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#4c6272']
 
 async function loadAccounts() {
   const [ml, sh] = await Promise.all([api.get('/mercadolivre/accounts/'), api.get('/shopee/accounts/')])
@@ -823,7 +823,7 @@ async function renderEvolutionChart() {
   const orders = timeseries.value.map((r) => r.orders)
 
   const traces = [
-    { x: months, y: gmv, name: 'GMV', type: 'scatter', mode: 'lines+markers', line: { color: '#0f766e' } },
+    { x: months, y: gmv, name: 'GMV', type: 'scatter', mode: 'lines+markers', line: { color: '#7f1642' } },
     { x: months, y: orders, name: 'Pedidos', type: 'bar', yaxis: 'y2', marker: { color: '#7dd3c0' }, opacity: 0.6 },
   ]
 
@@ -838,7 +838,7 @@ async function renderEvolutionChart() {
   const layout = {
     margin: { l: 50, r: 50, t: 10, b: 30 },
     height: 260,
-    font: { family: 'Inter, sans-serif', size: 11, color: '#64748b' },
+    font: { family: 'Inter, sans-serif', size: 11, color: '#4c6272' },
     xaxis: { gridcolor: '#eef0f4' },
     yaxis: { title: 'GMV', gridcolor: '#eef0f4', tickprefix: 'R$' },
     yaxis2: { title: 'Pedidos', overlaying: 'y', side: 'right', showgrid: false },
@@ -1221,7 +1221,7 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 @import 'src/css/tokens.scss';
 
-.krivus-page { background: #f8fafc; }
+.krivus-page { background: #edf4f7; }
 .krivus-container { max-width: 1100px; margin: 0 auto; padding: $space-6 $space-6 $space-12; }
 
 .meta-row { margin-top: -$space-2; }
@@ -1239,7 +1239,7 @@ onUnmounted(() => {
   background: rgba(248, 250, 252, 0.94);
   backdrop-filter: blur(4px);
   padding: $space-2 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #b8cbd6;
   overflow-x: auto;
 }
 .section-nav-link {
@@ -1252,8 +1252,8 @@ onUnmounted(() => {
   white-space: nowrap;
   transition: background $transition-fast, color $transition-fast;
 }
-.section-nav-link:hover { background: #e2e8f0; }
-.section-nav-link--active { background: #0f766e; color: #fff; }
+.section-nav-link:hover { background: #b8cbd6; }
+.section-nav-link--active { background: #7f1642; color: #fff; }
 
 /* Editor de faixas de cobrança */
 .edit-client-body { max-height: 70vh; overflow-y: auto; }
@@ -1267,13 +1267,13 @@ onUnmounted(() => {
 .stage-track { display: flex; flex-wrap: wrap; gap: $space-2; }
 .stage-step { flex: 1; min-width: 130px; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .stage-dot {
-  width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0;
+  width: 22px; height: 22px; border-radius: 50%; background: #b8cbd6;
   display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: $space-2;
 }
-.stage-step--done .stage-dot { background: #0f766e; }
+.stage-step--done .stage-dot { background: #7f1642; }
 .stage-step--current .stage-dot { background: #d97706; box-shadow: 0 0 0 4px rgba(217,119,6,0.16); }
 .stage-card {
-  background: #fff; border: 1px solid #e2e8f0; border-radius: $radius-md; padding: $space-3; width: 100%; min-height: 70px;
+  background: #fff; border: 1px solid #b8cbd6; border-radius: $radius-md; padding: $space-3; width: 100%; min-height: 70px;
 }
 .stage-step--current .stage-card { border-color: #d97706; }
 .stage-label { font-size: $text-xs-size; font-weight: $font-semibold; color: $text-primary; }
@@ -1284,12 +1284,12 @@ onUnmounted(() => {
 .lifetime-track { display: flex; gap: $space-4; flex-wrap: wrap; }
 .lifetime-badge {
   display: flex; flex-direction: column; align-items: center; cursor: pointer;
-  min-width: 100px; padding: $space-3; background: #fff; border: 1px solid #e2e8f0; border-radius: $radius-lg;
+  min-width: 100px; padding: $space-3; background: #fff; border: 1px solid #b8cbd6; border-radius: $radius-lg;
   transition: box-shadow $transition-base, transform $transition-base;
 }
 .lifetime-badge:hover { box-shadow: $shadow-sm; transform: translateY(-1px); }
 .lifetime-icon {
-  width: 44px; height: 44px; border-radius: 50%; background: $tint-slate-bg; color: #94a3b8;
+  width: 44px; height: 44px; border-radius: 50%; background: $tint-slate-bg; color: #6b8498;
   display: flex; align-items: center; justify-content: center; margin-bottom: 6px;
 }
 .lifetime-icon--done { background: $tint-teal-bg; color: $tint-teal-text; }
@@ -1301,11 +1301,11 @@ onUnmounted(() => {
 
 /* Timeline / marcos */
 .timeline-wrapper { position: relative; display: flex; flex-wrap: wrap; gap: $space-4; padding: $space-6 0; }
-.timeline-track { position: absolute; top: 52px; left: 0; right: 0; height: 2px; background: #e2e8f0; z-index: 0; }
+.timeline-track { position: absolute; top: 52px; left: 0; right: 0; height: 2px; background: #b8cbd6; z-index: 0; }
 .milestone-item { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; z-index: 1; min-width: 150px; max-width: 190px; }
 .milestone-dot { width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px currentColor; flex-shrink: 0; margin-bottom: 10px; }
-.milestone-card { background: #fff; border: 1px solid #e2e8f0; border-radius: $radius-md; padding: $space-3; text-align: center; transition: box-shadow $transition-base, border-color $transition-base; width: 100%; }
-.milestone-item:hover .milestone-card { border-color: #0f766e; box-shadow: $shadow-sm; }
+.milestone-card { background: #fff; border: 1px solid #b8cbd6; border-radius: $radius-md; padding: $space-3; text-align: center; transition: box-shadow $transition-base, border-color $transition-base; width: 100%; }
+.milestone-item:hover .milestone-card { border-color: #7f1642; box-shadow: $shadow-sm; }
 .milestone-date { font-size: 11px; color: $text-disabled; }
 .milestone-title { font-size: $text-small-size; font-weight: $font-semibold; color: $text-primary; margin: 2px 0; }
 
@@ -1314,25 +1314,25 @@ onUnmounted(() => {
 .drawer-label { font-size: $text-xs-size; font-weight: $font-semibold; color: $text-muted; text-transform: uppercase; letter-spacing: 0.5px; }
 .milestone-title-input { font-size: 20px; }
 .doc-list { display: flex; flex-direction: column; gap: $space-2; }
-.doc-item { padding: $space-2 $space-3; border: 1px solid #e2e8f0; border-radius: $radius-md; cursor: pointer; transition: background $transition-fast; }
-.doc-item:hover { background: #f8fafc; }
+.doc-item { padding: $space-2 $space-3; border: 1px solid #b8cbd6; border-radius: $radius-md; cursor: pointer; transition: background $transition-fast; }
+.doc-item:hover { background: #edf4f7; }
 .doc-title { font-size: $text-small-size; font-weight: 500; color: $text-primary; }
 .doc-meta { font-size: 11px; color: $text-disabled; }
 .link-list { display: flex; flex-direction: column; gap: 6px; }
-.link-item { padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: $radius-sm; }
-.link-anchor { font-size: $text-small-size; color: #0f766e; text-decoration: none; }
+.link-item { padding: 6px 10px; border: 1px solid #b8cbd6; border-radius: $radius-sm; }
+.link-anchor { font-size: $text-small-size; color: #7f1642; text-decoration: none; }
 .link-anchor:hover { text-decoration: underline; }
 
 /* Tasks */
 .task-list { display: flex; flex-direction: column; gap: 6px; }
-.task-item { padding: $space-2 $space-3; border: 1px solid #e2e8f0; border-radius: $radius-md; gap: $space-2; background: #fff; }
+.task-item { padding: $space-2 $space-3; border: 1px solid #b8cbd6; border-radius: $radius-md; gap: $space-2; background: #fff; }
 .task-title { font-size: $text-small-size; color: $text-primary; }
 .task-done { text-decoration: line-through; color: $text-disabled; }
 .task-meta { font-size: 11px; color: $text-disabled; }
 
 /* Interactions */
 .interaction-list { display: flex; flex-direction: column; gap: $space-2; }
-.interaction-item { padding: $space-3; border: 1px solid #e2e8f0; border-radius: $radius-md; background: #fff; }
+.interaction-item { padding: $space-3; border: 1px solid #b8cbd6; border-radius: $radius-md; background: #fff; }
 .interaction-date { font-size: 11px; color: $text-disabled; }
-.interaction-desc { font-size: $text-small-size; color: #334155; }
+.interaction-desc { font-size: $text-small-size; color: #152d43; }
 </style>

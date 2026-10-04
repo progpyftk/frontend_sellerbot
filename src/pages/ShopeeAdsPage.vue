@@ -602,7 +602,7 @@ function formatTick(val) {
 .meta-chip--warn  { background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
 .meta-chip--neg   { background: #fff1f2; color: #ef4444; border: 1px solid #fee2e2; }
 .meta-chip--neutral { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; }
-.meta-chip--teal    { background: #f0fdf4; color: #0d9488; border: 1px solid #ccfbf1; }
+.meta-chip--teal    { background: #f0fdf4; color: #a51e55; border: 1px solid #fbe0ec; }
 
 /* ─── CAMPAIGN TABLE ─────────────────────────────────────────────────────── */
 .camp-table-wrap { overflow-x: auto; }
@@ -674,7 +674,7 @@ function formatTick(val) {
 .bar--cost         { background: #ee4d2d; }
 .bar--total_amount { background: #10b981; }
 .bar--acos         { background: #f97316; }
-.bar--clicks       { background: #6366f1; }
+.bar--clicks       { background: #658aa1; }
 .bar-label { font-size: 8px; color: #9aa0ac; white-space: nowrap; }
 .bar-tooltip { font-size: 12px; line-height: 1.6; }
 .bar-tooltip-date { font-weight: 700; margin-bottom: 4px; }

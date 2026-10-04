@@ -27,7 +27,7 @@ defineOptions({ name: 'ErrorNotFound' });
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: #edf4f7;
   padding: 24px;
 }
 
@@ -40,19 +40,19 @@ defineOptions({ name: 'ErrorNotFound' });
   width: 64px;
   height: 64px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  background: linear-gradient(135deg, #a51e55, #b1547b);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 24px;
-  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.25);
+  box-shadow: 0 8px 24px rgba(165,30,85, 0.25);
 }
 
 .sb-error-code {
   font-size: 96px;
   font-weight: 800;
-  color: #0d9488;
+  color: #a51e55;
   line-height: 1;
   letter-spacing: -3px;
   opacity: 0.20;
@@ -62,14 +62,14 @@ defineOptions({ name: 'ErrorNotFound' });
 .sb-error-title {
   font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   margin: 0 0 12px;
   letter-spacing: -0.4px;
 }
 
 .sb-error-message {
   font-size: 14px;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.5;
   margin: 0 0 32px;
 }

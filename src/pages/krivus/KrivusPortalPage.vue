@@ -7,7 +7,7 @@
       </div>
       <div class="portal-subtitle">Acompanhamento da parceria com a Krivus</div>
 
-      <q-chip class="q-mt-md" color="teal-1" text-color="teal-9" :label="data.current_stage_display" icon="flag" />
+      <q-chip class="q-mt-md" color="primary" text-color="primary" :label="data.current_stage_display" icon="flag" />
 
       <div class="kpi-grid q-mt-lg">
         <div class="kpi-card">
@@ -97,42 +97,42 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.portal-page { background: #f8fafc; min-height: 100vh; }
+.portal-page { background: #edf4f7; min-height: 100vh; }
 .portal-container { max-width: 720px; margin: 0 auto; padding: 48px 24px; }
 
 .portal-header { display: flex; align-items: center; gap: 10px; }
 .color-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
-.portal-title { font-size: 26px; font-weight: 700; color: #1e293b; margin: 0; }
-.portal-subtitle { color: #64748b; font-size: 14px; margin-top: 4px; }
+.portal-title { font-size: 26px; font-weight: 700; color: #152d43; margin: 0; }
+.portal-subtitle { color: #4c6272; font-size: 14px; margin-top: 4px; }
 
-.section-title { font-size: 16px; font-weight: 600; color: #1e293b; margin: 0; }
+.section-title { font-size: 16px; font-weight: 600; color: #152d43; margin: 0; }
 
 .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.kpi-card { background: #fff; border-radius: 10px; padding: 20px; border: 1px solid #e2e8f0; }
-.kpi-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-.kpi-value { font-size: 26px; font-weight: 700; color: #1e293b; margin: 4px 0; }
-.kpi-sub { font-size: 11px; color: #94a3b8; }
+.kpi-card { background: #fff; border-radius: 10px; padding: 20px; border: 1px solid #b8cbd6; }
+.kpi-label { font-size: 12px; font-weight: 600; color: #4c6272; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-value { font-size: 26px; font-weight: 700; color: #152d43; margin: 4px 0; }
+.kpi-sub { font-size: 11px; color: #6b8498; }
 
 .lifetime-track { display: flex; gap: 16px; flex-wrap: wrap; }
 .lifetime-badge {
   display: flex; flex-direction: column; align-items: center;
-  min-width: 90px; padding: 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  min-width: 90px; padding: 12px; background: #fff; border: 1px solid #b8cbd6; border-radius: 10px;
 }
 .lifetime-icon {
-  width: 40px; height: 40px; border-radius: 50%; background: #f1f5f9; color: #94a3b8;
+  width: 40px; height: 40px; border-radius: 50%; background: #dfe9ef; color: #6b8498;
   display: flex; align-items: center; justify-content: center; margin-bottom: 6px;
 }
-.lifetime-icon--done { background: #ccfbf1; color: #0d9488; }
-.lifetime-label { font-size: 12px; font-weight: 600; color: #1e293b; }
-.lifetime-date { font-size: 11px; color: #94a3b8; }
+.lifetime-icon--done { background: #fbe0ec; color: #a51e55; }
+.lifetime-label { font-size: 12px; font-weight: 600; color: #152d43; }
+.lifetime-date { font-size: 11px; color: #6b8498; }
 
 .milestone-list { display: flex; flex-direction: column; gap: 8px; }
 .milestone-item {
-  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;
+  background: #fff; border: 1px solid #b8cbd6; border-radius: 8px; padding: 10px 14px;
   display: flex; align-items: center; gap: 12px;
 }
-.milestone-date { font-size: 11px; color: #94a3b8; min-width: 70px; }
-.milestone-title { font-size: 13px; color: #1e293b; font-weight: 500; }
+.milestone-date { font-size: 11px; color: #6b8498; min-width: 70px; }
+.milestone-title { font-size: 13px; color: #152d43; font-weight: 500; }
 
-.portal-footer { text-align: center; color: #cbd5e1; font-size: 11px; margin-top: 48px; }
+.portal-footer { text-align: center; color: #93aebb; font-size: 11px; margin-top: 48px; }
 </style>

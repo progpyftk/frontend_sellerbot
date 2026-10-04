@@ -16,7 +16,7 @@
             {{ pagination.rowsNumber }} vendas
           </div>
         </div>
-        <q-btn unelevated color="teal-7" icon="refresh" label="Atualizar"
+        <q-btn unelevated color="primary" icon="refresh" label="Atualizar"
           @click="refreshData" :loading="loading" size="sm" class="q-px-md" />
       </div>
     </div>
@@ -112,7 +112,7 @@
                   clickable v-close-popup @click="applySort(opt)">
                   <q-item-section>{{ opt.label }}</q-item-section>
                   <q-item-section side v-if="pagination.sortBy === opt.field && pagination.descending === opt.desc">
-                    <q-icon name="check" color="teal-7" size="14px" />
+                    <q-icon name="check" color="primary" size="14px" />
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -132,7 +132,7 @@
                   <q-item-section>Imprimir Etiqueta</q-item-section>
                 </q-item>
                 <q-item clickable v-close-popup @click="setFilterReadyToShip">
-                  <q-item-section avatar><q-icon name="inventory" color="teal-7" size="16px" /></q-item-section>
+                  <q-item-section avatar><q-icon name="inventory" color="primary" size="16px" /></q-item-section>
                   <q-item-section>Pronto para Coleta</q-item-section>
                 </q-item>
                 <q-separator />
@@ -162,7 +162,7 @@
                 <q-separator />
                 <q-item-label header class="fb-menu-header">Outros</q-item-label>
                 <q-item clickable v-close-popup @click="setFilterCatalog">
-                  <q-item-section avatar><q-icon name="auto_awesome" color="indigo-7" size="16px" /></q-item-section>
+                  <q-item-section avatar><q-icon name="auto_awesome" color="secondary" size="16px" /></q-item-section>
                   <q-item-section>Catálogo</q-item-section>
                 </q-item>
                 <q-item clickable v-close-popup @click="setFilterCancelled">
@@ -225,7 +225,7 @@
                 <q-item-section side>
                   <q-checkbox :model-value="filters.account?.includes(acc.id)"
                     @update:model-value="toggleAccountFilter(acc.id)"
-                    @click.stop color="teal-7" dense />
+                    @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ acc.nickname }}</q-item-section>
               </q-item>
@@ -255,7 +255,7 @@
                 <q-item-section side>
                   <q-checkbox :model-value="filters.status?.includes(opt.value)"
                     @update:model-value="toggleStatusFilter(opt.value)"
-                    @click.stop color="teal-7" dense />
+                    @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
               </q-item>
@@ -285,7 +285,7 @@
                 <q-item-section side>
                   <q-checkbox :model-value="filters.shipment_status?.includes(opt.value)"
                     @update:model-value="toggleShipmentFilter(opt.value)"
-                    @click.stop color="teal-7" dense />
+                    @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
               </q-item>
@@ -315,7 +315,7 @@
                 <q-item-section side>
                   <q-checkbox :model-value="filters.logistic_type?.includes(opt.value)"
                     @update:model-value="toggleLogisticFilter(opt.value)"
-                    @click.stop color="teal-7" dense />
+                    @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
               </q-item>
@@ -345,7 +345,7 @@
                 <q-item-section side>
                   <q-checkbox :model-value="filters.cost_type?.includes(opt.value)"
                     @update:model-value="toggleCostTypeFilter(opt.value)"
-                    @click.stop color="teal-7" dense />
+                    @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
               </q-item>
@@ -361,7 +361,7 @@
 
           <div class="fb-index-header">
             <div class="fb-index-title">
-              <q-icon name="filter_alt" size="14px" color="teal-7" />
+              <q-icon name="filter_alt" size="14px" color="primary" />
               <span>Filtrando</span>
               <span class="fb-index-count">{{ advancedFilterCount + (filters.search ? 1 : 0) + (filters.account?.length ? 1 : 0) + (filters.status?.length ? 1 : 0) + (filters.shipment_status?.length ? 1 : 0) + (filters.logistic_type?.length ? 1 : 0) + (filters.cost_type?.length ? 1 : 0) }} grupos</span>
             </div>
@@ -795,7 +795,7 @@
           </q-tr>
         </template>
 
-        <template #loading><q-inner-loading showing color="teal-7" /></template>
+        <template #loading><q-inner-loading showing color="primary" /></template>
       </q-table>
     </div>
 
@@ -805,7 +805,7 @@
     <q-dialog v-model="financialOpen" position="right" full-height :maximized="$q.screen.lt.md"
       transition-show="slide-left" transition-hide="slide-right">
       <div v-if="!selectedOrder" class="detail-panel detail-panel--loading">
-        <q-spinner-dots color="teal" size="2.5em" />
+        <q-spinner-dots color="primary" size="2.5em" />
       </div>
       <div class="detail-panel" v-if="selectedOrder">
         <div class="detail-header">
@@ -814,7 +814,7 @@
               <div class="dialog-eyebrow"><q-icon name="account_balance_wallet" size="13px" class="q-mr-xs" />Resumo Financeiro</div>
               <div class="detail-order-id">
                 <template v-if="selectedOrder._isPack">
-                  <q-icon name="inventory_2" size="14px" class="q-mr-xs" style="color:#6366f1" />pack #{{ selectedOrder.pack_id }}
+                  <q-icon name="inventory_2" size="14px" class="q-mr-xs" style="color:#658aa1" />pack #{{ selectedOrder.pack_id }}
                 </template>
                 <template v-else>#{{ selectedOrder.order_id }}</template>
               </div>
@@ -831,7 +831,7 @@
               </div>
             </div>
             <div class="row q-gutter-x-xs">
-              <q-btn flat round dense icon="local_shipping" color="teal-7" size="sm"
+              <q-btn flat round dense icon="local_shipping" color="primary" size="sm"
                 @click="financialOpen = false; openLogistics(selectedOrder)"
                 :disable="!selectedOrder.shipment">
                 <q-tooltip>Ver Logística</q-tooltip>
@@ -851,7 +851,7 @@
             <!-- Itens -->
             <div class="detail-section">
               <div class="section-title"><q-icon name="shopping_cart" size="14px" class="q-mr-xs" />Itens do Pedido</div>
-              <div v-if="detailLoading" class="text-center q-pa-lg"><q-spinner-dots color="teal" size="2em" /></div>
+              <div v-if="detailLoading" class="text-center q-pa-lg"><q-spinner-dots color="primary" size="2em" /></div>
               <div v-else class="items-table">
                 <div class="items-thead">
                   <span style="flex:1">Produto</span>
@@ -895,7 +895,7 @@
                   <div class="receipt-row sub-row">
                     <div class="receipt-label-g">
                       <span class="receipt-label">(+) Repasse Flex ML</span>
-                      <span class="receipt-sub" style="color:#0d9488">
+                      <span class="receipt-sub" style="color:#a51e55">
                         <q-icon name="directions_bike" size="10px" /> Frete pago pelo comprador — ML repassa ao seller
                       </span>
                     </div>
@@ -1069,7 +1069,7 @@
               </div>
             </div>
             <div class="row q-gutter-x-xs">
-              <q-btn flat round dense icon="account_balance_wallet" color="teal-7" size="sm"
+              <q-btn flat round dense icon="account_balance_wallet" color="primary" size="sm"
                 @click="logisticsOpen = false; openFinancial(logisticsOrder)">
                 <q-tooltip>Ver Financeiro</q-tooltip>
               </q-btn>
@@ -1187,7 +1187,7 @@
 
               <!-- Flex: seller entrega, não há custo de transportadora -->
               <div v-if="logisticsOrder.shipment.logistic_type === 'self_service'" class="flex-freight-note">
-                <q-icon name="directions_bike" size="16px" class="q-mr-sm" color="teal-6" />
+                <q-icon name="directions_bike" size="16px" class="q-mr-sm" color="primary" />
                 <div>
                   <div class="flex-freight-title">Entrega Flex — sem custo de frete ML</div>
                   <div class="flex-freight-desc">Você mesmo realiza a entrega. O ML não cobra serviço de transportadora neste modo.</div>
@@ -1265,7 +1265,7 @@
             <!-- Seção: Período -->
             <div class="fadv-section">
               <div class="fadv-section-title">
-                <q-icon name="calendar_month" size="15px" color="teal-7" />
+                <q-icon name="calendar_month" size="15px" color="primary" />
                 Período
               </div>
               <div class="fadv-row fadv-row--col">
@@ -1291,16 +1291,16 @@
             <!-- Seção: Valor da Venda -->
             <div class="fadv-section">
               <div class="fadv-section-title">
-                <q-icon name="attach_money" size="15px" color="teal-7" />
+                <q-icon name="attach_money" size="15px" color="primary" />
                 Valor da Venda
               </div>
               <div class="fadv-row">
                 <q-input v-model.number="filters.priceMin" type="number" label="Mínimo"
-                  outlined dense bg-color="white" color="teal-7" class="fadv-input"
+                  outlined dense bg-color="white" color="primary" class="fadv-input"
                   clearable prefix="R$" stack-label />
                 <span class="fadv-range-sep">→</span>
                 <q-input v-model.number="filters.priceMax" type="number" label="Máximo"
-                  outlined dense bg-color="white" color="teal-7" class="fadv-input"
+                  outlined dense bg-color="white" color="primary" class="fadv-input"
                   clearable prefix="R$" stack-label />
               </div>
             </div>
@@ -1310,19 +1310,19 @@
             <!-- Seção: Lucro Após Custo Médio do Produto -->
             <div class="fadv-section">
               <div class="fadv-section-title">
-                <q-icon name="trending_up" size="15px" color="teal-7" />
+                <q-icon name="trending_up" size="15px" color="primary" />
                 Margem após CMV (R$)
                 <q-btn-toggle v-model="marginFilterMode"
                   :options="[{label:'Após Custo Médio', value:'lucro_apos_cmp'},{label:'Antes Custo Médio', value:'net_received'}]"
-                  dense unelevated toggle-color="teal-7" color="grey-2" text-color="grey-7"
+                  dense unelevated toggle-color="primary" color="grey-2" text-color="grey-7"
                   rounded size="xs" class="q-ml-auto" />
               </div>
               <div class="fadv-row">
                 <q-input v-model.number="filters.marginMin" type="number" label="Mínimo R$"
-                  prefix="R$" outlined dense bg-color="white" color="teal-7" class="fadv-input" clearable stack-label />
+                  prefix="R$" outlined dense bg-color="white" color="primary" class="fadv-input" clearable stack-label />
                 <span class="fadv-range-sep">→</span>
                 <q-input v-model.number="filters.marginMax" type="number" label="Máximo R$"
-                  prefix="R$" outlined dense bg-color="white" color="teal-7" class="fadv-input" clearable stack-label />
+                  prefix="R$" outlined dense bg-color="white" color="primary" class="fadv-input" clearable stack-label />
               </div>
             </div>
 
@@ -1331,14 +1331,14 @@
             <!-- Seção: Flags -->
             <div class="fadv-section">
               <div class="fadv-section-title">
-                <q-icon name="flag" size="15px" color="teal-7" />
+                <q-icon name="flag" size="15px" color="primary" />
                 Flags
               </div>
               <div class="fadv-flags">
                 <q-item clickable class="fadv-flag-item"
                   @click="filters.is_catalog = filters.is_catalog === true ? null : true">
                   <q-item-section side>
-                    <q-checkbox :model-value="filters.is_catalog === true" color="teal-7" dense />
+                    <q-checkbox :model-value="filters.is_catalog === true" color="primary" dense />
                   </q-item-section>
                   <q-item-section>
                     <div class="fadv-flag-label">
@@ -1356,7 +1356,7 @@
                 <q-item clickable class="fadv-flag-item"
                   @click="filters.fulfilled = filters.fulfilled === true ? null : true">
                   <q-item-section side>
-                    <q-checkbox :model-value="filters.fulfilled === true" color="teal-7" dense />
+                    <q-checkbox :model-value="filters.fulfilled === true" color="primary" dense />
                   </q-item-section>
                   <q-item-section>
                     <div class="fadv-flag-label">
@@ -1380,7 +1380,7 @@
         <div class="fadv-footer">
           <q-btn flat no-caps icon="filter_alt_off" label="Limpar filtros"
             color="red-5" @click="clearFilters" size="sm" />
-          <q-btn unelevated no-caps label="Fechar" color="teal-7"
+          <q-btn unelevated no-caps label="Fechar" color="primary"
             v-close-popup size="sm" class="q-px-lg" />
         </div>
 
@@ -2143,9 +2143,9 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   transition: box-shadow .15s;
 }
 .today-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-.today-card--pos  { border-left: 3px solid #0d9488; }
+.today-card--pos  { border-left: 3px solid #a51e55; }
 .today-card--neg  { border-left: 3px solid #ef4444; }
-.today-card--neutral { border-left: 3px solid #6366f1; }
+.today-card--neutral { border-left: 3px solid #658aa1; }
 .today-card--skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -2161,11 +2161,11 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   border-radius: 8px;
   background: #f0f9f8;
   display: flex; align-items: center; justify-content: center;
-  color: #0d9488;
+  color: #a51e55;
   flex-shrink: 0;
 }
 .today-card--neg .today-card-icon { background: #fef2f2; color: #ef4444; }
-.today-card--neutral .today-card-icon { background: #eef2ff; color: #6366f1; }
+.today-card--neutral .today-card-icon { background: #eef2ff; color: #658aa1; }
 .today-card-body { min-width: 0; }
 .today-card-val   { font-size: 15px; font-weight: 700; color: #1a1f36; line-height: 1.2; }
 .today-card-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: #9aa0ac; margin-top: 1px; }
@@ -2306,7 +2306,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 }
 .fb-combo:hover { border-color: #c5cfe0; background: #edf0f7; }
 .fb-combo--on {
-  background: #e6f7f5;
+  background: #fdf2f7;
   border-color: #4db6ac;
   box-shadow: 0 0 0 2px rgba(0,137,123,.08);
 }
@@ -2361,7 +2361,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .fb-menu {
   border-radius: 10px !important;
   box-shadow: 0 6px 24px rgba(0,0,0,.13) !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1px solid #b8cbd6 !important;
   overflow: hidden;
 }
 .fb-menu-item {
@@ -2383,8 +2383,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 
 /* ── Filter index ────────────────────────────────── */
 .fb-index {
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  background: #edf4f7;
+  border: 1.5px solid #b8cbd6;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -2465,7 +2465,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   font-weight: 500;
   color: #374151;
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 20px;
   padding: 2px 9px 2px 9px;
   cursor: pointer;
@@ -2474,7 +2474,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   box-shadow: 0 1px 2px rgba(0,0,0,.04);
 }
 .fb-index-pill:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
-.fb-index-pill--teal { background: #f0fdfa; border-color: #99f6e4; color: #0f766e; }
+.fb-index-pill--teal { background: #fdf2f7; border-color: #f7c1d6; color: #7f1642; }
 .fb-index-pill--teal:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
 
 /* ── Advanced panel ──────────────────────────────── */
@@ -2714,7 +2714,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 /* PACK items list in produto cell: cada item = título (max 2 linhas) + SKU/MLB abaixo */
 .pack-items-list  { display: flex; flex-direction: column; gap: 6px; }
 .pack-item-line   { display: flex; align-items: flex-start; gap: 4px; font-size: 11px; line-height: 1.3; }
-.pack-item-qty    { color: #6366f1; font-weight: 700; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+.pack-item-qty    { color: #658aa1; font-weight: 700; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
 .pack-item-title  {
   flex: 1; min-width: 0; color: #1a1f36;
   white-space: normal; overflow-wrap: break-word;
@@ -2737,12 +2737,12 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
   white-space: normal; overflow-wrap: break-word;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
-.id-chip       { display: inline-flex; align-items: center; gap: 1px; font-size: 9px; font-family: 'Roboto Mono', monospace; color: #718096; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0 4px; }
+.id-chip       { display: inline-flex; align-items: center; gap: 1px; font-size: 9px; font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; color: #718096; background: #f7fafc; border: 1px solid #b8cbd6; border-radius: 4px; padding: 0 4px; }
 .id-chip.sku   { color: #4a5568; }
 /* MLB/SKU + conta + badges de pack/catálogo, tudo numa linha só (quebra se não couber). */
 .produto-meta  { display: flex; align-items: center; gap: 3px; margin-top: 3px; flex-wrap: wrap; }
 .pedido-sub    { display: flex; align-items: flex-start; gap: 6px; margin-top: 7px; padding-top: 6px; border-top: 1px dashed #f0f2f5; flex-wrap: wrap; }
-.pedido-id     { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; color: #00897b; cursor: pointer; overflow-wrap: anywhere; }
+.pedido-id     { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 10.5px; font-weight: 600; color: #00897b; cursor: pointer; overflow-wrap: anywhere; }
 .pedido-id:hover .copy-icon { opacity: 1; }
 .copy-icon     { opacity: 0; transition: opacity .15s; }
 .account-chip  {
@@ -2802,7 +2802,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .amount-main  { font-size: 13px; font-weight: 700; color: #1a1f36; }
 .amount-sub   { font-size: 10px; color: #9aa0ac; margin-top: 2px; }
 .coupon-chip  { display: inline-flex; align-items: center; gap: 2px; margin-top: 3px; font-size: 9px; font-weight: 600; color: #c05621; background: #fffaf0; border-radius: 4px; padding: 1px 5px; }
-.flex-credit-hint { font-size: 9px; color: #0d9488; margin-top: 2px; display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
+.flex-credit-hint { font-size: 9px; color: #a51e55; margin-top: 2px; display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
 
 .cell-fee     { text-align: right; }
 .fee-main     { font-size: 12.5px; font-weight: 700; color: #e53e3e; }
@@ -2822,8 +2822,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .partial-flag  { background: #fff3e0; color: #e65100; }
 .frete-audit   { font-size: 9px; color: #b0bec5; margin-top: 2px; }
 .frete-gratis  { font-size: 11.5px; font-weight: 700; color: #38a169; display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
-.flex-badge    { color: #0d9488; font-weight: 700; }
-.flex-repasse-hint { font-size: 9px; color: #0d9488; margin-top: 2px; font-weight: 600; }
+.flex-badge    { color: #a51e55; font-weight: 700; }
+.flex-repasse-hint { font-size: 9px; color: #a51e55; margin-top: 2px; font-weight: 600; }
 
 .cell-liquido  { text-align: right; }
 .liquido-main  { font-size: 13.5px; font-weight: 700; }
@@ -2854,7 +2854,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .detail-panel--loading { align-items: center; justify-content: center; }
 .detail-header { padding: 16px 22px 14px; border-bottom: 1px solid #e8eaed; flex-shrink: 0; }
 .dialog-eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9aa0ac; display: flex; align-items: center; margin-bottom: 4px; }
-.detail-order-id { font-family: 'Roboto Mono', monospace; font-size: 16px; font-weight: 700; color: #1a1f36; }
+.detail-order-id { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 16px; font-weight: 700; color: #1a1f36; }
 .detail-meta     { font-size: 11px; color: #9aa0ac; margin-top: 2px; }
 .detail-body     { padding: 14px 22px 32px; }
 .detail-section  { margin-bottom: 20px; }
@@ -2868,7 +2868,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .item-thumb-sm { width: 32px; height: 32px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid #e8eaed; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
 .item-thumb-sm img { width: 100%; height: 100%; object-fit: cover; }
 .item-title-d { font-weight: 500; color: #2d3748; font-size: 12px; line-height: 1.3; }
-.item-meta-d  { font-size: 10px; color: #9aa0ac; margin-top: 1px; font-family: 'Roboto Mono', monospace; }
+.item-meta-d  { font-size: 10px; color: #9aa0ac; margin-top: 1px; font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
 .fee-d        { font-weight: 700; color: #e53e3e; font-size: 12px; }
 .fee-d-sub    { font-size: 10px; color: #9aa0ac; }
 
@@ -2899,11 +2899,11 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 /* ─── FLEX FREIGHT NOTE ─────────────────────────── */
 .flex-freight-note {
   display: flex; align-items: flex-start; gap: 10px;
-  background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px;
+  background: #fdf2f7; border: 1px solid #f7c1d6; border-radius: 10px;
   padding: 12px 14px; margin-bottom: 4px;
 }
-.flex-freight-title { font-size: 12px; font-weight: 700; color: #0f766e; }
-.flex-freight-desc  { font-size: 11px; color: #5eead4; margin-top: 2px; line-height: 1.4; color: #0d9488; }
+.flex-freight-title { font-size: 12px; font-weight: 700; color: #7f1642; }
+.flex-freight-desc  { font-size: 11px; color: #f7a8c8; margin-top: 2px; line-height: 1.4; color: #a51e55; }
 
 /* ─── ACTION CALLOUT (logistics dialog) ─────────── */
 .action-callout {
@@ -2958,7 +2958,7 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .t-value    { font-size: 12px; font-weight: 500; color: #2d3748; }
 .t-value.delivered { color: #276749; font-weight: 600; }
 .t-sub      { color: #9aa0ac; font-size: 10px; }
-.mono       { font-family: 'Roboto Mono', monospace; font-size: 11px; }
+.mono       { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-size: 11px; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    MOBILE

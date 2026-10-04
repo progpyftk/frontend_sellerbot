@@ -11,7 +11,7 @@
     </template>
     <div v-if="loading" class="insights-state"><SbEmptyState variant="loading" title="Analisando o período" /></div>
     <SbEmptyState v-else-if="error" variant="error" title="Insights indisponíveis" :message="error">
-      <template #action><q-btn outline color="teal-8" label="Tentar novamente" @click="emit('retry')" /></template>
+      <template #action><q-btn outline color="primary" label="Tentar novamente" @click="emit('retry')" /></template>
     </SbEmptyState>
     <SbEmptyState v-else-if="!causal" title="Sem evidências suficientes" message="Amplie o período ou aguarde mais observações do anúncio." />
     <div v-else class="insights-body">
@@ -70,27 +70,27 @@ const promotion = computed(() => props.causal?.impacto_promocao?.dias_com_promo 
 
 <style lang="scss" scoped>
 .insights-heading { display: flex; align-items: flex-start; justify-content: space-between; width: 100%; }
-.card-eyebrow { color: #0f766e; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.card-title { color: #0f172a; font-size: 15px; font-weight: 700; margin-top: 3px; }
+.card-eyebrow { color: #7f1642; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.card-title { color: #101e2b; font-size: 15px; font-weight: 700; margin-top: 3px; }
 .insights-state { min-height: 180px; display: grid; place-items: center; }
 .insights-body { display: flex; flex-direction: column; gap: 18px; }
 .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.summary-card { display: flex; flex-direction: column; gap: 5px; padding: 11px 12px; border: 1px solid #e2e8f0; border-radius: 9px; }
-.summary-card span { color: #64748b; font-size: 11px; }
-.summary-card strong { color: #0f172a; font-size: 16px; }
-.section-label { display: flex; align-items: center; gap: 6px; color: #334155; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.summary-card { display: flex; flex-direction: column; gap: 5px; padding: 11px 12px; border: 1px solid #b8cbd6; border-radius: 9px; }
+.summary-card span { color: #4c6272; font-size: 11px; }
+.summary-card strong { color: #101e2b; font-size: 16px; }
+.section-label { display: flex; align-items: center; gap: 6px; color: #152d43; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
 .attention-box { padding: 12px; border-radius: 9px; background: #fffbeb; color: #92400e; }
 .attention-row { font-size: 12px; line-height: 1.5; padding-top: 5px; }
-.insight-section { border-top: 1px solid #f1f5f9; padding-top: 14px; }
-.association-note { color: #64748b; font-size: 11px; line-height: 1.4; margin-bottom: 9px; }
+.insight-section { border-top: 1px solid #dfe9ef; padding-top: 14px; }
+.association-note { color: #4c6272; font-size: 11px; line-height: 1.4; margin-bottom: 9px; }
 .relation-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
-.relation-name { color: #475569; flex: 0 1 180px; font-size: 12px; }
-.relation-meter { width: 100px; height: 6px; overflow: hidden; background: #f1f5f9; border-radius: 99px; }
+.relation-name { color: #4c6272; flex: 0 1 180px; font-size: 12px; }
+.relation-meter { width: 100px; height: 6px; overflow: hidden; background: #dfe9ef; border-radius: 99px; }
 .relation-meter span { display: block; height: 100%; border-radius: inherit; }
-.relation-meter .positive { background: #0f766e; }.relation-meter .negative { background: #dc2626; }
-.relation-sample { color: #94a3b8; font-size: 11px; }
+.relation-meter .positive { background: #7f1642; }.relation-meter .negative { background: #dc2626; }
+.relation-sample { color: #6b8498; font-size: 11px; }
 .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.comparison-grid > div { display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #f8fafc; border-radius: 8px; }
-.comparison-grid span, .comparison-grid small { color: #64748b; font-size: 11px; }.comparison-grid strong { color: #0f172a; font-size: 14px; }
+.comparison-grid > div { display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #edf4f7; border-radius: 8px; }
+.comparison-grid span, .comparison-grid small { color: #4c6272; font-size: 11px; }.comparison-grid strong { color: #101e2b; font-size: 14px; }
 @media (max-width: 600px) { .summary-grid { grid-template-columns: 1fr 1fr; } .relation-name { flex-basis: 105px; } .relation-meter { flex: 1; } .comparison-grid { grid-template-columns: 1fr; } }
 </style>

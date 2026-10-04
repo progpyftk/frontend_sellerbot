@@ -12,12 +12,12 @@
             {{ period.label }}
           </button>
         </div>
-        <q-btn outline color="teal-8" icon="refresh" label="Atualizar" :loading="loading.list || loading.overview" @click="refresh" />
+        <q-btn outline color="primary" icon="refresh" label="Atualizar" :loading="loading.list || loading.overview" @click="refresh" />
       </template>
     </SbPageHeader>
 
     <div class="mobile-toolbar">
-      <q-btn outline color="teal-8" icon="list" label="Ver anúncios" @click="mobileListOpen = true" />
+      <q-btn outline color="primary" icon="list" label="Ver anúncios" @click="mobileListOpen = true" />
       <span v-if="selectedItem">{{ selectedItem.title }}</span>
     </div>
 
@@ -85,18 +85,18 @@ function notifyCopied() {
 
 <style lang="scss" scoped>
 .analytics-page { min-height: calc(100vh - 64px); }
-.period-toggle { display: flex; gap: 3px; padding: 3px; border: 1px solid #e2e8f0; border-radius: 9px; background: #fff; }
-.period-toggle button { border: 0; border-radius: 6px; background: transparent; color: #64748b; cursor: pointer; font: inherit; font-size: 12px; padding: 7px 10px; }
-.period-toggle button:hover, .period-toggle button.active { background: #ccfbf1; color: #0f766e; font-weight: 700; }
+.period-toggle { display: flex; gap: 3px; padding: 3px; border: 1px solid #b8cbd6; border-radius: 9px; background: #fff; }
+.period-toggle button { border: 0; border-radius: 6px; background: transparent; color: #4c6272; cursor: pointer; font: inherit; font-size: 12px; padding: 7px 10px; }
+.period-toggle button:hover, .period-toggle button.active { background: #fbe0ec; color: #7f1642; font-weight: 700; }
 .analytics-layout { display: flex; align-items: stretch; gap: 16px; min-height: calc(100vh - 200px); }
 .detail-panel { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 12px; }
-.detail-placeholder { flex: 1; min-height: 400px; display: grid; place-items: center; border: 1px dashed #cbd5e1; border-radius: 14px; background: rgba(255, 255, 255, .5); }
+.detail-placeholder { flex: 1; min-height: 400px; display: grid; place-items: center; border: 1px dashed #93aebb; border-radius: 14px; background: rgba(255, 255, 255, .5); }
 .mobile-toolbar { display: none; }
 @media (max-width: 767px) {
   .analytics-page { padding-bottom: 24px; }
   .analytics-layout { min-height: calc(100vh - 180px); }
   .mobile-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .mobile-toolbar span { overflow: hidden; color: #475569; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-toolbar span { overflow: hidden; color: #4c6272; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
   :deep(.sb-page-header-actions) { width: 100%; justify-content: space-between; }
   .period-toggle { flex: 1; }
   .period-toggle button { flex: 1; padding-left: 5px; padding-right: 5px; }

@@ -17,7 +17,7 @@ defineProps({
   width: 100%;
   overflow-x: auto;
   border-radius: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   background: #ffffff;
 }
 
@@ -25,39 +25,39 @@ defineProps({
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  color: #334155;
+  color: #152d43;
 
   :deep(thead) {
-    background: #f8fafc;
+    background: #edf4f7;
   }
   :deep(thead th) {
     font-size: 11px;
     font-weight: 600;
-    color: #64748b;
+    color: #4c6272;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 12px 16px;
     text-align: left;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #b8cbd6;
     white-space: nowrap;
   }
   :deep(tbody td) {
     padding: 14px 16px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #dfe9ef;
     vertical-align: middle;
   }
   :deep(tbody tr:last-child td) {
     border-bottom: none;
   }
   :deep(tbody tr:hover) {
-    background: #f8fafc;
+    background: #edf4f7;
   }
   :deep(tfoot td) {
     padding: 12px 16px;
-    background: #f8fafc;
+    background: #edf4f7;
     font-weight: 600;
-    color: #0f172a;
-    border-top: 1px solid #e2e8f0;
+    color: #101e2b;
+    border-top: 1px solid #b8cbd6;
   }
 
   /* helpers consumidos pelos consumidores */
@@ -66,7 +66,7 @@ defineProps({
   :deep(.row--pos) { color: #16a34a; font-weight: 600; }
   :deep(.row--neg) { color: #dc2626; font-weight: 600; }
   :deep(.row--warn) { color: #d97706; font-weight: 500; }
-  :deep(.row--muted) { color: #94a3b8; }
-  :deep(.row--bold) { font-weight: 600; color: #0f172a; }
+  :deep(.row--muted) { color: #6b8498; }
+  :deep(.row--bold) { font-weight: 600; color: #101e2b; }
 }
 </style>

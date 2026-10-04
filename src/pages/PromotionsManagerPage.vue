@@ -146,7 +146,7 @@
                             :icon="activationStatusMeta(props.row).icon"
                             :label="activationStatusMeta(props.row).label" />
                           <q-chip v-if="props.row.boosted_offer" dense square size="xs"
-                            color="teal-1" text-color="teal-9" icon="savings"
+                            color="primary" text-color="primary" icon="savings"
                             :label="`Boost ML ${props.row.boosted_discount_pct ?? '—'}%`">
                             <q-tooltip>
                               Benefício ML: {{ props.row.boosted_discount_pct ?? '—' }}% ·
@@ -174,14 +174,14 @@
                             {{ props.row.last_activated_count }} itens
                           </q-chip>
 
-                           <q-toggle v-if="canWrite && props.row.record_id && props.row.can_auto_activate" dense size="sm" color="teal"
+                           <q-toggle v-if="canWrite && props.row.record_id && props.row.can_auto_activate" dense size="sm" color="primary"
                             :model-value="props.row.auto_activate"
                             @update:model-value="v => toggleAutoActivate(props.row, v)"
                             class="q-ml-sm" />
                           <q-chip v-if="props.row.auto_activate && props.row.auto_max_discount_pct"
                             dense size="sm" color="orange-2" text-color="orange-9"
                             :label="`Trava ${props.row.auto_max_discount_pct}%`" />
-                           <span v-if="props.row.record_id && props.row.can_auto_activate" class="q-ml-xs" style="font-size:0.68rem;color:#64748b">
+                           <span v-if="props.row.record_id && props.row.can_auto_activate" class="q-ml-xs" style="font-size:0.68rem;color:#4c6272">
                             Ativar automaticamente
                           </span>
                         </div>
@@ -318,7 +318,7 @@
               </q-item-section>
             </q-item>
             <q-item class="q-py-md">
-              <q-item-section avatar><q-avatar color="teal-1" text-color="teal-9" icon="security" /></q-item-section>
+              <q-item-section avatar><q-avatar color="primary" text-color="primary" icon="security" /></q-item-section>
               <q-item-section>
                 <q-item-label class="text-weight-bold">3. Use a trava de desconto</q-item-label>
                 <q-item-label caption>Uma trava de <b>15%</b> aceita descontos de até 15%. Se o ML sugerir 8%, usa 8%; se exigir 20%, ignora o anúncio.</q-item-label>
@@ -426,10 +426,10 @@
                 (aparecem no log como "fora da trava").
               </div>
               <q-input v-model.number="fixedDiscountPct" type="number" label="Desconto fixo para todos"
-                outlined dense bg-color="white" color="indigo-8" class="text-weight-bold text-center"
+                outlined dense bg-color="white" color="secondary" class="text-weight-bold text-center"
                 min="1" max="99" suffix="% OFF">
                 <template v-slot:prepend>
-                  <q-icon name="percent" color="indigo-8" />
+                  <q-icon name="percent" color="secondary" />
                 </template>
               </q-input>
             </template>
@@ -455,7 +455,7 @@
     <!-- FB-30: dialog de trava obrigatória para auto-ativação -->
     <q-dialog v-model="showAutoTravaDialog" persistent>
       <q-card style="width: 420px; max-width: 94vw;">
-        <q-card-section class="row items-center bg-teal-7 text-white q-py-sm">
+        <q-card-section class="row items-center bg-primary text-white q-py-sm">
           <q-icon name="schedule" size="sm" class="q-mr-sm" />
           <span class="text-subtitle1 text-weight-bold">Trava de desconto para auto-ativação</span>
           <q-space />
@@ -485,7 +485,7 @@
           <q-btn flat label="Cancelar" color="grey-7" @click="cancelAutoTrava" />
           <q-btn
             :label="`Ativar com trava de ${autoTravaPercent || '?'}%`"
-            color="teal" @click="confirmAutoTrava"
+            color="primary" @click="confirmAutoTrava"
             :disable="!autoTravaPercent || autoTravaPercent <= 0 || autoTravaPercent > 100" />
         </q-card-actions>
       </q-card>
@@ -1210,7 +1210,7 @@ onMounted(() => {
 }
 
 .font-mono {
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 }
 
 .promotions-table :deep(tbody tr td) {
@@ -1243,10 +1243,10 @@ onMounted(() => {
 .header-title-promos   { font-size: 16px; font-weight: 700; color: #1a1f36; }
 
 .table-responsive { overflow-x: auto; }
-.promotions-filters { border: 1px solid #e8edf3; border-radius: 10px; padding: 10px; background: #f8fafc; }
+.promotions-filters { border: 1px solid #e8edf3; border-radius: 10px; padding: 10px; background: #edf4f7; }
 .activation-reason { max-width: 220px; white-space: normal; text-align: left; }
 .activation-preview { background: #fff8e8; color: #7c4a03; border: 1px solid #f3d28a; }
-.guide-intro { padding: 12px 14px; border-radius: 8px; background: #f1f5f9; color: #334155; line-height: 1.45; }
+.guide-intro { padding: 12px 14px; border-radius: 8px; background: #dfe9ef; color: #152d43; line-height: 1.45; }
 
 @media (max-width: 600px) {
   .promos-page-header .row { flex-wrap: wrap; gap: 8px; }

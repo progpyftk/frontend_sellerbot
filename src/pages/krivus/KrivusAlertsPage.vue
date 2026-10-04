@@ -90,7 +90,7 @@ onMounted(loadAlerts)
 <style lang="scss" scoped>
 @import 'src/css/tokens';
 
-.krivus-page { background: #f8fafc; }
+.krivus-page { background: #edf4f7; }
 .krivus-container { max-width: 900px; margin: 0 auto; padding: $space-6; }
 
 .alerts-grid { display: flex; flex-direction: column; gap: $space-2; }

@@ -17,7 +17,7 @@
           dense
           no-caps
           size="sm"
-          color="teal-8"
+          color="primary"
           icon="download"
           :label="`Exportar ${linhasOrdenadas.length} linha(s)`"
           @click="exportar"

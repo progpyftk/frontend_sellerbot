@@ -12,7 +12,7 @@
           v-model="origem"
           dense
           no-caps
-          toggle-color="teal-8"
+          toggle-color="primary"
           :options="[
             { label: 'Calculado agora', value: 'calculado' },
             { label: 'Trilha gravada', value: 'gravado' },

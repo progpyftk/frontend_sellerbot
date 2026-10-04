@@ -15,7 +15,7 @@
       <div class="cta-cards">
 
         <div class="ccard">
-          <div class="ccard-icon" style="background: rgba(13,148,136,.15); color: #14b8a6;">
+          <div class="ccard-icon" style="background: rgba(165,30,85,.15); color: #b1547b;">
             <q-icon name="support_agent" size="28px" />
           </div>
           <h3>Consultoria Krivus</h3>
@@ -57,7 +57,7 @@
       </div>
 
       <div class="trust-note">
-        <q-icon name="verified_user" size="16px" color="teal-6" />
+        <q-icon name="verified_user" size="16px" color="primary" />
         Sem fidelidade. Sem taxas ocultas. Só avançamos quando você avança.
       </div>
 
@@ -78,7 +78,7 @@ export default defineComponent({ name: 'SignUpCallToAction' })
 .cta-section {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, #0f172a 0%, #134e4a 50%, #0f172a 100%);
+  background: linear-gradient(160deg, #101e2b 0%, #5c0f30 50%, #101e2b 100%);
   padding: 96px 0;
 }
 
@@ -101,14 +101,14 @@ export default defineComponent({ name: 'SignUpCallToAction' })
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
-  color: #2dd4bf;
+  color: #f28ab4;
   margin-bottom: 14px;
 }
 
 .cta-title {
   font-size: clamp(1.8rem, 3.5vw, 2.5rem);
   font-weight: 800;
-  color: #f1f5f9;
+  color: #dfe9ef;
   margin: 0 0 14px;
   letter-spacing: -.8px;
   line-height: 1.2;
@@ -116,7 +116,7 @@ export default defineComponent({ name: 'SignUpCallToAction' })
 
 .cta-sub {
   font-size: 1.05rem;
-  color: #94a3b8;
+  color: #6b8498;
   line-height: 1.7;
 }
 
@@ -148,13 +148,13 @@ export default defineComponent({ name: 'SignUpCallToAction' })
   h3 {
     font-size: 1.15rem;
     font-weight: 700;
-    color: #f1f5f9;
+    color: #dfe9ef;
     margin: 16px 0 10px;
   }
 
   p {
     font-size: .9rem;
-    color: #94a3b8;
+    color: #6b8498;
     line-height: 1.7;
     margin: 0 0 20px;
   }
@@ -169,7 +169,7 @@ export default defineComponent({ name: 'SignUpCallToAction' })
 
     li {
       font-size: .86rem;
-      color: #cbd5e1;
+      color: #93aebb;
     }
   }
 }
@@ -194,11 +194,11 @@ export default defineComponent({ name: 'SignUpCallToAction' })
   transition: background .2s, box-shadow .2s;
 
   &--primary {
-    background: #0d9488;
+    background: #a51e55;
     color: #fff;
     &:hover {
-      background: #0f766e;
-      box-shadow: 0 6px 20px rgba(13,148,136,.4);
+      background: #7f1642;
+      box-shadow: 0 6px 20px rgba(165,30,85,.4);
     }
   }
 
@@ -216,7 +216,7 @@ export default defineComponent({ name: 'SignUpCallToAction' })
 .trust-note {
   text-align: center;
   font-size: .85rem;
-  color: #64748b;
+  color: #4c6272;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -227,7 +227,7 @@ export default defineComponent({ name: 'SignUpCallToAction' })
 .deco {
   position: absolute;
   border-radius: 50%;
-  background: #2dd4bf;
+  background: #f28ab4;
   pointer-events: none;
 }
 

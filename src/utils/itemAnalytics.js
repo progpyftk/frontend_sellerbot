@@ -29,17 +29,17 @@ export const COMBINE_MODE = 'combine'
 // `band: true` indica métrica binária renderizada como faixa de fundo, não como curva.
 export const METRIC_CATALOG = [
   { key: 'visits', label: 'Visitas', category: 'traffic', axis: 'y', format: 'count', color: '#0284c7' },
-  { key: 'orders_count', label: 'Pedidos', category: 'traffic', axis: 'y', format: 'count', color: '#0f766e' },
+  { key: 'orders_count', label: 'Pedidos', category: 'traffic', axis: 'y', format: 'count', color: '#7f1642' },
   { key: 'units_sold', label: 'Unidades vendidas', category: 'traffic', axis: 'y', format: 'count', color: '#eab308' },
   { key: 'conversion_rate', label: 'Conversão', category: 'traffic', axis: 'y2', format: 'percent', color: '#f59e0b' },
   { key: 'ads_cost', label: 'Ads (custo)', category: 'traffic', axis: 'y', format: 'currency', color: '#7c3aed', disabled: true, disabledHint: 'disponível quando o backend entregar ads_cost/ads_roas' },
-  { key: 'price', label: 'Preço', category: 'price', axis: 'y3', format: 'currency', color: '#6366f1' },
+  { key: 'price', label: 'Preço', category: 'price', axis: 'y3', format: 'currency', color: '#658aa1' },
   { key: 'original_price', label: 'Preço original', category: 'price', axis: 'y3', format: 'currency', color: '#a78bfa' },
   { key: 'gmv', label: 'GMV', category: 'price', axis: 'y3', format: 'currency', color: '#d97706' },
   { key: 'has_promotion', label: 'Com promoção', category: 'price', axis: null, format: 'boolean', color: '#fb923c', band: true },
-  { key: 'available_quantity', label: 'Estoque informado', category: 'stock', axis: 'y', format: 'count', color: '#64748b' },
+  { key: 'available_quantity', label: 'Estoque informado', category: 'stock', axis: 'y', format: 'count', color: '#4c6272' },
   { key: 'fulfillment_available_quantity', label: 'Full disponível', category: 'stock', axis: 'y', format: 'count', color: '#16a34a' },
-  { key: 'fulfillment_total_quantity', label: 'Full total', category: 'stock', axis: 'y', format: 'count', color: '#94a3b8' },
+  { key: 'fulfillment_total_quantity', label: 'Full total', category: 'stock', axis: 'y', format: 'count', color: '#6b8498' },
 ]
 
 export const COMBINE_CATEGORIES = Object.freeze([

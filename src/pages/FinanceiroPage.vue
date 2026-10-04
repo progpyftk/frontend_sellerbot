@@ -28,8 +28,8 @@
           dense
           no-caps
           align="left"
-          active-color="teal-8"
-          indicator-color="teal-8"
+          active-color="primary"
+          indicator-color="primary"
           class="financeiro-tabs"
           @update:model-value="irPara"
         >

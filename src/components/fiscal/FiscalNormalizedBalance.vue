@@ -126,7 +126,7 @@
             dense
             no-caps
             unelevated
-            toggle-color="teal-8"
+            toggle-color="primary"
             color="grey-3"
             text-color="grey-8"
             :options="[
@@ -221,7 +221,7 @@
 
         <template #body-cell-unit="props">
           <q-td :props="props">
-            <q-chip dense size="sm" color="teal-1" text-color="teal-10" class="text-weight-bold">
+            <q-chip dense size="sm" color="primary" text-color="primary" class="text-weight-bold">
               {{ dimensionIcon(props.row.dimension) }} {{ props.row.unit }}
             </q-chip>
           </q-td>
@@ -244,7 +244,7 @@
             <span
               :class="[
                 'text-weight-bold',
-                props.row.balance_qty > 0 ? 'text-teal-9' : props.row.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'
+                props.row.balance_qty > 0 ? 'text-primary' : props.row.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'
               ]"
             >
               {{ formatNumber(props.row.balance_qty) }}
@@ -269,7 +269,7 @@
             <span
               :class="[
                 'text-weight-bold',
-                props.row.balance_value > 0 ? 'text-teal-9' : props.row.balance_value < 0 ? 'text-red-9' : 'text-grey-7'
+                props.row.balance_value > 0 ? 'text-primary' : props.row.balance_value < 0 ? 'text-red-9' : 'text-grey-7'
               ]"
             >
               {{ formatCurrency(props.row.balance_value) }}
@@ -497,13 +497,13 @@ defineExpose({ load })
 
 <style scoped>
 .normalized-balance__banner { border: 1px solid #a7f3d0; }
-.normalized-balance__banner--good { background: #ecfdf5; color: #134e4a; }
+.normalized-balance__banner--good { background: #ecfdf5; color: #5c0f30; }
 .normalized-balance__banner--warn { background: #fffbeb; border-color: #fde68a; color: #78350f; }
 .normalized-balance__banner--bad { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
-.normalized-balance__banner--empty { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+.normalized-balance__banner--empty { background: #edf4f7; border-color: #b8cbd6; color: #4c6272; }
 .normalized-pending-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; }
 .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 .text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.border-bottom { border-bottom: 1px solid #f1f5f9; }
+.border-bottom { border-bottom: 1px solid #dfe9ef; }
 .normalized-table :deep(.q-table__middle) { overflow-x: auto; }
 </style>

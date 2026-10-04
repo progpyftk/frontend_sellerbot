@@ -83,7 +83,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .testimonials-section {
-  background: linear-gradient(160deg, #0f172a 0%, #134e4a 60%, #0f172a 100%);
+  background: linear-gradient(160deg, #101e2b 0%, #5c0f30 60%, #101e2b 100%);
   padding: 96px 0;
 }
 
@@ -104,21 +104,21 @@ export default defineComponent({
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
-  color: #2dd4bf;
+  color: #f28ab4;
   margin-bottom: 12px;
 }
 
 .section-title {
   font-size: clamp(1.75rem, 3vw, 2.4rem);
   font-weight: 800;
-  color: #f1f5f9;
+  color: #dfe9ef;
   margin: 0 0 14px;
   letter-spacing: -.7px;
 }
 
 .section-sub {
   font-size: 1rem;
-  color: #94a3b8;
+  color: #6b8498;
   line-height: 1.7;
 }
 
@@ -147,7 +147,7 @@ export default defineComponent({
 
 .tcard-quote {
   font-size: .9rem;
-  color: #cbd5e1;
+  color: #93aebb;
   line-height: 1.7;
   margin: 0 0 24px;
   font-style: italic;
@@ -163,7 +163,7 @@ export default defineComponent({
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  background: linear-gradient(135deg, #a51e55, #b1547b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -177,12 +177,12 @@ export default defineComponent({
   display: block;
   font-size: .9rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #dfe9ef;
 }
 
 .tcard-author span {
   font-size: .78rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.4;
 }
 
@@ -202,12 +202,12 @@ export default defineComponent({
 .rval {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #2dd4bf;
+  color: #f28ab4;
 }
 
 .rlbl {
   font-size: .72rem;
-  color: #64748b;
+  color: #4c6272;
   text-transform: uppercase;
   letter-spacing: .6px;
 }

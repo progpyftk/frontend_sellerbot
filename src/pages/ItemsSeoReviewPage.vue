@@ -512,9 +512,9 @@ onMounted(() => {
   align-items: center;
   padding: 12px 16px;
   border: 1px solid #c7dedd;
-  border-left: 3px solid #0d9488;
+  border-left: 3px solid #a51e55;
   border-radius: 10px;
-  background: linear-gradient(100deg, #f0fdfa 0%, #f8fafc 100%);
+  background: linear-gradient(100deg, #fdf2f7 0%, #edf4f7 100%);
   color: #335b5d;
   font-size: 13px;
 }
@@ -529,7 +529,7 @@ onMounted(() => {
   margin-bottom: 18px;
 }
 .seo-review__section-kicker {
-  color: #0d9488;
+  color: #a51e55;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .12em;
@@ -543,12 +543,12 @@ onMounted(() => {
 }
 .seo-review__section-copy {
   margin: 0;
-  color: #64748b;
+  color: #4c6272;
   font-size: 13px;
 }
 .seo-review__candidate-count {
   flex-shrink: 0;
-  color: #0f766e;
+  color: #7f1642;
   font-size: 12px;
   font-weight: 700;
   padding: 7px 10px;
@@ -589,7 +589,7 @@ onMounted(() => {
   min-width: 0;
 }
 .seo-review__step-arrow {
-  color: #cbd5e1;
+  color: #93aebb;
   margin-top: 10px;
   flex-shrink: 0;
 }
@@ -597,8 +597,8 @@ onMounted(() => {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #f0fdf9;
-  color: #0d9488;
+  background: #fdf2f7;
+  color: #a51e55;
   font-size: 12px;
   font-weight: 700;
   display: flex;
@@ -610,13 +610,13 @@ onMounted(() => {
 .seo-review__step-title {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   margin-bottom: 2px;
 }
 .seo-review__step-text {
   font-size: 12.5px;
   line-height: 1.5;
-  color: #475569;
+  color: #4c6272;
 }
 .seo-review__step-text .sb-badge {
   margin: 0 2px;
@@ -632,7 +632,7 @@ onMounted(() => {
 .seo-review__runbar {
   font-size: 13px;
   color: #4b5563;
-  background: #f1f5f9;
+  background: #dfe9ef;
   border-radius: 8px;
   padding: 10px 14px;
 }
@@ -641,7 +641,7 @@ onMounted(() => {
   cursor: pointer;
 }
 .seo-review__row:hover {
-  background: #f8fafc;
+  background: #edf4f7;
 }
 .seo-review__gaps {
   display: flex;
@@ -661,7 +661,7 @@ onMounted(() => {
   gap: 10px;
 }
 .seo-review__card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 10px;
   padding: 12px 14px;
   background: #fff;
@@ -676,7 +676,7 @@ onMounted(() => {
 .seo-review__card-campo {
   font-weight: 700;
   font-size: 13px;
-  color: #0f172a;
+  color: #101e2b;
 }
 .seo-review__diff {
   font-size: 13px;
@@ -713,17 +713,17 @@ onMounted(() => {
   flex-shrink: 0;
 }
 .seo-review__diff-arrow {
-  color: #cbd5e1;
+  color: #93aebb;
   align-self: center;
 }
 .seo-review__card-evidencia {
   font-size: 12px;
-  color: #64748b;
+  color: #4c6272;
   margin-top: 8px;
 }
 .seo-review__card-confianca {
   font-size: 11px;
-  color: #94a3b8;
+  color: #6b8498;
   margin-top: 4px;
   text-transform: capitalize;
 }
@@ -733,10 +733,10 @@ onMounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #b8cbd6;
   padding-top: 12px;
 }
 .seo-review__detail > td {
-  background: #f8fafc;
+  background: #edf4f7;
 }
 </style>

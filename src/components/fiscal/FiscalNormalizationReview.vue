@@ -1,7 +1,7 @@
 <template>
   <div class="normalization-review">
     <q-banner rounded class="q-mb-md normalization-review__banner">
-      <template #avatar><q-icon name="verified" color="teal-8" /></template>
+      <template #avatar><q-icon name="verified" color="primary" /></template>
       <div class="text-weight-bold">Normalização métrica do saldo fiscal</div>
       <div class="text-body2 q-mt-xs">
         Apenas aliases e regras aprovados entram no saldo normalizado. Sugestões pendentes ficam fora do cálculo;
@@ -28,7 +28,7 @@
 
     <div class="row q-col-gutter-md q-mb-md">
       <div class="col-12 col-sm-4"><div class="review-kpi"><span>Pendentes</span><strong class="text-amber-9">{{ pendingCount }}</strong><small>aguardando revisão</small></div></div>
-      <div class="col-12 col-sm-4"><div class="review-kpi"><span>Aprovados</span><strong class="text-teal-9">{{ approvedCount }}</strong><small>aptos para a próxima normalização</small></div></div>
+      <div class="col-12 col-sm-4"><div class="review-kpi"><span>Aprovados</span><strong class="text-primary">{{ approvedCount }}</strong><small>aptos para a próxima normalização</small></div></div>
       <div class="col-12 col-sm-4"><div class="review-kpi"><span>Exibidos</span><strong>{{ aliases.length }}</strong><small>nesta consulta</small></div></div>
     </div>
 
@@ -66,7 +66,7 @@
         <template #body-cell-actions="props">
           <q-td :props="props" class="text-right">
             <q-btn v-if="props.row.status === 'suggested'" flat dense color="negative" icon="close" @click="reviewAlias(props.row, 'rejected')"><q-tooltip>Rejeitar sugestão</q-tooltip></q-btn>
-            <q-btn v-if="props.row.status === 'suggested'" unelevated dense color="teal-8" icon="check" label="Aprovar" @click="reviewAlias(props.row, 'approved')" />
+            <q-btn v-if="props.row.status === 'suggested'" unelevated dense color="primary" icon="check" label="Aprovar" @click="reviewAlias(props.row, 'approved')" />
             <q-btn v-else flat dense icon="visibility" @click="selectedAlias = props.row; showAliasDialog = true"><q-tooltip>Ver evidência</q-tooltip></q-btn>
           </q-td>
         </template>
@@ -90,7 +90,7 @@
       </q-card-section>
       <q-list separator>
         <q-item v-for="product in canonicalProducts" :key="product.id">
-          <q-item-section avatar><q-icon :name="product.dimension === 'mass' ? 'scale' : product.dimension === 'volume' ? 'local_drink' : 'inventory_2'" color="teal-8" /></q-item-section>
+          <q-item-section avatar><q-icon :name="product.dimension === 'mass' ? 'scale' : product.dimension === 'volume' ? 'local_drink' : 'inventory_2'" color="primary" /></q-item-section>
           <q-item-section>
             <q-item-label>{{ product.name }}</q-item-label>
             <q-item-label caption>{{ product.dimension }} · unidade padrão {{ product.default_unit }} · NCMs {{ (product.compatible_ncms || []).join(', ') || 'não informados' }}</q-item-label>
@@ -98,7 +98,7 @@
           <q-item-section side>
             <div class="row items-center q-gutter-xs">
               <q-chip dense :color="statusColor(product.status)" :text-color="statusTextColor(product.status)">{{ statusLabel(product.status) }}</q-chip>
-              <q-btn v-if="product.status === 'suggested'" unelevated dense color="teal-8" label="Aprovar produto" @click="reviewCanonical(product, 'approved')" />
+              <q-btn v-if="product.status === 'suggested'" unelevated dense color="primary" label="Aprovar produto" @click="reviewCanonical(product, 'approved')" />
               <q-btn v-if="product.status === 'suggested'" flat dense color="negative" icon="close" @click="reviewCanonical(product, 'rejected')" />
             </div>
           </q-item-section>
@@ -220,16 +220,16 @@ watch(() => props.refreshToken, (value, previous) => { if (value !== previous) r
 </script>
 
 <style scoped>
-.normalization-review__banner { background: #ecfdf5; border: 1px solid #a7f3d0; color: #134e4a; }
-.review-kpi { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
-.review-kpi span { color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-.review-kpi strong { font-size: 24px; line-height: 1.1; color: #0f172a; }
-.review-kpi small { color: #64748b; }
+.normalization-review__banner { background: #ecfdf5; border: 1px solid #a7f3d0; color: #5c0f30; }
+.review-kpi { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border: 1px solid #b8cbd6; border-radius: 10px; background: #fff; }
+.review-kpi span { color: #4c6272; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.review-kpi strong { font-size: 24px; line-height: 1.1; color: #101e2b; }
+.review-kpi small { color: #4c6272; }
 .alias-description, .evidence-value { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 .review-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.review-detail-grid div { padding: 10px; border-radius: 8px; background: #f8fafc; }
+.review-detail-grid div { padding: 10px; border-radius: 8px; background: #edf4f7; }
 .review-detail-grid span, .review-detail-grid strong { display: block; }
-.review-detail-grid span { color: #64748b; font-size: 12px; margin-bottom: 3px; }
+.review-detail-grid span { color: #4c6272; font-size: 12px; margin-bottom: 3px; }
 @media (max-width: 600px) { .review-detail-grid { grid-template-columns: 1fr; } }
 </style>

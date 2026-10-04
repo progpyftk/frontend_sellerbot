@@ -16,7 +16,7 @@
             {{ pagination.rowsNumber.toLocaleString('pt-BR') }} pedidos
           </div>
         </div>
-         <q-btn v-if="canWrite" unelevated color="teal-7" icon="account_balance_wallet" label="Backfill Escrow"
+         <q-btn v-if="canWrite" unelevated color="primary" icon="account_balance_wallet" label="Backfill Escrow"
           :loading="backfillingEscrow" size="sm" class="q-px-md q-mr-sm"
           @click="backfillEscrow">
           <q-tooltip class="bg-grey-9" style="max-width:260px">
@@ -71,7 +71,7 @@
             <div class="today-card-val">{{ formatCurrency(todayStats.faturamento) }}</div>
             <div class="today-card-label">Receita líquida</div>
             <div class="today-card-sub">
-              <span :class="todayStats.revenue_basis === 'escrow' ? 'text-teal-6' : 'text-orange-6'">
+              <span :class="todayStats.revenue_basis === 'escrow' ? 'text-primary' : 'text-orange-6'">
                 {{ revenueBasisLabel(todayStats) }}
               </span>
               <span v-if="todayStats.revenue_basis !== 'escrow'" class="text-grey-5">
@@ -160,7 +160,7 @@
                   clickable v-close-popup @click="applySort(opt.value)">
                   <q-item-section>{{ opt.label }}</q-item-section>
                   <q-item-section side v-if="currentSort === opt.value">
-                    <q-icon name="check" color="teal-7" size="14px" />
+                    <q-icon name="check" color="primary" size="14px" />
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -174,7 +174,7 @@
               <q-list dense style="min-width:200px">
                 <q-item-label header class="fb-menu-header">Expedição</q-item-label>
                 <q-item clickable v-close-popup @click="setView('READY_TO_SHIP')">
-                  <q-item-section avatar><q-icon name="inventory" color="teal-7" size="16px" /></q-item-section>
+                  <q-item-section avatar><q-icon name="inventory" color="primary" size="16px" /></q-item-section>
                   <q-item-section>Pronto para Envio</q-item-section>
                 </q-item>
                 <q-item clickable v-close-popup @click="setView('PROCESSED')">
@@ -238,7 +238,7 @@
                 <q-item-section side>
                   <q-checkbox :model-value="filters.account?.includes(acc.id)"
                     @update:model-value="toggleFilter('account', acc.id)"
-                    @click.stop color="teal-7" dense />
+                    @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ acc.shop_name }}</q-item-section>
               </q-item>
@@ -268,7 +268,7 @@
                 <q-item-section side>
                   <q-checkbox :model-value="filters.status?.includes(opt.value)"
                     @update:model-value="toggleFilter('status', opt.value)"
-                    @click.stop color="teal-7" dense />
+                    @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section>
                   <div class="row items-center q-gutter-x-xs">
@@ -303,7 +303,7 @@
                 <q-item-section side>
                   <q-checkbox :model-value="filters.shipping_carrier?.includes(opt.value)"
                     @update:model-value="toggleFilter('shipping_carrier', opt.value)"
-                    @click.stop color="teal-7" dense />
+                    @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section>
                   <span class="fb-menu-item-label">{{ opt.label }}</span>
@@ -344,7 +344,7 @@
         <div v-if="activeFilterTags.length" class="fb-index">
           <div class="fb-index-header">
             <div class="fb-index-title">
-              <q-icon name="filter_list" size="13px" color="teal-7" />
+              <q-icon name="filter_list" size="13px" color="primary" />
               Filtros ativos
               <span class="fb-index-count">{{ activeFilterTags.length }}</span>
             </div>
@@ -355,7 +355,7 @@
           <div class="fb-index-rows">
             <div v-for="tag in activeFilterTags" :key="tag.key + tag.value" class="fb-index-row">
               <div class="fb-index-cat">
-                <q-icon :name="tag.icon" size="10px" color="teal-7" />
+                <q-icon :name="tag.icon" size="10px" color="primary" />
                 {{ tag.catLabel }}
               </div>
               <div class="fb-index-pills">
@@ -534,7 +534,7 @@
           </q-tr>
         </template>
 
-        <template #loading><q-inner-loading showing color="teal-7" /></template>
+        <template #loading><q-inner-loading showing color="primary" /></template>
       </q-table>
     </div>
 
@@ -562,11 +562,11 @@
             <div class="column items-end q-gutter-y-xs">
               <q-btn flat round dense icon="close" color="grey-6" @click="detailOpen = false" />
               <q-btn v-if="!isEscrowReal(selectedOrder)"
-                unelevated dense size="xs" color="teal-7" icon="sync" label="Sync Escrow"
+                unelevated dense size="xs" color="primary" icon="sync" label="Sync Escrow"
                 :loading="syncingEscrow"
                 @click="syncOrderEscrow(selectedOrder)"
               />
-              <q-icon v-else name="verified" size="14px" color="teal-6">
+              <q-icon v-else name="verified" size="14px" color="primary">
                 <q-tooltip class="bg-grey-9">Dados de escrow sincronizados</q-tooltip>
               </q-icon>
             </div>
@@ -587,7 +587,7 @@
                 <span class="text-grey-7">Pago em {{ formatDate(selectedOrder.pay_time) }}</span>
               </div>
               <div v-if="selectedOrder.tracking_number" class="detail-meta-item">
-                <q-icon name="local_shipping" size="12px" class="q-mr-xs text-teal-7" />
+                <q-icon name="local_shipping" size="12px" class="q-mr-xs text-primary" />
                 <span class="font-mono text-grey-8">{{ selectedOrder.tracking_number }}</span>
               </div>
             </div>
@@ -644,7 +644,7 @@
           <div class="detail-section">
             <div class="detail-section-title">
               <q-icon name="account_balance_wallet" size="14px" /> Auditoria Financeira
-              <q-badge v-if="isEscrowReal(selectedOrder)" color="teal-7" class="q-ml-sm" style="font-size:9px">ESCROW</q-badge>
+              <q-badge v-if="isEscrowReal(selectedOrder)" color="primary" class="q-ml-sm" style="font-size:9px">ESCROW</q-badge>
               <q-badge v-else :color="selectedOrder.escrow_sync_status === 'error' ? 'negative' : 'grey-5'" class="q-ml-sm" style="font-size:9px">
                 {{ escrowStatusLabel(selectedOrder) }}
               </q-badge>
@@ -689,7 +689,7 @@
 
                 <!-- Subsídios da Shopee que cobrem a diferença até o valor pago pelo comprador -->
                 <div v-if="getShopeeSubsidy(selectedOrder) > 0" class="finance-row finance-row--note q-mt-xs">
-                  <span class="finance-label-note text-indigo-6">
+                  <span class="finance-label-note text-secondary">
                     Subsídio Shopee
                     <q-tooltip class="bg-grey-9" style="max-width:300px">
                       A Shopee cobriu a diferença entre o Preço de venda (R${{ formatCurrency(selectedOrder.selling_price) }}) e o valor efetivamente pago pelo comprador (R${{ formatCurrency(selectedOrder.total_amount) }}).
@@ -698,7 +698,7 @@
                     </q-tooltip>
                     <q-icon name="info_outline" size="10px" class="q-ml-xs" />
                   </span>
-                  <span class="finance-val-note text-indigo-6">-{{ formatCurrency(getShopeeSubsidy(selectedOrder)) }}</span>
+                  <span class="finance-val-note text-secondary">-{{ formatCurrency(getShopeeSubsidy(selectedOrder)) }}</span>
                 </div>
                 <div class="finance-row finance-row--note">
                   <span class="finance-label-note finance-bold">Total pago pelo comprador</span>
@@ -780,7 +780,7 @@
                     </span>
                     <span class="finance-negative">-{{ formatCurrency(selectedOrder.logistics_fee) }}</span>
                   </div>
-                  <div v-if="Number(selectedOrder.shopee_shipping_rebate) > 0" class="logistics-box-row text-teal-7">
+                  <div v-if="Number(selectedOrder.shopee_shipping_rebate) > 0" class="logistics-box-row text-primary">
                     <span>Rebate Shopee
                       <q-tooltip class="bg-grey-9" style="max-width:260px">shopee_shipping_rebate: Shopee subsidia o frete devolvendo ao seller</q-tooltip>
                       <q-icon name="info_outline" size="9px" class="q-ml-xs" />
@@ -790,7 +790,7 @@
                   <div class="logistics-box-divider" />
                   <div class="logistics-box-row logistics-box-total">
                     <span>Frete líquido (custo real)</span>
-                    <span :class="getFreteNet(selectedOrder) > 0 ? 'finance-negative' : 'text-teal-7'">
+                    <span :class="getFreteNet(selectedOrder) > 0 ? 'finance-negative' : 'text-primary'">
                       {{ formatCurrency(getFreteNet(selectedOrder)) }}
                     </span>
                   </div>
@@ -880,7 +880,7 @@
             <div class="detail-section-title">
               <q-icon name="local_shipping" size="14px" /> Rastreamento
               <span class="font-mono text-grey-5 q-ml-sm" style="font-size:10px">{{ selectedOrder.tracking_number }}</span>
-              <q-spinner v-if="trackingLoading" size="12px" color="teal-6" class="q-ml-sm" />
+              <q-spinner v-if="trackingLoading" size="12px" color="primary" class="q-ml-sm" />
             </div>
 
             <!-- Timeline de eventos -->
@@ -1456,12 +1456,12 @@ onMounted(() => {
 <style scoped lang="scss">
 @import 'src/css/tokens.scss';
 /* ── Página base ───────────────────────────────────────────── */
-.shopee-orders-page { background: #f8fafc; min-height: 100vh; }
+.shopee-orders-page { background: #edf4f7; min-height: 100vh; }
 
 /* ── Header ────────────────────────────────────────────────── */
 .page-header {
   background: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #b8cbd6;
   padding: 14px 20px;
   position: sticky; top: $app-header-h; z-index: 10;
 }
@@ -1471,50 +1471,50 @@ onMounted(() => {
   display: flex; align-items: center; justify-content: center;
   color: #fff;
 }
-.header-eyebrow { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
-.header-title { font-size: 18px; font-weight: 700; color: #0f172a; }
+.header-eyebrow { font-size: 10px; font-weight: 600; color: #6b8498; text-transform: uppercase; letter-spacing: .5px; }
+.header-title { font-size: 18px; font-weight: 700; color: #101e2b; }
 .header-count {
-  background: #f1f5f9; border-radius: 10px; padding: 3px 10px;
-  font-size: 12px; font-weight: 600; color: #64748b;
+  background: #dfe9ef; border-radius: 10px; padding: 3px 10px;
+  font-size: 12px; font-weight: 600; color: #4c6272;
 }
 
 /* ── Today bar ─────────────────────────────────────────────── */
 .today-bar {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 20px; background: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #b8cbd6;
   overflow-x: auto;
 }
 .today-bar-label {
   display: flex; align-items: center; font-size: 11px; font-weight: 700;
-  color: #94a3b8; text-transform: uppercase; letter-spacing: .5px;
+  color: #6b8498; text-transform: uppercase; letter-spacing: .5px;
   flex-shrink: 0;
 }
 .today-card {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 12px; border-radius: 10px; flex-shrink: 0;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #b8cbd6;
 }
 .today-card--skeleton {
-  width: 130px; height: 50px; background: #f1f5f9;
+  width: 130px; height: 50px; background: #dfe9ef;
   border-radius: 10px; animation: pulse 1.4s ease-in-out infinite;
 }
 @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
 .today-card--pos { border-color: #bbf7d0; background: #f0fdf4; }
 .today-card--neg { border-color: #fecaca; background: #fef2f2; }
-.today-card--neutral { border-color: #e2e8f0; background: #f8fafc; }
-.today-card-icon { color: #0d9488; }
+.today-card--neutral { border-color: #b8cbd6; background: #edf4f7; }
+.today-card-icon { color: #a51e55; }
 .today-card--pos .today-card-icon { color: #16a34a; }
 .today-card--neg .today-card-icon { color: #dc2626; }
 .today-card-body { display: flex; flex-direction: column; }
-.today-card-val { font-size: 16px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-.today-card-val--muted { color: #94a3b8; }
-.today-card-label { font-size: 10px; color: #64748b; display: flex; align-items: center; gap: 4px; }
-.today-card-badge { background: #f0fdf9; color: #0d9488; border-radius: 4px; padding: 0 4px; font-size: 9px; font-weight: 700; }
-.today-card-sub { font-size: 10px; color: #94a3b8; }
+.today-card-val { font-size: 16px; font-weight: 700; color: #101e2b; line-height: 1.2; }
+.today-card-val--muted { color: #6b8498; }
+.today-card-label { font-size: 10px; color: #4c6272; display: flex; align-items: center; gap: 4px; }
+.today-card-badge { background: #fdf2f7; color: #a51e55; border-radius: 4px; padding: 0 4px; font-size: 9px; font-weight: 700; }
+.today-card-sub { font-size: 10px; color: #6b8498; }
 
 /* ── Filter bar ────────────────────────────────────────────── */
-.fb { background: #fff; border-bottom: 1px solid #e2e8f0; }
+.fb { background: #fff; border-bottom: 1px solid #b8cbd6; }
 
 .fb-toolbar {
   display: flex; align-items: center; gap: 8px;
@@ -1525,21 +1525,21 @@ onMounted(() => {
   display: flex; align-items: center; gap: 6px;
   flex: 1; min-width: 160px; max-width: 380px;
   height: 34px; padding: 0 10px;
-  border: 1.5px solid #e2e8f0; border-radius: 10px;
-  background: #f8fafc; transition: border-color .15s, background .15s;
+  border: 1.5px solid #b8cbd6; border-radius: 10px;
+  background: #edf4f7; transition: border-color .15s, background .15s;
 }
-.fb-search.focused, .fb-search.filled { border-color: #0d9488; background: #fff; }
-.fb-search-icon { color: #94a3b8; flex-shrink: 0; }
+.fb-search.focused, .fb-search.filled { border-color: #a51e55; background: #fff; }
+.fb-search-icon { color: #6b8498; flex-shrink: 0; }
 .fb-search-input {
   flex: 1; border: none; outline: none; background: transparent;
-  font-size: 13px; color: #0f172a;
+  font-size: 13px; color: #101e2b;
 }
-.fb-search-input::placeholder { color: #94a3b8; }
+.fb-search-input::placeholder { color: #6b8498; }
 .fb-search-clear {
-  background: none; border: none; cursor: pointer; color: #94a3b8;
+  background: none; border: none; cursor: pointer; color: #6b8498;
   padding: 0; display: flex; align-items: center;
 }
-.fb-search-clear:hover { color: #0f172a; }
+.fb-search-clear:hover { color: #101e2b; }
 
 .fb-toolbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
 .fb-btn-group { display: flex; }
@@ -1547,14 +1547,14 @@ onMounted(() => {
 .fb-tbtn {
   display: flex; align-items: center; gap: 5px;
   height: 32px; padding: 0 12px; border-radius: 7px;
-  border: 1.5px solid #e2e8f0; background: #fff !important;
-  font-size: 12px !important; font-weight: 500; color: #64748b !important;
+  border: 1.5px solid #b8cbd6; background: #fff !important;
+  font-size: 12px !important; font-weight: 500; color: #4c6272 !important;
   cursor: pointer; transition: all .15s; white-space: nowrap;
 }
-.fb-tbtn:hover { background: #f8fafc !important; }
-.fb-tbtn--active { border-color: #0d9488 !important; color: #0d9488 !important; background: #f0fdf9 !important; }
+.fb-tbtn:hover { background: #edf4f7 !important; }
+.fb-tbtn--active { border-color: #a51e55 !important; color: #a51e55 !important; background: #fdf2f7 !important; }
 .fb-adv-badge {
-  background: #0d9488; color: #fff;
+  background: #a51e55; color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 10px;
   padding: 1px 5px; min-width: 16px; text-align: center;
 }
@@ -1565,7 +1565,7 @@ onMounted(() => {
   color: #ef4444; cursor: pointer; transition: background .15s;
 }
 .fb-clear-btn:hover { background: #fef2f2; }
-.fb-menu-header { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 8px 16px 4px; }
+.fb-menu-header { font-size: 10px; font-weight: 700; color: #6b8498; text-transform: uppercase; padding: 8px 16px 4px; }
 
 /* ── Filterbar comboboxes ──────────────────────────────────── */
 .fb-filterbar {
@@ -1574,37 +1574,37 @@ onMounted(() => {
 }
 .fb-combo {
   position: relative; display: flex; align-items: center;
-  border: 1.5px solid #e2e8f0; border-radius: 20px;
+  border: 1.5px solid #b8cbd6; border-radius: 20px;
   background: #fff; transition: border-color .15s; overflow: visible;
 }
-.fb-combo:hover { border-color: #cbd5e1; }
-.fb-combo--on   { border-color: #0d9488; background: #f0fdf9; }
+.fb-combo:hover { border-color: #93aebb; }
+.fb-combo--on   { border-color: #a51e55; background: #fdf2f7; }
 .fb-combo-btn {
   display: flex; align-items: center; gap: 5px;
   height: 30px; padding: 0 10px 0 9px;
   background: none; border: none; cursor: pointer;
   font-size: 12px; font-weight: 500; color: #374151; border-radius: 20px;
 }
-.fb-combo--on .fb-combo-btn  { color: #0d9488; }
-.fb-combo-ico                { color: #94a3b8; flex-shrink: 0; }
-.fb-combo--on .fb-combo-ico  { color: #0d9488; }
+.fb-combo--on .fb-combo-btn  { color: #a51e55; }
+.fb-combo-ico                { color: #6b8498; flex-shrink: 0; }
+.fb-combo--on .fb-combo-ico  { color: #a51e55; }
 .fb-combo-label              { white-space: nowrap; }
 .fb-combo-multi {
-  background: #0d9488; color: #fff; border-radius: 10px;
+  background: #a51e55; color: #fff; border-radius: 10px;
   font-size: 10px; font-weight: 700; padding: 0 5px;
 }
-.fb-combo-arrow { color: #94a3b8; }
+.fb-combo-arrow { color: #6b8498; }
 .fb-combo-clear {
   display: flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 50%;
-  background: #0d9488; border: none; cursor: pointer;
+  background: #a51e55; border: none; cursor: pointer;
   color: #fff; margin-right: 5px; flex-shrink: 0;
 }
-.fb-combo-clear:hover { background: #0f766e; }
+.fb-combo-clear:hover { background: #7f1642; }
 
 .fb-menu { border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,.10) !important; }
 .fb-menu-item { transition: background .1s; }
-.fb-menu-item--on { background: #f0fdf9 !important; }
+.fb-menu-item--on { background: #fdf2f7 !important; }
 .fb-menu-item-label { font-size: 13px; }
 
 /* ── Status dot in filter menu ─────────────────────────────── */
@@ -1613,7 +1613,7 @@ onMounted(() => {
 }
 .s-dot--completed { background: #16a34a; }
 .s-dot--shipped   { background: #2563eb; }
-.s-dot--ready     { background: #0d9488; }
+.s-dot--ready     { background: #a51e55; }
 .s-dot--processed { background: #0891b2; }
 .s-dot--unpaid    { background: #d97706; }
 .s-dot--invoice   { background: #7c3aed; }
@@ -1622,13 +1622,13 @@ onMounted(() => {
 .s-dot--return    { background: #f97316; }
 .s-dot--retry     { background: #ea580c; }
 .s-dot--confirm   { background: #0ea5e9; }
-.s-dot--default   { background: #94a3b8; }
+.s-dot--default   { background: #6b8498; }
 
 /* ── Filter index ──────────────────────────────────────────── */
-.fb-index { border-top: 1px solid #f1f5f9; padding: 8px 16px; background: #f8fafc; }
+.fb-index { border-top: 1px solid #dfe9ef; padding: 8px 16px; background: #edf4f7; }
 .fb-index-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.fb-index-title { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #64748b; }
-.fb-index-count { background: #e2e8f0; border-radius: 10px; padding: 0 7px; font-size: 10px; }
+.fb-index-title { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #4c6272; }
+.fb-index-count { background: #b8cbd6; border-radius: 10px; padding: 0 7px; font-size: 10px; }
 .fb-index-clear {
   display: flex; align-items: center; gap: 3px; font-size: 11px;
   color: #ef4444; background: none; border: none; cursor: pointer; padding: 0;
@@ -1637,18 +1637,18 @@ onMounted(() => {
 .fb-index-row  { display: flex; align-items: flex-start; gap: 8px; }
 .fb-index-cat  {
   display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600;
-  color: #94a3b8; text-transform: uppercase; letter-spacing: .4px;
+  color: #6b8498; text-transform: uppercase; letter-spacing: .4px;
   min-width: 70px; padding-top: 2px;
 }
 .fb-index-pills { display: flex; flex-wrap: wrap; gap: 4px; }
 .fb-index-pill {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 12px;
-  background: #f0fdf9; color: #0d9488;
+  background: #fdf2f7; color: #a51e55;
   font-size: 11px; font-weight: 500;
   cursor: pointer; transition: background .1s;
 }
-.fb-index-pill:hover { background: #ccfbf1; }
+.fb-index-pill:hover { background: #fbe0ec; }
 
 /* ── Tabela ────────────────────────────────────────────────── */
 .table-container { background: #fff; }
@@ -1662,38 +1662,38 @@ onMounted(() => {
      nao rola, qualquer `top:` vira empurrao permanente do cabecalho para baixo,
      por cima das primeiras linhas. Nada aqui gruda no viewport da pagina. */
   position: sticky; top: 0; z-index: 1;
-  background: #f8fafc;
-  font-size: 11px; font-weight: 700; color: #64748b;
+  background: #edf4f7;
+  font-size: 11px; font-weight: 700; color: #4c6272;
   text-transform: uppercase; letter-spacing: .4px;
-  border-bottom: 1.5px solid #e2e8f0;
+  border-bottom: 1.5px solid #b8cbd6;
 }
 
-:deep(.shopee-table tbody tr.hover-row:hover) { background: #f0fdf9 !important; }
-:deep(.shopee-table tbody tr.row-expanded)    { background: #f0fdf9 !important; }
+:deep(.shopee-table tbody tr.hover-row:hover) { background: #fdf2f7 !important; }
+:deep(.shopee-table tbody tr.row-expanded)    { background: #fdf2f7 !important; }
 :deep(.shopee-table tbody td) {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
   min-height: 65px; height: auto; vertical-align: top;
   padding-top: 10px; padding-bottom: 10px;
 }
 
 /* ── Cells ─────────────────────────────────────────────────── */
 .badge-mono {
-  background: #f1f5f9; color: #475569;
+  background: #dfe9ef; color: #4c6272;
   padding: 1px 5px; border-radius: 5px;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   letter-spacing: -0.5px; font-size: 11px;
 }
-.badge-mono:hover { background: #e2e8f0; }
+.badge-mono:hover { background: #b8cbd6; }
 
 .shop-badge { color: #EE4D2D; font-weight: 700; font-size: 11px; }
 .shop-badge--direta { color: #7c3aed; }
 
 .cell-amount { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-.amount-main { font-size: 14px; font-weight: 700; color: #0f172a; }
-.amount-sub  { font-size: 10px; color: #94a3b8; }
+.amount-main { font-size: 14px; font-weight: 700; color: #101e2b; }
+.amount-sub  { font-size: 10px; color: #6b8498; }
 
-.frete-val   { font-size: 13px; color: #64748b; }
-.frete-hint  { font-size: 10px; color: #94a3b8; }
+.frete-val   { font-size: 13px; color: #4c6272; }
+.frete-hint  { font-size: 10px; color: #6b8498; }
 .frete-gratis {
   display: flex; align-items: center; gap: 3px;
   font-size: 11px; color: #16a34a; font-weight: 600;
@@ -1703,7 +1703,7 @@ onMounted(() => {
 .lucro-main  { font-size: 14px; font-weight: 700; }
 .lucro-main.pos { color: #16a34a; }
 .lucro-main.neg { color: #dc2626; }
-.lucro-hint  { font-size: 10px; color: #94a3b8; }
+.lucro-hint  { font-size: 10px; color: #6b8498; }
 .margin-pill { font-size: 10px; font-weight: 700; border-radius: 20px; padding: 2px 7px; display: inline-block; margin-top: 3px; }
 .margin-pos  { background: #f0fff4; color: #276749; }
 .margin-neg  { background: #fff5f5; color: #c53030; }
@@ -1717,7 +1717,7 @@ onMounted(() => {
 }
 .order-status-pill--completed { background: #dcfce7; color: #16a34a; }
 .order-status-pill--shipped   { background: #dbeafe; color: #2563eb; }
-.order-status-pill--ready     { background: #ccfbf1; color: #0d9488; }
+.order-status-pill--ready     { background: #fbe0ec; color: #a51e55; }
 .order-status-pill--processed { background: #e0f2fe; color: #0891b2; }
 .order-status-pill--unpaid    { background: #fef3c7; color: #b45309; }
 .order-status-pill--invoice   { background: #ede9fe; color: #7c3aed; }
@@ -1726,15 +1726,15 @@ onMounted(() => {
 .order-status-pill--return    { background: #ffedd5; color: #f97316; }
 .order-status-pill--retry     { background: #ffedd5; color: #ea580c; }
 .order-status-pill--confirm   { background: #e0f2fe; color: #0ea5e9; }
-.order-status-pill--default   { background: #f1f5f9; color: #475569; }
+.order-status-pill--default   { background: #dfe9ef; color: #4c6272; }
 
 /* ── Expand panel ──────────────────────────────────────────── */
 .expand-panel {
   background: #fff; padding: 16px 20px;
-  border-top: 2px solid #0d9488;
+  border-top: 2px solid #a51e55;
 }
 .expand-section-label {
-  font-size: 10px; font-weight: 700; color: #94a3b8;
+  font-size: 10px; font-weight: 700; color: #6b8498;
   text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px;
 }
 
@@ -1742,39 +1742,39 @@ onMounted(() => {
 .item-card {
   display: flex; align-items: flex-start; gap: 10px;
   padding: 10px 12px; border-radius: 10px;
-  border: 1px solid #e2e8f0; background: #f8fafc;
+  border: 1px solid #b8cbd6; background: #edf4f7;
 }
 .item-img-placeholder {
   width: 50px; height: 50px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: #f1f5f9; border-radius: 6px;
+  background: #dfe9ef; border-radius: 6px;
 }
 .variation-badge {
   display: inline-flex; align-items: center; gap: 3px;
-  font-size: 11px; font-weight: 600; color: #0d9488;
-  background: #f0fdf9; border-radius: 6px; padding: 1px 6px;
+  font-size: 11px; font-weight: 600; color: #a51e55;
+  background: #fdf2f7; border-radius: 6px; padding: 1px 6px;
 }
 .item-price    { font-size: 12px; color: #EE4D2D; font-weight: 600; }
-.item-subtotal { font-size: 12px; color: #0f172a; font-weight: 700; }
-.border-grey   { border: 1px solid #e2e8f0; }
+.item-subtotal { font-size: 12px; color: #101e2b; font-weight: 700; }
+.border-grey   { border: 1px solid #b8cbd6; }
 
 /* ── Table extra cells ─────────────────────────────────────── */
-.amount-original { font-size: 10px; color: #94a3b8; }
+.amount-original { font-size: 10px; color: #6b8498; }
 .cell-liquido { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .liquido-main { font-size: 13px; font-weight: 700; }
-.liquido-main.pos { color: #0d9488; }
+.liquido-main.pos { color: #16a34a; }
 .liquido-main.neg { color: #dc2626; }
-.liquido-hint { font-size: 10px; color: #94a3b8; }
+.liquido-hint { font-size: 10px; color: #6b8498; }
 .variation-badge-inline {
   display: inline-flex; align-items: center; gap: 3px;
-  font-size: 10px; font-weight: 600; color: #0d9488;
+  font-size: 10px; font-weight: 600; color: #a51e55;
 }
 
 /* SKU inline na linha da tabela */
 .sku-inline {
   display: inline-block;
-  font-family: 'Roboto Mono', monospace;
-  font-size: 10px; color: #94a3b8;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 10px; color: #6b8498;
   letter-spacing: -0.3px;
 }
 
@@ -1782,25 +1782,25 @@ onMounted(() => {
 .badge-sku {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 2px 6px; border-radius: 5px;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 10.5px; font-weight: 600; letter-spacing: -0.3px;
-  background: #f1f5f9; color: #475569;
+  background: #dfe9ef; color: #4c6272;
 }
 .badge-sku--variation {
   background: #f0fdf4; color: #15803d;
 }
 .badge-sku--id {
-  background: #f8fafc; color: #94a3b8; font-weight: 400;
+  background: #edf4f7; color: #6b8498; font-weight: 400;
 }
 
 /* ── Finance summary (dialog) ──────────────────────────────── */
 .finance-summary { display: flex; flex-direction: column; gap: 4px; }
 .finance-block {
   padding: 8px 10px; border-radius: 8px;
-  background: #f8fafc; margin-bottom: 4px;
+  background: #edf4f7; margin-bottom: 4px;
 }
 .finance-block-label {
-  font-size: 10px; font-weight: 700; color: #94a3b8;
+  font-size: 10px; font-weight: 700; color: #6b8498;
   text-transform: uppercase; letter-spacing: .4px;
   margin-bottom: 6px;
 }
@@ -1811,27 +1811,27 @@ onMounted(() => {
 .finance-row--note { padding: 1px 0; }
 .finance-row--subtotal { padding: 6px 0; }
 .finance-row--total { padding: 5px 0; }
-.finance-label       { color: #64748b; display: flex; align-items: center; }
-.finance-label-note  { color: #94a3b8; font-size: 11px; display: flex; align-items: center; }
-.finance-label-bold  { color: #0f172a; font-weight: 700; font-size: 13px; }
-.finance-val         { color: #0f172a; font-weight: 500; }
-.finance-val-note    { color: #94a3b8; font-size: 11px; }
+.finance-label       { color: #4c6272; display: flex; align-items: center; }
+.finance-label-note  { color: #6b8498; font-size: 11px; display: flex; align-items: center; }
+.finance-label-bold  { color: #101e2b; font-weight: 700; font-size: 13px; }
+.finance-val         { color: #101e2b; font-weight: 500; }
+.finance-val-note    { color: #6b8498; font-size: 11px; }
 .finance-bold        { font-weight: 700; }
 .finance-negative    { color: #dc2626; }
 .finance-pos         { color: #16a34a; font-weight: 600; }
 .finance-subtotal    { font-size: 15px; font-weight: 700; }
-.finance-subtotal.pos { color: #0d9488; }
+.finance-subtotal.pos { color: #16a34a; }
 .finance-subtotal.neg { color: #dc2626; }
 .finance-total       { font-size: 16px; font-weight: 700; }
 .finance-total.pos   { color: #16a34a; }
 .finance-total.neg   { color: #dc2626; }
-.finance-divider     { height: 1px; background: #e2e8f0; margin: 8px 0; }
+.finance-divider     { height: 1px; background: #b8cbd6; margin: 8px 0; }
 .finance-note-box {
   display: flex; align-items: center;
-  font-size: 11px; color: #94a3b8;
-  background: #f8fafc; border-radius: 8px;
+  font-size: 11px; color: #6b8498;
+  background: #edf4f7; border-radius: 8px;
   padding: 8px 12px; margin-top: 8px;
-  border: 1px dashed #e2e8f0;
+  border: 1px dashed #b8cbd6;
 }
 
 /* ── Price breakdown box (quadrinho de formação de preço) ───── */
@@ -1847,7 +1847,7 @@ onMounted(() => {
   font-size: 11.5px; padding: 2px 0;
 }
 .price-box-label { color: #78716c; }
-.price-box-val   { color: #0f172a; font-weight: 500; }
+.price-box-val   { color: #101e2b; font-weight: 500; }
 .price-box-strike { text-decoration: line-through; color: #a8a29e; }
 .price-box-divider { height: 1px; background: #fed7aa; margin: 5px 0; }
 .price-box-total .price-box-label { color: #44403c; font-weight: 600; font-size: 12px; }
@@ -1855,28 +1855,28 @@ onMounted(() => {
 
 /* ── Logistics box (quadrinho de frete) ─────────────────────── */
 .logistics-box {
-  background: #f0fdf9;
-  border: 1px solid #99f6e4;
+  background: #fdf2f7;
+  border: 1px solid #f7c1d6;
   border-radius: 8px;
   padding: 8px 10px;
   margin-top: 4px;
 }
 .logistics-box-label {
-  font-size: 10px; font-weight: 700; color: #0d9488;
+  font-size: 10px; font-weight: 700; color: #a51e55;
   text-transform: uppercase; letter-spacing: .4px;
   margin-bottom: 5px; display: flex; align-items: center;
 }
 .logistics-box-row {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 11.5px; color: #475569; padding: 2px 0;
+  font-size: 11.5px; color: #4c6272; padding: 2px 0;
 }
-.logistics-box-divider { height: 1px; background: #99f6e4; margin: 5px 0; }
-.logistics-box-total { font-weight: 600; color: #0f172a; font-size: 12px; }
+.logistics-box-divider { height: 1px; background: #f7c1d6; margin: 5px 0; }
+.logistics-box-total { font-weight: 600; color: #101e2b; font-size: 12px; }
 
 .tracking-card {
   display: flex; align-items: center;
   padding: 8px 12px; border-radius: 8px;
-  background: #f0fdf9; border: 1px solid #99f6e4;
+  background: #fdf2f7; border: 1px solid #f7c1d6;
 }
 
 /* ── Detail panel (dialog) ─────────────────────────────────── */
@@ -1885,21 +1885,21 @@ onMounted(() => {
   display: flex; flex-direction: column; height: 100%;
 }
 .detail-header {
-  padding: 16px 20px; border-bottom: 1px solid #e2e8f0;
+  padding: 16px 20px; border-bottom: 1px solid #b8cbd6;
   flex-shrink: 0;
 }
-.dialog-eyebrow { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
-.detail-order-id { font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 4px; font-family: 'Roboto Mono', monospace; }
-.detail-meta { font-size: 12px; color: #64748b; margin-top: 2px; }
+.dialog-eyebrow { font-size: 10px; font-weight: 700; color: #6b8498; text-transform: uppercase; letter-spacing: .5px; }
+.detail-order-id { font-size: 18px; font-weight: 700; color: #101e2b; margin-top: 4px; font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
+.detail-meta { font-size: 12px; color: #4c6272; margin-top: 2px; }
 .detail-body { flex: 1; overflow-y: auto; padding-bottom: 20px; }
 
 .detail-section {
   padding: 14px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
 }
 .detail-section-title {
   display: flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 700; color: #64748b;
+  font-size: 11px; font-weight: 700; color: #4c6272;
   text-transform: uppercase; letter-spacing: .4px;
   margin-bottom: 10px;
 }
@@ -1907,12 +1907,12 @@ onMounted(() => {
   display: flex; justify-content: space-between; align-items: center;
   font-size: 12px; padding: 3px 0; gap: 10px;
 }
-.detail-label { color: #94a3b8; flex-shrink: 0; }
-.detail-value { color: #0f172a; text-align: right; }
+.detail-label { color: #6b8498; flex-shrink: 0; }
+.detail-value { color: #101e2b; text-align: right; }
 .detail-item-card {
   display: flex; align-items: flex-start; gap: 10px;
   padding: 10px 12px; border-radius: 10px;
-  border: 1px solid #e2e8f0; background: #f8fafc; margin-bottom: 8px;
+  border: 1px solid #b8cbd6; background: #edf4f7; margin-bottom: 8px;
 }
 .detail-meta-row { display: flex; flex-direction: column; gap: 5px; }
 .detail-meta-item { display: flex; align-items: center; font-size: 12px; }
@@ -1934,66 +1934,66 @@ onMounted(() => {
   margin-top: 3px;
   justify-self: center;
   flex-shrink: 0;
-  &--active { background: #0d9488; box-shadow: 0 0 0 3px #ccfbf1; }
-  &--done   { background: #cbd5e1; }
+  &--active { background: #a51e55; box-shadow: 0 0 0 3px #fbe0ec; }
+  &--done   { background: #93aebb; }
 }
 .tracking-line {
   grid-column: 1; grid-row: 2;
-  width: 2px; background: #e2e8f0;
+  width: 2px; background: #b8cbd6;
   justify-self: center;
   min-height: 100%;
 }
 .tracking-content { grid-column: 2; grid-row: 1 / 3; }
 .tracking-desc {
-  font-size: 12px; color: #475569; line-height: 1.4;
-  &--latest { color: #0f172a; font-weight: 600; }
+  font-size: 12px; color: #4c6272; line-height: 1.4;
+  &--latest { color: #101e2b; font-weight: 600; }
 }
-.tracking-time { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+.tracking-time { font-size: 10px; color: #6b8498; margin-top: 2px; }
 
 /* ── Advanced filter drawer ────────────────────────────────── */
 .fadv-panel { display: flex; flex-direction: column; border-radius: 0 !important; }
 .fadv-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid #e2e8f0; background: #fff;
+  padding: 16px 20px; border-bottom: 1px solid #b8cbd6; background: #fff;
 }
-.fadv-title { font-size: 15px; font-weight: 700; color: #0f172a; }
-.fadv-close { background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; }
-.fadv-close:hover { color: #0f172a; }
+.fadv-title { font-size: 15px; font-weight: 700; color: #101e2b; }
+.fadv-close { background: none; border: none; cursor: pointer; color: #6b8498; display: flex; }
+.fadv-close:hover { color: #101e2b; }
 .fadv-body  { padding: 8px 0; }
-.fadv-section { padding: 12px 20px; border-bottom: 1px solid #f1f5f9; }
+.fadv-section { padding: 12px 20px; border-bottom: 1px solid #dfe9ef; }
 .fadv-section-label {
-  font-size: 11px; font-weight: 700; color: #94a3b8;
+  font-size: 11px; font-weight: 700; color: #6b8498;
   text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
 }
 .fadv-range-row { display: flex; align-items: center; gap: 8px; }
-.fadv-range-sep { color: #94a3b8; font-size: 12px; }
+.fadv-range-sep { color: #6b8498; font-size: 12px; }
 .fadv-input {
   height: 34px; width: 100px; padding: 0 10px;
-  border: 1.5px solid #e2e8f0; border-radius: 8px;
-  font-size: 13px; color: #0f172a; background: #f8fafc;
+  border: 1.5px solid #b8cbd6; border-radius: 8px;
+  font-size: 13px; color: #101e2b; background: #edf4f7;
   outline: none; transition: border-color .15s;
 }
-.fadv-input:focus { border-color: #0d9488; background: #fff; }
+.fadv-input:focus { border-color: #a51e55; background: #fff; }
 .fadv-footer {
   display: flex; gap: 8px; padding: 14px 20px;
-  border-top: 1px solid #e2e8f0; background: #fff; margin-top: auto;
+  border-top: 1px solid #b8cbd6; background: #fff; margin-top: auto;
 }
 .fadv-btn-clear {
   flex: 1; height: 36px; border-radius: 8px;
-  border: 1.5px solid #e2e8f0; background: #fff;
+  border: 1.5px solid #b8cbd6; background: #fff;
   font-size: 13px; font-weight: 500; color: #374151; cursor: pointer;
 }
-.fadv-btn-clear:hover { background: #f8fafc; }
+.fadv-btn-clear:hover { background: #edf4f7; }
 .fadv-btn-apply {
   flex: 2; height: 36px; border-radius: 8px;
-  border: none; background: #0d9488; color: #fff;
+  border: none; background: #a51e55; color: #fff;
   font-size: 13px; font-weight: 600; cursor: pointer;
   transition: background .15s;
 }
-.fadv-btn-apply:hover { background: #0f766e; }
+.fadv-btn-apply:hover { background: #7f1642; }
 
 /* ── Utilities ─────────────────────────────────────────────── */
-.font-mono { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
+.font-mono { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; letter-spacing: -0.5px; }
 .ellipsis  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Transitions ───────────────────────────────────────────── */

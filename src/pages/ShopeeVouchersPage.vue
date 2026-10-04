@@ -268,7 +268,7 @@
             <!-- Renovação automática (FB-27) -->
             <div class="sv-form-section">
               <label class="sv-autorenew-check">
-                <q-checkbox v-model="form.auto_renew" dense color="teal" />
+                <q-checkbox v-model="form.auto_renew" dense color="primary" />
                 <div>
                   <div class="sv-form-label" style="margin:0">Renovar automaticamente</div>
                   <div class="text-caption text-grey-5">Cria um novo ciclo sozinho quando o anterior vence — sem precisar voltar aqui.</div>
@@ -521,14 +521,14 @@
     <q-dialog v-model="autoRenewOpen">
       <q-card style="width:520px;max-width:96vw">
         <q-card-section class="row items-center q-pb-sm">
-          <q-icon name="autorenew" size="sm" class="q-mr-sm" style="color:#0d9488" />
+          <q-icon name="autorenew" size="sm" class="q-mr-sm" style="color:#a51e55" />
           <span class="text-subtitle1 text-weight-bold">Renovações automáticas</span>
           <q-space />
           <q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-pt-none" style="max-height:60vh;overflow-y:auto">
           <div v-if="autoRenewLoading" class="sv-center" style="padding:30px">
-            <q-spinner-dots color="teal" size="30px" />
+            <q-spinner-dots color="primary" size="30px" />
           </div>
           <div v-else-if="!autoRenewTemplates.length" class="text-center text-grey-5 q-pa-lg">
             Nenhuma renovação automática ativa. Crie um cupom marcando "Renovar automaticamente".
@@ -541,7 +541,7 @@
               </div>
               <div v-if="t.last_error" class="sv-ar-error">⚠ {{ t.last_error }}</div>
             </div>
-            <q-toggle v-model="t.active" color="teal" @update:model-value="v => toggleAutoRenew(t, v)" />
+            <q-toggle v-model="t.active" color="primary" @update:model-value="v => toggleAutoRenew(t, v)" />
           </div>
         </q-card-section>
       </q-card>
@@ -936,17 +936,17 @@ function usageColor(pct) {
 .sv-pills { display: flex; gap: 4px; flex-wrap: wrap; }
 .sv-pills--status { border-left: 1px solid #eee; padding-left: 10px; }
 .sv-pills--form { gap: 6px; }
-.sv-pill { font-size: 12px; padding: 4px 12px; border-radius: 16px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #64748b; transition: all .15s; white-space: nowrap; }
-.sv-pill--on { background: #0d9488; color: #fff; border-color: #0d9488; }
+.sv-pill { font-size: 12px; padding: 4px 12px; border-radius: 16px; border: 1px solid #b8cbd6; background: #fff; cursor: pointer; color: #4c6272; transition: all .15s; white-space: nowrap; }
+.sv-pill--on { background: #a51e55; color: #fff; border-color: #a51e55; }
 
 /* ── Stats bar ── */
-.sv-stats { display: flex; gap: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 20px; margin-bottom: 14px; }
+.sv-stats { display: flex; gap: 20px; background: #fff; border: 1px solid #b8cbd6; border-radius: 10px; padding: 10px 20px; margin-bottom: 14px; }
 .sv-stat { display: flex; flex-direction: column; align-items: center; }
-.sv-stat-n { font-size: 18px; font-weight: 700; color: #0f172a; }
+.sv-stat-n { font-size: 18px; font-weight: 700; color: #101e2b; }
 .sv-stat-n--green { color: #16a34a; }
-.sv-stat-n--amber { color: #0f172a; }
-.sv-stat-n--blue  { color: #0f172a; }
-.sv-stat-l { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; }
+.sv-stat-n--amber { color: #101e2b; }
+.sv-stat-n--blue  { color: #101e2b; }
+.sv-stat-l { font-size: 10px; color: #6b8498; text-transform: uppercase; letter-spacing: .4px; }
 
 /* ── Center / Empty ── */
 .sv-center { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; }
@@ -977,9 +977,9 @@ function usageColor(pct) {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #0d9488;
-  background: #f0fdf9;
-  border: 1px solid #99f6e4;
+  color: #a51e55;
+  background: #fdf2f7;
+  border: 1px solid #f7c1d6;
   border-radius: 14px;
   padding: 3px 6px 3px 10px;
   margin-left: 8px;
@@ -994,7 +994,7 @@ function usageColor(pct) {
 .sv-name { font-size: 13px; color: #444; font-weight: 500; }
 
 .sv-code-row { display: flex; align-items: center; gap: 4px; }
-.sv-code { font-family: monospace; font-size: 11.5px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 1px 7px; border-radius: 5px; letter-spacing: .5px; }
+.sv-code { font-family: monospace; font-size: 11.5px; font-weight: 700; color: #4c6272; background: #dfe9ef; padding: 1px 7px; border-radius: 5px; letter-spacing: .5px; }
 
 .sv-min { font-size: 11px; color: #888; }
 
@@ -1033,8 +1033,8 @@ function usageColor(pct) {
 /* Tipo select */
 .sv-type-select { display: flex; gap: 8px; flex-wrap: wrap; }
 .sv-type-opt { flex: 1; min-width: 120px; border: 2px solid #eee; border-radius: 10px; padding: 10px 12px; cursor: pointer; text-align: center; transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #999; }
-.sv-type-opt:hover { border-color: #0d9488; color: #0d9488; }
-.sv-type-opt--on { border-color: #0d9488; background: #f0fdf9; color: #0d9488; }
+.sv-type-opt:hover { border-color: #a51e55; color: #a51e55; }
+.sv-type-opt--on { border-color: #a51e55; background: #fdf2f7; color: #a51e55; }
 .sv-type-opt--disabled { cursor: not-allowed; opacity: .5; }
 .sv-type-opt--disabled:hover { border-color: #eee; color: #999; }
 .sv-type-opt-title { font-size: 13px; font-weight: 700; }
@@ -1043,11 +1043,11 @@ function usageColor(pct) {
 .sv-warn { font-size: 12px; color: #f57c00; background: #fff3e0; padding: 8px 12px; border-radius: 8px; display: flex; align-items: flex-start; }
 
 /* Renovação automática (FB-27) */
-.sv-autorenew-check { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
-.sv-ar-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 4px; border-bottom: 1px solid #f1f5f9; }
+.sv-autorenew-check { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 10px; border: 1px solid #b8cbd6; border-radius: 8px; background: #edf4f7; }
+.sv-ar-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 4px; border-bottom: 1px solid #dfe9ef; }
 .sv-ar-row:last-child { border-bottom: none; }
 .sv-ar-info { min-width: 0; }
-.sv-ar-name { font-weight: 700; color: #0f172a; font-size: 13px; }
+.sv-ar-name { font-weight: 700; color: #101e2b; font-size: 13px; }
 .sv-ar-error { font-size: 11px; color: #dc2626; margin-top: 2px; }
 
 /* ── Detail ── */
@@ -1064,23 +1064,23 @@ function usageColor(pct) {
 .sv-toast-anim-enter-from, .sv-toast-anim-leave-to { opacity: 0; transform: translateX(-50%) translateY(10px); }
 
 /* ── Tabela de cupons (feedback #10 / FB-22 / FB-28) ── */
-.sv-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow-x: auto; }
+.sv-table-wrap { background: #fff; border: 1px solid #b8cbd6; border-radius: 12px; overflow-x: auto; }
 .sv-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .sv-table th {
   text-align: left; font-size: 10px; font-weight: 700; letter-spacing: .5px;
-  text-transform: uppercase; color: #94a3b8; padding: 10px 12px;
-  border-bottom: 1px solid #e2e8f0; background: #f8fafc; white-space: nowrap;
+  text-transform: uppercase; color: #6b8498; padding: 10px 12px;
+  border-bottom: 1px solid #b8cbd6; background: #edf4f7; white-space: nowrap;
 }
 .sv-table th.right, .sv-table td.right { text-align: right; }
-.sv-table td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.sv-table td { padding: 9px 12px; border-bottom: 1px solid #dfe9ef; vertical-align: middle; }
 .sv-tr { cursor: pointer; transition: background .12s; }
-.sv-tr:hover { background: #f8fafc; }
+.sv-tr:hover { background: #edf4f7; }
 .sv-td-name { max-width: 260px; }
-.sv-td-name-main { font-weight: 700; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-td-name-main { font-weight: 700; color: #101e2b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sv-td-name-sub { display: flex; align-items: center; gap: 2px; margin-top: 2px; }
-.sv-td-value { font-weight: 700; color: #0d9488; white-space: nowrap; }
-.sv-td-date { white-space: nowrap; color: #64748b; }
-.sv-td-shop { color: #94a3b8; white-space: nowrap; font-size: 11.5px; margin-left: 2px; }
+.sv-td-value { font-weight: 700; color: #a51e55; white-space: nowrap; }
+.sv-td-date { white-space: nowrap; color: #4c6272; }
+.sv-td-shop { color: #6b8498; white-space: nowrap; font-size: 11.5px; margin-left: 2px; }
 
 @media (max-width: 600px) {
   .page-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }

@@ -100,8 +100,8 @@ const handleLogout = async () => {
 <style lang="scss" scoped>
 .sb-home-header {
   background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 0 #f1f5f9;
+  border-bottom: 1px solid #b8cbd6;
+  box-shadow: 0 1px 0 #dfe9ef;
 }
 
 .header-inner {
@@ -122,14 +122,14 @@ const handleLogout = async () => {
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  background: linear-gradient(135deg, #a51e55, #b1547b);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1rem;
   font-weight: 900;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+  box-shadow: 0 4px 12px rgba(165,30,85, 0.25);
 }
 
 .brand-text {
@@ -141,13 +141,13 @@ const handleLogout = async () => {
 .brand-name {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   letter-spacing: -0.3px;
 }
 
 .brand-sub {
   font-size: .65rem;
-  color: #94a3b8;
+  color: #6b8498;
   text-transform: uppercase;
   letter-spacing: .6px;
   margin-top: 1px;
@@ -159,7 +159,7 @@ const handleLogout = async () => {
 .nav-link {
   font-size: .86rem;
   font-weight: 500;
-  color: #475569;
+  color: #4c6272;
   text-decoration: none;
   padding: 6px 12px;
   border-radius: 8px;
@@ -167,26 +167,26 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
 
-  &:hover { color: #0f172a; background: #f0fdf9; }
+  &:hover { color: #101e2b; background: #fdf2f7; }
 
   &--product {
-    color: #0d9488;
+    color: #a51e55;
     font-weight: 600;
-    &:hover { background: #f0fdf9; color: #0d9488; }
+    &:hover { background: #fdf2f7; color: #a51e55; }
   }
 }
 
-.nav-btn { color: #64748b; font-size: .86rem; border-radius: 8px; &:hover { color: #0f172a; } }
+.nav-btn { color: #4c6272; font-size: .86rem; border-radius: 8px; &:hover { color: #101e2b; } }
 .cta-btn { font-size: .86rem; font-weight: 600; padding: 8px 18px; border-radius: 8px; }
-.welcome-text { font-size: .82rem; color: #64748b; }
+.welcome-text { font-size: .82rem; color: #4c6272; }
 
 .mobile-menu {
   width: 280px;
   background: #ffffff;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid #b8cbd6;
 }
 
-.mobile-brand { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+.mobile-brand { font-size: 1.1rem; font-weight: 800; color: #101e2b; }
 
 @media (max-width: 600px) {
   .header-inner { padding: 0 12px; }
@@ -199,13 +199,13 @@ const handleLogout = async () => {
   gap: 4px;
 
   a {
-    color: #475569;
+    color: #4c6272;
     text-decoration: none;
     font-size: .95rem;
     padding: 10px 8px;
     border-radius: 8px;
     transition: color 200ms ease, background 200ms ease;
-    &:hover { color: #0f172a; background: #f0fdf9; }
+    &:hover { color: #101e2b; background: #fdf2f7; }
   }
 }
 </style>

@@ -20,9 +20,9 @@ const events = computed(() => (props.timeline?.series || []).flatMap((row) => {
 <style lang="scss" scoped>
 .events-list { display: flex; flex-direction: column; gap: 9px; }
 .event-row { display: flex; align-items: center; gap: 9px; }
-.event-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+.event-dot { width: 8px; height: 8px; border-radius: 50%; background: #6b8498; }
 .event-dot--promotion { background: #f59e0b; }
 .event-copy { display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
-.event-copy strong { color: #334155; font-weight: 600; }
-.event-copy span { color: #94a3b8; font-size: 11px; }
+.event-copy strong { color: #152d43; font-weight: 600; }
+.event-copy span { color: #6b8498; font-size: 11px; }
 </style>

@@ -135,14 +135,14 @@ export default defineComponent({
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
-  color: #0d9488;
+  color: #a51e55;
   margin-bottom: 12px;
 }
 
 .section-title {
   font-size: clamp(1.75rem, 3vw, 2.35rem);
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   margin: 0 0 16px;
   letter-spacing: -.7px;
   line-height: 1.2;
@@ -150,7 +150,7 @@ export default defineComponent({
 
 .section-sub {
   font-size: 1rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.72;
   max-width: 640px;
   margin: 0 auto;
@@ -195,10 +195,10 @@ export default defineComponent({
 }
 
 .compare-after {
-  background: #f0fdf9;
-  border: 1px solid #99f6e4;
+  background: #fdf2f7;
+  border: 1px solid #f7c1d6;
 
-  li { color: #134e4a; }
+  li { color: #5c0f30; }
 }
 
 .compare-label {
@@ -212,11 +212,11 @@ export default defineComponent({
   margin-bottom: 20px;
 
   .compare-before & { color: #ef4444; }
-  .compare-after & { color: #0d9488; }
+  .compare-after & { color: #a51e55; }
 }
 
 .ic-neg { color: #ef4444; font-weight: 700; flex-shrink: 0; }
-.ic-pos { color: #0d9488; font-weight: 700; flex-shrink: 0; }
+.ic-pos { color: #a51e55; font-weight: 700; flex-shrink: 0; }
 
 .compare-arrow {
   display: flex;
@@ -230,7 +230,7 @@ export default defineComponent({
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .5px;
-    color: #94a3b8;
+    color: #6b8498;
     white-space: nowrap;
   }
 }
@@ -239,22 +239,22 @@ export default defineComponent({
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  background: linear-gradient(135deg, #a51e55, #b1547b);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(13,148,136,.35);
+  box-shadow: 0 4px 14px rgba(165,30,85,.35);
 }
 
 /* Marketplace strip */
-.mp-strip { border-top: 1px solid #e2e8f0; padding-top: 48px; }
+.mp-strip { border-top: 1px solid #b8cbd6; padding-top: 48px; }
 
 .mp-title {
   font-size: .75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .7px;
-  color: #94a3b8;
+  color: #6b8498;
   margin-bottom: 24px;
   text-align: center;
 }
@@ -270,15 +270,15 @@ export default defineComponent({
   gap: 16px;
   align-items: flex-start;
   padding: 22px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #edf4f7;
+  border: 1px solid #b8cbd6;
   border-radius: 14px;
   transition: box-shadow .2s;
 
   &:hover { box-shadow: 0 6px 20px rgba(0,0,0,.07); }
 
-  strong { display: block; font-size: .95rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
-  p { font-size: .83rem; color: #64748b; margin: 0; line-height: 1.55; }
+  strong { display: block; font-size: .95rem; font-weight: 700; color: #101e2b; margin-bottom: 4px; }
+  p { font-size: .83rem; color: #4c6272; margin: 0; line-height: 1.55; }
 }
 
 .mp-icon {

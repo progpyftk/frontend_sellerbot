@@ -39,5 +39,5 @@ const message = computed(() => {
 .quality-banner--fresh { background: #ecfdf5; color: #166534; }
 .quality-banner--warning { background: #fffbeb; color: #92400e; }
 .quality-banner--error { background: #fef2f2; color: #991b1b; }
-.quality-banner--neutral { background: #f1f5f9; color: #475569; }
+.quality-banner--neutral { background: #dfe9ef; color: #4c6272; }
 </style>

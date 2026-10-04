@@ -20,7 +20,7 @@
           </div>
 
           <div class="chat-header-actions">
-            <q-btn flat round dense icon="edit_note" size="sm" color="teal-7" @click="newChat">
+            <q-btn flat round dense icon="edit_note" size="sm" color="primary" @click="newChat">
               <q-tooltip>Nova conversa</q-tooltip>
             </q-btn>
 
@@ -31,7 +31,7 @@
           no-caps
           :label="selectedModelName"
           icon="smart_toy"
-          color="teal-7"
+          color="primary"
           class="model-selector-btn"
         >
           <q-list style="min-width: 360px">
@@ -51,7 +51,7 @@
               <q-item-section>
                 <q-item-label>
                   {{ model.name }}
-                  <q-badge v-if="model.recommended" color="teal-7" label="Recomendado" class="q-ml-xs" />
+                  <q-badge v-if="model.recommended" color="primary" label="Recomendado" class="q-ml-xs" />
                 </q-item-label>
                 <q-item-label caption>{{ model.note }}</q-item-label>
               </q-item-section>
@@ -169,7 +169,7 @@
                     </div>
                     <span class="trail-text">{{ log.text }}</span>
                     <template v-if="li === msg.logs.length - 1">
-                      <q-spinner-dots color="teal-6" size="14px" class="q-ml-xs" />
+                      <q-spinner-dots color="primary" size="14px" class="q-ml-xs" />
                       <span v-if="msg.elapsedSec" class="trail-elapsed">{{ msg.elapsedSec }}s</span>
                     </template>
                   </div>
@@ -177,7 +177,7 @@
                   <div v-if="!msg.logs.length" class="trail-step trail-thinking trail-step--active">
                     <div class="trail-dot"><q-icon name="psychology" size="11px" /></div>
                     <span class="trail-text">Conectando ao agente...</span>
-                    <q-spinner-dots color="teal-6" size="14px" class="q-ml-xs" />
+                    <q-spinner-dots color="primary" size="14px" class="q-ml-xs" />
                     <span v-if="msg.elapsedSec" class="trail-elapsed">{{ msg.elapsedSec }}s</span>
                   </div>
                 </div>
@@ -219,7 +219,7 @@
                     <div v-if="approval.status === 'pending'" class="listing-draft-actions">
                        <q-btn v-if="canWrite" unelevated color="positive" label="Aprovar" icon="check" no-caps dense :loading="approval.loading" @click="approveApproval(msg, approval)" />
                        <q-btn v-if="canWrite" flat color="negative" label="Rejeitar" icon="close" no-caps dense :loading="approval.loading" @click="rejectApproval(msg, approval)" />
-                       <q-btn v-if="canWrite && approval.marketplace !== 'tiny'" flat color="teal-8" label="Ajustar" icon="edit" no-caps dense :loading="approval.loading" @click="adjustApproval(msg, approval)" />
+                       <q-btn v-if="canWrite && approval.marketplace !== 'tiny'" flat color="primary" label="Ajustar" icon="edit" no-caps dense :loading="approval.loading" @click="adjustApproval(msg, approval)" />
                     </div>
                     <div v-else class="listing-draft-status" :class="`listing-draft-status--${approval.status}`"><q-icon :name="approvalStatusIcon(approval.status)" size="16px" />{{ approvalStatusLabel(approval.status) }}</div>
                   </div>
@@ -234,7 +234,7 @@
                  <div class="batch-status-title">Lote {{ batchStatusLabel(msg.batchStatus.status) }}</div>
                  <div class="batch-status-counts"><span>Sucesso: {{ msg.batchStatus.succeeded || 0 }}</span><span>Falhas: {{ msg.batchStatus.failed || 0 }}</span><span>Pendentes: {{ msg.batchStatus.pending || 0 }}</span></div>
                  <div v-if="msg.batchStatus.skus?.length" class="batch-sku-list" aria-label="SKUs do lote"><q-checkbox v-for="sku in msg.batchStatus.skus" :key="sku.sku" v-model="sku.selected" dense :disable="sku.status === 'executed'" :label="`${sku.sku} · ${batchStatusLabel(sku.status)}`" /></div>
-                   <q-btn v-if="canWrite && msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length" flat dense no-caps color="teal-8" label="Tentar falhas novamente" :loading="msg.batchStatus.retrying" @click="retryBatch(msg)" />
+                   <q-btn v-if="canWrite && msg.batchStatus.status === 'partial' && msg.batchStatus.retryable?.length" flat dense no-caps color="primary" label="Tentar falhas novamente" :loading="msg.batchStatus.retrying" @click="retryBatch(msg)" />
                </div>
 
               <!-- Cursor piscante enquanto tokens chegam -->
@@ -278,7 +278,7 @@
        </div>
        <div v-if="pendingFiles.length" class="artifact-preview-bar" aria-live="polite">
          <div v-for="(artifact, i) in pendingFiles" :key="`${artifact.file.name}-${i}`" class="artifact-preview-item">
-           <q-icon name="table_view" size="16px" color="teal-7" />
+           <q-icon name="table_view" size="16px" color="primary" />
            <span class="artifact-preview-name">{{ artifact.file.name }}</span>
            <q-badge v-if="artifact.preview && !artifact.preview.valid" color="negative" label="Revise" />
             <q-btn flat round dense icon="close" size="xs" color="negative" aria-label="Remover arquivo" @click="removeFile(i)" />
@@ -312,7 +312,7 @@
           </q-input>
           <q-btn
             round
-            color="teal-7"
+            color="primary"
             icon="send"
             :loading="isLoading"
              :disable="(!inputMessage.trim() && !pendingImages.length && !pendingFiles.length) || isLoading"
@@ -379,7 +379,7 @@
              </div>
              <q-btn
                 v-if="['partial', 'paused', 'failed', 'running'].includes(run.status)"
-                flat dense no-caps color="teal-8" label="Retomar"
+                flat dense no-caps color="primary" label="Retomar"
                 :loading="run.resuming"
                 @click="resumeRun(run)"
              />
@@ -1562,7 +1562,7 @@ onBeforeUnmount(stopActiveStream)
 }
 
 .suggestion-chip {
-  background: #f8fafc;
+  background: #edf4f7;
   border: 1px solid #e8edf3;
   border-radius: 8px;
   padding: 9px 12px;
@@ -1647,8 +1647,8 @@ onBeforeUnmount(stopActiveStream)
   flex-direction: column;
   gap: 0;
   padding: 10px 14px 10px 12px;
-  background: #f0fdf9;
-  border: 1px solid #99f6e4;
+  background: #fdf2f7;
+  border: 1px solid #f7c1d6;
   border-radius: 10px;
   border-top-left-radius: 3px;
 }
@@ -1745,22 +1745,22 @@ onBeforeUnmount(stopActiveStream)
 
 .artifact-validation-card,
 .batch-status-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #edf4f7;
+  border: 1px solid #b8cbd6;
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 8px;
   font-size: 12px;
 }
 .artifact-validation-title,
-.batch-status-title { font-weight: 600; color: #334155; }
+.batch-status-title { font-weight: 600; color: #152d43; }
 .artifact-validation-error { color: #b91c1c; margin-top: 4px; }
-.batch-status-counts { display: flex; flex-wrap: wrap; gap: 10px; color: #64748b; margin: 6px 0; }
+.batch-status-counts { display: flex; flex-wrap: wrap; gap: 10px; color: #4c6272; margin: 6px 0; }
 .batch-sku-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 4px 0 8px; }
 
 /* Live log panel */
 .live-log-panel {
-  background: #f8fafc;
+  background: #edf4f7;
   border: 1px solid #e8edf3;
   border-radius: 8px;
   padding: 8px 12px;
@@ -1794,7 +1794,7 @@ onBeforeUnmount(stopActiveStream)
 }
 .log-summary:hover {
   background: rgba(99, 102, 241, 0.13);
-  color: #6366f1;
+  color: #658aa1;
 }
 .log-summary--error {
   background: rgba(239, 68, 68, 0.07);
@@ -1823,7 +1823,7 @@ onBeforeUnmount(stopActiveStream)
   color: #6b7280;
 }
 
-.log-thinking .q-icon { color: #6366f1; }
+.log-thinking .q-icon { color: #658aa1; }
 .log-tool_call .q-icon { color: #f59e0b; }
 .log-tool_result .q-icon { color: #10b981; }
 .log-error .q-icon { color: #ef4444; }
@@ -1839,7 +1839,7 @@ onBeforeUnmount(stopActiveStream)
 }
 
 .message--user .message-text {
-  background: linear-gradient(135deg, #a51e55, #2dd4bf);
+  background: linear-gradient(135deg, #a51e55, #f28ab4);
   color: #fff;
   border-radius: 12px;
   border-top-right-radius: 4px;
@@ -1952,15 +1952,15 @@ onBeforeUnmount(stopActiveStream)
   padding: 6px 8px;
   border: 1px solid #dbe5ed;
   border-radius: 8px;
-  background: #f8fafc;
+  background: #edf4f7;
 }
-.artifact-preview-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #334155; }
+.artifact-preview-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #152d43; }
 .artifact-preview-error { color: #b91c1c; font-size: 11px; padding: 2px 4px; }
 
 .history-runs-label { margin-top: 18px; }
-.history-run-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #f8fafc; margin-bottom: 5px; }
+.history-run-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #edf4f7; margin-bottom: 5px; }
 .history-run-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.history-run-status { color: #64748b; font-size: 11px; }
+.history-run-status { color: #4c6272; font-size: 11px; }
 
 /* Images in messages */
 .message-images {

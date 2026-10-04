@@ -45,7 +45,7 @@ const spinnerColor = computed(() => (props.variant === 'error' ? 'negative' : 'p
   justify-content: center;
   padding: 48px 24px;
   text-align: center;
-  color: #64748b;
+  color: #4c6272;
 }
 
 .sb-empty-icon {
@@ -56,13 +56,13 @@ const spinnerColor = computed(() => (props.variant === 'error' ? 'negative' : 'p
 .sb-empty-title {
   font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: #101e2b;
   margin-bottom: 4px;
 }
 
 .sb-empty-message {
   font-size: 14px;
-  color: #64748b;
+  color: #4c6272;
   max-width: 400px;
   line-height: 1.5;
 }

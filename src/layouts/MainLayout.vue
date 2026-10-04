@@ -288,7 +288,7 @@ const redirectToLogin = () => router.push("/login")
 ══════════════════════════════════════════════════════════════════════════ */
 :deep(.sidebar) {
   background: #ffffff !important;
-  border-right: 1px solid #e2e8f0 !important;
+  border-right: 1px solid #b8cbd6 !important;
 }
 
 /* ── Brand ── */
@@ -306,7 +306,7 @@ const redirectToLogin = () => router.push("/login")
   left: 16px;
   right: 16px;
   height: 1px;
-  background: #f1f5f9;
+  background: #dfe9ef;
 }
 
 .brand-mark {
@@ -325,14 +325,14 @@ const redirectToLogin = () => router.push("/login")
 .brand-name {
   font-size: 16px;
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   letter-spacing: -0.4px;
   line-height: 1;
 }
 
 .brand-sub {
   font-size: 10px;
-  color: #94a3b8;
+  color: #6b8498;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -370,11 +370,11 @@ const redirectToLogin = () => router.push("/login")
   background: transparent;
   margin-top: 6px;
 }
-.nav-section:hover { background: #f8fafc; }
+.nav-section:hover { background: #edf4f7; }
 
 /* Raiz que é destino (FINT-19): a mesma linha das outras seções, mas leva à tela em vez de
    expandir — o estado ativo usa o mesmo vocabulário do item de menu. */
-.nav-section--active { background: #f0fdf9; }
+.nav-section--active { background: #fdf2f7; }
 .nav-section--active .nav-section-label { color: #a51e55; }
 .nav-section--active .nav-section-icon { background: #f8e8ef; color: #a51e55; }
 
@@ -385,8 +385,8 @@ const redirectToLogin = () => router.push("/login")
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  background: #f1f5f9;
-  color: #94a3b8;
+  background: #dfe9ef;
+  color: #6b8498;
   flex-shrink: 0;
 }
 
@@ -396,18 +396,18 @@ const redirectToLogin = () => router.push("/login")
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: #4c6272;
   text-align: left;
 }
 
 .nav-chevron {
-  color: #cbd5e1;
+  color: #93aebb;
   transition: transform 220ms ease;
   flex-shrink: 0;
 }
 .nav-chevron--open {
   transform: rotate(180deg);
-  color: #94a3b8;
+  color: #6b8498;
 }
 
 /* Marketplace badges (ML / Shopee) */
@@ -436,7 +436,7 @@ const redirectToLogin = () => router.push("/login")
   opacity: 0;
   margin-left: 6px;
   padding-left: 10px;
-  border-left: 1px solid #f1f5f9;
+  border-left: 1px solid #dfe9ef;
 }
 .nav-children--open {
   max-height: 600px;
@@ -461,11 +461,11 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .nav-item:hover:not(.nav-item--active) {
-  background: #f8fafc;
+  background: #edf4f7;
 }
 
 .nav-item--active {
-  background: #f0fdf9; /* teal-50 */
+  background: #fdf2f7; /* teal-50 */
   color: #a51e55;
 }
 
@@ -494,8 +494,8 @@ const redirectToLogin = () => router.push("/login")
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #f1f5f9;
-  color: #475569;
+  background: #dfe9ef;
+  color: #4c6272;
   transition: background 150ms ease, color 150ms ease;
 }
 
@@ -505,15 +505,15 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .nav-item:hover:not(.nav-item--active) .nav-icon-wrap {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #b8cbd6;
+  color: #101e2b;
 }
 
 /* Label */
 .nav-label {
   font-size: 13px;
   font-weight: 500;
-  color: #334155;
+  color: #152d43;
   flex: 1;
   transition: color 150ms ease;
   white-space: nowrap;
@@ -522,7 +522,7 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .nav-item:hover:not(.nav-item--active) .nav-label {
-  color: #0f172a;
+  color: #101e2b;
 }
 
 .nav-item--active .nav-label {
@@ -541,7 +541,7 @@ const redirectToLogin = () => router.push("/login")
 
 .nav-sep {
   height: 1px;
-  background: #f1f5f9;
+  background: #dfe9ef;
   margin: 4px 4px;
 }
 
@@ -552,7 +552,7 @@ const redirectToLogin = () => router.push("/login")
   left: 0;
   right: 0;
   background: #ffffff;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #b8cbd6;
 }
 
 .sidebar-user {
@@ -575,7 +575,7 @@ const redirectToLogin = () => router.push("/login")
 .sidebar-user-name {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: #101e2b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -583,7 +583,7 @@ const redirectToLogin = () => router.push("/login")
 
 .sidebar-user-role {
   font-size: 9.5px;
-  color: #94a3b8;
+  color: #6b8498;
   margin-top: 2px;
   font-weight: 600;
   text-transform: uppercase;
@@ -591,7 +591,7 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .sidebar-logout {
-  color: #94a3b8 !important;
+  color: #6b8498 !important;
   transition: color 150ms ease !important;
 }
 .sidebar-logout:hover { color: #dc2626 !important; }
@@ -601,8 +601,8 @@ const redirectToLogin = () => router.push("/login")
 ══════════════════════════════════════════════════════════════════════════ */
 .app-header {
   background: #ffffff !important;
-  box-shadow: 0 1px 0 #e2e8f0 !important;
-  border-bottom: 1px solid #f1f5f9;
+  box-shadow: 0 1px 0 #b8cbd6 !important;
+  border-bottom: 1px solid #dfe9ef;
 }
 
 .app-toolbar {
@@ -616,7 +616,7 @@ const redirectToLogin = () => router.push("/login")
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: #4c6272;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -624,7 +624,7 @@ const redirectToLogin = () => router.push("/login")
   transition: background 150ms ease, color 150ms ease;
 }
 .menu-toggle:hover {
-  background: #f0fdf9;
+  background: #fdf2f7;
   color: #a51e55;
 }
 
@@ -645,14 +645,14 @@ const redirectToLogin = () => router.push("/login")
   gap: 6px;
   padding: 5px 12px 5px 8px;
   border-radius: 20px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #b8cbd6;
   background: #ffffff;
   transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
   cursor: pointer;
 }
 .user-chip-inner:hover {
   border-color: #a51e55;
-  background: #f0fdf9;
+  background: #fdf2f7;
   box-shadow: 0 2px 8px rgba(165, 30, 85, 0.10);
 }
 
@@ -664,7 +664,7 @@ const redirectToLogin = () => router.push("/login")
 .chip-name {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: #101e2b;
   max-width: 110px;
   white-space: nowrap;
   overflow: hidden;
@@ -672,7 +672,7 @@ const redirectToLogin = () => router.push("/login")
 }
 
 .chip-chevron {
-  color: #94a3b8;
+  color: #6b8498;
 }
 
 /* Dropdown */
@@ -681,7 +681,7 @@ const redirectToLogin = () => router.push("/login")
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 30px rgba(15, 23, 42, 0.10) !important;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
 }
 
 .dd-header {
@@ -689,8 +689,8 @@ const redirectToLogin = () => router.push("/login")
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: #edf4f7;
+  border-bottom: 1px solid #b8cbd6;
 }
 
 .dd-avatar {
@@ -700,18 +700,18 @@ const redirectToLogin = () => router.push("/login")
 .dd-name {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
 }
 
 .dd-email {
   font-size: 11px;
-  color: #94a3b8;
+  color: #6b8498;
   margin-top: 1px;
 }
 
 .dd-item {
   font-size: 13px;
-  color: #334155;
+  color: #152d43;
   min-height: 40px;
 }
 .dd-item--danger { color: #dc2626; }

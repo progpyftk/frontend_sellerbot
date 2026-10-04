@@ -14,7 +14,7 @@
       <template #action>
         <q-btn
           unelevated
-          color="teal-8"
+          color="primary"
           text-color="white"
           icon="add"
           label="Nova conexão"
@@ -28,7 +28,7 @@
       <SbCard v-for="conexao in conexoes" :key="conexao.id" class="q-mb-md">
         <template #header>
           <div class="row items-center no-wrap">
-            <q-icon name="account_balance" size="sm" color="teal-8" class="q-mr-sm" />
+            <q-icon name="account_balance" size="sm" color="primary" class="q-mr-sm" />
             <div>
               <div class="text-subtitle1 text-weight-bold text-grey-9">
                 {{ conexao.banco_nome || conexao.banco }}
@@ -56,7 +56,7 @@
             flat
             dense
             no-caps
-            color="teal-8"
+            color="primary"
             icon="network_check"
             label="Testar conexão"
             :loading="testandoId === conexao.id"
@@ -144,7 +144,7 @@
           </template>
 
           <template #celula-saldo="{ linha }">
-            <span class="text-weight-bold" :class="Number(linha.saldo) < 0 ? 'text-red-9' : 'text-teal-9'">
+            <span class="text-weight-bold" :class="Number(linha.saldo) < 0 ? 'text-red-9' : 'text-primary'">
               {{ formatCurrency(linha.saldo) }}
             </span>
             <div v-if="linha.saldo_em" class="text-caption text-grey-6">
@@ -158,7 +158,7 @@
                 flat
                 dense
                 no-caps
-                color="teal-8"
+                color="primary"
                 icon="sync"
                 label="Sincronizar"
                 @click="emit('sincronizar', conexao, linha)"

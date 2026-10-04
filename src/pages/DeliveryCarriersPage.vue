@@ -7,11 +7,11 @@
       icon="local_shipping"
     >
       <template #actions>
-        <q-btn color="teal-7" icon="add" label="Nova transportadora" @click="openCarrier()" />
+        <q-btn color="primary" icon="add" label="Nova transportadora" @click="openCarrier()" />
       </template>
     </SbPageHeader>
 
-    <q-tabs v-model="tab" dense active-color="teal-8" indicator-color="teal-7" class="q-mb-md">
+    <q-tabs v-model="tab" dense active-color="primary" indicator-color="primary" class="q-mb-md">
       <q-tab name="carriers" label="Transportadoras" icon="local_shipping" />
       <q-tab name="dimensions" label="Dimensões de produtos" icon="straighten" />
     </q-tabs>
@@ -23,7 +23,7 @@
             <div class="text-subtitle1 text-weight-medium">Transportadoras configuradas</div>
           </template>
           <template #actions>
-            <q-btn flat dense color="teal-7" icon="refresh" aria-label="Recarregar" @click="load">
+            <q-btn flat dense color="primary" icon="refresh" aria-label="Recarregar" @click="load">
               <q-tooltip>Recarregar</q-tooltip>
             </q-btn>
           </template>
@@ -36,7 +36,7 @@
             :message="loadError"
           >
             <template #action>
-              <q-btn color="teal-7" label="Tentar novamente" @click="load" />
+              <q-btn color="primary" label="Tentar novamente" @click="load" />
             </template>
           </SbEmptyState>
           <SbEmptyState
@@ -45,7 +45,7 @@
             message="Cadastre uma transportadora para calcular o custo teórico das entregas."
           >
             <template #action>
-              <q-btn color="teal-7" label="Nova transportadora" @click="openCarrier()" />
+              <q-btn color="primary" label="Nova transportadora" @click="openCarrier()" />
             </template>
           </SbEmptyState>
           <SbTable v-else>
@@ -71,10 +71,10 @@
                 <td>{{ regionLabel(carrier.region) }}</td>
                 <td class="text-right">{{ carrier.rate_tiers?.length || 0 }}</td>
                 <td class="text-right no-wrap">
-                  <q-btn flat dense round icon="tune" color="teal-8" aria-label="Editar faixas" @click="openTiers(carrier)">
+                  <q-btn flat dense round icon="tune" color="primary" aria-label="Editar faixas" @click="openTiers(carrier)">
                     <q-tooltip>Editar faixas de preço</q-tooltip>
                   </q-btn>
-                  <q-btn flat dense round icon="edit" color="teal-8" aria-label="Editar transportadora" @click="openCarrier(carrier)">
+                  <q-btn flat dense round icon="edit" color="primary" aria-label="Editar transportadora" @click="openCarrier(carrier)">
                     <q-tooltip>Editar</q-tooltip>
                   </q-btn>
                   <q-btn flat dense round icon="delete" color="negative" aria-label="Excluir transportadora" @click="removeCarrier(carrier)">
@@ -96,7 +96,7 @@
             <q-input v-model="skuFilter" dense outlined placeholder="Buscar SKU" clearable style="min-width: 180px">
               <template #prepend><q-icon name="search" /></template>
             </q-input>
-            <q-btn outline color="teal-8" icon="add" label="Adicionar SKU" @click="openDimension()" />
+            <q-btn outline color="primary" icon="add" label="Adicionar SKU" @click="openDimension()" />
           </template>
 
           <SbEmptyState v-if="loading" variant="loading" title="Carregando dimensões..." />
@@ -106,7 +106,7 @@
             message="Sem dimensões, o pedido entra na auditoria como pendência e fica fora dos totais."
           >
             <template #action>
-              <q-btn color="teal-7" label="Adicionar SKU" @click="openDimension()" />
+              <q-btn color="primary" label="Adicionar SKU" @click="openDimension()" />
             </template>
           </SbEmptyState>
           <SbEmptyState
@@ -135,7 +135,7 @@
                 <td class="text-right text-weight-medium">{{ formatKg(billableWeight(dimension)) }}</td>
                 <td>{{ dimension.source }}</td>
                 <td class="text-right no-wrap">
-                  <q-btn flat dense round icon="edit" color="teal-8" aria-label="Editar dimensões" @click="openDimension(dimension)">
+                  <q-btn flat dense round icon="edit" color="primary" aria-label="Editar dimensões" @click="openDimension(dimension)">
                     <q-tooltip>Editar</q-tooltip>
                   </q-btn>
                   <q-btn flat dense round icon="delete" color="negative" aria-label="Excluir dimensões" @click="removeDimension(dimension)">
@@ -179,7 +179,7 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" :disable="saving" v-close-popup />
-          <q-btn color="teal-7" label="Salvar" :loading="saving" @click="saveCarrier" />
+          <q-btn color="primary" label="Salvar" :loading="saving" @click="saveCarrier" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -203,7 +203,7 @@
             </div>
             <div class="col-12 col-sm-6">
               <div class="text-caption text-grey-7">Peso faturável (maior entre real e cubado)</div>
-              <div class="text-h6 text-teal-8">{{ formatKg(preview.billable) }}</div>
+              <div class="text-h6 text-primary">{{ formatKg(preview.billable) }}</div>
             </div>
           </div>
           <div class="text-caption text-grey-7">
@@ -212,7 +212,7 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" :disable="saving" v-close-popup />
-          <q-btn color="teal-7" label="Salvar" :loading="saving" @click="saveDimension" />
+          <q-btn color="primary" label="Salvar" :loading="saving" @click="saveDimension" />
         </q-card-actions>
       </q-card>
     </q-dialog>

@@ -147,7 +147,7 @@
       </div>
 
       <!-- Botão refresh -->
-      <q-btn flat round icon="refresh" color="teal-7" :loading="loading" @click="$emit('refresh')" size="sm">
+      <q-btn flat round icon="refresh" color="primary" :loading="loading" @click="$emit('refresh')" size="sm">
         <q-tooltip>Atualizar</q-tooltip>
       </q-btn>
 

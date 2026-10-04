@@ -45,7 +45,7 @@
       <q-toggle
         :model-value="filters.is_full === 'true'"
         label="Somente Full"
-        color="teal-7"
+        color="primary"
         @update:model-value="emit('filter', 'is_full', $event ? 'true' : '')"
       />
       <q-select
@@ -99,7 +99,7 @@ const sortOptions = [
 </script>
 
 <style lang="scss" scoped>
-.filters-panel { padding: 16px; border-bottom: 1px solid #f1f5f9; }
+.filters-panel { padding: 16px; border-bottom: 1px solid #dfe9ef; }
 .filters-search { margin-bottom: 12px; }
 .filters-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .filters-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }

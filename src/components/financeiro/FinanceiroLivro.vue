@@ -12,7 +12,7 @@
           v-model="visao"
           dense
           no-caps
-          toggle-color="teal-8"
+          toggle-color="primary"
           :options="[
             { label: 'Lançamentos', value: 'lancamentos' },
             { label: 'Plano de contas', value: 'plano' },

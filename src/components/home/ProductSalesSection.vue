@@ -51,7 +51,7 @@
           <div class="feature-list">
             <div v-for="f in features" :key="f.title" class="feature-row">
               <div class="f-icon">
-                <q-icon :name="f.icon" size="18px" color="teal-6" />
+                <q-icon :name="f.icon" size="18px" color="primary" />
               </div>
               <div>
                 <strong>{{ f.title }}</strong>
@@ -106,7 +106,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .sellerbot-section {
-  background: #f0fdf9;
+  background: #fdf2f7;
   padding: 96px 0;
 }
 
@@ -130,8 +130,8 @@ export default defineComponent({
   position: relative;
   border-radius: 20px;
   overflow: hidden;
-  border: 2px solid #99f6e4;
-  box-shadow: 0 24px 60px rgba(13,148,136,.18);
+  border: 2px solid #f7c1d6;
+  box-shadow: 0 24px 60px rgba(165,30,85,.18);
 }
 
 .sb-img {
@@ -145,7 +145,7 @@ export default defineComponent({
   position: absolute;
   top: 16px;
   left: 16px;
-  background: rgba(13,148,136,.9);
+  background: rgba(165,30,85,.9);
   color: #fff;
   font-size: .75rem;
   font-weight: 700;
@@ -162,7 +162,7 @@ export default defineComponent({
   bottom: -20px;
   right: -20px;
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 14px;
   padding: 16px 20px;
   box-shadow: 0 12px 32px rgba(0,0,0,.12);
@@ -176,12 +176,12 @@ export default defineComponent({
   gap: 16px;
   padding: 5px 0;
 
-  &:not(:last-child) { border-bottom: 1px solid #f1f5f9; }
+  &:not(:last-child) { border-bottom: 1px solid #dfe9ef; }
 }
 
-.float-label { font-size: .78rem; color: #94a3b8; }
-.float-val { font-size: .88rem; font-weight: 700; color: #0f172a; }
-.float-val.positive { color: #0d9488; }
+.float-label { font-size: .78rem; color: #6b8498; }
+.float-val { font-size: .88rem; font-weight: 700; color: #101e2b; }
+.float-val.positive { color: #a51e55; }
 
 /* Content */
 .eyebrow {
@@ -190,24 +190,24 @@ export default defineComponent({
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
-  color: #0d9488;
+  color: #a51e55;
   margin-bottom: 12px;
 }
 
 .sb-title {
   font-size: clamp(1.7rem, 3vw, 2.3rem);
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   line-height: 1.2;
   margin: 0 0 18px;
   letter-spacing: -.7px;
 }
 
-.accent { color: #0d9488; }
+.accent { color: #a51e55; }
 
 .sb-sub {
   font-size: .97rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.75;
   margin: 0 0 32px;
 }
@@ -229,7 +229,7 @@ export default defineComponent({
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(13,148,136,.1);
+  background: rgba(165,30,85,.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,13 +240,13 @@ export default defineComponent({
   display: block;
   font-size: .92rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   margin-bottom: 3px;
 }
 
 .feature-row p {
   font-size: .84rem;
-  color: #64748b;
+  color: #4c6272;
   margin: 0;
   line-height: 1.55;
 }
@@ -258,7 +258,7 @@ export default defineComponent({
   align-items: center;
   padding: 12px 26px;
   border-radius: 10px;
-  background: #0d9488;
+  background: #a51e55;
   color: #fff;
   font-weight: 700;
   font-size: .92rem;
@@ -266,8 +266,8 @@ export default defineComponent({
   transition: background .2s, box-shadow .2s;
 
   &:hover {
-    background: #0f766e;
-    box-shadow: 0 6px 20px rgba(13,148,136,.35);
+    background: #7f1642;
+    box-shadow: 0 6px 20px rgba(165,30,85,.35);
   }
 }
 
@@ -276,14 +276,14 @@ export default defineComponent({
   align-items: center;
   padding: 12px 20px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  color: #64748b;
+  border: 1px solid #93aebb;
+  color: #4c6272;
   font-weight: 600;
   font-size: .92rem;
   text-decoration: none;
   transition: border-color .2s, color .2s;
 
-  &:hover { border-color: #0d9488; color: #0d9488; }
+  &:hover { border-color: #a51e55; color: #a51e55; }
 }
 
 @media (max-width: 900px) {

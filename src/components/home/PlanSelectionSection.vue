@@ -39,11 +39,11 @@
             </template>
           </div>
 
-          <q-separator class="q-my-md" :style="{ borderColor: plan.popular ? '#0d9488' : '#e2e8f0' }" />
+          <q-separator class="q-my-md" :style="{ borderColor: plan.popular ? '#a51e55' : '#b8cbd6' }" />
 
           <ul class="plan-features">
             <li v-for="f in plan.features" :key="f.text" :class="{ 'feat--off': f.off }">
-              <span class="feat-check" :style="f.off ? { color: '#cbd5e1' } : { color: plan.iconColor }">
+              <span class="feat-check" :style="f.off ? { color: '#93aebb' } : { color: plan.iconColor }">
                 {{ f.off ? '–' : '✓' }}
               </span>
               <span>{{ f.text }}</span>
@@ -80,8 +80,8 @@ export default defineComponent({
       plans: [
         {
           icon: 'smart_toy',
-          iconBg: 'rgba(13,148,136,.1)',
-          iconColor: '#0d9488',
+          iconBg: 'rgba(165,30,85,.1)',
+          iconColor: '#a51e55',
           name: 'SellerBot Starter',
           tagline: 'Para quem quer começar com controle financeiro.',
           priceType: 'free',
@@ -102,8 +102,8 @@ export default defineComponent({
         },
         {
           icon: 'manage_accounts',
-          iconBg: 'rgba(13,148,136,.15)',
-          iconColor: '#0d9488',
+          iconBg: 'rgba(165,30,85,.15)',
+          iconColor: '#a51e55',
           name: 'SellerBot Pro',
           tagline: 'Para sellers que querem controle total da operação.',
           priceType: 'fixed',
@@ -152,7 +152,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .plans-section {
-  background: #f8fafc;
+  background: #edf4f7;
   padding: 96px 0;
 }
 
@@ -173,21 +173,21 @@ export default defineComponent({
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
-  color: #0d9488;
+  color: #a51e55;
   margin-bottom: 12px;
 }
 
 .section-title {
   font-size: clamp(1.75rem, 3vw, 2.4rem);
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   margin: 0 0 16px;
   letter-spacing: -.7px;
 }
 
 .section-sub {
   font-size: 1rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.72;
   max-width: 560px;
   margin: 0 auto;
@@ -203,7 +203,7 @@ export default defineComponent({
 
 .plan-card {
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 20px;
   padding: 32px;
   position: relative;
@@ -215,8 +215,8 @@ export default defineComponent({
   }
 
   &--popular {
-    border-color: #0d9488;
-    box-shadow: 0 0 0 1px #0d9488, 0 10px 32px rgba(13,148,136,.12);
+    border-color: #a51e55;
+    box-shadow: 0 0 0 1px #a51e55, 0 10px 32px rgba(165,30,85,.12);
   }
 }
 
@@ -224,7 +224,7 @@ export default defineComponent({
   position: absolute;
   top: -1px;
   right: 24px;
-  background: #0d9488;
+  background: #a51e55;
   color: #fff;
   font-size: .68rem;
   font-weight: 700;
@@ -254,12 +254,12 @@ export default defineComponent({
 .plan-name {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
 }
 
 .plan-tagline {
   font-size: .8rem;
-  color: #94a3b8;
+  color: #6b8498;
   margin-top: 2px;
   line-height: 1.4;
 }
@@ -271,18 +271,18 @@ export default defineComponent({
   margin-bottom: 4px;
 }
 
-.price-prefix { font-size: 1rem; font-weight: 700; color: #64748b; }
+.price-prefix { font-size: 1rem; font-weight: 700; color: #4c6272; }
 
 .price-main {
   font-size: 2rem;
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   line-height: 1;
 }
 
 .price-consult { font-size: 1.4rem; color: #f59e0b; }
 
-.price-period { font-size: .85rem; color: #94a3b8; }
+.price-period { font-size: .85rem; color: #6b8498; }
 
 .plan-features {
   list-style: none;
@@ -300,10 +300,10 @@ li {
   align-items: flex-start;
   gap: 8px;
   font-size: .87rem;
-  color: #475569;
+  color: #4c6272;
   line-height: 1.4;
 
-  &.feat--off { color: #cbd5e1; }
+  &.feat--off { color: #93aebb; }
 }
 
 .plan-cta {
@@ -319,22 +319,22 @@ li {
   transition: background .2s, box-shadow .2s, border-color .2s;
 
   &--primary {
-    background: #0d9488;
+    background: #a51e55;
     color: #fff;
-    &:hover { background: #0f766e; box-shadow: 0 6px 20px rgba(13,148,136,.35); }
+    &:hover { background: #7f1642; box-shadow: 0 6px 20px rgba(165,30,85,.35); }
   }
 
   &--ghost {
-    border: 1.5px solid #e2e8f0;
-    color: #475569;
-    &:hover { border-color: #0d9488; color: #0d9488; }
+    border: 1.5px solid #b8cbd6;
+    color: #4c6272;
+    &:hover { border-color: #a51e55; color: #a51e55; }
   }
 }
 
 .plans-note {
   text-align: center;
   font-size: .85rem;
-  color: #94a3b8;
+  color: #6b8498;
   display: flex;
   align-items: center;
   justify-content: center;

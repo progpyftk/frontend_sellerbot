@@ -19,7 +19,7 @@
     </div>
 
     <div v-if="loading && !data" class="center-loading">
-      <q-spinner-dots color="teal" size="40px" />
+      <q-spinner-dots color="primary" size="40px" />
     </div>
 
     <div v-else-if="error" class="center-error">{{ error }}</div>
@@ -452,16 +452,16 @@ onMounted(load)
 .header-left { display: flex; align-items: center; gap: 12px; }
 .header-icon {
   width: 36px; height: 36px; border-radius: 8px;
-  background: rgba(20,184,166,0.15); display: flex; align-items: center;
-  justify-content: center; color: #14b8a6;
+  background: rgba(177,84,123,0.15); display: flex; align-items: center;
+  justify-content: center; color: #b1547b;
 }
-.header-eyebrow { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
-.header-title { font-size: 17px; font-weight: 700; color: #e2e8f0; }
+.header-eyebrow { font-size: 10px; color: #4c6272; text-transform: uppercase; letter-spacing: .08em; }
+.header-title { font-size: 17px; font-weight: 700; color: #b8cbd6; }
 .header-right { display: flex; align-items: center; gap: 10px; }
-.checked-at { font-size: 11px; color: #64748b; }
+.checked-at { font-size: 11px; color: #4c6272; }
 .refresh-btn {
   width: 30px; height: 30px; border-radius: 6px; background: rgba(255,255,255,0.06);
-  border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center;
+  border: none; cursor: pointer; color: #6b8498; display: flex; align-items: center;
   justify-content: center; transition: background .15s;
 }
 .refresh-btn:hover { background: rgba(255,255,255,0.1); }
@@ -470,7 +470,7 @@ onMounted(load)
 
 .center-loading, .center-error {
   display: flex; align-items: center; justify-content: center;
-  height: 200px; color: #64748b;
+  height: 200px; color: #4c6272;
 }
 
 /* ── Alerta: rotina sem rodar hoje (PROMO-IA-33) ── */
@@ -493,7 +493,7 @@ onMounted(load)
 .section-title {
   padding: 20px 24px 10px;
   font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .08em; color: #64748b;
+  letter-spacing: .08em; color: #4c6272;
 }
 .infra-grid { display: flex; gap: 14px; padding: 0 24px; flex-wrap: wrap; }
 .infra-card {
@@ -504,14 +504,14 @@ onMounted(load)
 .card--ok    { border-left: 3px solid #22c55e; }
 .card--warn  { border-left: 3px solid #f59e0b; }
 .card--error { border-left: 3px solid #ef4444; }
-.infra-icon { color: #94a3b8; padding-top: 2px; }
-.infra-label { font-size: 11px; color: #64748b; margin-bottom: 3px; }
-.infra-value { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #e2e8f0; }
-.infra-meta { font-size: 11px; color: #64748b; }
+.infra-icon { color: #6b8498; padding-top: 2px; }
+.infra-label { font-size: 11px; color: #4c6272; margin-bottom: 3px; }
+.infra-value { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #b8cbd6; }
+.infra-meta { font-size: 11px; color: #4c6272; }
 .val--ok    { color: #22c55e; }
 .val--warn  { color: #f59e0b; }
 .val--error { color: #ef4444; }
-.tiny-empty { padding: 12px 24px; font-size: 13px; color: #64748b; }
+.tiny-empty { padding: 12px 24px; font-size: 13px; color: #4c6272; }
 
 /* ── Routines table ── */
 .routines-table { padding: 0 24px; }
@@ -523,7 +523,7 @@ onMounted(load)
 }
 .rt-header {
   padding: 8px 14px; font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .06em; color: #475569;
+  letter-spacing: .06em; color: #4c6272;
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
@@ -533,13 +533,13 @@ onMounted(load)
   transition: border-color .15s;
 }
 .rt-row:hover { border-color: rgba(255,255,255,0.12); }
-.rt-row--expanded { border-color: rgba(20,184,166,0.3); }
+.rt-row--expanded { border-color: rgba(177,84,123,0.3); }
 .rt-row--overdue { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.06); }
 
-.rt-main { padding: 12px 14px; font-size: 13px; color: #cbd5e1; }
+.rt-main { padding: 12px 14px; font-size: 13px; color: #93aebb; }
 
 .col-name { display: flex; align-items: center; gap: 6px; font-weight: 500; }
-.expand-icon { color: #475569; flex-shrink: 0; }
+.expand-icon { color: #4c6272; flex-shrink: 0; }
 
 /* Badges */
 .badge {
@@ -549,8 +549,8 @@ onMounted(load)
 .badge--success { background: rgba(34,197,94,.15);  color: #22c55e; }
 .badge--partial { background: rgba(245,158,11,.15); color: #f59e0b; }
 .badge--error   { background: rgba(239,68,68,.15);  color: #ef4444; }
-.badge--skipped { background: rgba(100,116,139,.15);color: #94a3b8; }
-.badge--none    { background: rgba(100,116,139,.1); color: #475569; }
+.badge--skipped { background: rgba(100,116,139,.15);color: #6b8498; }
+.badge--none    { background: rgba(100,116,139,.1); color: #4c6272; }
 .badge--overdue { background: rgba(239,68,68,.2);   color: #ef4444; }
 
 /* History pills */
@@ -561,18 +561,18 @@ onMounted(load)
 .pill--success { background: rgba(34,197,94,.12);  color: #22c55e; }
 .pill--partial { background: rgba(245,158,11,.12); color: #f59e0b; }
 .pill--error   { background: rgba(239,68,68,.12);  color: #ef4444; }
-.pill--skipped { background: rgba(100,116,139,.1); color: #94a3b8; }
-.hist-none { color: #475569; font-size: 12px; }
+.pill--skipped { background: rgba(100,116,139,.1); color: #6b8498; }
+.hist-none { color: #4c6272; font-size: 12px; }
 
 /* ── Detail ── */
 .rt-detail {
   padding: 0 14px 14px;
   border-top: 1px solid rgba(255,255,255,0.05);
 }
-.detail-title { font-size: 11px; color: #64748b; padding: 10px 0 8px; text-transform: uppercase; letter-spacing: .06em; }
-.detail-empty { font-size: 12px; color: #475569; }
-.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #94a3b8; }
-.detail-table th { padding: 5px 8px; text-align: left; color: #475569; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.detail-title { font-size: 11px; color: #4c6272; padding: 10px 0 8px; text-transform: uppercase; letter-spacing: .06em; }
+.detail-empty { font-size: 12px; color: #4c6272; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #6b8498; }
+.detail-table th { padding: 5px 8px; text-align: left; color: #4c6272; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .detail-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
 .detail-table tr:last-child td { border-bottom: none; }
 

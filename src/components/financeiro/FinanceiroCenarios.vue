@@ -12,7 +12,7 @@
           v-model="modelo"
           dense
           no-caps
-          toggle-color="teal-8"
+          toggle-color="primary"
           :options="[
             { label: 'Regimes (Simples × Presumido × Real)', value: 'regimes' },
             { label: '2027 (puro × híbrido × fora)', value: '2027' },

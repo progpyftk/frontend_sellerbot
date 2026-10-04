@@ -421,11 +421,11 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @import 'src/css/tokens.scss';
-.tiktok-items-page { background: #f8fafc; min-height: 100vh; }
+.tiktok-items-page { background: #edf4f7; min-height: 100vh; }
 
 .page-header {
   background: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #b8cbd6;
   padding: 14px 20px;
   position: sticky; top: $app-header-h; z-index: 10;
 }
@@ -435,15 +435,15 @@ onMounted(() => {
   display: flex; align-items: center; justify-content: center;
   color: #fff;
 }
-.header-eyebrow { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
-.header-title { font-size: 18px; font-weight: 700; color: #0f172a; }
+.header-eyebrow { font-size: 10px; font-weight: 600; color: #6b8498; text-transform: uppercase; letter-spacing: .5px; }
+.header-title { font-size: 18px; font-weight: 700; color: #101e2b; }
 .header-count {
-  background: #f1f5f9; border-radius: 10px; padding: 3px 10px;
-  font-size: 12px; font-weight: 600; color: #64748b;
+  background: #dfe9ef; border-radius: 10px; padding: 3px 10px;
+  font-size: 12px; font-weight: 600; color: #4c6272;
 }
 
 /* ── Filter bar ── */
-.fb { background: #fff; border-bottom: 1px solid #e2e8f0; }
+.fb { background: #fff; border-bottom: 1px solid #b8cbd6; }
 .fb-toolbar {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 16px; flex-wrap: nowrap; overflow-x: auto;
@@ -452,31 +452,31 @@ onMounted(() => {
   display: flex; align-items: center; gap: 6px;
   flex: 1; min-width: 160px; max-width: 380px;
   height: 34px; padding: 0 10px;
-  border: 1.5px solid #e2e8f0; border-radius: 10px;
-  background: #f8fafc; transition: border-color .15s, background .15s;
+  border: 1.5px solid #b8cbd6; border-radius: 10px;
+  background: #edf4f7; transition: border-color .15s, background .15s;
 }
-.fb-search.focused, .fb-search.filled { border-color: #0f172a; background: #fff; }
-.fb-search-icon { color: #94a3b8; flex-shrink: 0; }
+.fb-search.focused, .fb-search.filled { border-color: #101e2b; background: #fff; }
+.fb-search-icon { color: #6b8498; flex-shrink: 0; }
 .fb-search-input {
   flex: 1; border: none; outline: none; background: transparent;
-  font-size: 13px; color: #0f172a;
+  font-size: 13px; color: #101e2b;
 }
-.fb-search-input::placeholder { color: #94a3b8; }
+.fb-search-input::placeholder { color: #6b8498; }
 .fb-search-clear {
-  background: none; border: none; cursor: pointer; color: #94a3b8;
+  background: none; border: none; cursor: pointer; color: #6b8498;
   padding: 0; display: flex; align-items: center;
 }
 .fb-toolbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
 .fb-tbtn {
   display: flex; align-items: center; gap: 5px;
   height: 32px; padding: 0 12px; border-radius: 7px;
-  border: 1.5px solid #e2e8f0; background: #fff !important;
-  font-size: 12px !important; font-weight: 500; color: #64748b !important;
+  border: 1.5px solid #b8cbd6; background: #fff !important;
+  font-size: 12px !important; font-weight: 500; color: #4c6272 !important;
   cursor: pointer; transition: all .15s; white-space: nowrap;
 }
-.fb-tbtn--active { border-color: #0f172a !important; color: #0f172a !important; }
+.fb-tbtn--active { border-color: #101e2b !important; color: #101e2b !important; }
 .fb-adv-badge {
-  background: #0f172a; color: #fff;
+  background: #101e2b; color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 10px;
   padding: 1px 5px; min-width: 16px; text-align: center;
 }
@@ -494,35 +494,35 @@ onMounted(() => {
 }
 .fb-combo {
   position: relative; display: flex; align-items: center;
-  border: 1.5px solid #e2e8f0; border-radius: 20px;
+  border: 1.5px solid #b8cbd6; border-radius: 20px;
   background: #fff; transition: border-color .15s; overflow: visible;
 }
-.fb-combo:hover { border-color: #cbd5e1; }
-.fb-combo--on { border-color: #0f172a; background: #f8fafc; }
+.fb-combo:hover { border-color: #93aebb; }
+.fb-combo--on { border-color: #101e2b; background: #edf4f7; }
 .fb-combo-btn {
   display: flex; align-items: center; gap: 5px;
   height: 30px; padding: 0 10px 0 9px;
   background: none; border: none; cursor: pointer;
   font-size: 12px; font-weight: 500; color: #374151; border-radius: 20px;
 }
-.fb-combo--on .fb-combo-btn { color: #0f172a; }
-.fb-combo-ico { color: #94a3b8; flex-shrink: 0; }
-.fb-combo--on .fb-combo-ico { color: #0f172a; }
+.fb-combo--on .fb-combo-btn { color: #101e2b; }
+.fb-combo-ico { color: #6b8498; flex-shrink: 0; }
+.fb-combo--on .fb-combo-ico { color: #101e2b; }
 .fb-combo-label { white-space: nowrap; }
 .fb-combo-multi {
-  background: #0f172a; color: #fff; border-radius: 10px;
+  background: #101e2b; color: #fff; border-radius: 10px;
   font-size: 10px; font-weight: 700; padding: 0 5px;
 }
-.fb-combo-arrow { color: #94a3b8; }
+.fb-combo-arrow { color: #6b8498; }
 .fb-combo-clear {
   display: flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 50%;
-  background: #0f172a; border: none; cursor: pointer;
+  background: #101e2b; border: none; cursor: pointer;
   color: #fff; margin-right: 5px; flex-shrink: 0;
 }
 .fb-menu { border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,.10) !important; }
 .fb-menu-item { transition: background .1s; }
-.fb-menu-item--on { background: #f8fafc !important; }
+.fb-menu-item--on { background: #edf4f7 !important; }
 .fb-menu-item-label { font-size: 13px; }
 
 /* ── Table ── */
@@ -535,29 +535,29 @@ onMounted(() => {
      nao rola, qualquer `top:` vira empurrao permanente do cabecalho para baixo,
      por cima das primeiras linhas. Nada aqui gruda no viewport da pagina. */
   position: sticky; top: 0; z-index: 1;
-  background: #f8fafc;
-  font-size: 11px; font-weight: 700; color: #64748b;
+  background: #edf4f7;
+  font-size: 11px; font-weight: 700; color: #4c6272;
   text-transform: uppercase; letter-spacing: .4px;
-  border-bottom: 1.5px solid #e2e8f0;
+  border-bottom: 1.5px solid #b8cbd6;
 }
-:deep(.tiktok-table tbody tr.hover-row:hover) { background: #f8fafc !important; }
+:deep(.tiktok-table tbody tr.hover-row:hover) { background: #edf4f7 !important; }
 :deep(.tiktok-table tbody td) {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
   min-height: 50px; height: auto; vertical-align: middle;
   padding-top: 8px; padding-bottom: 8px;
 }
 
 .badge-mono {
-  background: #f1f5f9; color: #475569;
+  background: #dfe9ef; color: #4c6272;
   padding: 1px 5px; border-radius: 5px;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   letter-spacing: -0.5px; font-size: 11px;
 }
-.border-grey { border: 1px solid #e2e8f0; }
+.border-grey { border: 1px solid #b8cbd6; }
 .sku-inline {
   display: inline-block;
-  font-family: 'Roboto Mono', monospace;
-  font-size: 10px; color: #94a3b8;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 10px; color: #6b8498;
   letter-spacing: -0.3px;
 }
 
@@ -568,7 +568,7 @@ onMounted(() => {
 }
 .status-dot--ACTIVE { background: #16a34a; }
 .status-dot--INACTIVE { background: #dc2626; }
-.status-dot--default { background: #94a3b8; }
+.status-dot--default { background: #6b8498; }
 
 @media (max-width: 600px) {
   .page-header { padding: 10px 12px; }

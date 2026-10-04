@@ -234,7 +234,7 @@ onMounted(() => {
 <style lang="scss" scoped>
 @import 'src/css/tokens';
 
-.krivus-page { background: #f8fafc; }
+.krivus-page { background: #edf4f7; }
 .krivus-container { max-width: 1100px; margin: 0 auto; padding: $space-6 $space-6 $space-12; }
 
 .section-title { font-size: $text-h3-size; font-weight: $font-semibold; color: $text-primary; margin: $space-8 0 $space-3; }
@@ -242,7 +242,7 @@ onMounted(() => {
 .stage-funnel { display: flex; flex-wrap: wrap; gap: $space-3; }
 .funnel-item {
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: $radius-lg;
   padding: $space-3 $space-4;
   min-width: 110px;
@@ -251,7 +251,7 @@ onMounted(() => {
   transition: box-shadow $transition-base, transform $transition-base;
 }
 .funnel-item:hover { box-shadow: $shadow-sm; transform: translateY(-1px); }
-.funnel-count { font-size: 20px; font-weight: $font-bold; color: #0f766e; }
+.funnel-count { font-size: 20px; font-weight: $font-bold; color: #7f1642; }
 .funnel-label { font-size: 11px; color: $text-muted; margin-top: 2px; }
 
 .clients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: $space-4; }
@@ -259,7 +259,7 @@ onMounted(() => {
 .client-name { font-size: 15px; font-weight: $font-semibold; color: $text-primary; }
 .health-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .meta-label { font-size: 10px; color: $text-disabled; text-transform: uppercase; }
-.meta-value { font-size: $text-small-size; font-weight: $font-semibold; color: #334155; }
+.meta-value { font-size: $text-small-size; font-weight: $font-semibold; color: #152d43; }
 
 .alert-banner {
   display: flex;

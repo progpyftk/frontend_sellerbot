@@ -71,7 +71,7 @@ export default defineComponent({ name: 'HomePageFooter' })
 
 <style lang="scss" scoped>
 .sb-footer {
-  background: #0f172a;
+  background: #101e2b;
   border-top: 1px solid rgba(255,255,255,.07);
 }
 
@@ -96,7 +96,7 @@ export default defineComponent({ name: 'HomePageFooter' })
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  background: linear-gradient(135deg, #a51e55, #b1547b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,19 +110,19 @@ export default defineComponent({ name: 'HomePageFooter' })
 .brand-name {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #f1f5f9;
+  color: #dfe9ef;
 }
 
 .brand-sub {
   font-size: .75rem;
-  color: #475569;
+  color: #4c6272;
   text-transform: uppercase;
   letter-spacing: .5px;
 }
 
 .brand-desc {
   font-size: .85rem;
-  color: #475569;
+  color: #4c6272;
   line-height: 1.65;
   margin: 0;
   max-width: 280px;
@@ -143,11 +143,11 @@ export default defineComponent({ name: 'HomePageFooter' })
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: #4c6272;
   text-decoration: none;
   transition: color .2s, background .2s;
 
-  &:hover { color: #2dd4bf; background: rgba(45,212,191,.1); }
+  &:hover { color: #f28ab4; background: rgba(45,212,191,.1); }
 }
 
 /* Link columns */
@@ -158,11 +158,11 @@ export default defineComponent({ name: 'HomePageFooter' })
 
   a {
     font-size: .86rem;
-    color: #64748b;
+    color: #4c6272;
     text-decoration: none;
     transition: color .2s;
     line-height: 1;
-    &:hover { color: #2dd4bf; }
+    &:hover { color: #f28ab4; }
   }
 }
 
@@ -171,7 +171,7 @@ export default defineComponent({ name: 'HomePageFooter' })
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .7px;
-  color: #f1f5f9;
+  color: #dfe9ef;
   margin-bottom: 6px;
 }
 
@@ -191,7 +191,7 @@ export default defineComponent({ name: 'HomePageFooter' })
 
 .footer-bottom span {
   font-size: .8rem;
-  color: #475569;
+  color: #4c6272;
 }
 
 .footer-bottom-links {
@@ -200,9 +200,9 @@ export default defineComponent({ name: 'HomePageFooter' })
 
   a {
     font-size: .8rem;
-    color: #475569;
+    color: #4c6272;
     text-decoration: none;
-    &:hover { color: #2dd4bf; }
+    &:hover { color: #f28ab4; }
   }
 }
 

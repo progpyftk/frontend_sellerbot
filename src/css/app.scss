@@ -152,7 +152,7 @@ $side-props: (p: padding, pt: padding-top, pr: padding-right, pb: padding-bottom
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { height: 4px; }
-  &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+  &::-webkit-scrollbar-thumb { background: #93aebb; border-radius: 2px; }
 }
 
 .filter-scroll {
@@ -186,11 +186,20 @@ $side-props: (p: padding, pt: padding-top, pr: padding-right, pb: padding-bottom
   color: #8a94a6;
 }
 
-/* Identidade Krivus nas ações do SellerBot; cores semânticas ficam independentes. */
+/* Identidade Krivus: as cores nomeadas `teal-*` e `indigo-*` do Quasar (legado) apontam para a
+   escala framboesa/navy em todo o app. Cores semânticas (positive/negative/warning/info) ficam independentes. */
+$krivus-framboesa: (1: #fdf2f7, 2: #fbe0ec, 3: #f7c1d6, 4: #f28ab4, 5: #d86a98, 6: #b1547b, 7: #a51e55, 8: #8f1a4a, 9: #7f1642, 10: #5c0f30, 11: #a51e55);
+$krivus-navy: (1: #e3ebf1, 2: #c5d4e0, 3: #9fb7c9, 4: #658aa1, 5: #4a7088, 6: #2f5470, 7: #1f3d57, 8: #152d43, 9: #101e2b, 10: #0b1721, 11: #152d43);
+@each $nome, $escala in (teal: $krivus-framboesa, indigo: $krivus-navy) {
+  .text-#{$nome} { color: map-get($escala, 7) !important; }
+  .bg-#{$nome} { background: map-get($escala, 7) !important; }
+  @each $n, $hex in $escala {
+    .text-#{$nome}-#{$n} { color: $hex !important; }
+    .bg-#{$nome}-#{$n} { background: $hex !important; }
+  }
+}
 #sb-layout {
   --q-primary: #a51e55;
   --q-secondary: #152d43;
   --q-accent: #f28ab4;
-  .text-teal, .text-teal-7, .text-teal-8, .text-teal-9 { color: #a51e55 !important; }
-  .bg-teal, .bg-teal-7, .bg-teal-8, .bg-teal-9 { background: #a51e55 !important; }
 }

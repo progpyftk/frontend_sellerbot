@@ -16,7 +16,7 @@
       </div>
       <div class="context-actions">
         <div class="context-id">{{ overview.item_id }} <q-btn flat round dense icon="content_copy" size="sm" aria-label="Copiar item ID" @click="copyId" /></div>
-        <q-btn v-if="overview.permalink" flat dense color="teal-8" icon="open_in_new" label="Abrir anúncio" :href="overview.permalink" target="_blank" />
+        <q-btn v-if="overview.permalink" flat dense color="primary" icon="open_in_new" label="Abrir anúncio" :href="overview.permalink" target="_blank" />
       </div>
     </SbCard>
     <ItemAnalyticsKpiStrip :metrics="overview.metrics" />
@@ -53,12 +53,12 @@ async function copyId() {
 .item-context { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; }
 .context-main, .context-meta, .context-id, .context-actions { display: flex; align-items: center; }
 .context-main { min-width: 0; gap: 12px; }
-.context-icon { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 42px; border-radius: 11px; color: #0f766e; background: #ccfbf1; }
+.context-icon { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 42px; border-radius: 11px; color: #7f1642; background: #fbe0ec; }
 .context-copy { min-width: 0; }
-.context-title { overflow: hidden; color: #0f172a; font-size: 16px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.context-meta { flex-wrap: wrap; gap: 6px; color: #64748b; font-size: 11px; margin-top: 6px; }
+.context-title { overflow: hidden; color: #101e2b; font-size: 16px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.context-meta { flex-wrap: wrap; gap: 6px; color: #4c6272; font-size: 11px; margin-top: 6px; }
 .context-actions { flex-direction: column; align-items: flex-end; gap: 4px; }
-.context-id { color: #64748b; font-family: monospace; font-size: 11px; gap: 2px; }
+.context-id { color: #4c6272; font-family: monospace; font-size: 11px; gap: 2px; }
 .inventory-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .inventory-grid > :only-child { grid-column: 1 / -1; }
 @media (max-width: 700px) { .item-context { align-items: flex-start; flex-direction: column; } .context-actions { align-items: flex-start; } .inventory-grid { grid-template-columns: 1fr; } }

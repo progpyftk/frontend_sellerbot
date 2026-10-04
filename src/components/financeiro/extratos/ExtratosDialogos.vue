@@ -163,7 +163,7 @@
     <q-btn
       unelevated
       no-caps
-      color="teal-8"
+      color="primary"
       text-color="white"
       icon="save"
       :label="ctx.conexaoEmEdicao ? 'Salvar alterações' : 'Criar conexão'"
@@ -190,7 +190,7 @@
 
   <q-card-section class="q-pa-md contrapartes-corpo">
     <div v-if="ctx.carregandoContrapartes" class="column items-center q-pa-lg">
-      <q-spinner color="teal-8" size="32px" />
+      <q-spinner color="primary" size="32px" />
       <div class="text-caption text-grey-7 q-mt-sm">Carregando contrapartes pendentes…</div>
     </div>
 
@@ -242,7 +242,7 @@
               <q-btn
                 unelevated
                 no-caps
-                color="teal-8"
+                color="primary"
                 text-color="white"
                 icon="done_all"
                 label="Aplicar"
@@ -298,7 +298,7 @@
     <q-btn
       unelevated
       no-caps
-      color="teal-8"
+      color="primary"
       text-color="white"
       icon="sync"
       label="Sincronizar"

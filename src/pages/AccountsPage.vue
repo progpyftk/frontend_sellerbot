@@ -56,7 +56,7 @@
       <div v-show="activeTab === 'ml'" class="tab-content">
         <div class="tab-header">
           <div class="tab-title">Contas Mercado Livre</div>
-          <q-btn v-if="canWrite" unelevated color="teal-7" icon="add_circle" label="Adicionar Conta ML" @click="startMLAuth"
+          <q-btn v-if="canWrite" unelevated color="primary" icon="add_circle" label="Adicionar Conta ML" @click="startMLAuth"
             :loading="isAuthenticating" size="sm">
             <q-tooltip>Conectar nova conta do MercadoLivre</q-tooltip>
           </q-btn>
@@ -64,7 +64,7 @@
 
         <div class="table-wrap">
           <div v-if="loadingML" class="flex flex-center q-pa-xl">
-            <q-spinner color="teal-7" size="3em" />
+            <q-spinner color="primary" size="3em" />
           </div>
 
           <template v-else>
@@ -92,7 +92,7 @@
                   <q-toggle
                     v-if="canWrite"
                     :model-value="!!props.row.fiscal_invoice_sync_enabled"
-                    color="teal-7"
+                    color="primary"
                     :loading="savingFiscalAccount === `ml:${props.row.account_id}`"
                     @update:model-value="(value) => saveFiscalInvoiceSync(props.row, value, 'ml')"
                   >
@@ -156,12 +156,12 @@
                       }}</q-tooltip>
                   </q-btn>
 
-                   <q-btn v-if="canWrite && props.row.is_tiny_connected" flat round dense size="sm" color="teal-7" icon="sync"
+                   <q-btn v-if="canWrite && props.row.is_tiny_connected" flat round dense size="sm" color="primary" icon="sync"
                     :loading="syncingCnpj === props.row.cnpj" @click="syncCustoMedioProduto(props.row)">
                     <q-tooltip>Sync Custos (Tiny)</q-tooltip>
                   </q-btn>
 
-                   <q-btn v-if="canWrite && props.row.user === currentUserId" flat round dense size="sm" color="indigo-5" icon="group"
+                   <q-btn v-if="canWrite && props.row.user === currentUserId" flat round dense size="sm" color="secondary" icon="group"
                     @click="openShareDialog('ml', props.row)">
                     <q-tooltip>Compartilhar conta</q-tooltip>
                   </q-btn>
@@ -316,7 +316,7 @@
                     <q-tooltip>Renovar Token</q-tooltip>
                   </q-btn>
 
-                  <q-btn v-if="props.row.user === currentUserId" flat round dense size="sm" color="indigo-5" icon="group"
+                  <q-btn v-if="props.row.user === currentUserId" flat round dense size="sm" color="secondary" icon="group"
                     @click="openShareDialog('shopee', props.row)">
                     <q-tooltip>Compartilhar conta</q-tooltip>
                   </q-btn>
@@ -400,7 +400,7 @@
                     <q-tooltip>Renovar Token</q-tooltip>
                   </q-btn>
 
-                  <q-btn v-if="props.row.user === currentUserId" flat round dense size="sm" color="indigo-5" icon="group"
+                  <q-btn v-if="props.row.user === currentUserId" flat round dense size="sm" color="secondary" icon="group"
                     @click="openShareDialog('tiktokshop', props.row)">
                     <q-tooltip>Compartilhar conta</q-tooltip>
                   </q-btn>
@@ -567,15 +567,15 @@
         <q-separator />
         <q-card-section class="q-gutter-sm">
           <!-- Usuários com acesso -->
-          <div style="font-size:12px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px">
+          <div style="font-size:12px; font-weight:600; color:#4c6272; text-transform:uppercase; letter-spacing:.5px">
             Acesso compartilhado
           </div>
           <div v-if="!shareAccount?.shared_with_users?.length" style="color:#9aa0ac; font-size:13px">
             Nenhum usuário com acesso compartilhado ainda.
           </div>
           <div v-for="u in (shareAccount?.shared_with_users || [])" :key="u.id"
-            class="row items-center q-pa-xs" style="background:#f8fafc; border-radius:8px; margin-bottom:4px">
-            <q-icon name="person" size="16px" color="indigo-5" class="q-mr-sm" />
+            class="row items-center q-pa-xs" style="background:#edf4f7; border-radius:8px; margin-bottom:4px">
+            <q-icon name="person" size="16px" color="secondary" class="q-mr-sm" />
             <div style="flex:1">
               <div style="font-size:13px; font-weight:600; color:#1a1f36">{{ u.username }}</div>
               <div style="font-size:11px; color:#9aa0ac">{{ u.email }}</div>
@@ -590,13 +590,13 @@
           <q-separator class="q-my-sm" />
 
           <!-- Adicionar novo usuário -->
-          <div style="font-size:12px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px">
+          <div style="font-size:12px; font-weight:600; color:#4c6272; text-transform:uppercase; letter-spacing:.5px">
             Adicionar usuário
           </div>
           <div class="row q-gutter-sm items-center">
             <q-input v-model="shareEmail" label="E-mail do usuário" outlined dense style="flex:1"
               @keyup.enter="addShare" hint="Digite o e-mail e pressione Enter ou clique em Adicionar" />
-            <q-btn unelevated color="indigo-5" label="Adicionar" size="sm"
+            <q-btn unelevated color="secondary" label="Adicionar" size="sm"
               :loading="addingShare" @click="addShare" />
           </div>
         </q-card-section>
@@ -638,7 +638,7 @@
             <div class="text-subtitle2 text-grey-8">Notas fiscais no Balanço de NCMs</div>
             <q-toggle
               :model-value="tinyForm.fiscal_sync_enabled"
-              color="teal-7"
+              color="primary"
               :loading="tinyFiscalSaving"
               label="Sincronizar NF-e deste CNPJ pelo Tiny"
               @update:model-value="saveTinyFiscalSync"
@@ -657,7 +657,7 @@
             </div>
             <q-btn
               v-if="tinyForm.fiscal_sync_enabled"
-              flat dense no-caps color="teal-7" icon="sync" label="Sincronizar período selecionado"
+              flat dense no-caps color="primary" icon="sync" label="Sincronizar período selecionado"
               :loading="tinyFiscalSyncing" @click="syncTinyFiscal"
             />
             <div v-if="tinyForm.fiscal_sync?.last_error" class="text-caption text-negative">
@@ -1461,7 +1461,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0d9488, #2dd4bf);
+  background: linear-gradient(135deg, #a51e55, #f28ab4);
   color: #fff;
 }
 
@@ -1502,7 +1502,7 @@ onMounted(() => {
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  color: #64748b;
+  color: #4c6272;
   transition: color .15s, border-color .15s;
 }
 
@@ -1513,7 +1513,7 @@ onMounted(() => {
 .tab-btn--active {
   color: #1a1f36;
   font-weight: 600;
-  border-bottom-color: #0d9488;
+  border-bottom-color: #a51e55;
 }
 
 .tab-logo {
@@ -1557,7 +1557,7 @@ onMounted(() => {
   height: 20px;
   border-radius: 10px;
   background: #e8edf3;
-  color: #64748b;
+  color: #4c6272;
   font-size: 11px;
   font-weight: 600;
 }

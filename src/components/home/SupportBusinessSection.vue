@@ -14,7 +14,7 @@
             />
           </div>
           <div class="about-quote-card">
-            <q-icon name="format_quote" size="28px" color="teal-6" />
+            <q-icon name="format_quote" size="28px" color="primary" />
             <p>
               "Nosso objetivo não é ter centenas de clientes. É ter clientes que crescem
               de verdade — com um time que conhece a operação deles tanto quanto eles."
@@ -68,22 +68,22 @@ export default defineComponent({
       pillars: [
         {
           icon: 'group',
-          iconBg: 'rgba(13,148,136,.1)',
-          iconColor: '#0d9488',
+          iconBg: 'rgba(165,30,85,.1)',
+          iconColor: '#a51e55',
           title: 'Time dedicado',
           desc: 'Cada cliente tem profissionais exclusivos. Nenhum compartilhamento de atenção.',
         },
         {
           icon: 'smart_toy',
           iconBg: 'rgba(45,212,191,.1)',
-          iconColor: '#14b8a6',
+          iconColor: '#b1547b',
           title: 'Tecnologia própria',
           desc: 'SellerBot desenvolvido internamente para suprir o que as ferramentas genéricas não fazem.',
         },
         {
           icon: 'analytics',
           iconBg: 'rgba(99,102,241,.1)',
-          iconColor: '#6366f1',
+          iconColor: '#658aa1',
           title: 'Decisões por dados',
           desc: 'Cada recomendação vem de métricas reais da sua operação, não de achismo.',
         },
@@ -102,7 +102,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .about-section {
-  background: #f8fafc;
+  background: #edf4f7;
   padding: 96px 0;
 }
 
@@ -126,7 +126,7 @@ export default defineComponent({
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 16px 48px rgba(0,0,0,.1);
-  border-left: 4px solid #0d9488;
+  border-left: 4px solid #a51e55;
 }
 
 .about-img {
@@ -138,13 +138,13 @@ export default defineComponent({
 
 .about-quote-card {
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 16px;
   padding: 24px;
 
   p {
     font-size: .92rem;
-    color: #475569;
+    color: #4c6272;
     line-height: 1.7;
     font-style: italic;
     margin: 10px 0 8px;
@@ -154,7 +154,7 @@ export default defineComponent({
 .quote-author {
   font-size: .8rem;
   font-weight: 700;
-  color: #0d9488;
+  color: #a51e55;
 }
 
 /* Content */
@@ -164,24 +164,24 @@ export default defineComponent({
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
-  color: #0d9488;
+  color: #a51e55;
   margin-bottom: 12px;
 }
 
 .about-title {
   font-size: clamp(1.7rem, 3vw, 2.3rem);
   font-weight: 800;
-  color: #0f172a;
+  color: #101e2b;
   line-height: 1.2;
   margin: 0 0 20px;
   letter-spacing: -.7px;
 }
 
-.accent { color: #0d9488; }
+.accent { color: #a51e55; }
 
 .about-desc {
   font-size: .97rem;
-  color: #64748b;
+  color: #4c6272;
   line-height: 1.75;
   margin: 0 0 16px;
 }
@@ -213,13 +213,13 @@ export default defineComponent({
   display: block;
   font-size: .88rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   margin-bottom: 4px;
 }
 
 .pillar p {
   font-size: .82rem;
-  color: #64748b;
+  color: #4c6272;
   margin: 0;
   line-height: 1.5;
 }

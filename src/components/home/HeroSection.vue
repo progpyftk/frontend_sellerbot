@@ -84,7 +84,7 @@ export default defineComponent({
   display: flex;
   align-items: center;
   overflow: hidden;
-  background: #0f172a;
+  background: #101e2b;
 }
 
 .hero-bg-img {
@@ -101,9 +101,9 @@ export default defineComponent({
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(135deg, rgba(15,23,42,.97) 0%, rgba(19,78,74,.82) 58%, rgba(13,148,136,.55) 100%),
-    radial-gradient(ellipse 700px 500px at 85% 40%, rgba(13,148,136,.18) 0%, transparent 70%),
-    radial-gradient(ellipse 500px 700px at 5% 90%, rgba(20,184,166,.09) 0%, transparent 70%);
+    linear-gradient(135deg, rgba(15,23,42,.97) 0%, rgba(19,78,74,.82) 58%, rgba(165,30,85,.55) 100%),
+    radial-gradient(ellipse 700px 500px at 85% 40%, rgba(165,30,85,.18) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 700px at 5% 90%, rgba(177,84,123,.09) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -120,9 +120,9 @@ export default defineComponent({
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(13,148,136,.18);
+  background: rgba(165,30,85,.18);
   border: 1px solid rgba(45,212,191,.35);
-  color: #5eead4;
+  color: #f7a8c8;
   font-size: .74rem;
   font-weight: 700;
   letter-spacing: .7px;
@@ -135,8 +135,8 @@ export default defineComponent({
 .badge-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: #14b8a6;
-  box-shadow: 0 0 8px #14b8a6;
+  background: #b1547b;
+  box-shadow: 0 0 8px #b1547b;
   animation: blink 2s infinite;
 }
 
@@ -149,22 +149,22 @@ export default defineComponent({
   font-size: clamp(2.4rem, 5vw, 3.8rem);
   font-weight: 800;
   line-height: 1.1;
-  color: #f1f5f9;
+  color: #dfe9ef;
   margin: 0 0 24px;
   letter-spacing: -1.5px;
   max-width: 720px;
 }
 
-.hero-accent { color: #2dd4bf; }
+.hero-accent { color: #f28ab4; }
 
 .hero-sub {
   font-size: 1.07rem;
   line-height: 1.78;
-  color: #94a3b8;
+  color: #6b8498;
   margin: 0 0 38px;
   max-width: 600px;
 
-  strong { color: #cbd5e1; font-weight: 600; }
+  strong { color: #93aebb; font-weight: 600; }
 }
 
 .hero-ctas {
@@ -179,7 +179,7 @@ export default defineComponent({
   align-items: center;
   padding: 14px 32px;
   border-radius: 10px;
-  background: #0d9488;
+  background: #a51e55;
   color: #fff;
   font-weight: 700;
   font-size: .98rem;
@@ -187,8 +187,8 @@ export default defineComponent({
   transition: background .2s, box-shadow .2s;
 
   &:hover {
-    background: #0f766e;
-    box-shadow: 0 8px 28px rgba(13,148,136,.4);
+    background: #7f1642;
+    box-shadow: 0 8px 28px rgba(165,30,85,.4);
   }
 }
 
@@ -198,7 +198,7 @@ export default defineComponent({
   padding: 14px 24px;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.15);
-  color: #f1f5f9;
+  color: #dfe9ef;
   font-weight: 600;
   font-size: .98rem;
   text-decoration: none;
@@ -262,18 +262,18 @@ export default defineComponent({
 .stat-val {
   font-size: 1rem;
   font-weight: 800;
-  color: #2dd4bf;
+  color: #f28ab4;
   line-height: 1;
 }
 
 .stat-lbl {
   font-size: .7rem;
-  color: #64748b;
+  color: #4c6272;
   text-transform: uppercase;
   letter-spacing: .6px;
 }
 
-.geo { position: absolute; border-radius: 50%; pointer-events: none; background: #2dd4bf; }
+.geo { position: absolute; border-radius: 50%; pointer-events: none; background: #f28ab4; }
 .g1 { width: 520px; height: 520px; right: -130px; top: -130px; opacity: .04; }
 .g2 { width: 300px; height: 300px; right: 200px; bottom: -80px; opacity: .03; }
 .g3 { width: 180px; height: 180px; right: 60px; top: 55%; opacity: .06; background: #f59e0b; }

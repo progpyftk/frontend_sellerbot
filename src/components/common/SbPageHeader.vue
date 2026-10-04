@@ -45,8 +45,8 @@ defineProps({
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: #f0fdf9;
-  color: #0d9488;
+  background: #fdf2f7;
+  color: #a51e55;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,7 +56,7 @@ defineProps({
 .sb-page-title {
   font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: #101e2b;
   letter-spacing: -0.4px;
   line-height: 1.2;
   margin: 0;
@@ -64,7 +64,7 @@ defineProps({
 
 .sb-page-subtitle {
   font-size: 13px;
-  color: #64748b;
+  color: #4c6272;
   margin-top: 4px;
 }
 

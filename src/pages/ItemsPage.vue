@@ -16,7 +16,7 @@
             {{ pagination.rowsNumber }} anúncios
           </div>
         </div>
-        <q-btn unelevated color="teal-7" icon="refresh" label="Atualizar"
+        <q-btn unelevated color="primary" icon="refresh" label="Atualizar"
           @click="refreshData" :loading="loading" size="sm" class="q-px-md" />
       </div>
     </div>
@@ -54,7 +54,7 @@
                   clickable v-close-popup @click="applySort(opt)">
                   <q-item-section>{{ opt.label }}</q-item-section>
                   <q-item-section side v-if="pagination.sortBy === opt.field && pagination.descending === opt.desc">
-                    <q-icon name="check" color="teal-7" size="14px" />
+                    <q-icon name="check" color="primary" size="14px" />
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -94,7 +94,7 @@
                 @click.stop="toggleAccountFilter(acc.id)">
                 <q-item-section side>
                   <q-checkbox :model-value="filters.account?.includes(acc.id)"
-                    @update:model-value="toggleAccountFilter(acc.id)" @click.stop color="teal-7" dense />
+                    @update:model-value="toggleAccountFilter(acc.id)" @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ acc.nickname }}</q-item-section>
               </q-item>
@@ -123,7 +123,7 @@
                 @click.stop="toggleStatusFilter(opt.value)">
                 <q-item-section side>
                   <q-checkbox :model-value="filters.status?.includes(opt.value)"
-                    @update:model-value="toggleStatusFilter(opt.value)" @click.stop color="teal-7" dense />
+                    @update:model-value="toggleStatusFilter(opt.value)" @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
               </q-item>
@@ -152,7 +152,7 @@
                 @click.stop="toggleLogisticFilter(opt.value)">
                 <q-item-section side>
                   <q-checkbox :model-value="filters.logistic_type?.includes(opt.value)"
-                    @update:model-value="toggleLogisticFilter(opt.value)" @click.stop color="teal-7" dense />
+                    @update:model-value="toggleLogisticFilter(opt.value)" @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
               </q-item>
@@ -181,7 +181,7 @@
                 @click.stop="toggleListingTypeFilter(opt.value)">
                 <q-item-section side>
                   <q-checkbox :model-value="filters.listing_type?.includes(opt.value)"
-                    @update:model-value="toggleListingTypeFilter(opt.value)" @click.stop color="teal-7" dense />
+                    @update:model-value="toggleListingTypeFilter(opt.value)" @click.stop color="primary" dense />
                 </q-item-section>
                 <q-item-section class="fb-menu-item-label">{{ opt.label }}</q-item-section>
               </q-item>
@@ -287,7 +287,7 @@
         <div v-if="hasActiveFilters" class="fb-index">
           <div class="fb-index-header">
             <div class="fb-index-title">
-              <q-icon name="filter_alt" size="14px" color="teal-7" />
+              <q-icon name="filter_alt" size="14px" color="primary" />
               <span>Filtrando</span>
               <span class="fb-index-count">
                 {{ [filters.search?1:0, filters.account?.length?1:0, filters.status?.length?1:0,
@@ -409,8 +409,8 @@
            <div v-if="canWrite && (selectedItems.length || selectAllFiltered)" class="bulk-bar-wrap">
             <!-- Barra principal de ações -->
             <div class="bulk-bar q-px-lg q-py-sm row items-center q-gutter-sm">
-              <q-icon name="check_box" color="indigo-6" size="18px" />
-              <span class="text-weight-bold text-indigo-8">
+              <q-icon name="check_box" color="secondary" size="18px" />
+              <span class="text-weight-bold text-secondary">
                 <template v-if="selectAllFiltered">
                   Todos <strong>{{ pagination.rowsNumber }}</strong> filtrados selecionados
                 </template>
@@ -419,11 +419,11 @@
                 </template>
               </span>
               <q-separator vertical inset class="q-mx-xs" />
-              <q-btn unelevated dense color="indigo-6" text-color="white" icon="sell"
+              <q-btn unelevated dense color="secondary" text-color="white" icon="sell"
                 label="Preços" size="sm" class="q-px-md" @click="showBulkPriceDialog = true" />
               <q-btn unelevated dense color="orange-7" text-color="white" icon="local_offer"
                 label="Promoção" size="sm" class="q-px-md" @click="showBulkPromoDialog = true" />
-              <q-btn unelevated dense color="teal-7" text-color="white" icon="rocket_launch"
+              <q-btn unelevated dense color="primary" text-color="white" icon="rocket_launch"
                 label="Tipo Anúncio" size="sm" class="q-px-md" @click="showBulkListingTypeDialog = true" />
               <q-btn unelevated dense color="green-7" text-color="white" icon="inventory_2"
                 label="Estoque" size="sm" class="q-px-md" @click="showBulkStockDialog = true" />
@@ -437,11 +437,11 @@
             <!-- Banner: selecionar todos filtrados -->
             <div v-if="!selectAllFiltered && allSelected && pagination.rowsNumber > items.length"
               class="select-all-filtered-bar q-px-lg q-py-xs row items-center q-gutter-sm">
-              <q-icon name="info" color="indigo-5" size="14px" />
-              <span class="text-caption text-indigo-8">
+              <q-icon name="info" color="secondary" size="14px" />
+              <span class="text-caption text-secondary">
                 Apenas os <strong>{{ items.length }}</strong> anúncios desta página estão selecionados.
               </span>
-              <q-btn flat dense no-caps size="sm" color="indigo-7" class="q-px-sm"
+              <q-btn flat dense no-caps size="sm" color="secondary" class="q-px-sm"
                 :label="`Selecionar todos os ${pagination.rowsNumber} filtrados`"
                 @click="selectAllFiltered = true" />
             </div>
@@ -449,8 +449,8 @@
             <!-- Banner: todos filtrados selecionados -->
             <div v-if="selectAllFiltered"
               class="select-all-filtered-bar select-all-filtered-bar--active q-px-lg q-py-xs row items-center q-gutter-sm">
-              <q-icon name="check_circle" color="teal-7" size="14px" />
-              <span class="text-caption text-teal-8">
+              <q-icon name="check_circle" color="primary" size="14px" />
+              <span class="text-caption text-primary">
                 Todos os <strong>{{ pagination.rowsNumber }}</strong> anúncios que correspondem ao filtro atual estão selecionados.
               </span>
             </div>
@@ -466,7 +466,7 @@
             <q-tr :props="props" class="bg-grey-2 text-grey-8 text-uppercase text-caption">
               <q-th auto-width>
                  <q-checkbox v-if="canWrite" :model-value="allSelected" :indeterminate="someSelected"
-                  @update:model-value="toggleAll" color="indigo-6" dense />
+                  @update:model-value="toggleAll" color="secondary" dense />
               </q-th>
               <q-th auto-width />
               <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">
@@ -477,12 +477,12 @@
 
           <template v-slot:body="props">
             <q-tr :props="props"
-              :class="[isSelected(props.row) ? 'bg-indigo-1' : (props.expand ? 'bg-indigo-1' : 'hover-row')]"
+              :class="[isSelected(props.row) ? 'bg-secondary' : (props.expand ? 'bg-secondary' : 'hover-row')]"
               class="cursor-pointer">
 
               <q-td auto-width>
                  <q-checkbox v-if="canWrite" :model-value="isSelected(props.row)" @update:model-value="toggleSelect(props.row)"
-                  @click.stop color="indigo-6" dense />
+                  @click.stop color="secondary" dense />
               </q-td>
 
               <q-td auto-width class="q-py-md">
@@ -521,13 +521,13 @@
                       @click.stop="copyText(props.row.item_id)" title="Clique para copiar o MLB">
                       {{ props.row.item_id }}
                     </span>
-                    <span class="text-indigo-6 text-weight-bold">
+                    <span class="text-secondary text-weight-bold">
                       <q-icon name="store" size="10px" /> {{ props.row.account_nickname }}
                     </span>
                     <q-badge v-if="props.row.listing_type_id === 'gold_pro'" outline color="yellow-9" label="Premium"
                       size="xs" class="self-start" />
                     <q-badge v-else outline color="grey-6" label="Clássico" size="xs" class="self-start" />
-                    <q-badge v-if="props.row.catalog_listing" outline color="indigo" label="CATÁLOGO"
+                    <q-badge v-if="props.row.catalog_listing" outline color="secondary" label="CATÁLOGO"
                       class="text-weight-bold" />
                   </div>
 
@@ -697,7 +697,7 @@
                         <tbody>
                           <tr v-if="isDetailLoading(props.row)">
                             <td colspan="5" class="text-center text-caption text-grey-6 q-pa-md">
-                              <q-spinner-dots color="indigo" size="2em" /> Carregando...
+                              <q-spinner-dots color="secondary" size="2em" /> Carregando...
                             </td>
                           </tr>
                           <tr v-else-if="getVariations(props.row).length === 0">
@@ -883,7 +883,7 @@
       <q-card style="min-width:min(500px, 95vw); max-width:95vw">
 
         <!-- Header -->
-        <q-card-section class="bg-indigo-6 text-white row items-center q-pb-sm">
+        <q-card-section class="bg-secondary text-white row items-center q-pb-sm">
           <q-icon name="sell" size="sm" class="q-mr-sm" />
           <span class="text-h6">Alterar Preços</span>
           <q-space /><q-btn icon="close" flat round dense v-close-popup />
@@ -898,7 +898,7 @@
               { label: 'Atacado',  value: 'wholesale', icon: 'storefront'  },
             ]"
             color="grey-2" text-color="grey-8"
-            toggle-color="indigo-6" toggle-text-color="white"
+            toggle-color="secondary" toggle-text-color="white"
             style="border-radius:8px; border: 1px solid #e8eaed" />
           <div class="text-caption text-grey-6 q-mt-sm">{{ selectedItems.length }} anúncio(s) selecionado(s)</div>
         </q-card-section>
@@ -909,16 +909,16 @@
         <q-card-section v-if="bulkPriceForm.mode === 'adjust'" class="q-pa-lg column q-gutter-md">
           <q-btn-toggle v-model="bulkPriceForm.direction" spread unelevated
             :options="[{label:'Aumentar',value:'increase',icon:'arrow_upward'},{label:'Diminuir',value:'decrease',icon:'arrow_downward'}]"
-            color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
+            color="grey-3" text-color="grey-8" toggle-color="secondary" toggle-text-color="white" />
 
           <q-btn-toggle v-model="bulkPriceForm.type" spread unelevated
             :options="[{label:'Percentual (%)',value:'pct'},{label:'Valor fixo (R$)',value:'abs'}]"
-            color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
+            color="grey-3" text-color="grey-8" toggle-color="secondary" toggle-text-color="white" />
 
           <q-input v-model.number="bulkPriceForm.value" type="number" outlined dense
             :label="bulkPriceForm.type === 'pct' ? 'Percentual (%)' : 'Valor (R$)'"
             :hint="bulkPriceForm.type === 'pct' ? 'Ex: 10 → ajusta em 10% o preço atual' : 'Ex: 5.00 → soma/subtrai R$ 5,00'"
-            color="indigo-6">
+            color="secondary">
             <template v-slot:prepend>
               <q-icon :name="bulkPriceForm.type === 'pct' ? 'percent' : 'attach_money'" />
             </template>
@@ -928,7 +928,7 @@
         <!-- ── Modo: Preço Exato ────────────────────────────────────────── -->
         <q-card-section v-else-if="bulkPriceForm.mode === 'exact'" class="q-pa-lg column q-gutter-md">
           <q-input v-model.number="bulkExactPriceForm.price" type="number" outlined dense
-            label="Novo preço exato (R$)" color="indigo-6" autofocus
+            label="Novo preço exato (R$)" color="secondary" autofocus
             hint="Este valor substituirá o preço atual de todos os anúncios selecionados">
             <template v-slot:prepend><q-icon name="attach_money" /></template>
           </q-input>
@@ -943,7 +943,7 @@
               <span class="exact-price-arrow">
                 <span class="exact-price-old">R$ {{ Number(item.price || 0).toFixed(2) }}</span>
                 <q-icon name="arrow_forward" size="10px" color="grey-5" />
-                <span class="exact-price-new" :class="bulkExactPriceForm.price ? 'text-indigo-7' : 'text-grey-5'">
+                <span class="exact-price-new" :class="bulkExactPriceForm.price ? 'text-secondary' : 'text-grey-5'">
                   {{ bulkExactPriceForm.price ? `R$ ${Number(bulkExactPriceForm.price).toFixed(2)}` : '—' }}
                 </span>
               </span>
@@ -953,8 +953,8 @@
             </div>
           </div>
 
-          <q-banner dense class="bg-indigo-1 text-indigo-9 rounded-borders">
-            <template v-slot:avatar><q-icon name="warning_amber" color="indigo-6" size="16px" /></template>
+          <q-banner dense class="bg-secondary text-secondary rounded-borders">
+            <template v-slot:avatar><q-icon name="warning_amber" color="secondary" size="16px" /></template>
             O preço atual de cada anúncio será <strong>substituído</strong> pelo valor informado.
           </q-banner>
         </q-card-section>
@@ -963,7 +963,7 @@
         <q-card-section
           v-if="(bulkPriceForm.mode === 'adjust' && bulkPriceForm.direction === 'increase') || bulkPriceForm.mode === 'exact'"
           class="q-px-lg q-pt-none q-pb-md">
-          <q-checkbox v-model="bulkPriceForm.pausePromotions" dense color="indigo-6"
+          <q-checkbox v-model="bulkPriceForm.pausePromotions" dense color="secondary"
             label="Pausar promoções ativas e desativar o ajuste automático de preço (preço dinâmico)" />
           <div class="text-caption text-grey-6 q-ml-lg">
             Anúncios em promoção continuam mostrando o preço promocional pro comprador mesmo
@@ -979,7 +979,7 @@
 
           <div v-for="(tier, i) in bulkWholesaleForm.tiers" :key="i"
             class="row q-col-gutter-sm items-center q-pa-sm rounded-borders"
-            :class="tier.value && tier.min_quantity ? 'bg-indigo-1' : 'bg-grey-1'">
+            :class="tier.value && tier.min_quantity ? 'bg-secondary' : 'bg-grey-1'">
             <div class="col-auto" style="min-width:28px">
               <q-chip dense square :color="tier.value && tier.min_quantity ? 'indigo-6' : 'grey-4'" text-color="white" size="sm">
                 {{ i + 1 }}
@@ -987,17 +987,17 @@
             </div>
             <div class="col-3">
               <q-input v-model.number="tier.min_quantity" type="number" outlined dense
-                label="Qtd mínima" color="indigo-6" min="1" />
+                label="Qtd mínima" color="secondary" min="1" />
             </div>
             <div class="col-4">
               <q-btn-toggle v-model="tier.priceType" dense unelevated
                 :options="[{label:'% off',value:'pct'},{label:'R$ fixo',value:'abs'}]"
-                color="grey-3" text-color="grey-8" toggle-color="indigo-6" toggle-text-color="white" />
+                color="grey-3" text-color="grey-8" toggle-color="secondary" toggle-text-color="white" />
             </div>
             <div class="col">
               <q-input v-model.number="tier.value" type="number" outlined dense
                 :label="tier.priceType === 'pct' ? 'Desconto %' : 'Preço R$'"
-                color="indigo-6" min="0.01"
+                color="secondary" min="0.01"
                 :hint="tier.priceType === 'pct' && tier.value ? `${tier.value}% de desconto` : ''" />
             </div>
           </div>
@@ -1008,8 +1008,8 @@
             {{ wholesaleValidationError }}
           </q-banner>
 
-          <q-banner dense class="bg-indigo-1 text-indigo-9 rounded-borders q-mt-xs">
-            <template v-slot:avatar><q-icon name="info" color="indigo-6" size="16px" /></template>
+          <q-banner dense class="bg-secondary text-secondary rounded-borders q-mt-xs">
+            <template v-slot:avatar><q-icon name="info" color="secondary" size="16px" /></template>
             Faixas com "% off" são calculadas sobre o preço atual de cada anúncio. Faixas incompletas são ignoradas.
           </q-banner>
         </q-card-section>
@@ -1017,15 +1017,15 @@
         <!-- Ações -->
         <q-card-actions align="right" class="q-pa-md q-pt-none">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-          <q-btn v-if="bulkPriceForm.mode === 'adjust'" unelevated label="Aplicar Ajuste" color="indigo-6"
+          <q-btn v-if="bulkPriceForm.mode === 'adjust'" unelevated label="Aplicar Ajuste" color="secondary"
             :loading="bulkLoading"
             :disable="!bulkPriceForm.value || bulkPriceForm.value <= 0"
             @click="executeBulkPriceUpdate" />
-          <q-btn v-else-if="bulkPriceForm.mode === 'exact'" unelevated label="Aplicar Preço Exato" color="indigo-6"
+          <q-btn v-else-if="bulkPriceForm.mode === 'exact'" unelevated label="Aplicar Preço Exato" color="secondary"
             :loading="bulkLoading"
             :disable="!bulkExactPriceForm.price || bulkExactPriceForm.price <= 0"
             @click="executeBulkExactPrice" />
-          <q-btn v-else-if="bulkPriceForm.mode === 'wholesale'" unelevated label="Aplicar Atacado" color="indigo-6"
+          <q-btn v-else-if="bulkPriceForm.mode === 'wholesale'" unelevated label="Aplicar Atacado" color="secondary"
             :loading="bulkLoading"
             :disable="!!wholesaleValidationError"
             @click="executeBulkWholesale" />
@@ -1094,7 +1094,7 @@
     <!-- ══ DIALOG 3: ALTERAR TIPO DE ANÚNCIO ═════════════════════════════ -->
     <q-dialog v-model="showBulkListingTypeDialog" persistent>
       <q-card style="min-width:min(400px, 95vw); max-width:95vw">
-        <q-card-section class="bg-teal-7 text-white row items-center">
+        <q-card-section class="bg-primary text-white row items-center">
           <q-icon name="rocket_launch" size="sm" class="q-mr-sm" />
           <span class="text-h6">Alterar Tipo de Anúncio</span>
           <q-space /><q-btn icon="close" flat round dense v-close-popup />
@@ -1108,10 +1108,10 @@
               {label:'Premium (gold_pro)',value:'gold_pro',icon:'workspace_premium'},
               {label:'Clássico (gold_special)',value:'gold_special',icon:'article'}
             ]"
-            color="grey-3" text-color="grey-8" toggle-color="teal-7" toggle-text-color="white" />
+            color="grey-3" text-color="grey-8" toggle-color="primary" toggle-text-color="white" />
 
-          <q-banner class="bg-teal-1 text-teal-9 rounded-borders">
-            <template v-slot:avatar><q-icon name="info" color="teal-7" /></template>
+          <q-banner class="bg-primary text-primary rounded-borders">
+            <template v-slot:avatar><q-icon name="info" color="primary" /></template>
             <span v-if="bulkListingTypeForm.listing_type === 'gold_pro'">
               <b>Premium</b>: maior visibilidade, tarifa mais alta. Recomendado para itens com 10+ vendas.
             </span>
@@ -1123,7 +1123,7 @@
 
         <q-card-actions align="right" class="q-pa-md q-pt-none">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-          <q-btn unelevated label="Aplicar" color="teal-7" :loading="bulkLoading"
+          <q-btn unelevated label="Aplicar" color="primary" :loading="bulkLoading"
             @click="executeBulkListingType" />
         </q-card-actions>
       </q-card>
@@ -2190,7 +2190,7 @@ const reactivateItem = (row) => {
 }
 
 .font-mono {
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   letter-spacing: -0.5px;
 }
 
@@ -2265,7 +2265,7 @@ const reactivateItem = (row) => {
 .header-icon {
   width: 34px; height: 34px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #0d9488, #2dd4bf); color: #fff;
+  background: linear-gradient(135deg, #a51e55, #f28ab4); color: #fff;
 }
 .header-eyebrow { font-size: 10px; color: #9aa0ac; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
 .header-title   { font-size: 16px; font-weight: 700; color: #1a1f36; }
@@ -2287,7 +2287,7 @@ const reactivateItem = (row) => {
   padding: 0 10px;
   transition: border-color .15s, background .15s;
 }
-.fb-search.focused, .fb-search.filled { border-color: #0d9488; background: #fff; }
+.fb-search.focused, .fb-search.filled { border-color: #a51e55; background: #fff; }
 .fb-search-icon { color: #b0b7c3; flex-shrink: 0; }
 .fb-search-input {
   flex: 1; border: none; background: transparent;
@@ -2311,9 +2311,9 @@ const reactivateItem = (row) => {
   white-space: nowrap;
 }
 .fb-tbtn:hover { background: #f5f7fa; }
-.fb-tbtn--active { border-color: #0d9488; color: #0d9488; background: #f0faf9; }
+.fb-tbtn--active { border-color: #a51e55; color: #a51e55; background: #f0faf9; }
 .fb-adv-badge {
-  background: #0d9488; color: #fff;
+  background: #a51e55; color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 10px;
   padding: 1px 5px; min-width: 16px; text-align: center;
 }
@@ -2338,7 +2338,7 @@ const reactivateItem = (row) => {
   overflow: visible;
 }
 .fb-combo:hover { border-color: #c8cdd6; }
-.fb-combo--on   { border-color: #0d9488; background: #f0faf9; }
+.fb-combo--on   { border-color: #a51e55; background: #f0faf9; }
 .fb-combo-btn {
   display: flex; align-items: center; gap: 5px;
   height: 30px; padding: 0 10px 0 9px;
@@ -2346,19 +2346,19 @@ const reactivateItem = (row) => {
   font-size: 12px; font-weight: 500; color: #374151;
   border-radius: 20px;
 }
-.fb-combo--on .fb-combo-btn { color: #0d9488; }
+.fb-combo--on .fb-combo-btn { color: #a51e55; }
 .fb-combo-ico   { color: #9aa0ac; flex-shrink: 0; }
-.fb-combo--on .fb-combo-ico { color: #0d9488; }
+.fb-combo--on .fb-combo-ico { color: #a51e55; }
 .fb-combo-label { white-space: nowrap; }
 .fb-combo-multi {
-  background: #0d9488; color: #fff; border-radius: 10px;
+  background: #a51e55; color: #fff; border-radius: 10px;
   font-size: 10px; font-weight: 700; padding: 0 5px;
 }
 .fb-combo-arrow { color: #9aa0ac; transition: transform .15s; }
 .fb-combo-clear {
   display: flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 50%;
-  background: #0d9488; border: none; cursor: pointer;
+  background: #a51e55; border: none; cursor: pointer;
   color: #fff; margin-right: 5px; flex-shrink: 0;
 }
 .fb-combo-clear:hover { background: #0a7a72; }
@@ -2382,7 +2382,7 @@ const reactivateItem = (row) => {
 .fb-index-pill {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 12px;
-  background: #e0f2f0; color: #0d9488; font-size: 11px; font-weight: 500;
+  background: #e0f2f0; color: #a51e55; font-size: 11px; font-weight: 500;
   cursor: pointer; transition: background .1s;
 }
 .fb-index-pill:hover { background: #ccebe8; }
@@ -2416,7 +2416,7 @@ const reactivateItem = (row) => {
   cursor: pointer; transition: all .15s;
 }
 .fadv-radio input { display: none; }
-.fadv-radio--on { border-color: #0d9488; background: #f0faf9; color: #0d9488; }
+.fadv-radio--on { border-color: #a51e55; background: #f0faf9; color: #a51e55; }
 .fadv-range-row { display: flex; align-items: center; gap: 6px; }
 .fadv-range-sep { color: #9aa0ac; font-size: 11px; }
 .fadv-input {
@@ -2425,7 +2425,7 @@ const reactivateItem = (row) => {
   font-size: 12px; color: #1a1f36; background: #f8f9fb;
   outline: none; transition: border-color .15s;
 }
-.fadv-input:focus { border-color: #0d9488; background: #fff; }
+.fadv-input:focus { border-color: #a51e55; background: #fff; }
 .fadv-input--sm { width: 76px; }
 
 /* ── Fade transition ── */

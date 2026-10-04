@@ -83,7 +83,7 @@ onBeforeUnmount(() => editor.value?.destroy())
 
 <style>
 .tiptap-wrapper {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
@@ -93,8 +93,8 @@ onBeforeUnmount(() => editor.value?.destroy())
   display: flex;
   align-items: center;
   padding: 4px 8px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-bottom: 1px solid #b8cbd6;
+  background: #edf4f7;
   flex-wrap: wrap;
   gap: 2px;
 }
@@ -105,21 +105,21 @@ onBeforeUnmount(() => editor.value?.destroy())
   outline: none;
   font-size: 14px;
   line-height: 1.7;
-  color: #1e293b;
+  color: #152d43;
 }
 
 .tiptap-content .ProseMirror h1 { font-size: 1.5em; font-weight: 700; margin: 0.8em 0 0.4em; }
 .tiptap-content .ProseMirror h2 { font-size: 1.25em; font-weight: 600; margin: 0.8em 0 0.4em; }
 .tiptap-content .ProseMirror h3 { font-size: 1.1em; font-weight: 600; margin: 0.8em 0 0.4em; }
 .tiptap-content .ProseMirror ul, .tiptap-content .ProseMirror ol { padding-left: 1.5em; }
-.tiptap-content .ProseMirror blockquote { border-left: 3px solid #6366f1; margin: 0; padding-left: 12px; color: #64748b; }
-.tiptap-content .ProseMirror hr { border: none; border-top: 1px solid #e2e8f0; margin: 1em 0; }
+.tiptap-content .ProseMirror blockquote { border-left: 3px solid #658aa1; margin: 0; padding-left: 12px; color: #4c6272; }
+.tiptap-content .ProseMirror hr { border: none; border-top: 1px solid #b8cbd6; margin: 1em 0; }
 .tiptap-content .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: #94a3b8;
+  color: #6b8498;
   pointer-events: none;
   float: left;
   height: 0;
 }
-.tiptap-readonly .ProseMirror { background: #f8fafc; cursor: default; }
+.tiptap-readonly .ProseMirror { background: #edf4f7; cursor: default; }
 </style>

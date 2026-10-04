@@ -52,7 +52,7 @@
     <!-- Contadores por status -->
     <div class="row q-col-gutter-md q-mb-md">
       <div class="col-6 col-sm-3"><div class="review-kpi"><span>Pendentes</span><strong class="text-amber-9">{{ counts.suggested }}</strong><small>aguardando revisão</small></div></div>
-      <div class="col-6 col-sm-3"><div class="review-kpi"><span>Aprovadas</span><strong class="text-teal-9">{{ counts.approved }}</strong><small>regras aptas a projetar</small></div></div>
+      <div class="col-6 col-sm-3"><div class="review-kpi"><span>Aprovadas</span><strong class="text-primary">{{ counts.approved }}</strong><small>regras aptas a projetar</small></div></div>
       <div class="col-6 col-sm-3"><div class="review-kpi"><span>Aplicadas</span><strong class="text-blue-9">{{ counts.applied }}</strong><small>itens projetados no balanço</small></div></div>
       <div class="col-6 col-sm-3"><div class="review-kpi"><span>Rejeitadas</span><strong class="text-red-9">{{ counts.rejected }}</strong><small>fora da normalização</small></div></div>
     </div>
@@ -78,7 +78,7 @@
         <template #body-cell-counts="props">
           <q-td :props="props">
             <div class="text-caption">
-              <span class="text-teal-9">{{ props.row.items_approved || 0 }}</span> aprovados ·
+              <span class="text-primary">{{ props.row.items_approved || 0 }}</span> aprovados ·
               <span class="text-amber-9">{{ props.row.items_pending || 0 }}</span> pendentes ·
               <span class="text-red-9">{{ props.row.items_rejected || 0 }}</span> rejeitados
             </div>
@@ -134,7 +134,7 @@
         <template #body-cell-actions="props">
           <q-td :props="props" class="text-right">
             <q-btn v-if="props.row.status === 'suggested'" flat dense color="negative" icon="close" @click="reviewRule(props.row, 'rejected')"><q-tooltip>Rejeitar regra</q-tooltip></q-btn>
-            <q-btn v-if="props.row.status === 'suggested'" unelevated dense color="teal-8" icon="check" label="Aprovar" @click="reviewRule(props.row, 'approved')" />
+            <q-btn v-if="props.row.status === 'suggested'" unelevated dense color="primary" icon="check" label="Aprovar" @click="reviewRule(props.row, 'approved')" />
           </q-td>
         </template>
         <template #no-data>
@@ -171,7 +171,7 @@
         </template>
         <template #body-cell-evidence="props">
           <q-td :props="props">
-            <q-chip v-if="props.row.evidence_found" dense color="teal-1" text-color="teal-10">com evidência</q-chip>
+            <q-chip v-if="props.row.evidence_found" dense color="primary" text-color="primary">com evidência</q-chip>
             <q-chip v-else dense color="amber-1" text-color="amber-10">sem evidência</q-chip>
             <div v-if="props.row.evidence_alternatives" class="text-caption text-grey-6 text-ellipsis" style="max-width: 180px;" :title="props.row.evidence_alternatives">{{ props.row.evidence_alternatives }}</div>
           </q-td>
@@ -182,8 +182,8 @@
         <template #body-cell-actions="props">
           <q-td :props="props" class="text-right">
             <q-btn v-if="props.row.status === 'suggested'" flat dense color="amber-8" icon="undo" @click="reviewItem(props.row, 'needs_review')"><q-tooltip>Devolver para revisão</q-tooltip></q-btn>
-            <q-btn v-if="props.row.status === 'suggested'" unelevated dense color="teal-8" icon="check" label="Aprovar" @click="reviewItem(props.row, 'approved')" />
-            <q-btn v-if="props.row.status === 'needs_review'" unelevated dense color="teal-8" icon="check" label="Aprovar" @click="reviewItem(props.row, 'approved')" />
+            <q-btn v-if="props.row.status === 'suggested'" unelevated dense color="primary" icon="check" label="Aprovar" @click="reviewItem(props.row, 'approved')" />
+            <q-btn v-if="props.row.status === 'needs_review'" unelevated dense color="primary" icon="check" label="Aprovar" @click="reviewItem(props.row, 'approved')" />
           </q-td>
         </template>
         <template #no-data>
@@ -345,8 +345,8 @@ defineExpose({ reloadAll })
 <style scoped>
 .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 .text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.review-kpi { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
-.review-kpi span { color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
-.review-kpi strong { font-size: 22px; line-height: 1.1; color: #0f172a; }
-.review-kpi small { color: #64748b; }
+.review-kpi { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid #b8cbd6; border-radius: 10px; background: #fff; }
+.review-kpi span { color: #4c6272; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.review-kpi strong { font-size: 22px; line-height: 1.1; color: #101e2b; }
+.review-kpi small { color: #4c6272; }
 </style>

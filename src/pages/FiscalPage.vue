@@ -22,7 +22,7 @@
             />
             <q-btn
               unelevated
-              color="teal-8"
+              color="primary"
               text-color="white"
               icon="cloud_upload"
               label="Importar XMLs"
@@ -39,8 +39,8 @@
           dense
           no-caps
           align="left"
-          active-color="teal-8"
-          indicator-color="teal-8"
+          active-color="primary"
+          indicator-color="primary"
           class="fiscal-tabs"
         >
           <q-tab name="balance" icon="bar_chart" label="Balanço de NCMs" />
@@ -280,7 +280,7 @@
                     <span v-if="props.row.balance_status !== 'unknown'"
                       :class="[
                         'text-weight-bold',
-                        props.row.balance_qty > 0 ? 'text-teal-9' : props.row.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'
+                        props.row.balance_qty > 0 ? 'text-primary' : props.row.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'
                       ]"
                     >
                       {{ formatNumber(props.row.balance_qty) }}
@@ -292,7 +292,7 @@
                       v-for="u in props.row.units_breakdown"
                       :key="u.unit"
                       class="text-caption text-weight-bold"
-                      :class="u.balance_qty > 0 ? 'text-teal-9' : u.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'"
+                      :class="u.balance_qty > 0 ? 'text-primary' : u.balance_qty < 0 ? 'text-red-9' : 'text-grey-7'"
                     >
                       <span v-if="u.balance_qty !== null && u.balance_qty !== undefined">{{ formatNumber(u.balance_qty) }}</span>
                       <span v-else class="text-amber-9">Desconhecido</span>
@@ -319,7 +319,7 @@
                   <span
                     :class="[
                       'text-weight-bold',
-                      props.row.balance_value > 0 ? 'text-teal-9' : props.row.balance_value < 0 ? 'text-red-9' : 'text-grey-7'
+                      props.row.balance_value > 0 ? 'text-primary' : props.row.balance_value < 0 ? 'text-red-9' : 'text-grey-7'
                     ]"
                   >
                     {{ formatCurrency(props.row.balance_value) }}
@@ -333,7 +333,7 @@
                     flat
                     round
                     dense
-                    color="teal-8"
+                    color="primary"
                     icon="visibility"
                     @click="filterDocsByNcm(props.row.ncm)"
                   >
@@ -546,7 +546,7 @@
                     flat
                     round
                     dense
-                    color="teal-8"
+                    color="primary"
                     icon="description"
                     @click="openDocumentDetail(props.row.id)"
                   >
@@ -575,7 +575,7 @@
             <div class="col-12 col-md-6">
               <SbCard class="upload-card">
                 <div class="row items-center q-mb-md">
-                  <q-icon name="folder_zip" size="md" color="teal-8" class="q-mr-sm" />
+                  <q-icon name="folder_zip" size="md" color="primary" class="q-mr-sm" />
                   <div>
                     <div class="text-subtitle1 text-weight-bold text-grey-9">Importação em Lote (.ZIP)</div>
                     <div class="text-caption text-grey-6">Recomendado para centenas ou milhares de XMLs</div>
@@ -626,7 +626,7 @@
                       />
                       <q-btn
                         unelevated
-                        color="teal-8"
+                        color="primary"
                         text-color="white"
                         icon="upload"
                         label="Enviar Lote(s) ZIP"
@@ -643,7 +643,7 @@
             <div class="col-12 col-md-6">
               <SbCard class="upload-card">
                 <div class="row items-center q-mb-md">
-                  <q-icon name="description" size="md" color="teal-8" class="q-mr-sm" />
+                  <q-icon name="description" size="md" color="primary" class="q-mr-sm" />
                   <div>
                     <div class="text-subtitle1 text-weight-bold text-grey-9">Upload de XMLs Avulsos</div>
                     <div class="text-caption text-grey-6">Selecione múltiplos arquivos .xml de uma vez</div>
@@ -673,7 +673,7 @@
                   <div class="row justify-end q-mt-md">
                     <q-btn
                       unelevated
-                      color="teal-8"
+                      color="primary"
                       text-color="white"
                       icon="cloud_upload"
                       label="Processar XMLs"
@@ -692,7 +692,7 @@
             <SbCard v-if="activeBatch" class="q-mb-lg border-teal">
               <div class="row items-center justify-between q-mb-md">
                 <div class="row items-center">
-                  <q-spinner-dots color="teal-8" size="sm" class="q-mr-sm" v-if="activeBatch.status === 'processing'" />
+                  <q-spinner-dots color="primary" size="sm" class="q-mr-sm" v-if="activeBatch.status === 'processing'" />
                   <q-icon name="check_circle" color="positive" size="sm" class="q-mr-sm" v-else-if="activeBatch.status === 'completed'" />
                   <div>
                     <div class="text-subtitle1 text-weight-bold text-grey-9">
@@ -710,8 +710,8 @@
               <!-- Barra de Progresso -->
               <q-linear-progress
                 :value="activeBatch.progress?.percentage / 100 || 0"
-                color="teal-8"
-                track-color="teal-1"
+                color="primary"
+                track-color="primary"
                 rounded
                 size="10px"
                 class="q-mb-md"
@@ -761,7 +761,7 @@
                 <q-btn
                   flat
                   no-caps
-                  color="teal-8"
+                  color="primary"
                   label="Ver Lista de Arquivos deste Lote"
                   icon="list"
                   @click="openBatchFilesDialog(activeBatch.id)"
@@ -833,7 +833,7 @@
                     flat
                     round
                     dense
-                    color="teal-8"
+                    color="primary"
                     icon="list"
                     @click="openBatchFilesDialog(props.row.id)"
                   >
@@ -853,7 +853,7 @@
         <q-card style="width: 900px; max-width: 95vw;" class="rounded-borders">
           <q-card-section class="row items-center justify-between border-bottom bg-grey-1">
             <div class="row items-center">
-              <q-icon name="receipt" size="sm" color="teal-8" class="q-mr-sm" />
+              <q-icon name="receipt" size="sm" color="primary" class="q-mr-sm" />
               <div>
                 <div class="text-h6 text-weight-bold text-grey-9">
                   Detalhes da NF-e {{ selectedDoc?.number || 'S/N' }}
@@ -895,7 +895,7 @@
               <div class="col-6 col-sm-3">
                 <div class="info-block">
                   <div class="text-caption text-grey-6">Valor Total</div>
-                  <div class="text-weight-bold text-teal-9">{{ formatCurrency(selectedDoc.total_value) }}</div>
+                  <div class="text-weight-bold text-primary">{{ formatCurrency(selectedDoc.total_value) }}</div>
                 </div>
               </div>
               <div class="col-6 col-sm-3">
@@ -1639,7 +1639,7 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .fiscal-page {
-  background: #f8fafc;
+  background: #edf4f7;
   min-height: 100vh;
 }
 
@@ -1651,7 +1651,7 @@ onUnmounted(() => {
 .tabs-wrapper {
   background: #ffffff;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
   padding: 4px 8px;
 }
 
@@ -1678,38 +1678,38 @@ onUnmounted(() => {
 }
 
 .border-bottom {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #dfe9ef;
 }
 
 .border-teal {
-  border: 1px solid #14b8a6;
+  border: 1px solid #b1547b;
 }
 
 .dropzone-box {
   padding: 20px;
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed #93aebb;
   border-radius: 12px;
-  background: #f8fafc;
+  background: #edf4f7;
   transition: all 0.2s ease;
 
   &--active {
-    border-color: #0d9488;
+    border-color: #a51e55;
     background: #f0fdf4;
   }
 }
 
 .batch-kpi-box {
-  background: #f8fafc;
+  background: #edf4f7;
   padding: 10px 6px;
   border-radius: 8px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #dfe9ef;
 }
 
 .info-block {
-  background: #f8fafc;
+  background: #edf4f7;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #b8cbd6;
 }
 
 .balance-table {

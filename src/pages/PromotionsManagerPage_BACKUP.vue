@@ -633,7 +633,7 @@ onMounted(() => {
 }
 
 .font-mono {
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 }
 
 .promotions-table :deep(tbody tr td) {
