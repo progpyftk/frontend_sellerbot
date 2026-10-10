@@ -161,7 +161,7 @@
               <div class="sv-pills sv-pills--form">
                 <button v-for="a in accounts" :key="a.id"
                   :class="['sv-pill', form.account_id === a.id && 'sv-pill--on']"
-                  @click="form.account_id = a.id">{{ a.shop_name }}</button>
+                  @click="form.account_id = a.id; pickedItems = []; form.item_id_list = []">{{ a.shop_name }}</button>
               </div>
             </div>
 
@@ -199,12 +199,38 @@
                   <div class="sv-type-opt-title">Loja</div>
                   <div class="sv-type-opt-desc">Válido para qualquer produto</div>
                 </div>
-                <div class="sv-type-opt sv-type-opt--disabled" title="Em breve — seleção de produtos ainda não implementada">
+                <div :class="['sv-type-opt', form.voucher_type === 2 && 'sv-type-opt--on']"
+                  @click="form.voucher_type = 2; form.auto_renew = false">
                   <q-icon name="inventory_2" size="20px" />
                   <div class="sv-type-opt-title">Produto</div>
-                  <div class="sv-type-opt-desc">Em breve</div>
+                  <div class="sv-type-opt-desc">Só nos anúncios escolhidos</div>
                 </div>
               </div>
+            </div>
+
+            <!-- Seleção de anúncios (cupom de Produto) -->
+            <div v-if="form.voucher_type === 2" class="sv-form-section">
+              <div class="sv-form-label">Anúncios do cupom *</div>
+              <q-select v-model="pickedItems" :options="itemOptions" multiple use-chips use-input
+                outlined dense option-value="item_id" option-label="item_name" stack-label
+                label="Busque por nome, SKU ou ID" input-debounce="300"
+                @filter="filterItems" @update:model-value="onPickItems">
+                <template #no-option>
+                  <q-item><q-item-section class="text-grey">Digite para buscar anúncios da conta</q-item-section></q-item>
+                </template>
+                <template #option="{ itemProps, opt }">
+                  <q-item v-bind="itemProps">
+                    <q-item-section avatar v-if="opt.thumbnail">
+                      <q-avatar square size="32px"><img :src="opt.thumbnail" /></q-avatar>
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label lines="1">{{ opt.item_name }}</q-item-label>
+                      <q-item-label caption>{{ opt.item_sku || opt.item_id }} · {{ fmtBRL(opt.price) }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <div class="text-caption text-grey-5 q-mt-xs">A Shopee aceita até 100 anúncios por cupom.</div>
             </div>
 
             <!-- Tipo de recompensa -->
@@ -266,7 +292,7 @@
             </div>
 
             <!-- Renovação automática (FB-27) -->
-            <div class="sv-form-section">
+            <div v-if="form.voucher_type === 1" class="sv-form-section">
               <label class="sv-autorenew-check">
                 <q-checkbox v-model="form.auto_renew" dense color="primary" />
                 <div>
@@ -593,12 +619,29 @@ const createOpen    = ref(false)
 const createLoading = ref(false)
 const form = ref(defaultForm())
 
+// ── Cupom de Produto: seleção de anúncios da conta ─────────────────────────
+const pickedItems = ref([])
+const itemOptions = ref([])
+async function filterItems(texto, update) {
+  try {
+    const res = await ShopeeService.listItems({
+      account: form.value.account_id, search: texto || undefined, status: 'NORMAL', page_size: 20,
+    })
+    const lista = res.data?.results || res.data || []
+    update(() => { itemOptions.value = lista })
+  } catch {
+    update(() => { itemOptions.value = [] })
+  }
+}
+function onPickItems(lista) { form.value.item_id_list = (lista || []).map(i => i.item_id) }
+
 function defaultForm() {
   return {
     account_id:        null,
     voucher_name:      '',
     voucher_code:      '',
     voucher_type:      1,   // 1=loja, 2=produto
+    item_id_list:      [],  // só no cupom de produto
     reward_type:       1,   // 1=fixo, 2=%, 3=coins
     discount_amount:   null,
     percentage:        null,
@@ -645,6 +688,9 @@ const validationChecklist = computed(() => {
     // FB-28: Shopee só aceita voucher_code de 1-5 alfanuméricos — antes o usuário
     // podia digitar até 20 chars e o erro só vinha da API ("Up to 5 characters."), ilegível.
     { ok: /^[A-Za-z0-9]{1,5}$/.test(f.voucher_code.trim()), label: 'Código de 1 a 5 letras/números' },
+    ...(f.voucher_type === 2 ? [
+      { ok: (f.item_id_list || []).length >= 1 && f.item_id_list.length <= 100, label: 'Entre 1 e 100 anúncios escolhidos' },
+    ] : []),
     { ok: hasDiscount,                 label: f.reward_type === 1 ? 'Valor do desconto > R$ 0' : 'Percentual definido' },
     { ok: (f.usage_quantity || 0) >= 1,label: 'Quantidade de usos ≥ 1' },
     ...(f.auto_renew ? [
@@ -762,6 +808,8 @@ function openCreate() {
   }
   form.value = defaultForm()
   form.value.account_id = accounts.value[0].id
+  pickedItems.value = []
+  itemOptions.value = []
   createOpen.value = true
 }
 
@@ -817,6 +865,7 @@ async function submitCreate() {
       start_time:       toTimestamp(f.start_date),
       end_time:         toTimestamp(f.end_date),
     }
+    if (f.voucher_type === 2) payload.item_id_list = f.item_id_list
 
     if (f.reward_type === 1) {
       payload.discount_amount = parseFloat(f.discount_amount)

@@ -207,6 +207,7 @@ const menuSections = [
       { label: "Publicidade",      icon: "campaign",              route: "shopee-ads" },
       { label: "Desconto",         icon: "local_offer",           route: "shopee-discounts" },
       { label: "Cupons",           icon: "confirmation_number",  route: "shopee-vouchers" },
+      { label: "Oferta Relâmpago", icon: "bolt",                 route: "shopee-flash-sales" },
     ],
   },
   {

@@ -106,6 +106,32 @@ export default {
     return api.post(`/shopee/discounts/${discountId}/items/`, data)
   },
 
+  // Flash Sale (Oferta Relâmpago) da loja
+  getFlashSales(params = {}) {
+    return api.get('/shopee/flash-sales/', { params })
+  },
+  getFlashSaleSlots(params = {}) {
+    return api.get('/shopee/flash-sales/slots/', { params })
+  },
+  suggestFlashSaleItem(params = {}) {
+    return api.get('/shopee/flash-sales/suggest/', { params })
+  },
+  getFlashSale(flashSaleId, params = {}) {
+    return api.get(`/shopee/flash-sales/${flashSaleId}/`, { params })
+  },
+  createFlashSale(data) {
+    return api.post('/shopee/flash-sales/create/', data)
+  },
+  addFlashSaleItems(flashSaleId, data) {
+    return api.post(`/shopee/flash-sales/${flashSaleId}/items/`, data)
+  },
+  setFlashSaleStatus(flashSaleId, data) {
+    return api.post(`/shopee/flash-sales/${flashSaleId}/status/`, data)
+  },
+  deleteFlashSale(flashSaleId, params = {}) {
+    return api.delete(`/shopee/flash-sales/${flashSaleId}/`, { params })
+  },
+
   // Vouchers (Cupons)
   getVouchers(params = {}) {
     return api.get('/shopee/vouchers/', { params })

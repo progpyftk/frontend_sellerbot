@@ -138,6 +138,11 @@ const routes = [
         component: () => import('pages/ShopeeDiscountsPage.vue')
       },
       {
+        path: 'shopee/flash-sales',
+        name: 'shopee-flash-sales',
+        component: () => import('pages/ShopeeFlashSalesPage.vue')
+      },
+      {
         path: 'shopee/vouchers',
         name: 'shopee-vouchers',
         component: () => import('pages/ShopeeVouchersPage.vue')
