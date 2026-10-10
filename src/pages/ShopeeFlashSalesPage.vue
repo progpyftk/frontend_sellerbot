@@ -65,7 +65,7 @@
           </div>
         </div>
         <div v-if="auto.calibrada" class="text-caption text-grey-6 q-mt-xs">
-          Catálogo pequeno? Use menos anúncios por dia: com poucos anúncios elegíveis, o mesmo grupo se repete todo dia e não há rodízio.
+          Com poucos anúncios elegíveis, o sistema reduz sozinho a quantidade por dia (no máximo metade dos elegíveis) para que o catálogo alterne.
         </div>
         <div v-if="auto.calibrada && canWrite" class="row items-center q-gutter-sm q-mt-sm">
           <q-btn unelevated color="orange-8" text-color="white" size="sm" label="Salvar" :loading="autoSaving"
