@@ -132,6 +132,16 @@ export default {
     return api.delete(`/shopee/flash-sales/${flashSaleId}/`, { params })
   },
 
+  getFlashSaleAuto(params = {}) {
+    return api.get('/shopee/flash-sales/auto/', { params })
+  },
+  saveFlashSaleAuto(data) {
+    return api.patch('/shopee/flash-sales/auto/', data)
+  },
+  runFlashSaleAuto(data) {
+    return api.post('/shopee/flash-sales/auto/', data)
+  },
+
   // Vouchers (Cupons)
   getVouchers(params = {}) {
     return api.get('/shopee/vouchers/', { params })

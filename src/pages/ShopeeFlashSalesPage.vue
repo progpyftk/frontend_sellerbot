@@ -29,6 +29,61 @@
       20 anúncios. O preço sugerido nunca fica abaixo do piso de margem do projeto.
     </div>
 
+    <!-- ══ AUTOMAÇÃO ══ -->
+    <q-card v-if="auto" flat bordered class="sf-auto">
+      <q-card-section class="row items-center q-pb-none">
+        <q-icon name="smart_toy" color="orange-8" class="q-mr-sm" />
+        <div class="text-subtitle2 text-weight-bold">Criar automaticamente</div>
+        <q-space />
+        <q-toggle v-model="auto.active" color="orange-8" :disable="!canWrite || (!auto.calibrada && !auto.active)"
+          :label="auto.active ? 'Ligada' : 'Desligada'" @update:model-value="saveAuto()" />
+      </q-card-section>
+      <q-card-section class="q-pt-sm">
+        <div class="text-caption text-grey-7">
+          Todo dia de madrugada o sistema completa as ofertas dos próximos dias com anúncios que têm folga
+          acima do piso de margem, alternando o catálogo. Nunca cria preço abaixo do piso.
+        </div>
+        <q-banner v-if="!auto.calibrada" dense class="bg-orange-1 text-orange-10 q-mt-sm" rounded>
+          {{ auto.motivo_bloqueio }}
+        </q-banner>
+        <div v-if="auto.calibrada" class="row q-col-gutter-sm q-mt-xs">
+          <div class="col-6 col-sm-3">
+            <q-input v-model.number="auto.itens_por_flash" type="number" dense outlined label="Anúncios por dia (1–20)"
+              min="1" max="20" :disable="!canWrite" />
+          </div>
+          <div class="col-6 col-sm-3">
+            <q-input v-model.number="autoDescontoPct" type="number" dense outlined label="Desconto extra máx. (%)"
+              min="1" max="50" suffix="%" :disable="!canWrite" />
+          </div>
+          <div class="col-6 col-sm-3">
+            <q-input v-model.number="auto.estoque" type="number" dense outlined label="Estoque por variação"
+              min="1" max="1000" :disable="!canWrite" />
+          </div>
+          <div class="col-6 col-sm-3">
+            <q-input v-model.number="auto.dias_a_frente" type="number" dense outlined label="Dias à frente (1–10)"
+              min="1" max="10" :disable="!canWrite" />
+          </div>
+        </div>
+        <div v-if="auto.calibrada" class="text-caption text-grey-6 q-mt-xs">
+          Catálogo pequeno? Use menos anúncios por dia: com poucos anúncios elegíveis, o mesmo grupo se repete todo dia e não há rodízio.
+        </div>
+        <div v-if="auto.calibrada && canWrite" class="row items-center q-gutter-sm q-mt-sm">
+          <q-btn unelevated color="orange-8" text-color="white" size="sm" label="Salvar" :loading="autoSaving"
+            @click="saveAuto()" />
+          <q-btn v-if="auto.active" flat color="orange-9" size="sm" icon="play_arrow" label="Executar agora"
+            :loading="autoRunning" @click="runAuto()" />
+        </div>
+        <div class="text-caption q-mt-sm" :class="auto.last_error ? 'text-negative' : 'text-grey-7'">
+          <template v-if="auto.last_error">Última execução falhou: {{ auto.last_error }}</template>
+          <template v-else-if="auto.last_run_at">
+            Última execução: {{ new Date(auto.last_run_at).toLocaleString('pt-BR') }} ·
+            {{ autoResumo }}
+          </template>
+          <template v-else>Ainda não executou.</template>
+        </div>
+      </q-card-section>
+    </q-card>
+
     <!-- ══ LISTA ══ -->
     <div v-if="loading" class="sf-center"><q-spinner-dots color="orange-7" size="36px" /></div>
     <div v-else-if="!flashSales.length" class="sf-center sf-empty">
@@ -214,9 +269,64 @@ onMounted(async () => {
     if (accounts.value.length) accountId.value = accounts.value[0].id
   } catch { accounts.value = [] }
   await loadFlashSales()
+  await loadAuto()
 })
 
-function selectAccount(id) { accountId.value = id; loadFlashSales() }
+function selectAccount(id) { accountId.value = id; loadFlashSales(); loadAuto() }
+
+// ── Automação (SHPP-6) ─────────────────────────────────────────────────────
+const auto = ref(null)
+const autoSaving = ref(false)
+const autoRunning = ref(false)
+const autoDescontoPct = computed({
+  get: () => (auto.value ? Math.round(Number(auto.value.desconto_max) * 100) : 20),
+  set: (v) => { if (auto.value) auto.value.desconto_max = Number(v) / 100 },
+})
+const autoResumo = computed(() => {
+  const r = auto.value?.last_result
+  if (!r) return ''
+  const novos = Object.values(r.dias || {}).reduce((n, d) => n + (d.anuncios?.length || 0), 0)
+  const dias = Object.keys(r.dias || {}).length
+  return dias ? `${novos} anúncio(s) em ${dias} dia(s) novo(s)` : 'nada a criar, os dias já estavam cobertos'
+})
+
+async function loadAuto() {
+  auto.value = null
+  if (!accountId.value) return
+  try {
+    auto.value = (await ShopeeService.getFlashSaleAuto({ account_id: accountId.value })).data
+  } catch { auto.value = null }
+}
+
+async function saveAuto() {
+  const a = auto.value
+  autoSaving.value = true
+  try {
+    const res = await ShopeeService.saveFlashSaleAuto({
+      account_id: accountId.value, active: a.active, itens_por_flash: a.itens_por_flash,
+      desconto_max: a.desconto_max, estoque: a.estoque, dias_a_frente: a.dias_a_frente,
+    })
+    auto.value = res.data
+    $q.notify({ type: 'positive', message: auto.value.active ? 'Automação ligada.' : 'Configuração salva.' })
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e?.response?.data?.error || e.message })
+    await loadAuto()
+  } finally {
+    autoSaving.value = false
+  }
+}
+
+async function runAuto() {
+  autoRunning.value = true
+  try {
+    await ShopeeService.runFlashSaleAuto({ account_id: accountId.value })
+    $q.notify({ type: 'positive', message: 'Execução enfileirada. Atualize em alguns minutos.' })
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e?.response?.data?.error || e.message })
+  } finally {
+    autoRunning.value = false
+  }
+}
 
 async function loadFlashSales() {
   if (!accountId.value) return
@@ -426,6 +536,7 @@ async function submitCreate() {
 .sf-header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sf-title { font-size: 18px; font-weight: 700; }
 .sf-badge { margin-left: 8px; font-size: 11px; padding: 1px 8px; border-radius: 10px; background: #fff3e0; color: #e65100; }
+.sf-auto { margin-bottom: 12px; }
 .sf-note { font-size: 12px; color: #78909c; margin-bottom: 12px; }
 .sf-pills { display: flex; gap: 4px; }
 .sf-pills--wrap { flex-wrap: wrap; }
