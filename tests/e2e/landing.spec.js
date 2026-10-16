@@ -79,16 +79,16 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     await expect(page).toHaveURL(/\/login$/)
   })
 
-  test('âncora "Para clínicas" rola até a seção e registra o hash', async ({ page }) => {
+  test('âncora "Tecnologia e IA" rola até a seção e registra o hash', async ({ page }) => {
     await page.addInitScript(() => localStorage.clear())
     await page.goto('/')
 
-    await page.locator('header nav a[href="#clinicas"]').click()
+    await page.locator('header nav a[href="#tecnologia"]').click()
 
-    await expect(page).toHaveURL(/#clinicas$/)
+    await expect(page).toHaveURL(/#tecnologia$/)
     // scroll suave: aguarda assentar em vez de medir no primeiro frame
     await expect
-      .poll(async () => (await page.locator('#clinicas').boundingBox())?.y ?? 9999, {
+      .poll(async () => (await page.locator('#tecnologia').boundingBox())?.y ?? 9999, {
         timeout: 5000,
       })
       .toBeLessThan(200)
@@ -114,7 +114,7 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
 
     const waLinks = page.locator('a[href*="wa.me/5511998180409"][data-offer]')
     await expect(waLinks).toHaveCount(10)
-    for (const [offer, message] of Object.entries({ marketing: 'marketing', clinicas: 'clínica', consultoria: 'consultoria empresarial', operacao: 'operação', projeto: 'projeto', gestao: 'gestão contínua', mentoria: 'mentoria', tributario: 'tributário' })) {
+    for (const [offer, message] of Object.entries({ marketing: 'marketing', tecnologia: 'automação de processos', consultoria: 'consultoria empresarial', operacao: 'operação', projeto: 'projeto', gestao: 'gestão contínua', mentoria: 'mentoria', tributario: 'tributário' })) {
       const href = await page.locator(`a[data-offer="${offer}"]`).getAttribute('href')
       expect(new URL(href).searchParams.get('text')).toContain(message)
     }
@@ -160,11 +160,11 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     )
     expect(overflow).toBeLessThanOrEqual(0)
   })
-  test('três frentes, clínicas e ferramentas de e-commerce acessíveis', async ({ page }) => {
+  test('três frentes, tecnologia e ferramentas de e-commerce acessíveis', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('input[type="range"]')).toHaveCount(0);
     await expect(page.locator('.ecommerce-dashboard img')).toHaveAttribute('src', '/images/sellerbot/dashboard.webp');
-    for (const id of ['consultoria', 'marketing', 'ecommerce', 'clinicas']) {
+    for (const id of ['consultoria', 'marketing', 'ecommerce', 'tecnologia']) {
       await expect(page.locator(`#${id}`)).toBeVisible();
     }
     await page.locator('a[href="#analises"]').click();
