@@ -34,7 +34,7 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
 
     await page.goto('/')
 
-    await expect(page.locator('#hero-title')).toContainText('IA na operação')
+    await expect(page.locator('#hero-title')).toContainText('Sua empresa')
     expect(new URL(page.url()).pathname).toBe('/')
     expect(userRequests).toEqual([])
   })
@@ -58,7 +58,7 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     await page.goto('/')
 
     await expect(page).toHaveTitle(
-      'Krivus — Mentoria e consultoria para e-commerce e marketplaces',
+      'Krivus — Consultoria empresarial, marketing e e-commerce',
     )
     const robots = await page.locator('meta[name="robots"]').getAttribute('content')
     expect(robots).toBe('noindex,nofollow')
@@ -67,7 +67,7 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     const description = await page
       .locator('meta[name="description"][data-qmeta]')
       .getAttribute('content')
-    expect(description).toContain('Mentoria e consultoria para empresas')
+    expect(description).toContain('Consultoria empresarial, identidade visual, sites')
   })
 
   test('"Entrar no SellerBot" leva ao login (anônimo)', async ({ page }) => {
@@ -79,38 +79,45 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     await expect(page).toHaveURL(/\/login$/)
   })
 
-  test('âncora "Mentoria" rola até a seção e registra o hash', async ({ page }) => {
+  test('âncora "Para clínicas" rola até a seção e registra o hash', async ({ page }) => {
     await page.addInitScript(() => localStorage.clear())
     await page.goto('/')
 
-    await page.locator('header nav a[href="#mentoria"]').click()
+    await page.locator('header nav a[href="#clinicas"]').click()
 
-    await expect(page).toHaveURL(/#mentoria$/)
+    await expect(page).toHaveURL(/#clinicas$/)
     // scroll suave: aguarda assentar em vez de medir no primeiro frame
     await expect
-      .poll(async () => (await page.locator('#mentoria').boundingBox())?.y ?? 9999, {
+      .poll(async () => (await page.locator('#clinicas').boundingBox())?.y ?? 9999, {
         timeout: 5000,
       })
       .toBeLessThan(200)
   })
 
-  test('deep-link /#consultoria funciona em reload', async ({ page }) => {
+  test('links diretos para consultoria e análise funcionam em reload', async ({ page }) => {
     await page.addInitScript(() => localStorage.clear())
-    await page.goto('/#consultoria')
-
-    await expect
-      .poll(async () => (await page.locator('#consultoria').boundingBox())?.y ?? 9999, {
-        timeout: 5000,
-      })
-      .toBeLessThan(200)
+    for (const id of ['consultoria', 'analise-precos']) {
+      await page.goto(`/#${id}`)
+      await page.reload()
+      await expect(page.locator(`#${id}`)).toBeVisible()
+      await expect
+        .poll(async () => (await page.locator(`#${id}`).boundingBox())?.y ?? 9999, {
+          timeout: 5000,
+        })
+        .toBeLessThan(200)
+    }
   })
 
-  test('cinco chamadas contextuais de WhatsApp com data-offer', async ({ page }) => {
+  test('contatos por serviço levam ao WhatsApp com a mensagem correspondente', async ({ page }) => {
     await page.addInitScript(() => localStorage.clear())
     await page.goto('/')
 
     const waLinks = page.locator('a[href*="wa.me/5511998180409"][data-offer]')
-    await expect(waLinks).toHaveCount(5)
+    await expect(waLinks).toHaveCount(10)
+    for (const [offer, message] of Object.entries({ marketing: 'marketing', clinicas: 'clínica', consultoria: 'consultoria empresarial', operacao: 'operação', projeto: 'projeto', gestao: 'gestão contínua', mentoria: 'mentoria', tributario: 'tributário' })) {
+      const href = await page.locator(`a[data-offer="${offer}"]`).getAttribute('href')
+      expect(new URL(href).searchParams.get('text')).toContain(message)
+    }
     await expect(page.locator('a[data-offer="mentoria"]')).toHaveCount(1)
     await expect(page.locator('a[data-offer="consultoria"]')).toHaveCount(1)
   })
@@ -153,10 +160,15 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
     )
     expect(overflow).toBeLessThanOrEqual(0)
   })
-  test('dashboard substitui calculadora e cada análise tem sua seção', async ({ page }) => {
+  test('três frentes, clínicas e ferramentas de e-commerce acessíveis', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('input[type="range"]')).toHaveCount(0);
-    await expect(page.locator('.hero-dashboard img')).toHaveAttribute('src', '/images/sellerbot/dashboard.webp');
+    await expect(page.locator('.ecommerce-dashboard img')).toHaveAttribute('src', '/images/sellerbot/dashboard.webp');
+    for (const id of ['consultoria', 'marketing', 'ecommerce', 'clinicas']) {
+      await expect(page.locator(`#${id}`)).toBeVisible();
+    }
+    await page.locator('a[href="#analises"]').click();
+    await expect(page.locator('#analises')).toHaveAttribute('open', '');
     for (const id of ['analise-ads', 'analise-promocoes', 'analise-precos', 'analise-anuncios']) {
       const section = page.locator(`#${id}`);
       await expect(section.getByRole('heading', { level: 2 })).toBeVisible();
@@ -173,7 +185,7 @@ test.describe('Landing pública Krivus (IDV-13)', () => {
 
   test('histórias têm âncoras e capturas ampliam com retorno de foco', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.hero-case-links a[href="#case-doseverde"]').click();
+    await page.locator('.case-links a[href="#case-doseverde"]').click();
     await expect(page.locator('#case-doseverde')).toBeFocused();
     const open = page.getByRole('button', { name: 'Ampliar Dashboard da operação', exact: true });
     await open.scrollIntoViewIfNeeded();

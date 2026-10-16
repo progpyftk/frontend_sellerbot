@@ -4,7 +4,7 @@
   <header class="header dark">
     <div class="wrap header-inner">
       <a class="brand" href="#inicio" aria-label="Krivus — início" @click="goToAnchor"><KrivusLogo /></a>
-      <nav aria-label="Navegação principal"><a href="#ferramentas" @click="goToAnchor">SellerBot</a><a href="#mentoria" @click="goToAnchor">Mentoria</a><a href="#consultoria" @click="goToAnchor">Consultoria</a></nav>
+      <nav aria-label="Navegação principal"><a href="#solucoes" @click="goToAnchor">Soluções</a><a href="#clinicas" @click="goToAnchor">Para clínicas</a><a href="#cases" @click="goToAnchor">Nosso trabalho</a></nav>
       <router-link class="header-contact" to="/login">Entrar no SellerBot <span aria-hidden="true">↗</span></router-link>
     </div>
   </header>
@@ -12,15 +12,63 @@
     <section id="inicio" class="hero dark" aria-labelledby="hero-title">
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">MERCADO LIVRE · SHOPEE · GESTÃO</p>
-          <h1 id="hero-title">IA na operação.<br><em>Experiência<br>na gestão.</em></h1>
-          <p class="lead">Mentoria e consultoria com o SellerBot. Inteligência artificial em Ads, promoções, precificação e criação de anúncios.</p>
-          <a class="button primary" :href="whatsapp.operation" data-offer="operacao">Conversar sobre minha operação <span aria-hidden="true">↗</span></a>
-          <a class="hero-tools-link" href="#ferramentas" @click="goToAnchor">Conhecer as ferramentas <span aria-hidden="true">↓</span></a>
+          <p class="eyebrow">CONSULTORIA · MARKETING · E-COMMERCE</p>
+          <h1 id="hero-title">Sua empresa<br>bem posicionada.<br><em>Preparada<br>para crescer.</em></h1>
+          <p class="lead">Gestão, marca e vendas na mesma direção. Consultoria empresarial, identidade visual, sites e marketing digital para empresas de serviços, clínicas e e-commerce.</p>
+          <a class="button primary" :href="whatsapp.business" data-offer="empresa">Vamos conversar sobre sua empresa <span aria-hidden="true">↗</span></a>
         </div>
-        <div class="hero-dashboard"><p class="product-label">SELLERBOT / VISÃO DA OPERAÇÃO</p><ProductCapture src="/images/sellerbot/dashboard.webp" label="Dashboard da operação" alt="Gráfico real do dashboard SellerBot na paleta Krivus, relacionando faturamento, receita, contribuição e publicidade ao longo de setembro. Dados demonstrativos." :width="1368" :height="863" /><p class="hero-insight">Faturamento, mídia e contribuição.<br>A mesma operação, vista por inteiro.</p></div>
-        <div class="hero-case-links" aria-label="Operações acompanhadas"><a v-for="example in cases" :key="example.id" :href="`#${example.id}`" @click="goToAnchor">{{ example.name }} <span aria-hidden="true">↗</span></a></div>
+        <div class="hero-directory">
+          <p class="directory-label">ONDE SUA EMPRESA QUER CHEGAR?</p>
+          <a href="#consultoria" @click="goToAnchor"><span class="directory-number">01</span><span><strong>Organizar a gestão.</strong><small>Consultoria empresarial</small></span><span aria-hidden="true">↗</span></a>
+          <a href="#marketing" @click="goToAnchor"><span class="directory-number">02</span><span><strong>Fortalecer a marca.</strong><small>Identidade, sites e campanhas</small></span><span aria-hidden="true">↗</span></a>
+          <a href="#ecommerce" @click="goToAnchor"><span class="directory-number">03</span><span><strong>Vender melhor.</strong><small>E-commerce e marketplaces</small></span><span aria-hidden="true">↗</span></a>
+          <p class="directory-note">Da estratégia à execução.<br>O ponto de partida é a sua empresa.</p>
+        </div>
       </div>
+    </section>
+
+    <section id="solucoes" class="section wrap solutions" aria-labelledby="solutions-title">
+      <div class="section-intro"><div><p class="eyebrow">O QUE A KRIVUS FAZ</p><h2 id="solutions-title">Três frentes.<br><em>Um negócio: o seu.</em></h2></div><p>Você pode começar por uma necessidade específica ou conectar as frentes em um mesmo projeto.</p></div>
+      <div class="solutions-grid">
+        <article id="consultoria" aria-labelledby="consulting-title">
+          <span class="solution-number">01 / GESTÃO</span><h3 id="consulting-title">Consultoria<br>empresarial</h3>
+          <p>Clareza para decidir. Organização para executar. Acompanhamos sua empresa do diagnóstico ao plano de ação.</p>
+          <ul><li>Diagnóstico e planejamento</li><li>Processos e gestão financeira</li><li>Prioridades e acompanhamento</li></ul>
+          <a class="text-link" :href="whatsapp.consulting" data-offer="consultoria">Organizar minha empresa <span aria-hidden="true">↗</span></a>
+        </article>
+        <article id="marketing" aria-labelledby="marketing-title">
+          <span class="solution-number">02 / PRESENÇA E AQUISIÇÃO</span><h3 id="marketing-title">Marca e<br>marketing digital</h3>
+          <p>Uma marca que se apresenta bem, um site que facilita o contato e campanhas para alcançar seu público.</p>
+          <ul><li>Identidade visual e posicionamento</li><li>Sites e páginas de campanha</li><li>Gestão de Google Ads e Meta Ads</li></ul>
+          <p class="channel-note">Campanhas no Google, Instagram e Facebook.</p>
+          <a class="text-link" :href="whatsapp.marketing" data-offer="marketing">Conversar sobre marketing <span aria-hidden="true">↗</span></a>
+        </article>
+        <article id="ecommerce" aria-labelledby="ecommerce-title">
+          <span class="solution-number">03 / VENDAS E OPERAÇÃO</span><h3 id="ecommerce-title">E-commerce e<br>marketplaces</h3>
+          <p>Conectamos preço, mídia e operação para acompanhar suas vendas e a rentabilidade de cada canal.</p>
+          <ul><li>Mercado Livre e Shopee</li><li>Anúncios, preços e promoções</li><li>Gestão com tecnologia SellerBot</li></ul>
+          <a class="text-link" :href="whatsapp.operation" data-offer="operacao">Conversar sobre meu e-commerce <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+    </section>
+
+    <section id="clinicas" class="clinic-section" aria-labelledby="clinic-title">
+      <div class="wrap section clinic-grid">
+        <div class="clinic-copy"><p class="eyebrow">PARA CLÍNICAS E CONSULTÓRIOS</p><h2 id="clinic-title">Da primeira impressão<br><em>ao contato com<br>a sua clínica.</em></h2><p>Apresente sua equipe, seus serviços e sua forma de cuidar. Conectamos identidade visual, site e campanhas para facilitar o caminho de quem procura a sua clínica.</p><a class="button primary" :href="whatsapp.clinic" data-offer="clinicas">Conversar sobre minha clínica <span aria-hidden="true">↗</span></a></div>
+        <ol class="clinic-journey">
+          <li><span aria-hidden="true">01</span><div><h3>Uma identidade que representa.</h3><p>Marca e linguagem visual coerentes em cada ponto de contato.</p></div></li>
+          <li><span aria-hidden="true">02</span><div><h3>Um site que orienta.</h3><p>Equipe, serviços, localização e caminhos claros para solicitar um agendamento.</p></div></li>
+          <li><span aria-hidden="true">03</span><div><h3>Campanhas com direção.</h3><p>Google, Instagram e Facebook conectados aos objetivos da clínica.</p></div></li>
+          <li><span aria-hidden="true">04</span><div><h3>Acompanhamento para melhorar.</h3><p>Leitura dos contatos gerados e dos agendamentos informados pela sua equipe.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="ferramentas" class="section wrap ecommerce-section" aria-labelledby="tools-title">
+      <div class="ecommerce-grid"><div><p class="eyebrow">E-COMMERCE · TECNOLOGIA DA KRIVUS</p><h2 id="tools-title">Experiência na gestão.<br><em>Dados na decisão.</em></h2><p>O SellerBot apoia nosso trabalho em Mercado Livre e Shopee. Vendas, campanhas, preços e margem ajudam a enxergar a operação por inteiro.</p><a class="text-link" href="#analises" @click="goToAnchor">Conhecer as análises do SellerBot <span aria-hidden="true">↓</span></a></div>
+        <div class="ecommerce-dashboard"><ProductCapture src="/images/sellerbot/dashboard.webp" label="Dashboard da operação" alt="Dashboard SellerBot com faturamento, receita, contribuição e publicidade ao longo de setembro. Dados demonstrativos." :width="1368" :height="863" /></div>
+      </div>
+      <nav class="case-links" aria-label="Operações acompanhadas"><a v-for="example in cases" :key="example.id" :href="`#${example.id}`" @click="goToAnchor">{{ example.name }} <span aria-hidden="true">↗</span></a></nav>
     </section>
 
     <section id="cases" class="section wrap case-stories" aria-labelledby="cases-title">
@@ -28,7 +76,8 @@
       <div class="stories-grid"><article v-for="example in cases" :id="example.id" :key="example.id" :aria-labelledby="`${example.id}-title`"><div class="story-top"><span>{{ example.topic }}</span><span>{{ example.number }}</span></div><h3 :id="`${example.id}-title`">{{ example.name }}</h3><h4>{{ example.headline }}</h4><p>{{ example.story }}</p><div class="story-work"><span>NO TRABALHO</span><p>{{ example.work }}</p></div></article></div>
     </section>
 
-    <section id="ferramentas" class="analysis-intro wrap" aria-labelledby="tools-title"><p class="eyebrow">SELLERBOT · TECNOLOGIA DA KRIVUS</p><h2 id="tools-title">Uma análise para<br><em>cada decisão.</em></h2><nav aria-label="Análises do SellerBot"><a href="#analise-ads" @click="goToAnchor">Ads</a><a href="#analise-promocoes" @click="goToAnchor">Promoções</a><a href="#analise-precos" @click="goToAnchor">Preço e margem</a><a href="#analise-anuncios" @click="goToAnchor">Anúncios</a><a href="#tributario" @click="goToAnchor">Tributário e saúde</a></nav></section>
+    <details id="analises" class="product-details">
+      <summary class="wrap"><span><span class="eyebrow">POR DENTRO DO SELLERBOT</span><strong>Conheça as análises da operação</strong></span><span class="details-toggle" aria-hidden="true">+</span></summary>
     <SellerBotTools />
 
     <section id="tributario" class="tax-section" aria-labelledby="tax-title">
@@ -38,32 +87,36 @@
       </div>
     </section>
 
-    <section class="services section" aria-labelledby="services-title">
-      <div class="wrap"><p class="eyebrow">MENTORIA E CONSULTORIA</p><h2 id="services-title">Tecnologia com direção.<br>Escolha como trabalhar.</h2>
+    </details>
+
+    <section id="como-trabalhamos" class="services section" aria-labelledby="services-title">
+      <div class="wrap"><p class="eyebrow">COMO TRABALHAMOS</p><h2 id="services-title">O formato acompanha<br><em>a sua necessidade.</em></h2>
         <div class="service-grid">
-          <article id="mentoria" class="mentoring" tabindex="-1"><span class="service-label">01 / MENTORIA</span><h3>Sua equipe executa.<br><em>A Krivus orienta.</em></h3><div class="program"><span><strong>5</strong> meses</span><span><strong>10</strong> encontros</span><span><strong>Sua equipe</strong> participa</span></div><p>Diagnóstico, prioridades e plano de ação. Encontros com quem decide e executa, acompanhando os dados e as mudanças da empresa.</p><a class="button primary" :href="whatsapp.mentoring" data-offer="mentoria">Avaliar a mentoria <span aria-hidden="true">↗</span></a></article>
-          <article id="consultoria" class="consulting" tabindex="-1"><span class="service-label">02 / CONSULTORIA</span><h3>Escopo definido.<br>A Krivus executa.</h3><p>Implantação, melhorias ou acompanhamento da operação. Atividades, responsáveis e entregas definidos na proposta.</p><a class="text-link" :href="whatsapp.consulting" data-offer="consultoria">Conversar sobre consultoria <span aria-hidden="true">↗</span></a></article>
+          <article id="projeto" class="consulting"><span class="service-label">01 / PROJETO PONTUAL</span><h3>Uma entrega.<br>Um escopo claro.</h3><p>Identidade visual, site ou implantação de melhorias. Etapas, responsáveis e entregas definidos na proposta.</p><a class="text-link" :href="whatsapp.project" data-offer="projeto">Conversar sobre meu projeto <span aria-hidden="true">↗</span></a></article>
+          <article id="acompanhamento" class="consulting"><span class="service-label">02 / GESTÃO CONTÍNUA</span><h3>Executar.<br>Acompanhar. Ajustar.</h3><p>Gestão de campanhas ou acompanhamento da operação, com prioridades e revisão dos indicadores acordados.</p><a class="text-link" :href="whatsapp.management" data-offer="gestao">Conhecer o acompanhamento <span aria-hidden="true">↗</span></a></article>
+          <article id="mentoria" class="consulting" tabindex="-1"><span class="service-label">03 / CONSULTORIA E MENTORIA</span><h3>Sua equipe executa.<br><em>A Krivus orienta.</em></h3><p>Diagnóstico, prioridades e plano de ação. Na mentoria, são dez encontros em cinco meses, com sua equipe.</p><a class="text-link" :href="whatsapp.mentoring" data-offer="mentoria">Avaliar a mentoria <span aria-hidden="true">↗</span></a></article>
         </div>
-        <p class="service-note">Ferramentas, canais e suporte conforme a proposta. Validações contábeis, fiscais e aduaneiras ficam com os profissionais responsáveis.</p>
+        <p class="service-note">Escopo, ferramentas e investimento definidos em proposta. A verba de anúncios é separada do serviço de gestão.</p>
       </div>
     </section>
 
     <section id="perguntas" class="section wrap faq" aria-labelledby="faq-title"><div><p class="eyebrow">DÚVIDAS DIRETAS</p><h2 id="faq-title">Antes de começar.</h2></div><div><details v-for="question in questions" :key="question.title"><summary>{{ question.title }}<span aria-hidden="true">+</span></summary><p>{{ question.answer }}</p></details></div></section>
-    <section id="conversar" class="closing" aria-labelledby="closing-title"><div class="wrap"><p class="eyebrow">VAMOS CONVERSAR</p><h2 id="closing-title">Sua operação.<br>Nosso próximo assunto.</h2><div class="closing-bottom"><p>Conte-nos onde você vende e em que precisa de apoio.</p><div><a class="button light" :href="whatsapp.operation" data-offer="operacao">Conversar sobre minha operação <span aria-hidden="true">↗</span></a><p class="contact-note">WhatsApp · +55 11 99818-0409</p></div></div></div></section>
+    <section id="conversar" class="closing" aria-labelledby="closing-title"><div class="wrap"><p class="eyebrow">VAMOS CONVERSAR</p><h2 id="closing-title">Sua empresa.<br>Nosso próximo assunto.</h2><div class="closing-bottom"><p>Conte-nos sobre o seu negócio e o que você quer desenvolver. Vamos encontrar o ponto de partida.</p><div><a class="button light" :href="whatsapp.business" data-offer="empresa">Conversar com a Krivus <span aria-hidden="true">↗</span></a><p class="contact-note">WhatsApp · +55 11 99818-0409</p></div></div></div></section>
   </main>
-  <footer class="wrap footer"><a class="brand" href="#inicio" aria-label="Krivus — voltar ao início" @click="goToAnchor"><KrivusLogo /></a><span>Experiência operacional. Dados. Tecnologia.</span><a href="#inicio" @click="goToAnchor">Voltar ao início <span aria-hidden="true">↑</span></a></footer>
+  <footer class="wrap footer"><a class="brand" href="#inicio" aria-label="Krivus — voltar ao início" @click="goToAnchor"><KrivusLogo /></a><span>Consultoria. Marketing. E-commerce.</span><a href="#inicio" @click="goToAnchor">Voltar ao início <span aria-hidden="true">↑</span></a></footer>
 </div>
 </template>
 
 <script setup>
 import { useMeta } from 'quasar';
+import { onMounted } from 'vue';
 import KrivusLogo from 'src/components/landing/KrivusLogo.vue';
 import SellerBotTools from 'src/components/landing/SellerBotTools.vue';
 import ProductCapture from 'src/components/landing/ProductCapture.vue';
 
 defineOptions({ name: 'LandingPage' });
-const title = 'Krivus — Mentoria e consultoria para e-commerce e marketplaces';
-const description = 'Mentoria e consultoria para empresas que vendem no Mercado Livre e na Shopee. Experiência operacional, dados e tecnologia própria para conectar preço, mídia, estoque e caixa.';
+const title = 'Krivus — Consultoria empresarial, marketing e e-commerce';
+const description = 'Consultoria empresarial, identidade visual, sites e gestão de Google Ads e Meta Ads. Estratégia e execução para empresas, clínicas e e-commerce.';
 // O domínio canônico permanece pendente; não inferir URL de produção do host da prévia.
 useMeta({ title, meta: {
   description: { name: 'description', content: description },
@@ -78,10 +131,15 @@ useMeta({ title, meta: {
 }, script: { organization: { type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'Organization', name: 'Krivus', telephone: '+55-11-99818-0409' }) } } });
 const contact = (message) => `https://wa.me/5511998180409?text=${encodeURIComponent(message)}`;
 const whatsapp = {
+  business: contact('Olá, quero conversar sobre minha empresa com a Krivus. Meu negócio é: ___. Preciso de apoio em: ___.'),
+  marketing: contact('Olá, quero conversar sobre marketing com a Krivus. Minha empresa é: ___. Tenho interesse em identidade visual, site ou gestão de campanhas: ___.'),
+  clinic: contact('Olá, quero conversar sobre minha clínica com a Krivus. A clínica é: ___. Preciso de apoio com marca, site ou campanhas: ___.'),
+  project: contact('Olá, quero conversar sobre um projeto com a Krivus. Minha empresa é: ___. O projeto que preciso desenvolver é: ___.'),
+  management: contact('Olá, quero conhecer a gestão contínua da Krivus. Minha empresa é: ___. Preciso de acompanhamento em: ___.'),
   operation: contact('Olá, quero conversar sobre minha operação com a Krivus. Vendo em: ___. Minha principal dificuldade hoje é: ___.'),
-  mentoring: contact('Olá, quero avaliar a mentoria Krivus para minha empresa. Vendo em: ___. Minha principal dificuldade hoje é: ___.'),
+  mentoring: contact('Olá, quero avaliar a mentoria Krivus para minha empresa. Meu negócio é: ___. Minha principal dificuldade hoje é: ___.'),
   tax: contact('Olá, quero conversar sobre um diagnóstico tributário e da saúde da minha empresa com a Krivus.'),
-  consulting: contact('Olá, quero conversar sobre consultoria Krivus. Vendo em: ___. Preciso de apoio na execução de: ___.'),
+  consulting: contact('Olá, quero conversar sobre consultoria empresarial com a Krivus. Meu negócio é: ___. Preciso de apoio em: ___.'),
 };
 // Nomes autorizados pelo dono; contextos sustentados no acervo, sem métricas inventadas.
 const cases = [
@@ -91,16 +149,27 @@ const cases = [
   { id: 'case-grampofix', number: '04', name: 'GrampoFix', topic: 'ANÚNCIOS E CAMPANHAS', headline: 'A análise chega ao anúncio.', story: 'A operação conectada ao SellerBot permite acompanhar campanhas e anúncios. O trabalho cruza leitura de publicidade com as condições promocionais de cada produto.', work: 'Dados de campanhas, anúncios e promoções disponíveis para apoiar a análise da operação.' },
 ];
 const questions = [
+  { title: 'A Krivus atende empresas que não vendem pela internet?', answer: 'Sim. Atendemos empresas de serviços, clínicas e consultórios com consultoria empresarial, identidade visual, sites e marketing digital, além do trabalho com e-commerce.' },
+  { title: 'Posso contratar apenas um site ou a identidade visual?', answer: 'Sim. Podemos começar com um projeto pontual ou combinar serviços conforme a necessidade da empresa. Escopo, etapas e investimento são definidos na proposta.' },
+  { title: 'A verba de anúncios está incluída na gestão?', answer: 'Não. O investimento em mídia no Google e na Meta é separado do valor do serviço. Os canais, o orçamento e o escopo da gestão são definidos na proposta.' },
   { title: 'Quem participa da mentoria?', answer: 'Você e as pessoas que decidem e executam. Dez encontros em cinco meses, com prioridades definidas pelo diagnóstico.' },
   { title: 'O SellerBot está incluído?', answer: 'Acesso, integrações e ferramentas são definidos na proposta. O escopo considera os canais e os dados da empresa.' },
   { title: 'Como é definido o investimento?', answer: 'Após entender a operação, apresentamos formato, escopo, investimento e condições.' },
 ];
+// Mantém acessíveis os links existentes para análises agora recolhidas.
+onMounted(() => {
+  const target = document.getElementById(window.location.hash.slice(1));
+  const disclosure = target?.closest('details');
+  if (disclosure) disclosure.open = true;
+});
 /** Move a leitura e o foco à seção, sem disparar o roteador ou hidratar sessão. */
 function goToAnchor(event) {
   const target = document.querySelector(event.currentTarget.getAttribute('href'));
   if (!target) return;
   event.preventDefault();
   if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+  const disclosure = target.closest('details');
+  if (disclosure) disclosure.open = true;
   target.focus({ preventScroll: true });
   target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   history.replaceState(null, '', event.currentTarget.getAttribute('href'));

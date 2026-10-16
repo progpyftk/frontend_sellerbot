@@ -209,3 +209,90 @@ section, [id] { scroll-margin-top:32px; }
  .stories-grid article { padding:23px 0 28px; } .stories-grid h3 { font-size:28px; }
  .analysis-intro { padding-bottom:0; } .analysis-intro nav { gap:0 24px; }
 }
+
+/* Serviços Krivus: a empresa abre a página; o produto apoia o e-commerce. */
+.hero { padding:72px 0 76px; }
+.hero-grid { grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:80px; }
+.hero h1 { font-size:clamp(44px,4.5vw,68px); }
+.hero-directory { padding:32px 0 0; border-top:2px solid var(--pink); }
+.directory-label { font-size:10px; letter-spacing:.12em; color:#c7d5de; margin-bottom:25px; }
+.hero-directory>a { display:grid; grid-template-columns:24px 1fr 20px; align-items:center; gap:18px; padding:25px 0; text-decoration:none; border-bottom:1px solid #435b6b; }
+.directory-number { align-self:start; padding-top:6px; color:var(--pink); font-size:10px; }
+.hero-directory strong { display:block; font-size:clamp(21px,2vw,29px); font-weight:500; line-height:1.3; letter-spacing:-.04em; }
+.hero-directory small { display:block; color:#c7d5de; font-size:12px; margin-top:8px; }
+.hero-directory>a>span:last-child { color:var(--pink); font-size:22px; transition:transform .18s; }
+.hero-directory>a:hover>span:last-child { transform:translate(3px,-3px); }
+.directory-note { font-size:12px; line-height:1.7; color:#c7d5de; margin:28px 0 0 42px; }
+.section-intro { display:flex; justify-content:space-between; gap:50px; align-items:end; margin-bottom:50px; }
+.section-intro h2 { margin:0; }
+.section-intro>p { max-width:340px; color:var(--muted); font-size:15px; margin:0; }
+.solutions-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:35px; }
+.solutions-grid article { display:flex; flex-direction:column; border-top:1px solid var(--line); padding-top:25px; }
+.solution-number { color:var(--accent); font-size:10px; font-weight:800; letter-spacing:.08em; margin-bottom:28px; }
+.solutions-grid h3 { font-size:30px; }
+.solutions-grid p, .solutions-grid li { font-size:14px; color:var(--muted); }
+.solutions-grid ul { padding:0; margin:0 0 24px; list-style:none; }
+.solutions-grid li { padding:9px 0; border-bottom:1px solid var(--line); }
+.solutions-grid .channel-note { font-size:11px; margin-top:-10px; }
+.solutions-grid .text-link { margin-top:auto; }
+.solutions .text-link, .ecommerce-section .text-link { color:var(--accent); }
+.clinic-section { background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.clinic-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:90px; align-items:center; }
+.clinic-copy>p:not(.eyebrow) { color:var(--muted); max-width:480px; font-size:16px; }
+.clinic-journey { padding:0; margin:0; list-style:none; }
+.clinic-journey li { display:grid; grid-template-columns:28px 1fr; gap:20px; padding:25px 0; border-top:1px solid #9fb6c4; }
+.clinic-journey li>span { color:var(--accent); font-size:11px; font-weight:700; padding-top:3px; }
+.clinic-journey h3 { font-size:21px; letter-spacing:-.035em; margin:0 0 10px; }
+.clinic-journey p { font-size:13px; color:var(--muted); margin:0; }
+.ecommerce-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:65px; align-items:center; }
+.ecommerce-grid h2 { font-size:clamp(36px,3.5vw,48px); }
+.ecommerce-grid p:not(.eyebrow) { color:var(--muted); max-width:460px; font-size:15px; }
+.ecommerce-dashboard { min-width:0; }
+.case-links { margin-top:55px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; border-top:1px solid var(--line); padding-top:20px; }
+.case-links a { display:flex; gap:24px; align-items:center; min-height:44px; font-size:20px; font-weight:600; text-decoration:none; letter-spacing:-.025em; }
+.case-links a span { color:var(--accent); font-size:15px; }
+.case-stories { padding-top:0; }
+.product-details { border-top:1px solid var(--line); }
+.product-details>summary { list-style:none; display:flex; align-items:center; justify-content:space-between; gap:25px; cursor:pointer; padding:32px 0; }
+.product-details>summary::-webkit-details-marker { display:none; }
+.product-details>summary .eyebrow { display:block; margin-bottom:8px; }
+.product-details>summary strong { font-size:22px; font-weight:600; letter-spacing:-.035em; line-height:1.3; }
+.details-toggle { font-size:32px; color:var(--accent); }
+.product-details[open] .details-toggle { transform:rotate(45deg); }
+.service-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:40px; }
+.service-grid h3 { font-size:30px; }
+@media(max-width:1100px) {
+  .hero-grid { gap:40px; }
+  .clinic-grid { gap:45px; }
+  .solutions-grid { gap:25px; }
+  .solutions-grid h3 { font-size:27px; }
+  .ecommerce-grid { gap:35px; }
+  .service-grid { gap:25px; }
+  .service-grid h3 { font-size:27px; }
+}
+@media(max-width:760px) {
+  .hero { padding:38px 0 40px; }
+  .hero-grid, .clinic-grid, .ecommerce-grid, .solutions-grid, .service-grid { grid-template-columns:minmax(0,1fr); }
+  .hero-grid { gap:40px; }
+  .hero h1 { font-size:clamp(39px,7.8vw,59px); }
+  .hero-directory { padding-top:22px; }
+  .directory-label { margin-bottom:8px; }
+  .hero-directory>a { padding:19px 0; }
+  .hero-directory strong { font-size:25px; }
+  .directory-note { margin-top:22px; }
+  .section-intro { display:block; margin-bottom:32px; }
+  .section-intro>p { margin-top:22px; max-width:100%; }
+  .solutions-grid { gap:35px; }
+  .solutions-grid h3 { font-size:32px; margin-bottom:20px; }
+  .solution-number { margin-bottom:20px; }
+  .clinic-grid { gap:35px; }
+  .clinic-copy .button { width:100%; }
+  .clinic-journey li { padding:22px 0; }
+  .ecommerce-grid { gap:28px; }
+  .case-links { display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; margin-top:30px; }
+  .case-links a { font-size:16px; gap:12px; justify-content:space-between; }
+  .case-stories { padding-top:0; }
+  .product-details>summary strong { font-size:19px; }
+  .service-grid { gap:32px; }
+  .service-grid h3 { font-size:30px; }
+}
