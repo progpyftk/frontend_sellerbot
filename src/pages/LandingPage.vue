@@ -17,13 +17,15 @@
           <p class="lead">Gestão, marca e vendas na mesma direção. Consultoria empresarial, identidade visual, sites e marketing digital para empresas de serviços, clínicas e e-commerce.</p>
           <a class="button primary" :href="whatsapp.business" data-offer="empresa">Vamos conversar sobre sua empresa <span aria-hidden="true">↗</span></a>
         </div>
-        <div class="hero-directory">
-          <p class="directory-label">ONDE SUA EMPRESA QUER CHEGAR?</p>
+        <figure class="hero-visual">
+          <img src="/images/krivus/marca-digital-1280.webp" srcset="/images/krivus/marca-digital-640.webp 640w, /images/krivus/marca-digital-1280.webp 1280w" sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1100px) 43vw, 540px" width="1280" height="853" alt="Composição de identidade visual com papelaria, notebook e celular em tons azul-ártico e framboesa." fetchpriority="high" decoding="async" />
+          <figcaption>Marca e presença digital <span>Composição ilustrativa</span></figcaption>
+        </figure>
+        <nav class="hero-directory" aria-label="Frentes de atuação da Krivus">
           <a href="#consultoria" @click="goToAnchor"><span class="directory-number">01</span><span><strong>Organizar a gestão.</strong><small>Consultoria empresarial</small></span><span aria-hidden="true">↗</span></a>
           <a href="#marketing" @click="goToAnchor"><span class="directory-number">02</span><span><strong>Fortalecer a marca.</strong><small>Identidade, sites e campanhas</small></span><span aria-hidden="true">↗</span></a>
           <a href="#ecommerce" @click="goToAnchor"><span class="directory-number">03</span><span><strong>Vender melhor.</strong><small>E-commerce e marketplaces</small></span><span aria-hidden="true">↗</span></a>
-          <p class="directory-note">Da estratégia à execução.<br>O ponto de partida é a sua empresa.</p>
-        </div>
+        </nav>
       </div>
     </section>
 
@@ -55,6 +57,10 @@
     <section id="clinicas" class="clinic-section" aria-labelledby="clinic-title">
       <div class="wrap section clinic-grid">
         <div class="clinic-copy"><p class="eyebrow">PARA CLÍNICAS E CONSULTÓRIOS</p><h2 id="clinic-title">Da primeira impressão<br><em>ao contato com<br>a sua clínica.</em></h2><p>Apresente sua equipe, seus serviços e sua forma de cuidar. Conectamos identidade visual, site e campanhas para facilitar o caminho de quem procura a sua clínica.</p><a class="button primary" :href="whatsapp.clinic" data-offer="clinicas">Conversar sobre minha clínica <span aria-hidden="true">↗</span></a></div>
+        <figure class="clinic-visual">
+          <img src="/images/krivus/clinica-1280.webp" srcset="/images/krivus/clinica-640.webp 640w, /images/krivus/clinica-1280.webp 1280w" sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1100px) 43vw, 540px" width="1280" height="853" alt="Recepção ilustrativa de uma clínica, com balcão em pedra clara, poltronas azuis e luz natural." loading="lazy" decoding="async" />
+          <figcaption>Uma presença que acolhe desde o primeiro contato. <span>Ambiente ilustrativo</span></figcaption>
+        </figure>
         <ol class="clinic-journey">
           <li><span aria-hidden="true">01</span><div><h3>Uma identidade que representa.</h3><p>Marca e linguagem visual coerentes em cada ponto de contato.</p></div></li>
           <li><span aria-hidden="true">02</span><div><h3>Um site que orienta.</h3><p>Equipe, serviços, localização e caminhos claros para solicitar um agendamento.</p></div></li>
