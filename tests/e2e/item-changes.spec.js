@@ -14,7 +14,7 @@ test('histórico mantém tabela e envia filtros ao servidor', async ({ page }, t
   const base = { base_price: entry('100.00'), promotion_price: entry('80.00'),
     promotions: entry([{ id: 'P1', name: 'Oferta Primavera', price: '80.00' }, { id: 'P2', name: 'Oferta da loja', price: '85.00' }]),
     status: entry('active'), logistics: entry({ logistic_type: 'cross_docking', is_flex: false }) }
-  const common = { account_id: 1, account_name: 'Conta demonstração', title: 'Substrato para orquídeas',
+  const common = { account_id: 1, account_name: 'Conta demonstração', title: 'Substrato para orquídeas e plantas ornamentais com drenagem e aeração',
     item_id: 'MLB123456', permalink: 'https://produto.mercadolivre.com.br/MLB-123456', detected_at: stamp,
     before: base, occurred_at: null }
   const events = [
@@ -42,7 +42,10 @@ test('histórico mantém tabela e envia filtros ao servidor', async ({ page }, t
   await expect(page.locator('tbody tr')).toHaveCount(2)
   await expect(page.getByText('R$ 110,00', { exact: true })).toBeVisible()
   await expect(page.locator('table')).toHaveCount(1)
-  await page.screenshot({ path: `/tmp/hist-ml-${testInfo.project.name}.png`, fullPage: true })
+  const rowHeights = await page.locator('tbody tr').evaluateAll(rows => rows.map(row => row.getBoundingClientRect().height))
+  expect(rowHeights.every(height => height <= 34)).toBe(true)
+  await expect(page.locator('.item-content').first()).toHaveAttribute('title', /drenagem e aeração/)
+  await page.screenshot({ path: `/tmp/hist-ml4-${testInfo.project.name}.png`, fullPage: true })
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
   expect(overflow).toBe(false)
   await page.getByRole('button', { name: 'Ontem', exact: true }).click()

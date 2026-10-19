@@ -2,7 +2,7 @@
   <q-page class="item-history">
     <header class="history-heading">
       <div><span class="eyebrow">Mercado Livre</span><h1>Histórico de alterações</h1></div>
-      <q-btn outline color="primary" icon="refresh" label="Atualizar" :loading="loading" @click="load" />
+      <q-btn outline dense color="primary" icon="refresh" label="Atualizar" :loading="loading" @click="load" />
     </header>
 
     <section class="history-filters" aria-label="Filtros do histórico">
@@ -34,9 +34,12 @@
       </div>
     </section>
 
-    <p class="coverage-note">As datas mostram quando detectamos a mudança, no horário de Brasília.
-      O histórico começa na primeira coleta; mudanças entre coletas podem não ser observadas.</p>
-    <p v-if="coverageText" class="coverage-note">{{ coverageText }}</p>
+    <div class="coverage-note">
+      <span>Histórico a partir da primeira coleta · Horário de Brasília · Anterior → novo</span>
+      <q-icon name="info_outline" size="15px" tabindex="0" aria-label="Sobre a cobertura do histórico">
+        <q-tooltip class="history-tooltip">As datas mostram quando detectamos a mudança. Mudanças entre coletas podem não ser observadas. {{ coverageText }}</q-tooltip>
+      </q-icon>
+    </div>
     <div v-if="accountError" class="history-error" role="alert">
       {{ accountError }} <q-btn flat dense label="Recarregar contas" @click="loadAccounts" />
     </div>
@@ -46,32 +49,34 @@
 
     <q-table v-else v-model:pagination="pagination" :rows="rows" :columns="columns" row-key="id"
       :loading="loading" :rows-per-page-options="[20, 40, 100, 200]" rows-per-page-label="Linhas por página"
-      :pagination-label="paginationLabel" flat bordered wrap-cells
+      :pagination-label="paginationLabel" flat bordered dense separator="cell"
       class="history-table" @request="onRequest">
       <template #body-cell-detected_at="props">
-        <q-td :props="props" class="date-cell">{{ formatDate(props.row.detected_at) }}
-          <small v-if="props.row.occurred_at">Alteração: {{ formatDate(props.row.occurred_at) }}</small>
+        <q-td :props="props" class="date-cell" :title="props.row.occurred_at ? `Alteração: ${formatDate(props.row.occurred_at)}` : 'Horário da detecção'">{{ formatDate(props.row.detected_at) }}
         </q-td>
       </template>
       <template #body-cell-item="props">
         <q-td :props="props" class="item-cell">
-          <span class="item-title">{{ props.row.title || 'Anúncio sem título' }}</span>
-          <a v-if="safePermalink(props.row.permalink)" :href="safePermalink(props.row.permalink)"
-            target="_blank" rel="noopener noreferrer">{{ props.row.item_id }}</a>
-          <span v-else class="item-id">{{ props.row.item_id }}</span>
+          <div class="item-content" :title="`${props.row.title || 'Anúncio sem título'} · ${props.row.item_id}`">
+            <a v-if="safePermalink(props.row.permalink)" :href="safePermalink(props.row.permalink)"
+              class="item-id" target="_blank" rel="noopener noreferrer">{{ props.row.item_id }}</a>
+            <span v-else class="item-id">{{ props.row.item_id }}</span>
+            <span class="item-title">{{ props.row.title || 'Anúncio sem título' }}</span>
+          </div>
         </q-td>
       </template>
       <template #body-cell-changed="props">
-        <q-td :props="props" class="changes-cell">{{ props.row.changed_fields.map(f => fieldLabels[f] || f).join(', ') }}</q-td>
+        <q-td :props="props" class="changes-cell" :title="props.row.changed_fields.map(f => fieldLabels[f] || f).join(', ')">{{ props.row.changed_fields.map(f => fieldLabels[f] || f).join(', ') }}</q-td>
       </template>
       <template v-for="field in stateFields" :key="field" #[`body-cell-${field}`]="props">
-        <q-td :props="props" class="state-cell">
-          <span v-if="props.row.changed_fields.includes(field)" class="old-value">{{ fieldText(props.row.before[field], field) }}</span>
-          <span v-if="props.row.changed_fields.includes(field)" class="transition" aria-label="mudou para">→</span>
-          <span :class="{ 'new-value': props.row.changed_fields.includes(field) }">{{ fieldText(props.row.after[field], field) }}</span>
-          <small v-if="props.row.after[field] && !props.row.changed_fields.includes(field) && new Date(props.row.after[field].observed_at).getTime() !== new Date(props.row.detected_at).getTime()">
-            Observado em {{ formatDate(props.row.after[field].observed_at) }}
-          </small>
+        <q-td :props="props" class="state-cell" :class="{ 'cell-changed': props.row.changed_fields.includes(field) }">
+          <div class="cell-content" :title="cellTitle(props.row, field)">
+            <template v-if="props.row.changed_fields.includes(field)">
+              <span class="old-value">{{ fieldText(props.row.before[field], field) }}</span>
+              <span class="transition" aria-label="mudou para">→</span>
+            </template>
+            <span :class="{ 'new-value': props.row.changed_fields.includes(field) }">{{ fieldText(props.row.after[field], field) }}</span>
+          </div>
         </q-td>
       </template>
       <template #no-data>
@@ -103,6 +108,12 @@ const logisticOptions = [
 ]
 const paginationLabel = (first, last, total) => `${first}–${last} de ${total}`
 const stateFields = Object.keys(fieldLabels)
+function cellTitle(row, field) {
+  const current = fieldText(row.after[field], field)
+  const previous = row.changed_fields.includes(field) ? `${fieldText(row.before[field], field)} → ` : ''
+  const observed = row.after[field]?.observed_at
+  return `${previous}${current}${observed ? `\nObservado em ${formatDate(observed)}` : ''}`
+}
 const columns = [
   { name: 'detected_at', field: 'detected_at', label: 'Data / hora da detecção', sortable: true },
   { name: 'account_name', field: 'account_name', label: 'Conta' },
@@ -113,7 +124,7 @@ const columns = [
   { name: 'changed', label: 'O que mudou' },
   { name: 'status', label: 'Ativo / situação' },
   { name: 'logistics', label: 'Logística' },
-].map(column => ({ ...column, align: 'left' }))
+].map(column => ({ ...column, align: ['base_price', 'promotion_price'].includes(column.name) ? 'right' : 'left' }))
 const coverageText = computed(() => {
   const observed = coverage.value?.accounts?.filter(a => a.first_observed_at) || []
   return observed.map(a => {
@@ -124,42 +135,49 @@ const coverageText = computed(() => {
 </script>
 
 <style scoped lang="scss">
-.item-history { padding: 28px; color: var(--sb-text-primary, #172b36); min-width: 0; }
-.history-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-.eyebrow { color: var(--q-primary); font-size: 12px; font-weight: 600; }
-h1 { font-size: 25px; font-weight: 600; line-height: 1.3; letter-spacing: -.4px; margin: 4px 0 0; }
-.history-filters { border-block: 1px solid var(--sb-border, #dbe3e7); padding: 16px 0; }
-.filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.filter-row + .filter-row { margin-top: 12px; }
+.item-history { padding: 16px 20px; color: var(--sb-text-primary, #172b36); min-width: 0; }
+.history-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.eyebrow { color: var(--q-primary); font-size: 11px; font-weight: 600; }
+h1 { font-size: 23px; font-weight: 600; line-height: 1.3; letter-spacing: -.4px; margin: 2px 0 0; }
+.history-filters { border-block: 1px solid var(--sb-border, #dbe3e7); padding: 10px 0; }
+.filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.filter-row + .filter-row { margin-top: 8px; }
+.filter-row + .filter-row > .q-field { flex: 1 1 130px; min-width: 120px; }
 .search-filter { flex: 2; min-width: 230px; }
-.account-filter, .change-filter { flex: 1; min-width: 220px; }
-.small-filter { min-width: 150px; }
+.account-filter, .change-filter { flex: 1; min-width: 200px; }
+.small-filter { min-width: 140px; }
 .period-shortcuts { display: flex; gap: 2px; }
-.coverage-note { font-size: 12px; color: var(--sb-text-secondary, #596c78); line-height: 1.6; margin: 12px 0; }
-.history-error { padding: 12px 16px; border: 1px solid var(--q-negative); border-radius: 4px; margin-bottom: 12px; }
-.history-table { border-color: var(--sb-border, #dbe3e7); border-radius: 4px; width: 100%; }
-.history-table :deep(th) { font-weight: 600; background: var(--sb-bg-secondary, #f4f7f8); white-space: nowrap; }
-.history-table :deep(td) { vertical-align: top; padding-top: 16px; padding-bottom: 16px; font-size: 13px; }
-.history-table :deep(.q-table__middle) { max-height: 65vh; overflow: auto; }
-.history-table :deep(thead th) { position: sticky; top: 0; z-index: 1; }
-.item-cell { min-width: 230px; max-width: 300px; }
-.item-title { display: block; font-weight: 500; margin-bottom: 6px; }
-a { color: var(--q-primary); text-underline-offset: 3px; }
-.item-id { display: block; }
-.date-cell { min-width: 170px; font-variant-numeric: tabular-nums; }
-.state-cell { min-width: 155px; max-width: 290px; white-space: pre-line; font-variant-numeric: tabular-nums; }
-.state-cell span, small { display: block; }
-small { font-size: 11px; line-height: 1.5; color: var(--sb-text-secondary, #596c78); margin-top: 6px; }
+.coverage-note { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--sb-text-secondary, #596c78); line-height: 1.5; margin: 8px 0; }
+.history-error { padding: 8px 12px; border: 1px solid var(--q-negative); border-radius: 3px; margin-bottom: 8px; }
+.history-table { border-color: #d4dce1; border-radius: 3px; width: 100%; background: #fff; }
+.history-table :deep(th) { height: 32px; padding: 5px 8px; font-size: 11px; font-weight: 600; background: #edf1f4; border-color: #d4dce1; white-space: nowrap; }
+.history-table :deep(tbody td) { height: 32px; padding: 4px 8px; line-height: 20px; vertical-align: middle; font-size: 12px; border-color: #e2e7eb; white-space: nowrap; }
+.history-table :deep(tbody tr:nth-child(even)) { background: #f8fafb; }
+.history-table :deep(tbody tr:hover) { background: #f3f6f8; }
+.history-table :deep(.q-table__middle) { max-height: calc(100vh - 300px); overflow: auto; }
+.history-table :deep(thead th) { position: sticky; top: 0; z-index: 1; box-shadow: 0 1px 0 #cbd5dc; }
+.history-table :deep(.q-table__bottom) { min-height: 34px; padding: 3px 8px; font-size: 11px; border-top: 1px solid #d4dce1; }
+.item-cell { min-width: 290px; max-width: 350px; }
+.item-content { display: flex; align-items: baseline; gap: 8px; max-width: 330px; }
+.item-title { overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+a { color: var(--q-primary); text-underline-offset: 2px; }
+.item-id { flex-shrink: 0; font-size: 11px; font-variant-numeric: tabular-nums; }
+.date-cell { min-width: 150px; font-variant-numeric: tabular-nums; }
+.state-cell { min-width: 140px; max-width: 300px; font-variant-numeric: tabular-nums; }
+.cell-content { overflow: hidden; text-overflow: ellipsis; max-width: 280px; white-space: nowrap; }
+.cell-content span { display: inline; }
 .old-value { color: var(--sb-text-secondary, #596c78); }
-.transition { color: var(--q-primary); margin: 3px 0; }
-.new-value { font-weight: 600; }
-.changes-cell { min-width: 150px; }
-.empty-state { display: flex; align-items: center; gap: 12px; padding: 28px 12px; }
+.transition { color: #8697a3; margin: 0 5px; }
+.new-value { font-weight: 600; color: var(--q-primary); }
+.cell-changed { background: color-mix(in srgb, var(--q-primary) 3%, transparent); }
+.changes-cell { min-width: 130px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.empty-state { display: flex; align-items: center; gap: 10px; padding: 20px 12px; }
 @media (max-width: 600px) {
-  .item-history { padding: 16px 12px; }
+  .item-history { padding: 12px; }
   .history-heading { align-items: flex-start; }
-  h1 { font-size: 21px; }
+  h1 { font-size: 20px; }
   .filter-row > * { min-width: 0; flex: 1 1 140px; }
   .filter-row .search-filter, .period-shortcuts { flex-basis: 100%; }
+  .history-table :deep(.q-table__middle) { max-height: 65vh; }
 }
 </style>
