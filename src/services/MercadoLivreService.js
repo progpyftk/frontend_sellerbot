@@ -1,6 +1,9 @@
 import { api } from 'src/boot/axios'
 
 export default {
+  listItemChanges(params) {
+    return api.get('/mercadolivre/item-changes/', { params })
+  },
   // 1. LISTAGEM (Agora aceita params diretos, muito mais flexível)
   listItems(params) {
     return api.get('/mercadolivre/items/', { params })

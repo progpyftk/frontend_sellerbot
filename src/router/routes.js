@@ -52,6 +52,11 @@ const routes = [
         component: () => import("pages/ItemsPage.vue"),
       },
       {
+        path: "items/historico",
+        name: "item-changes",
+        component: () => import("pages/ItemChangesPage.vue"),
+      },
+      {
         path: "items/revisao",
         name: "items-seo-review",
         component: () => import("pages/ItemsSeoReviewPage.vue"),
