@@ -32,7 +32,7 @@
             </thead>
             <tbody>
               <tr v-for="e in sortedRemoval" :key="e.key">
-                <td>{{ e.account_nickname }}</td>
+                <td>{{ nomeConta(e.account_nickname) }}</td>
                 <td>{{ e.sku || '—' }}</td>
                 <td class="review-dialog__ad">
                   <span>{{ e.title }}</span><span class="review-dialog__muted">{{ e.item_id }}</span>
@@ -72,7 +72,7 @@
             </thead>
             <tbody>
               <tr v-for="entry in sortedEligible" :key="entry.key">
-                <td>{{ entry.account_nickname }}</td>
+                <td>{{ nomeConta(entry.account_nickname) }}</td>
                 <td>{{ entry.sku || '—' }}</td>
                 <td class="review-dialog__ad">
                   <span>{{ entry.title }}</span>
@@ -121,7 +121,7 @@
             </thead>
             <tbody>
               <tr v-for="entry in sortedBlocked" :key="entry.key">
-                <td>{{ entry.account_nickname }}</td>
+                <td>{{ nomeConta(entry.account_nickname) }}</td>
                 <td>{{ entry.sku || '—' }}</td>
                 <td class="review-dialog__ad">
                   <span>{{ entry.title }}</span>
@@ -183,6 +183,7 @@
 import { computed } from 'vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import { formatBRL, formatPct } from 'src/utils/promotionsAdsView'
+import { nomeConta } from 'src/utils/nomeConta'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -196,7 +197,7 @@ defineEmits(['update:modelValue', 'confirm', 'remove', 'remove-removal'])
 
 // Ordena por conta → SKU → anúncio para agrupar visualmente a hierarquia.
 const byHierarchy = (a, b) =>
-  String(a.account_nickname).localeCompare(String(b.account_nickname), 'pt-BR')
+  nomeConta(a.account_nickname).localeCompare(nomeConta(b.account_nickname), 'pt-BR')
   || String(a.sku || '').localeCompare(String(b.sku || ''), 'pt-BR')
   || String(a.title).localeCompare(String(b.title), 'pt-BR')
 

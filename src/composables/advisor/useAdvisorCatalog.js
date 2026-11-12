@@ -13,6 +13,7 @@ import { computed, reactive, ref, watch } from 'vue';
 
 import AdvisorService from 'src/services/AdvisorService';
 import { decisionSummary, situationOf, suggestionOf } from 'src/utils/advisorDecision';
+import { nomeConta } from 'src/utils/nomeConta';
 
 const PRESETS = {
   assistente: 'Assistente',
@@ -132,7 +133,7 @@ export function useAdvisorCatalog(initialFilters = {}, initialSort = '-sales') {
   });
 
   const contasOpcoes = computed(() => contas.value.map((c) => ({
-    label: c.account_nickname || c.account_id,
+    label: nomeConta(c.account_nickname) || c.account_id,
     value: c.account_id,
   })));
 

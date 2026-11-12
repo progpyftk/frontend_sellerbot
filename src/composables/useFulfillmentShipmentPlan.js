@@ -1,6 +1,7 @@
 import { computed, getCurrentInstance, onBeforeUnmount, reactive, ref } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import { apiErrorMessage, downloadPlanCsv, localISODate } from 'src/utils/fulfillmentPlan'
+import { nomeConta } from 'src/utils/nomeConta'
 
 const READY_STATUSES = ['ready', 'ready_with_warnings', 'reviewed', 'exported', 'submitted_manually']
 
@@ -28,7 +29,7 @@ export function useFulfillmentShipmentPlan(service = MercadoLivreService) {
   let linesToken = 0
 
   const accountOptions = computed(() => accounts.value.map(account => ({
-    label: `${account.account_nickname || account.account_id} (${account.account_id})`,
+    label: `${nomeConta(account.account_nickname) || account.account_id} (${account.account_id})`,
     value: account.account_id,
   })))
   const isReady = computed(() => READY_STATUSES.includes(plan.value?.status))

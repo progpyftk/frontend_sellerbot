@@ -9,6 +9,7 @@ import { computed, ref } from 'vue';
 
 import AdvisorService from 'src/services/AdvisorService';
 import { brl, pct } from 'src/utils/advisorDecision';
+import { nomeConta } from 'src/utils/nomeConta';
 
 const STATUS_LABEL = { success: 'concluído', partial: 'parcial (com pendências)', error: 'com erro', skipped: 'pulado' };
 
@@ -126,7 +127,7 @@ export function useAdvisorToday() {
     return {
       algumaLigada: ligadas.length > 0,
       bloqueadaPorKillSwitch: killSwitch.value && contas.value.some((conta) => conta.auto_write),
-      nomes: ligadas.map((conta) => conta.account_nickname).join(', '),
+      nomes: ligadas.map((conta) => nomeConta(conta.account_nickname)).join(', '),
       leva: referencia?.wave_size || 10,
     };
   });

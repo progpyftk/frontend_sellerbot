@@ -1,5 +1,6 @@
 import { computed, reactive, ref } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
+import { nomeConta } from 'src/utils/nomeConta'
 import {
   apiErrorMessage,
   canReviewLines,
@@ -45,7 +46,7 @@ export function useFulfillmentDraft(service = MercadoLivreService) {
   })
 
   const accountOptions = computed(() => accounts.value.map(account => ({
-    label: `${account.account_nickname || account.account_id} (${account.account_id})`,
+    label: `${nomeConta(account.account_nickname) || account.account_id} (${account.account_id})`,
     value: account.account_id,
   })))
   const accountHealth = computed(() => health.value?.accounts?.find(row => row.account.id === accountId.value) || null)

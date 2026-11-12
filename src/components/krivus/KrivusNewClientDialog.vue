@@ -87,7 +87,7 @@
                   <q-checkbox
                     v-for="acc in mlAccounts" :key="acc.id"
                     v-model="form.ml_accounts" :val="acc.id"
-                    :label="acc.account_nickname" color="amber-8" dense
+                    :label="nomeConta(acc.account_nickname)" color="amber-8" dense
                   />
                   <div v-if="!mlAccounts.length" class="text-caption text-grey-4">Nenhuma conta ML conectada.</div>
                 </div>
@@ -127,6 +127,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import KrivusService from 'src/services/KrivusService'
 import { api } from 'src/boot/axios'
+import { nomeConta } from 'src/utils/nomeConta'
 
 const model = defineModel({ type: Boolean, default: false })
 const emit = defineEmits(['created'])

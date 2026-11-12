@@ -76,7 +76,7 @@ describe('AdvisorAutomationPage', () => {
 
   it('diz quem escreve agora, pelo nome da conta', async () => {
     const texto = (await montar()).texto();
-    expect(texto).toContain('1 conta(s) com escrita automática habilitada: MOGIVITTA');
+    expect(texto).toContain('1 conta(s) com escrita automática habilitada: Dose Verde');
   });
 
   it('com o kill switch ligado, avisa que nada é enviado', async () => {

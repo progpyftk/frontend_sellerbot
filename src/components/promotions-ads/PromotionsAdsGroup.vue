@@ -11,7 +11,7 @@
         <button class="pa-acct__btn" type="button" @click="accountOpen = !accountOpen">
           <q-icon :name="accountOpen ? 'expand_more' : 'chevron_right'" size="18px" class="pa-acct__chev" />
           <q-icon name="storefront" size="16px" class="pa-acct__store" />
-          <span class="pa-acct__name">{{ group.account_nickname }}</span>
+          <span class="pa-acct__name">{{ nomeConta(group.account_nickname) }}</span>
           <span class="pa-acct__meta">{{ allAds.length }} anúncio(s)</span>
           <span class="pa-acct__stats">
             <span v-if="accountStats.active" class="pa-tag pa-tag--active"><i class="pa-dot" /> {{ accountStats.active }} ativa(s)</span>
@@ -188,6 +188,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { nomeConta } from 'src/utils/nomeConta'
 import {
   bestMarginPct,
   blockingReasons,

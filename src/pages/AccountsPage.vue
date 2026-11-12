@@ -70,6 +70,12 @@
           <template v-else>
             <q-table v-if="mlAccounts.length > 0" :rows="mlAccounts" :columns="mlColumns" row-key="account_id" flat
               :pagination="{ rowsPerPage: 10 }" class="accounts-table">
+              <template v-slot:body-cell-account_nickname="props">
+                <q-td :props="props">
+                  <span class="td-val">{{ nomeConta(props.row.account_nickname) }}</span>
+                </q-td>
+              </template>
+
               <template v-slot:header-cell="props">
                 <q-th :props="props" class="th-cell">{{ props.col.label }}</q-th>
               </template>
@@ -561,7 +567,7 @@
           </div>
           <div>
             <div style="font-size: 15px; font-weight: 700; color: #1a1f36">Compartilhar Conta</div>
-            <div style="font-size: 11px; color: #9aa0ac">{{ shareAccount?.account_nickname || shareAccount?.shop_name }}</div>
+            <div style="font-size: 11px; color: #9aa0ac">{{ nomeConta(shareAccount?.account_nickname) || shareAccount?.shop_name }}</div>
           </div>
         </div>
         <q-separator />
@@ -616,7 +622,7 @@
           <div>
             <div style="font-size: 15px; font-weight: 700; color: #1a1f36">Conectar Tiny ERP</div>
             <div style="font-size: 11px; color: #9aa0ac">
-              {{ tinyForm.account_nickname }} — {{ formatCNPJ(tinyForm.cnpj) }}
+              {{ nomeConta(tinyForm.account_nickname) }} — {{ formatCNPJ(tinyForm.cnpj) }}
             </div>
           </div>
         </div>
@@ -683,6 +689,7 @@ import { useQuasar } from 'quasar'
 import { DateTime } from 'luxon'
 import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
+import { nomeConta } from 'src/utils/nomeConta'
 
 const $q = useQuasar()
 const authStore = useStore()

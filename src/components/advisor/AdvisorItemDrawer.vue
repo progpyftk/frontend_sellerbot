@@ -5,7 +5,7 @@
       <div>
         <strong id="adv-drawer-title" class="adv-drawer__mlb">{{ item?.item_id || 'Detalhe do anúncio' }}</strong>
         <span class="adv-drawer__titulo">{{ item?.title || '' }}</span>
-        <span class="adv-drawer__conta">{{ item?.account_nickname || '' }}</span>
+        <span class="adv-drawer__conta">{{ nomeConta(item?.account_nickname) }}</span>
       </div>
       <q-btn flat dense no-caps icon="close" label="fechar" @click="$emit('fechar')" />
     </header>
@@ -175,6 +175,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { brl, pct, resultOf } from 'src/utils/advisorDecision';
+import { nomeConta } from 'src/utils/nomeConta';
 
 const props = defineProps({
   detalhe: { type: Object, default: null },

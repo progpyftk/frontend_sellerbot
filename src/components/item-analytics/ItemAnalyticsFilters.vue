@@ -62,6 +62,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { nomeConta } from 'src/utils/nomeConta'
 
 const props = defineProps({
   filters: { type: Object, required: true },
@@ -70,7 +71,7 @@ const props = defineProps({
 const emit = defineEmits(['filter'])
 
 const accountOptions = computed(() => props.accounts.map((account) => ({
-  label: account.account_nickname || account.nickname || account.account_id || account.id,
+  label: nomeConta(account.account_nickname) || account.nickname || account.account_id || account.id,
   value: account.account_id || account.id,
 })))
 const statusOptions = [

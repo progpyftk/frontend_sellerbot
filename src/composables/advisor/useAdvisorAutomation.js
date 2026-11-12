@@ -13,6 +13,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 
 import AdvisorService from 'src/services/AdvisorService';
+import { nomeConta } from 'src/utils/nomeConta';
 
 export function useAdvisorAutomation() {
   const data = ref(null);
@@ -128,8 +129,8 @@ export function useAdvisorAutomation() {
     if (novo === null ? atual === null : Number(atual) === novo) return;
     await gravar(conta.account_id, { [campo]: novo },
       novo === null
-        ? `${conta.account_nickname}: ${REGUA_ROTULOS[campo]} voltou ao padrão da plataforma.`
-        : `${conta.account_nickname}: ${REGUA_ROTULOS[campo]} agora é ${novo}${CAMPOS_EM_REAIS.has(campo) ? ' (R$)' : '%'}.`);
+        ? `${nomeConta(conta.account_nickname)}: ${REGUA_ROTULOS[campo]} voltou ao padrão da plataforma.`
+        : `${nomeConta(conta.account_nickname)}: ${REGUA_ROTULOS[campo]} agora é ${novo}${CAMPOS_EM_REAIS.has(campo) ? ' (R$)' : '%'}.`);
     sincronizarReguas();
   }
 
@@ -153,7 +154,7 @@ export function useAdvisorAutomation() {
       }
     }
     if (!Object.keys(payload).length) return;
-    await gravar(conta.account_id, payload, `${conta.account_nickname}: limites salvos.`);
+    await gravar(conta.account_id, payload, `${nomeConta(conta.account_nickname)}: limites salvos.`);
   }
 
   const PRESETS_REGUA = {
@@ -188,8 +189,8 @@ export function useAdvisorAutomation() {
       conta.account_id,
       { auto_write: ligar === true },
       ligar === true
-        ? `${conta.account_nickname}: o robô vai escrever sozinho na próxima execução.`
-        : `${conta.account_nickname}: o robô parou de escrever. Nada foi desfeito no Mercado Livre.`,
+        ? `${nomeConta(conta.account_nickname)}: o robô vai escrever sozinho na próxima execução.`
+        : `${nomeConta(conta.account_nickname)}: o robô parou de escrever. Nada foi desfeito no Mercado Livre.`,
     );
   }
 
@@ -202,17 +203,17 @@ export function useAdvisorAutomation() {
     }
     if (bruto === conta.wave_size) return;          // nada mudou: não gasta uma gravação
     await gravar(conta.account_id, { wave_size: bruto },
-      `${conta.account_nickname}: rodada de ${bruto} anúncios.`);
+      `${nomeConta(conta.account_nickname)}: rodada de ${bruto} anúncios.`);
   }
 
   async function aprovarLeva(conta) {
     await gravar(conta.account_id, { canary_approved: true },
-      `${conta.account_nickname}: aval registrado para continuar após a primeira rodada limitada.`);
+      `${nomeConta(conta.account_nickname)}: aval registrado para continuar após a primeira rodada limitada.`);
   }
 
   async function retomar(conta) {
     await gravar(conta.account_id, { paused: false, pause_reason: '' },
-      `${conta.account_nickname}: pausa removida.`);
+      `${nomeConta(conta.account_nickname)}: pausa removida.`);
   }
 
   async function pausarTudo() {
@@ -249,7 +250,7 @@ export function useAdvisorAutomation() {
 
   /** Alertas de margem (SMART abaixo do limite) — sinalização, nunca pausa automática. */
   const alertas = computed(() => contas.value.flatMap((conta) => (conta.margin_alerts || [])
-    .map((alerta) => ({ ...alerta, conta: conta.account_nickname, account_id: conta.account_id }))));
+    .map((alerta) => ({ ...alerta, conta: nomeConta(conta.account_nickname), account_id: conta.account_id }))));
 
   return {
     data, carregando, erro, salvando, aviso, contas, levas, alertas,
