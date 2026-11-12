@@ -829,7 +829,7 @@
               <template v-if="activeMarketplace !== 'shopee' && data?.accounts">
                 <tr v-for="a in data.accounts" :key="'ml-' + a.account_id">
                   <td><span class="mkt-badge mkt-badge--ml">ML</span></td>
-                  <td class="bold">{{ a.account_nickname }}</td>
+                  <td class="bold">{{ nomeConta(a.account_nickname) }}</td>
                   <td class="muted">{{ a.cnpj || '—' }}</td>
                   <td class="right">{{ fmt(a.gmv) }}</td>
                   <td class="right">{{ fmt(a.net_revenue) }}</td>
@@ -1096,7 +1096,7 @@
               </thead>
               <tbody>
                 <tr v-for="a in flexByAccount" :key="a.account_id">
-                  <td class="bold">{{ a.account_nickname }}</td>
+                  <td class="bold">{{ nomeConta(a.account_nickname) }}</td>
                   <td class="right kpi-highlight" style="font-weight:700">{{ a.flex_orders_count }}</td>
                   <td class="right">{{ pctRaw(a.flex_orders_count, data?.flex?.orders_count) }}</td>
                   <td class="right">
@@ -1427,6 +1427,7 @@ import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
 import TikTokShopService from 'src/services/TikTokShopService'
 import { calculateNetMarginPct } from 'src/utils/dashboardMetrics'
+import { nomeConta } from 'src/utils/nomeConta'
 import { isDirectDeliveryCarrier } from 'src/utils/shopeeFinance'
 import SbKpiCard from 'src/components/common/SbKpiCard.vue'
 import SbKpiGrid from 'src/components/common/SbKpiGrid.vue'
@@ -2195,7 +2196,7 @@ async function load() {
         key: buildAccountKey('ml', a.account_id),
         id: a.account_id,
         marketplace: 'ml',
-        label: a.account_nickname,
+        label: nomeConta(a.account_nickname),
         color: ACCOUNT_COLORS[i % ACCOUNT_COLORS.length],
       }))
     }

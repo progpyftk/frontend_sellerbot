@@ -2,6 +2,29 @@
 import { getAccessToken, getRefreshToken, setAccessToken, clearTokens } from "src/services/tokenService";
 import { useStore } from "src/stores/store";
 import { api } from "./axios";
+import { nomeConta } from "src/utils/nomeConta";
+
+// Alias de exibição do nickname da conta (MOGIVITTA → Dose Verde).
+// Roda só na resposta da API, no campo `account_nickname`: não altera
+// account_id, filtros enviados, OAuth nem qualquer vínculo da conta.
+const CAMPOS_PESADOS = new Set(["raw_data", "escrow_raw", "invoice_data", "tax_snapshot", "discounts_raw"]);
+const PROFUNDIDADE_MAX = 5;
+
+const aplicarNomeConta = (valor, nivel = 0) => {
+  if (!valor || typeof valor !== "object" || nivel > PROFUNDIDADE_MAX) return;
+  if (Array.isArray(valor)) {
+    for (const item of valor) aplicarNomeConta(item, nivel + 1);
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(valor, "account_nickname") && typeof valor.account_nickname === "string") {
+    valor.account_nickname = nomeConta(valor.account_nickname);
+  }
+  for (const chave of Object.keys(valor)) {
+    if (CAMPOS_PESADOS.has(chave)) continue;
+    const filho = valor[chave];
+    if (filho && typeof filho === "object") aplicarNomeConta(filho, nivel + 1);
+  }
+};
 
 export const setupInterceptors = (store) => {
   api.interceptors.request.use(
@@ -17,7 +40,10 @@ export const setupInterceptors = (store) => {
   );
 
   api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      aplicarNomeConta(response?.data);
+      return response;
+    },
     async (error) => {
       const originalRequest = error.config;
 
