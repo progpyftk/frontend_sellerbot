@@ -48,6 +48,11 @@ export default {
     return api.get(`/shopee/orders/${orderId}/`)
   },
 
+  // Cascata GMV → lucro bruto dos pedidos filtrados (CUSTO-14); aceita os mesmos filtros da listagem
+  getOrdersKpis(params = {}) {
+    return api.get('/shopee/orders/kpis/', { params })
+  },
+
   getOrderTracking(orderId) {
     return api.get(`/shopee/orders/${orderId}/tracking/`)
   },

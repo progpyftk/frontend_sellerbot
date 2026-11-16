@@ -81,46 +81,44 @@
           </div>
         </div>
 
-        <!-- Margem após CMV -->
+        <!-- Lucro bruto do dia (CUSTO-14) -->
         <div class="today-card"
-          :class="todayStats.lucro_apos_cmp != null
-            ? (todayStats.lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg')
+          :class="todayStats.resultado?.pedidos
+            ? (todayStats.resultado.lucro_bruto >= 0 ? 'today-card--pos' : 'today-card--neg')
             : 'today-card--neutral'">
           <div class="today-card-icon"><q-icon name="trending_up" size="16px" /></div>
           <div class="today-card-body">
-            <template v-if="todayStats.lucro_apos_cmp != null">
-              <div class="today-card-val">{{ formatCurrency(todayStats.lucro_apos_cmp) }}</div>
+            <template v-if="todayStats.resultado?.pedidos">
+              <div class="today-card-val">{{ formatCurrency(todayStats.resultado.lucro_bruto) }}</div>
               <div class="today-card-label">
-                Margem após CMV
-                <span v-if="todayStats.margem_pct != null" class="today-card-badge">
-                  {{ todayStats.margem_pct }}%
+                Lucro bruto
+                <span v-if="todayStats.resultado.margem_contribuicao != null" class="today-card-badge">
+                  {{ (todayStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') }}%
                 </span>
               </div>
               <div class="today-card-sub">
-                <span v-if="todayStats.cmp_count < todayStats.count_paid" class="text-orange-5">
-                  {{ todayStats.cmp_count }}/{{ todayStats.count_paid }} c/ custo
+                <span v-if="todayStats.resultado.pedidos_custo_incompleto" class="text-orange-5">
+                  {{ todayStats.resultado.pedidos_custo_incompleto }} c/ custo incompleto
                 </span>
-                <span v-else>todos com custo cadastrado</span>
+                <span v-else>{{ todayStats.resultado.pedidos }} pedidos calculados</span>
               </div>
             </template>
             <template v-else>
               <div class="today-card-val today-card-val--muted">—</div>
-              <div class="today-card-label">Margem após CMV</div>
-              <div class="today-card-sub text-orange-5">CMV não cadastrado</div>
+              <div class="today-card-label">Lucro bruto</div>
+              <div class="today-card-sub">calculado no fim do sync</div>
             </template>
           </div>
         </div>
 
-        <!-- Lucro médio -->
-        <div v-if="todayStats.avg_lucro_apos_cmp != null"
-          class="today-card" :class="todayStats.avg_lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg'">
+        <!-- Lucro bruto médio -->
+        <div v-if="todayStats.resultado?.pedidos"
+          class="today-card" :class="todayStats.resultado.lucro_bruto_medio >= 0 ? 'today-card--pos' : 'today-card--neg'">
           <div class="today-card-icon"><q-icon name="equalizer" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.avg_lucro_apos_cmp) }}</div>
-            <div class="today-card-label">Margem média / pedido</div>
-            <div class="today-card-sub">
-              base: {{ todayStats.cmp_count }} pedido{{ todayStats.cmp_count !== 1 ? 's' : '' }} c/ custo
-            </div>
+            <div class="today-card-val">{{ formatCurrency(todayStats.resultado.lucro_bruto_medio) }}</div>
+            <div class="today-card-label">Lucro bruto / pedido</div>
+            <div class="today-card-sub">preparação {{ formatCurrency(todayStats.resultado.preparacao) }} no dia</div>
           </div>
         </div>
 
@@ -371,6 +369,9 @@
     </div>
 
     <!-- ══ TABELA ═════════════════════════════════════════════════ -->
+    <!-- KPIs do período filtrado: cascata GMV → lucro bruto (CUSTO-14) -->
+    <CascataKpis v-if="periodKpis" :kpis="periodKpis" canal="shopee" />
+
     <div class="table-container table-responsive">
       <SbTableScrollHint />
       <q-table
@@ -486,10 +487,22 @@
               </div>
             </q-td>
 
-            <!-- ⑥ Taxas Shopee (comissão + serviço, do escrow) -->
-            <q-td key="frete" :props="props" align="right">
+            <!-- ⑥–⑦ Imposto e receita líquida de impostos (CUSTO-14) -->
+            <q-td key="imposto" :props="props" align="right">
+              <CascataCelula :resultado="props.row.resultado" coluna="imposto" canal="shopee" />
+            </q-td>
+            <q-td key="receita_liquida" :props="props" align="right">
+              <CascataCelula :resultado="props.row.resultado" coluna="receita_liquida" canal="shopee" />
+            </q-td>
+
+            <!-- ⑧ Taxas Shopee (comissão + serviço + afiliados, do escrow) -->
+            <q-td key="taxas" :props="props" align="right">
               <div class="column items-end">
-                <template v-if="isEscrowReal(props.row)">
+                <template v-if="props.row.resultado">
+                  <span class="frete-val">-{{ formatCurrency(props.row.resultado.taxas) }}</span>
+                  <span class="frete-hint">comissão + taxas{{ Number(props.row.ams_commission_fee || 0) ? ' + afiliados' : '' }}</span>
+                </template>
+                <template v-else-if="isEscrowReal(props.row)">
                   <span class="frete-val">-{{ formatCurrency(getTaxasShopee(props.row)) }}</span>
                   <span class="frete-hint">comissão + taxas</span>
                 </template>
@@ -497,38 +510,24 @@
               </div>
             </q-td>
 
-            <!-- ⑦ Repasse Shopee (escrow_amount) -->
-            <q-td key="liquido" :props="props" align="right">
-              <div class="cell-liquido">
-                <template v-if="isEscrowReal(props.row)">
-                  <div :class="['liquido-main', props.row.escrow_amount >= 0 ? 'pos' : 'neg']">
-                    {{ formatCurrency(props.row.escrow_amount) }}
-                  </div>
-                  <div class="liquido-hint">repasse Shopee</div>
-                </template>
-                <template v-else>
-                  <div :class="['liquido-main', getLiquido(props.row) >= 0 ? 'pos' : 'neg']">
-                    {{ formatCurrency(getLiquido(props.row)) }}
-                  </div>
-                  <div class="liquido-hint">estimado</div>
-                </template>
-              </div>
+            <!-- ⑨–⑭ Frete, Ads, preparação, produto e lucro bruto (CUSTO-14) -->
+            <q-td key="frete" :props="props" align="right">
+              <CascataCelula :resultado="props.row.resultado" coluna="frete" canal="shopee" />
             </q-td>
-
-            <!-- ⑧ Margem após CMV -->
-            <q-td key="lucro" :props="props" align="right">
-              <div v-if="props.row.lucro_apos_cmp != null" class="cell-lucro">
-                <div :class="['lucro-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
-                  {{ formatCurrency(props.row.lucro_apos_cmp) }}
-                </div>
-                <div :class="['margin-pill', props.row.lucro_apos_cmp >= 0 ? 'margin-pos' : 'margin-neg']">
-                  {{ calcLucroPct(props.row) }}% margem
-                </div>
-                <div class="lucro-hint">
-                  Custo: {{ formatCurrency(props.row.custo_medio_produto) }}
-                </div>
-              </div>
-              <span v-else class="text-caption text-grey-5">S/ Custo</span>
+            <q-td key="ads" :props="props" align="right">
+              <CascataCelula :resultado="props.row.resultado" coluna="ads" canal="shopee" />
+            </q-td>
+            <q-td key="producao" :props="props" align="right">
+              <CascataCelula :resultado="props.row.resultado" coluna="producao" canal="shopee" />
+            </q-td>
+            <q-td key="embalagens" :props="props" align="right">
+              <CascataCelula :resultado="props.row.resultado" coluna="embalagens" canal="shopee" />
+            </q-td>
+            <q-td key="produto_custo" :props="props" align="right">
+              <CascataCelula :resultado="props.row.resultado" coluna="produto" canal="shopee" />
+            </q-td>
+            <q-td key="lucro_bruto" :props="props" align="right">
+              <CascataCelula :resultado="props.row.resultado" coluna="lucro_bruto" canal="shopee" />
             </q-td>
 
           </q-tr>
@@ -846,33 +845,8 @@
               </div>
             </template>
 
-            <!-- ── CMV + custo operacional + LUCRO ── -->
-            <template v-if="selectedOrder.custo_medio_produto != null">
-              <div class="finance-block q-mt-xs">
-                <div class="finance-block-label">Custo do Produto (CMV)</div>
-                <div class="finance-row">
-                  <span class="finance-label">Custo médio do produto</span>
-                  <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.custo_medio_produto) }}</span>
-                </div>
-                <div v-if="isDirectDeliveryCarrier(selectedOrder.shipping_carrier) && selectedOrder.direct_delivery_cost_snapshot != null" class="finance-row">
-                  <span class="finance-label">Custo Entrega Direta</span>
-                  <span class="finance-val finance-negative">-{{ formatCurrency(selectedOrder.direct_delivery_cost_snapshot) }}</span>
-                </div>
-              </div>
-              <div class="finance-divider" />
-              <div class="finance-row finance-row--total">
-                <span class="finance-label-bold">(=) LUCRO REAL</span>
-                <span :class="['finance-total', selectedOrder.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
-                  {{ formatCurrency(selectedOrder.lucro_apos_cmp) }}
-                </span>
-              </div>
-            </template>
-            <template v-else>
-              <div class="finance-note-box">
-                <q-icon name="info_outline" size="13px" class="q-mr-xs" />
-                Custo do produto não cadastrado. Configure o CMV no ERP para ver o lucro real.
-              </div>
-            </template>
+            <!-- ── Cascata GMV → lucro bruto (CUSTO-14) ── -->
+            <CascataDetalhe :resultado="selectedOrder.resultado" canal="shopee" />
           </div>
 
           <!-- Rastreamento -->
@@ -966,6 +940,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import CascataCelula from 'src/components/pedidos/CascataCelula.vue'
+import CascataDetalhe from 'src/components/pedidos/CascataDetalhe.vue'
+import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
 import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
@@ -985,6 +962,7 @@ const showAdvanced   = ref(false)
 const accountOptions = ref([])
 const currentSort    = ref('-create_time')
 const todayStats     = ref(null)
+const periodKpis     = ref(null)  // cascata do período filtrado (CUSTO-14)
 const todayLoading   = ref(false)
 const detailOpen       = ref(false)
 const selectedOrder    = ref(null)
@@ -1021,10 +999,17 @@ const columns = [
   { name: 'data',      label: 'DATA',                 field: 'create_time',    sortable: true,  align: 'left',   style: 'min-width:90px'  },
   { name: 'comprador', label: 'COMPRADOR',            field: 'buyer_username', sortable: false, align: 'left',   style: 'min-width:110px' },
   { name: 'status',    label: 'STATUS',               field: 'status',         sortable: false, align: 'center', style: 'min-width:120px' },
-  { name: 'bruto',     label: 'VENDA',                field: 'total_amount',   sortable: true,  align: 'right',  style: 'min-width:90px'  },
-  { name: 'frete',     label: 'TAXAS SHOPEE',         field: 'commission_fee', sortable: false, align: 'right',  style: 'min-width:90px' },
-  { name: 'liquido',   label: 'REPASSE (S/ CUSTO)',   field: 'escrow_amount',  sortable: false, align: 'right',  style: 'min-width:120px' },
-  { name: 'lucro',     label: 'MARGEM APÓS CMV',      field: 'lucro_apos_cmp', sortable: false, align: 'right',  style: 'min-width:115px' },
+  // Cascata GMV → lucro bruto (CUSTO-14, ordem decidida pelo dono em 16/11/2026)
+  { name: 'bruto',     label: 'GMV',                  field: 'total_amount',   sortable: true,  align: 'right',  style: 'min-width:90px'  },
+  { name: 'imposto',   label: 'IMPOSTO',              field: 'imposto',        sortable: false, align: 'right',  style: 'min-width:90px'  },
+  { name: 'receita_liquida', label: 'RECEITA LÍQUIDA', field: 'receita_liquida', sortable: false, align: 'right', style: 'min-width:105px' },
+  { name: 'taxas',     label: 'TAXAS SHOPEE',         field: 'commission_fee', sortable: false, align: 'right',  style: 'min-width:90px'  },
+  { name: 'frete',     label: 'FRETE',                field: 'frete',          sortable: false, align: 'right',  style: 'min-width:90px'  },
+  { name: 'ads',       label: 'ADS',                  field: 'ads',            sortable: false, align: 'right',  style: 'min-width:85px'  },
+  { name: 'producao',  label: 'CUSTO DE PRODUÇÃO',    field: 'producao',       sortable: false, align: 'right',  style: 'min-width:95px'  },
+  { name: 'embalagens', label: 'EMBALAGENS',          field: 'embalagens',     sortable: false, align: 'right',  style: 'min-width:90px'  },
+  { name: 'produto_custo', label: 'CUSTO DO PRODUTO', field: 'produto',        sortable: false, align: 'right',  style: 'min-width:100px' },
+  { name: 'lucro_bruto', label: 'LUCRO BRUTO',        field: 'lucro_bruto',    sortable: false, align: 'right',  style: 'min-width:115px' },
 ]
 
 // ── Opções ─────────────────────────────────────────────────────────────────
@@ -1064,6 +1049,9 @@ const sortOptions = [
   { value: '-total_amount', label: 'Maior valor'   },
   { value: 'total_amount',  label: 'Menor valor'   },
   { value: '-pay_time',     label: 'Último pago'   },
+  { value: '-resultado__lucro_bruto',        label: 'Maior lucro bruto' },
+  { value: 'resultado__lucro_bruto',         label: 'Menor lucro bruto' },
+  { value: 'resultado__margem_contribuicao', label: 'Pior margem %'     },
 ]
 
 // ── Computeds ──────────────────────────────────────────────────────────────
@@ -1162,11 +1150,6 @@ function getLiquido(row) {
 }
 
 // Margem de contribuição após CMV sobre o GMV (total_amount), como no Mercado Livre.
-function calcLucroPct(row) {
-  const t = Number(row.total_amount || 0)
-  if (t === 0 || row.lucro_apos_cmp == null) return 0
-  return Math.round((Number(row.lucro_apos_cmp) / t) * 100)
-}
 
 // Soma de unit_price × qty — preço real de venda dos produtos (sem frete)
 function getItemsSaleTotal(row) {
@@ -1328,6 +1311,7 @@ async function loadOrders(pg = null) {
     const { data } = await ShopeeService.listOrders(axiosParams)
     orders.value = data.results ?? data
     pagination.value.rowsNumber = data.count ?? orders.value.length
+    loadPeriodKpis(axiosParams)
   } catch (e) {
     console.error('Erro ao carregar pedidos:', e)
     $q.notify({ message: 'Erro ao carregar pedidos', color: 'negative' })
@@ -1349,6 +1333,18 @@ async function fetchTodayStats() {
     todayStats.value = data
   } catch (e) { console.error(e) }
   finally { todayLoading.value = false }
+}
+
+// KPIs da cascata com os mesmos filtros da tabela (CUSTO-14); falha não derruba a listagem
+async function loadPeriodKpis(axiosParams) {
+  const { page, page_size, sort, ...filtros } = axiosParams // eslint-disable-line no-unused-vars
+  try {
+    const { data } = await ShopeeService.getOrdersKpis(filtros)
+    periodKpis.value = data.resultado
+  } catch (e) {
+    console.error('Erro ao carregar KPIs da cascata:', e)
+    periodKpis.value = null
+  }
 }
 
 async function loadAccounts() {

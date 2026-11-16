@@ -34,16 +34,16 @@
       </template>
 
       <template v-else>
-        <!-- Margem após CMV do Produto -->
-        <div class="today-card" :class="todayStats.lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg'">
+        <!-- Lucro bruto do dia (CUSTO-14) -->
+        <div class="today-card" :class="(todayStats.resultado?.lucro_bruto ?? 0) >= 0 ? 'today-card--pos' : 'today-card--neg'">
           <div class="today-card-icon">
             <q-icon name="trending_up" size="16px" />
           </div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.lucro_apos_cmp) }}</div>
-            <div class="today-card-label">Margem após CMV</div>
-            <div class="today-card-sub" v-if="todayStats.cmp_count < todayStats.count">
-              {{ todayStats.cmp_count }}/{{ todayStats.count }} vendas com custo
+            <div class="today-card-val">{{ formatCurrency(todayStats.resultado?.lucro_bruto) }}</div>
+            <div class="today-card-label">Lucro bruto</div>
+            <div class="today-card-sub" v-if="todayStats.resultado?.margem_contribuicao != null">
+              {{ (todayStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') }}% do GMV · {{ todayStats.resultado.pedidos }} pedidos
             </div>
           </div>
         </div>
@@ -61,15 +61,15 @@
         </div>
 
         <!-- Lucro médio por venda -->
-        <div class="today-card" :class="todayStats.avg_lucro_apos_cmp >= 0 ? 'today-card--pos' : 'today-card--neg'">
+        <div class="today-card" :class="(todayStats.resultado?.lucro_bruto_medio ?? 0) >= 0 ? 'today-card--pos' : 'today-card--neg'">
           <div class="today-card-icon">
             <q-icon name="equalizer" size="16px" />
           </div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.avg_lucro_apos_cmp) }}</div>
-            <div class="today-card-label">Margem média / venda</div>
-            <div class="today-card-sub" v-if="todayStats.cmp_count">
-              base: {{ todayStats.cmp_count }} venda{{ todayStats.cmp_count !== 1 ? 's' : '' }} c/ custo
+            <div class="today-card-val">{{ formatCurrency(todayStats.resultado?.lucro_bruto_medio) }}</div>
+            <div class="today-card-label">Lucro bruto / pedido</div>
+            <div class="today-card-sub" v-if="todayStats.resultado?.pedidos">
+              preparação {{ formatCurrency(todayStats.resultado.preparacao) }} no dia
             </div>
           </div>
         </div>
@@ -513,6 +513,7 @@
       </div>
       <div class="pk-note">KPIs seguem os filtros ativos da tabela</div>
     </div>
+    <CascataKpis v-if="periodKpis?.resultado" :kpis="periodKpis.resultado" canal="ml" />
 
     <!-- ── TABELA ─────────────────────────────────────────── -->
     <div class="table-wrapper table-responsive">
@@ -700,6 +701,14 @@
               </div>
             </q-td>
 
+            <!-- Imposto e receita líquida de impostos (CUSTO-14) -->
+            <q-td key="imposto" :props="props" align="right">
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="imposto" canal="ml" />
+            </q-td>
+            <q-td key="receita_liquida" :props="props" align="right">
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="receita_liquida" canal="ml" />
+            </q-td>
+
             <!-- ⑦ Tarifa ML ──────────────────────────── -->
             <q-td key="tarifa" :props="props" align="right">
               <div class="cell-fee">
@@ -727,7 +736,9 @@
 
             <!-- ⑧ Frete ──────────────────────────────── -->
             <q-td key="frete" :props="props" align="right">
-              <div class="cell-frete">
+              <!-- CUSTO-14: frete da cascata (GMV − taxas − frete = repasse); sem resultado, o cálculo antigo -->
+              <CascataCelula v-if="resultadoDaLinha(props.row)" :resultado="resultadoDaLinha(props.row)" coluna="frete" canal="ml" />
+              <div v-else class="cell-frete">
                 <!-- Flex: seller entrega por conta própria -->
                 <template v-if="props.row.shipment?.logistic_type === 'self_service'">
                   <div v-if="getSellerShippingCost(props.row) > 0" class="frete-main">
@@ -763,33 +774,21 @@
               </div>
             </q-td>
 
-            <!-- ⑨ Líquido ────────────────────────────── -->
-            <q-td key="liquido" :props="props" align="right">
-              <div class="cell-liquido">
-                <div :class="['liquido-main', getNetMargin(props.row) >= 0 ? 'pos' : 'neg']">
-                  {{ formatCurrency(getNetMargin(props.row)) }}
-                </div>
-                <div :class="['margin-pill', getNetMargin(props.row) >= 0 ? 'margin-pos' : 'margin-neg']">
-                  {{ calculateMarginPct(props.row) }}% margem
-                </div>
-                <div class="liquido-hint">antes do Custo Médio</div>
-              </div>
+            <!-- ⑨–⑬ Ads, preparação, produto e lucro bruto (CUSTO-14) ─── -->
+            <q-td key="ads" :props="props" align="right">
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="ads" canal="ml" />
             </q-td>
-
-            <!-- ⑩ Lucro (c/ Custo Médio do Produto) ──── -->
-            <q-td key="lucro" :props="props" align="right">
-              <div class="cell-liquido" v-if="props.row.lucro_apos_cmp != null">
-                <div :class="['liquido-main', props.row.lucro_apos_cmp >= 0 ? 'pos' : 'neg']">
-                  {{ formatCurrency(props.row.lucro_apos_cmp) }}
-                </div>
-                <div :class="['margin-pill', props.row.lucro_apos_cmp >= 0 ? 'margin-pos' : 'margin-neg']">
-                  {{ calcLucroPct(props.row) }}% margem
-                </div>
-                <div class="liquido-hint">
-                  Custo: {{ formatCurrency(getCustoMedioProduto(props.row)) }}
-                </div>
-              </div>
-              <div v-else class="text-caption text-grey-5">S/ Custo</div>
+            <q-td key="producao" :props="props" align="right">
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="producao" canal="ml" />
+            </q-td>
+            <q-td key="embalagens" :props="props" align="right">
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="embalagens" canal="ml" />
+            </q-td>
+            <q-td key="produto_custo" :props="props" align="right">
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="produto" canal="ml" />
+            </q-td>
+            <q-td key="lucro_bruto" :props="props" align="right">
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="lucro_bruto" canal="ml" />
             </q-td>
 
           </q-tr>
@@ -977,58 +976,16 @@
                 </div>
                 <div class="receipt-sep thick" />
                 <div class="receipt-row total-row">
-                  <span class="receipt-label-bold">(=) Líquido (s/ Custo Médio)</span>
+                  <span class="receipt-label-bold">(=) Repasse do ML</span>
                   <div class="receipt-val-g">
                     <span :class="['receipt-total', getNetMargin(selectedOrder) >= 0 ? 'pos-t' : 'neg-t']">
                       {{ formatCurrency(getNetMargin(selectedOrder)) }}
                     </span>
                     <span :class="['margin-pill', getNetMargin(selectedOrder) >= 0 ? 'margin-pos' : 'margin-neg']">
-                      {{ calculateMarginPct(selectedOrder) }}% margem
+                      {{ calculateMarginPct(selectedOrder) }}% do GMV
                     </span>
                   </div>
                 </div>
-                <template v-if="selectedOrder.lucro_apos_cmp != null">
-                  <!-- Custo Médio por item (quando há cmp_unit_cost gravado no snapshot) -->
-                  <template v-for="item in (selectedOrder.items || [])" :key="'cmp-' + item.item_id_ml + (item.variation_id || '')">
-                    <div v-if="item.cmp_unit_cost != null" class="receipt-row sub-row">
-                      <div class="receipt-label-g">
-                        <span class="receipt-label">(-) Custo Médio · {{ item.seller_sku || item.item_id_ml }}</span>
-                        <span class="receipt-sub">
-                          {{ formatCurrency(item.cmp_unit_cost) }}/un × {{ item.quantity }}
-                          <template v-if="(selectedOrder.items||[]).filter(i => i.cmp_unit_cost != null).length > 1">
-                            · {{ item.title?.substring(0, 30) }}{{ item.title?.length > 30 ? '…' : '' }}
-                          </template>
-                        </span>
-                      </div>
-                      <span class="receipt-value ded-t">-{{ formatCurrency(Number(item.cmp_unit_cost) * Number(item.quantity || 1)) }}</span>
-                    </div>
-                  </template>
-                  <!-- Total Custo Médio do Produto -->
-                  <div class="receipt-row sub-row" :class="(selectedOrder.items||[]).filter(i => i.cmp_unit_cost != null).length > 1 ? 'cmv-total-row' : ''">
-                    <div class="receipt-label-g">
-                      <span class="receipt-label">(-) Custo Médio do Produto</span>
-                      <span class="receipt-sub">
-                        Custo médio do Tiny ERP · snapshot na data da venda
-                        <template v-if="selectedOrder.custo_medio_produto == null">
-                          <span style="color:#f59e0b"> · derivado</span>
-                        </template>
-                      </span>
-                    </div>
-                    <span class="receipt-value ded-t">-{{ formatCurrency(getCustoMedioProduto(selectedOrder)) }}</span>
-                  </div>
-                  <div class="receipt-sep thick" />
-                  <div class="receipt-row total-row">
-                    <span class="receipt-label-bold">(=) LUCRO REAL</span>
-                    <div class="receipt-val-g">
-                      <span :class="['receipt-total', selectedOrder.lucro_apos_cmp >= 0 ? 'pos-t' : 'neg-t']">
-                        {{ formatCurrency(selectedOrder.lucro_apos_cmp) }}
-                      </span>
-                      <span :class="['margin-pill', selectedOrder.lucro_apos_cmp >= 0 ? 'margin-pos' : 'margin-neg']">
-                        {{ calcLucroPct(selectedOrder) }}% margem
-                      </span>
-                    </div>
-                  </div>
-                </template>
                 <template v-if="getPaymentMethodLabel(selectedOrder)">
                   <div class="receipt-sep" />
                   <div class="receipt-row">
@@ -1037,6 +994,8 @@
                   </div>
                 </template>
               </div>
+              <!-- Cascata GMV → lucro bruto (CUSTO-14) -->
+              <CascataDetalhe :resultado="resultadoDaLinha(selectedOrder)" canal="ml" />
             </div>
 
           </div>
@@ -1311,9 +1270,9 @@
             <div class="fadv-section">
               <div class="fadv-section-title">
                 <q-icon name="trending_up" size="15px" color="primary" />
-                Margem após CMV (R$)
+                Lucro (R$)
                 <q-btn-toggle v-model="marginFilterMode"
-                  :options="[{label:'Após Custo Médio', value:'lucro_apos_cmp'},{label:'Antes Custo Médio', value:'net_received'}]"
+                  :options="[{label:'Lucro bruto', value:'lucro_bruto'},{label:'Repasse ML', value:'net_received'}]"
                   dense unelevated toggle-color="primary" color="grey-2" text-color="grey-7"
                   rounded size="xs" class="q-ml-auto" />
               </div>
@@ -1394,6 +1353,10 @@
 import { ref, onMounted, reactive, computed, watch } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
+import CascataCelula from 'src/components/pedidos/CascataCelula.vue'
+import CascataDetalhe from 'src/components/pedidos/CascataDetalhe.vue'
+import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
+import { resultadoDaLinha } from 'src/utils/resultadoPedido'
 import { useQuasar, copyToClipboard, date } from 'quasar'
 
 const $q = useQuasar()
@@ -1460,7 +1423,7 @@ const loading       = ref(false)
 const searchFocused = ref(false)
 
 // Margem — server-side via net_received ou lucro_apos_cmp gravados no banco
-const marginFilterMode = ref('lucro_apos_cmp')   // 'net_received' | 'lucro_apos_cmp'
+const marginFilterMode = ref('lucro_bruto')   // 'net_received' | 'lucro_bruto' (CUSTO-14)
 
 const filteredOrders = computed(() => orders.value)
 const financialOpen = ref(false)
@@ -1495,11 +1458,17 @@ const columns = [
   { name: 'comprador',    label: 'COMPRADOR',          field: 'buyer_nickname',align: 'left' },
   { name: 'status_venda', label: 'STATUS',             field: 'status',        align: 'left' },
   { name: 'logistica',    label: 'LOGÍSTICA',          field: 'shipment',      align: 'left' },
+  // Cascata GMV → lucro bruto (CUSTO-14, ordem decidida pelo dono em 16/11/2026)
   { name: 'venda',        label: 'GMV',                field: 'total_amount',  align: 'right', sortable: true },
+  { name: 'imposto',      label: 'IMPOSTO',            field: 'imposto',       align: 'right' },
+  { name: 'receita_liquida', label: 'RECEITA LÍQUIDA', field: 'receita_liquida', align: 'right' },
   { name: 'tarifa',       label: 'TAXAS ML',           field: 'total_fee',     align: 'right' },
   { name: 'frete',        label: 'FRETE',              field: 'shipping_cost', align: 'right' },
-  { name: 'liquido',      label: 'RECEITA LÍQUIDA',    field: 'net',           align: 'right' },
-  { name: 'lucro',        label: 'MARGEM APÓS CMV',    field: 'lucro_apos_cmp', align: 'right' },
+  { name: 'ads',          label: 'ADS',                field: 'ads',           align: 'right' },
+  { name: 'producao',     label: 'CUSTO DE PRODUÇÃO',  field: 'producao',      align: 'right' },
+  { name: 'embalagens',   label: 'EMBALAGENS',         field: 'embalagens',    align: 'right' },
+  { name: 'produto_custo', label: 'CUSTO DO PRODUTO',  field: 'produto',       align: 'right' },
+  { name: 'lucro_bruto',  label: 'LUCRO BRUTO',        field: 'lucro_bruto',   align: 'right' },
 ]
 
 // Soma de unidades do pedido (pack soma todos os sub-orders)
@@ -1593,6 +1562,10 @@ const sortOptions = [
   { label: 'Valor ↑ (menor)',     field: 'total_amount',  desc: false },
   { label: 'Status',              field: 'status',        desc: false },
   { label: 'Fechamento ↓',        field: 'date_closed',   desc: true  },
+  // CUSTO-14: ordenação server-side pela cascata
+  { label: 'Lucro bruto ↓',       field: 'resultado__lucro_bruto', desc: true },
+  { label: 'Lucro bruto ↑',       field: 'resultado__lucro_bruto', desc: false },
+  { label: 'Margem % ↑ (piores)', field: 'resultado__margem_contribuicao', desc: false },
 ]
 const currentSortLabel = computed(() => {
   const opt = sortOptions.find(o => o.field === pagination.value.sortBy && o.desc === pagination.value.descending)
@@ -1649,7 +1622,7 @@ const resetFiltersState = () => Object.assign(filters, {
   marginMin: null, marginMax: null, is_catalog: null, fulfilled: null,
   _substatus: null,
 })
-const clearFilters = () => { resetFiltersState(); marginFilterMode.value = 'lucro_apos_cmp'; buscar() }
+const clearFilters = () => { resetFiltersState(); marginFilterMode.value = 'lucro_bruto'; buscar() }
 
 const buscar = () => onRequest({ pagination: { ...pagination.value, page: 1 } })
 
@@ -1953,18 +1926,6 @@ const getDiscountSyncStatusLabel = (row) => ({
   unavailable: 'Detalhe indisponivel na janela de retencao da API',
 }[getDiscountSyncStatus(row)] || 'Estado de consulta desconhecido')
 
-// Retorna o Custo Médio do Produto total da order.
-// Preferência: campo custo_medio_produto gravado no banco.
-// Fallback: deriva de net_received - lucro_apos_cmp (quando migration 0022 gravou lucro_apos_cmp
-// mas custo_medio_produto ainda era null na época).
-const getCustoMedioProduto = (row) => {
-  if (row.custo_medio_produto != null) return Number(row.custo_medio_produto)
-  const netReceived   = Number(row.fee_breakdown?.net_received ?? null)
-  const lucroAposCmp  = row.lucro_apos_cmp != null ? Number(row.lucro_apos_cmp) : null
-  if (lucroAposCmp !== null && row.fee_breakdown?.net_received != null)
-    return netReceived - lucroAposCmp
-  return null
-}
 const getNetMargin = (row) => {
   if (row.fee_breakdown) return Number(row.fee_breakdown.net_received || 0)
   return Number(row.total_amount || 0)
@@ -1975,11 +1936,6 @@ const getNetMargin = (row) => {
 const calculateMarginPct = (row) => {
   const t = getBrutoAmount(row)
   return t === 0 ? 0 : Math.round((getNetMargin(row) / t) * 100)
-}
-const calcLucroPct = (row) => {
-  const t = Number(row.total_amount || 0)
-  if (t === 0 || row.lucro_apos_cmp == null) return 0
-  return Math.round((Number(row.lucro_apos_cmp) / t) * 100)
 }
 
 // ============================================================================
