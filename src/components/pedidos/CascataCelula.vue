@@ -2,10 +2,7 @@
   <!-- Uma coluna da cascata GMV → lucro bruto (CUSTO-14). Sem `resultado`, "—" com o motivo. -->
   <div v-if="!resultado" class="cc cc--vazio">
     —
-    <q-tooltip class="bg-grey-9" max-width="260px">
-      Resultado ainda não calculado para este pedido (cancelado, não pago ou sincronizado há
-      instantes). O cálculo roda no fim de cada sync de pedidos.
-    </q-tooltip>
+    <q-tooltip class="bg-grey-9" max-width="280px">{{ textoMotivo(motivo) }}</q-tooltip>
   </div>
 
   <div v-else-if="coluna === 'lucro_bruto'" class="cc">
@@ -46,7 +43,7 @@
 <script setup>
 import { computed } from 'vue'
 import {
-  COLUNAS_CASCATA, formatAliquota, formatDiaMes, linhasEmbalagens, linhasFrete, margemPct, pctDoGmv,
+  COLUNAS_CASCATA, formatAliquota, formatDiaMes, linhasEmbalagens, linhasFrete, margemPct, pctDoGmv, textoMotivo,
 } from 'src/utils/resultadoPedido'
 
 const props = defineProps({
@@ -54,6 +51,8 @@ const props = defineProps({
   // imposto | receita_liquida | frete | ads | producao | embalagens | produto | lucro_bruto
   coluna: { type: String, required: true },
   canal: { type: String, default: 'ml' },
+  // por que não há cascata: fora_do_estudo | nao_e_venda | antes_da_base | pendente
+  motivo: { type: String, default: null },
 })
 
 const moeda = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0))

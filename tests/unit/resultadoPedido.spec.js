@@ -48,3 +48,13 @@ describe('cascata do pedido (CUSTO-14)', () => {
     expect(linhasEmbalagens(bloco({ embalagens_detalhe: { saco: 0, stretch: 1.25 } }))).toEqual([['Stretch', 1.25]])
   })
 })
+
+describe('motivo do "—" (CUSTO-14)', async () => {
+  const { motivoDaLinha, textoMotivo } = await import('src/utils/resultadoPedido')
+  it('explica conta fora do estudo e usa o sub-pedido sem resultado do pack', () => {
+    expect(textoMotivo('fora_do_estudo')).toMatch(/fora do estudo/)
+    expect(textoMotivo(undefined)).toMatch(/2 horas/)
+    const pack = { _isPack: true, _packOrders: [{ resultado: {} }, { resultado: null, resultado_motivo: 'pendente' }] }
+    expect(motivoDaLinha(pack)).toBe('pendente')
+  })
+})

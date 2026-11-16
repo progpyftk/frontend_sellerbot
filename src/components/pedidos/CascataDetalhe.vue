@@ -6,9 +6,7 @@
       <span v-if="resultado" class="cd-meta">rates de {{ formatDiaMes(resultado.snapshot_data) }}</span>
     </div>
 
-    <div v-if="!resultado" class="cd-vazio">
-      Resultado ainda não calculado para este pedido (cancelado, não pago ou recém-sincronizado).
-    </div>
+    <div v-if="!resultado" class="cd-vazio">{{ textoMotivo(motivo) }}</div>
 
     <template v-else>
       <template v-for="c in COLUNAS_CASCATA" :key="c.chave">
@@ -46,12 +44,13 @@
 
 <script setup>
 import {
-  COLUNAS_CASCATA, formatAliquota, formatDiaMes, linhasEmbalagens, linhasFrete, margemPct,
+  COLUNAS_CASCATA, formatAliquota, formatDiaMes, linhasEmbalagens, linhasFrete, margemPct, textoMotivo,
 } from 'src/utils/resultadoPedido'
 
 const props = defineProps({
   resultado: { type: Object, default: null },
   canal: { type: String, default: 'ml' },
+  motivo: { type: String, default: null },
 })
 
 const moeda = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0))

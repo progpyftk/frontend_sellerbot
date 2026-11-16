@@ -116,3 +116,26 @@ export function formatDiaMes(iso) {
   const [, m, d] = String(iso).split('-');
   return `${d}/${m}`;
 }
+
+const MOTIVOS = {
+  fora_do_estudo:
+    'Conta fora do estudo de custo: só Dose Verde e Casa dos Suportes têm custo de produto, preparação e alíquota cadastrados.',
+  nao_e_venda: 'Pedido cancelado ou não pago: não entra na cascata.',
+  antes_da_base: 'Venda anterior a 01/01/2026, início da base de custo.',
+  pendente:
+    'Venda ainda não calculada: o resultado é recalculado a cada 2 horas (com o Ads do dia) e no sync diário de pedidos.',
+};
+
+/** Texto do "—" quando o pedido não tem cascata (`resultado_motivo` da API). */
+export function textoMotivo(motivo) {
+  return MOTIVOS[motivo] || MOTIVOS.pendente;
+}
+
+/** Motivo da linha: pack do ML usa o primeiro sub-pedido sem resultado. */
+export function motivoDaLinha(row) {
+  if (!row) return null;
+  if (row._isPack && Array.isArray(row._packOrders)) {
+    return row._packOrders.find((o) => !o.resultado)?.resultado_motivo || null;
+  }
+  return row.resultado_motivo || null;
+}

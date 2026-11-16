@@ -703,10 +703,10 @@
 
             <!-- Imposto e receita líquida de impostos (CUSTO-14) -->
             <q-td key="imposto" :props="props" align="right">
-              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="imposto" canal="ml" />
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="imposto" canal="ml" :motivo="motivoDaLinha(props.row)" />
             </q-td>
             <q-td key="receita_liquida" :props="props" align="right">
-              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="receita_liquida" canal="ml" />
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="receita_liquida" canal="ml" :motivo="motivoDaLinha(props.row)" />
             </q-td>
 
             <!-- ⑦ Tarifa ML ──────────────────────────── -->
@@ -737,7 +737,7 @@
             <!-- ⑧ Frete ──────────────────────────────── -->
             <q-td key="frete" :props="props" align="right">
               <!-- CUSTO-14: frete da cascata (GMV − taxas − frete = repasse); sem resultado, o cálculo antigo -->
-              <CascataCelula v-if="resultadoDaLinha(props.row)" :resultado="resultadoDaLinha(props.row)" coluna="frete" canal="ml" />
+              <CascataCelula v-if="resultadoDaLinha(props.row)" :resultado="resultadoDaLinha(props.row)" coluna="frete" canal="ml" :motivo="motivoDaLinha(props.row)" />
               <div v-else class="cell-frete">
                 <!-- Flex: seller entrega por conta própria -->
                 <template v-if="props.row.shipment?.logistic_type === 'self_service'">
@@ -776,19 +776,19 @@
 
             <!-- ⑨–⑬ Ads, preparação, produto e lucro bruto (CUSTO-14) ─── -->
             <q-td key="ads" :props="props" align="right">
-              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="ads" canal="ml" />
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="ads" canal="ml" :motivo="motivoDaLinha(props.row)" />
             </q-td>
             <q-td key="producao" :props="props" align="right">
-              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="producao" canal="ml" />
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="producao" canal="ml" :motivo="motivoDaLinha(props.row)" />
             </q-td>
             <q-td key="embalagens" :props="props" align="right">
-              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="embalagens" canal="ml" />
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="embalagens" canal="ml" :motivo="motivoDaLinha(props.row)" />
             </q-td>
             <q-td key="produto_custo" :props="props" align="right">
-              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="produto" canal="ml" />
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="produto" canal="ml" :motivo="motivoDaLinha(props.row)" />
             </q-td>
             <q-td key="lucro_bruto" :props="props" align="right">
-              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="lucro_bruto" canal="ml" />
+              <CascataCelula :resultado="resultadoDaLinha(props.row)" coluna="lucro_bruto" canal="ml" :motivo="motivoDaLinha(props.row)" />
             </q-td>
 
           </q-tr>
@@ -995,7 +995,7 @@
                 </template>
               </div>
               <!-- Cascata GMV → lucro bruto (CUSTO-14) -->
-              <CascataDetalhe :resultado="resultadoDaLinha(selectedOrder)" canal="ml" />
+              <CascataDetalhe :resultado="resultadoDaLinha(selectedOrder)" :motivo="motivoDaLinha(selectedOrder)" canal="ml" />
             </div>
 
           </div>
@@ -1356,7 +1356,7 @@ import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 import CascataCelula from 'src/components/pedidos/CascataCelula.vue'
 import CascataDetalhe from 'src/components/pedidos/CascataDetalhe.vue'
 import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
-import { resultadoDaLinha } from 'src/utils/resultadoPedido'
+import { motivoDaLinha, resultadoDaLinha } from 'src/utils/resultadoPedido'
 import { useQuasar, copyToClipboard, date } from 'quasar'
 
 const $q = useQuasar()
@@ -2652,6 +2652,20 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .orders-table  { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
 .orders-table :deep(.q-table__top)    { display: none; }
 .orders-table :deep(.q-table__bottom) { border-top: 1px solid #f0f2f5; font-size: 12px; }
+/* CUSTO-14: cabeçalho e rolagem horizontal fixos. O `.q-table__middle` vira o scrollport (altura
+   limitada à janela): o cabeçalho gruda no topo dele e a barra horizontal fica sempre visível no rodapé
+   da tabela, sem precisar rolar a página até o fim. A coluna do produto também fica fixa à esquerda. */
+.orders-table :deep(.q-table__middle) { max-height: calc(100vh - 110px); max-height: calc(100dvh - 110px); }
+.orders-table :deep(thead th) { position: sticky; top: 0; z-index: 3; }
+.orders-table :deep(thead th:first-child) { left: 0; z-index: 4; }
+.orders-table :deep(tbody td:first-child) {
+  position: sticky; left: 0; z-index: 2; background: #fff; box-shadow: 1px 0 0 #e8eaed;
+}
+.order-row:hover :deep(td:first-child) { background: #f8fbff; }
+@media (max-width: 599px) {
+  .orders-table :deep(tbody td:first-child), .orders-table :deep(thead th:first-child) { position: static; box-shadow: none; }
+  .orders-table :deep(thead th) { position: sticky; top: 0; }
+}
 .orders-thead :deep(th) {
   font-size: 10px; font-weight: 700; color: #9aa0ac;
   text-transform: uppercase; letter-spacing: .7px;

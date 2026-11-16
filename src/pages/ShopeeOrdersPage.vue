@@ -489,10 +489,10 @@
 
             <!-- ⑥–⑦ Imposto e receita líquida de impostos (CUSTO-14) -->
             <q-td key="imposto" :props="props" align="right">
-              <CascataCelula :resultado="props.row.resultado" coluna="imposto" canal="shopee" />
+              <CascataCelula :resultado="props.row.resultado" coluna="imposto" canal="shopee" :motivo="props.row.resultado_motivo" />
             </q-td>
             <q-td key="receita_liquida" :props="props" align="right">
-              <CascataCelula :resultado="props.row.resultado" coluna="receita_liquida" canal="shopee" />
+              <CascataCelula :resultado="props.row.resultado" coluna="receita_liquida" canal="shopee" :motivo="props.row.resultado_motivo" />
             </q-td>
 
             <!-- ⑧ Taxas Shopee (comissão + serviço + afiliados, do escrow) -->
@@ -512,22 +512,22 @@
 
             <!-- ⑨–⑭ Frete, Ads, preparação, produto e lucro bruto (CUSTO-14) -->
             <q-td key="frete" :props="props" align="right">
-              <CascataCelula :resultado="props.row.resultado" coluna="frete" canal="shopee" />
+              <CascataCelula :resultado="props.row.resultado" coluna="frete" canal="shopee" :motivo="props.row.resultado_motivo" />
             </q-td>
             <q-td key="ads" :props="props" align="right">
-              <CascataCelula :resultado="props.row.resultado" coluna="ads" canal="shopee" />
+              <CascataCelula :resultado="props.row.resultado" coluna="ads" canal="shopee" :motivo="props.row.resultado_motivo" />
             </q-td>
             <q-td key="producao" :props="props" align="right">
-              <CascataCelula :resultado="props.row.resultado" coluna="producao" canal="shopee" />
+              <CascataCelula :resultado="props.row.resultado" coluna="producao" canal="shopee" :motivo="props.row.resultado_motivo" />
             </q-td>
             <q-td key="embalagens" :props="props" align="right">
-              <CascataCelula :resultado="props.row.resultado" coluna="embalagens" canal="shopee" />
+              <CascataCelula :resultado="props.row.resultado" coluna="embalagens" canal="shopee" :motivo="props.row.resultado_motivo" />
             </q-td>
             <q-td key="produto_custo" :props="props" align="right">
-              <CascataCelula :resultado="props.row.resultado" coluna="produto" canal="shopee" />
+              <CascataCelula :resultado="props.row.resultado" coluna="produto" canal="shopee" :motivo="props.row.resultado_motivo" />
             </q-td>
             <q-td key="lucro_bruto" :props="props" align="right">
-              <CascataCelula :resultado="props.row.resultado" coluna="lucro_bruto" canal="shopee" />
+              <CascataCelula :resultado="props.row.resultado" coluna="lucro_bruto" canal="shopee" :motivo="props.row.resultado_motivo" />
             </q-td>
 
           </q-tr>
@@ -846,7 +846,7 @@
             </template>
 
             <!-- ── Cascata GMV → lucro bruto (CUSTO-14) ── -->
-            <CascataDetalhe :resultado="selectedOrder.resultado" canal="shopee" />
+            <CascataDetalhe :resultado="selectedOrder.resultado" :motivo="selectedOrder.resultado_motivo" canal="shopee" />
           </div>
 
           <!-- Rastreamento -->
@@ -1654,9 +1654,8 @@ onMounted(() => {
 
 :deep(.shopee-table thead tr th) {
   /* `top: 0` e nao `$app-header-h`: o scrollport do thead e o `.q-table__middle`
-     do Quasar (`overflow: auto`, altura livre -> nunca rola). Com scrollport que
-     nao rola, qualquer `top:` vira empurrao permanente do cabecalho para baixo,
-     por cima das primeiras linhas. Nada aqui gruda no viewport da pagina. */
+     do Quasar, que desde o CUSTO-14 tem altura maxima (ver abaixo) e rola por dentro.
+     Um `top:` maior que zero empurraria o cabecalho por cima das primeiras linhas. */
   position: sticky; top: 0; z-index: 1;
   background: #edf4f7;
   font-size: 11px; font-weight: 700; color: #4c6272;
@@ -1666,6 +1665,21 @@ onMounted(() => {
 
 :deep(.shopee-table tbody tr.hover-row:hover) { background: #fdf2f7 !important; }
 :deep(.shopee-table tbody tr.row-expanded)    { background: #fdf2f7 !important; }
+/* CUSTO-14: cabeçalho e rolagem horizontal fixos — o `.q-table__middle` ganha altura máxima e vira o
+   scrollport: o `top: 0` do cabeçalho passa a grudar e a barra horizontal fica visível no rodapé.
+   Coluna do pedido fixa à esquerda (no desktop). */
+:deep(.shopee-table .q-table__middle) { max-height: calc(100vh - 110px); max-height: calc(100dvh - 110px); }
+:deep(.shopee-table thead tr th) { z-index: 3; }
+:deep(.shopee-table thead tr th:first-child) { left: 0; z-index: 4; }
+:deep(.shopee-table tbody td:first-child) {
+  position: sticky; left: 0; z-index: 2; background: #fff; box-shadow: 1px 0 0 #dfe9ef;
+}
+:deep(.shopee-table tbody tr.hover-row:hover td:first-child),
+:deep(.shopee-table tbody tr.row-expanded td:first-child) { background: #fdf2f7; }
+@media (max-width: 599px) {
+  :deep(.shopee-table tbody td:first-child) { position: static; box-shadow: none; }
+  :deep(.shopee-table thead tr th:first-child) { left: auto; }
+}
 :deep(.shopee-table tbody td) {
   border-bottom: 1px solid #dfe9ef;
   min-height: 65px; height: auto; vertical-align: top;
