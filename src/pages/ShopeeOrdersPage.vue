@@ -359,7 +359,7 @@
     <!-- KPIs do período filtrado: cascata GMV → lucro bruto (CUSTO-14) -->
     <CascataKpis v-if="periodKpis" :kpis="periodKpis" canal="shopee" />
 
-    <div class="table-container table-responsive">
+    <div ref="tabelaWrap" class="table-container table-responsive">
       <SbTableScrollHint />
       <q-table
         flat
@@ -522,6 +522,8 @@
 
         <template #loading><q-inner-loading showing color="primary" /></template>
       </q-table>
+      <!-- CUSTO-14: barra horizontal grudada no rodapé da tela, espelhando a da tabela -->
+      <SbStickyHScroll :container="tabelaWrap" />
     </div>
 
     <!-- ══ DIALOG: DETALHE DO PEDIDO ════════════════════════════ -->
@@ -930,6 +932,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import CascataCelula from 'src/components/pedidos/CascataCelula.vue'
 import CascataDetalhe from 'src/components/pedidos/CascataDetalhe.vue'
 import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
+import SbStickyHScroll from 'src/components/common/SbStickyHScroll.vue'
 import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
@@ -948,6 +951,7 @@ const searchFocused  = ref(false)
 const showAdvanced   = ref(false)
 const accountOptions = ref([])
 const currentSort    = ref('-create_time')
+const tabelaWrap     = ref(null)  // wrapper da tabela (barra horizontal fixa, CUSTO-14)
 const todayStats     = ref(null)
 const periodKpis     = ref(null)  // cascata do período filtrado (CUSTO-14)
 const todayLoading   = ref(false)
@@ -996,7 +1000,8 @@ const columns = [
   { name: 'producao',  label: 'CUSTO DE PRODUÇÃO',    field: 'producao',       sortable: false, align: 'right',  style: 'min-width:95px'  },
   { name: 'embalagens', label: 'EMBALAGENS',          field: 'embalagens',     sortable: false, align: 'right',  style: 'min-width:90px'  },
   { name: 'produto_custo', label: 'CUSTO DO PRODUTO', field: 'produto',        sortable: false, align: 'right',  style: 'min-width:100px' },
-  { name: 'lucro_bruto', label: 'LUCRO BRUTO',        field: 'lucro_bruto',    sortable: false, align: 'right',  style: 'min-width:115px' },
+  // ordenável pelo cabeçalho: ordem pela margem de contribuição (%), pedidos sem cascata no fim
+  { name: 'lucro_bruto', label: 'LUCRO BRUTO · MARGEM %', field: 'lucro_bruto', sortable: true, align: 'right',  style: 'min-width:130px' },
 ]
 
 // ── Opções ─────────────────────────────────────────────────────────────────
@@ -1236,6 +1241,10 @@ function applyAdvanced() {
 
 function applySort(val) {
   currentSort.value = val
+  // reflete no cabeçalho quando a ordem escolhida no menu tem coluna correspondente (CUSTO-14)
+  const campo = val.replace(/^-/, '')
+  pagination.value.sortBy = Object.keys(SORT_FIELDS).find(k => SORT_FIELDS[k] === campo) || null
+  pagination.value.descending = val.startsWith('-')
   loadOrders()
 }
 
@@ -1307,9 +1316,16 @@ async function loadOrders(pg = null) {
   }
 }
 
+// Cabeçalho ordenável → `sort` da API (CUSTO-14); antes o clique no cabeçalho não ordenava nada
+const SORT_FIELDS = { data: 'create_time', bruto: 'total_amount', lucro_bruto: 'resultado__margem_contribuicao' }
+
 function onRequest(requestProps) {
+  const { sortBy, descending } = requestProps.pagination
   pagination.value.page = requestProps.pagination.page
   pagination.value.rowsPerPage = requestProps.pagination.rowsPerPage
+  pagination.value.sortBy = sortBy
+  pagination.value.descending = descending
+  if (sortBy && SORT_FIELDS[sortBy]) currentSort.value = (descending ? '-' : '') + SORT_FIELDS[sortBy]
   loadOrders(requestProps.pagination.page)
 }
 
@@ -1635,6 +1651,8 @@ onMounted(() => {
 
 /* ── Tabela ────────────────────────────────────────────────── */
 .table-container { background: #fff; }
+/* CUSTO-14: sem overflow no wrapper — a barra fixa (SbStickyHScroll) precisa grudar na tela */
+.table-container.table-responsive { overflow: visible; }
 .shopee-table { background: #fff; }
 
 :deep(.shopee-table .q-table__top) { display: none; }

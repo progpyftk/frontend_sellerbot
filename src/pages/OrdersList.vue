@@ -544,7 +544,7 @@
     <CascataKpis v-if="periodKpis?.resultado" :kpis="periodKpis.resultado" canal="ml" />
 
     <!-- ── TABELA ─────────────────────────────────────────── -->
-    <div class="table-wrapper table-responsive">
+    <div ref="tabelaWrap" class="table-wrapper table-responsive">
       <SbTableScrollHint />
       <q-table :rows="filteredOrders" :columns="columns" row-key="order_id" flat :loading="loading"
         v-model:pagination="pagination" @request="onRequest" binary-state-sort
@@ -824,6 +824,8 @@
 
         <template #loading><q-inner-loading showing color="primary" /></template>
       </q-table>
+      <!-- CUSTO-14: barra horizontal grudada no rodapé da tela, espelhando a da tabela -->
+      <SbStickyHScroll :container="tabelaWrap" />
     </div>
 
     <!-- ══════════════════════════════════════════════════ -->
@@ -1381,6 +1383,7 @@
 import { ref, onMounted, reactive, computed, watch } from 'vue'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
+import SbStickyHScroll from 'src/components/common/SbStickyHScroll.vue'
 import CascataCelula from 'src/components/pedidos/CascataCelula.vue'
 import CascataDetalhe from 'src/components/pedidos/CascataDetalhe.vue'
 import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
@@ -1388,6 +1391,12 @@ import { motivoDaLinha, resultadoDaLinha } from 'src/utils/resultadoPedido'
 import { useQuasar, copyToClipboard, date } from 'quasar'
 
 const $q = useQuasar()
+const tabelaWrap = ref(null)  // wrapper da tabela (barra horizontal fixa, CUSTO-14)
+// Cabeçalho ordenável → campo de ordenação da API (o nome da coluna não é o campo do backend)
+const SORT_FIELDS = {
+  data_venda: 'date_created', venda: 'total_amount', unidades: 'units',
+  lucro_bruto: 'resultado__margem_contribuicao',
+}
 
 // ============================================================================
 // 0. PACK GROUPING
@@ -1496,7 +1505,8 @@ const columns = [
   { name: 'producao',     label: 'CUSTO DE PRODUÇÃO',  field: 'producao',      align: 'right' },
   { name: 'embalagens',   label: 'EMBALAGENS',         field: 'embalagens',    align: 'right' },
   { name: 'produto_custo', label: 'CUSTO DO PRODUTO',  field: 'produto',       align: 'right' },
-  { name: 'lucro_bruto',  label: 'LUCRO BRUTO',        field: 'lucro_bruto',   align: 'right' },
+  // ordenável pelo cabeçalho: a ordem é pela margem de contribuição (%), pedidos sem cascata no fim
+  { name: 'lucro_bruto',  label: 'LUCRO BRUTO · MARGEM %', field: 'lucro_bruto', align: 'right', sortable: true },
 ]
 
 // Soma de unidades do pedido (pack soma todos os sub-orders)
@@ -1726,7 +1736,7 @@ const onRequest = async (props) => {
 
     const params = {
       page, page_size: rowsPerPage,
-      ordering: descending ? `-${sortBy}` : sortBy,
+      ordering: (() => { const f = SORT_FIELDS[sortBy] || sortBy; return descending ? `-${f}` : f })(),
       search:                  filters.search || undefined,
       account:                 filters.account?.length         ? filters.account.join(',')         : undefined,
       status:                  filters.status?.length          ? filters.status.join(',')          : undefined,
@@ -2680,6 +2690,8 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 .orders-table  { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
 .orders-table :deep(.q-table__top)    { display: none; }
 .orders-table :deep(.q-table__bottom) { border-top: 1px solid #f0f2f5; font-size: 12px; }
+/* CUSTO-14: sem overflow no wrapper — senão a barra fixa (SbStickyHScroll) grudaria nele e não na tela */
+.table-wrapper.table-responsive { overflow: visible; }
 /* CUSTO-14: cabeçalho e rolagem horizontal fixos. O `.q-table__middle` vira o scrollport (altura
    limitada à janela): o cabeçalho gruda no topo dele e a barra horizontal fica sempre visível no rodapé
    da tabela, sem precisar rolar a página até o fim. A coluna do produto também fica fixa à esquerda. */
