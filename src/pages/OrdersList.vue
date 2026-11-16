@@ -30,47 +30,75 @@
       </div>
 
       <template v-if="todayLoading || !todayStats">
-        <div class="today-card today-card--skeleton" v-for="n in 3" :key="n" />
+        <div class="today-card today-card--skeleton" v-for="n in 5" :key="n" />
       </template>
 
       <template v-else>
-        <!-- Lucro bruto do dia (CUSTO-14) -->
-        <div class="today-card" :class="(todayStats.resultado?.lucro_bruto ?? 0) >= 0 ? 'today-card--pos' : 'today-card--neg'">
-          <div class="today-card-icon">
-            <q-icon name="trending_up" size="16px" />
-          </div>
+        <!-- Cards do dia (CUSTO-14, ordem do dono): GMV · Vendas · Ads · Lucro bruto · Margem de contribuição -->
+        <div class="today-card today-card--neutral">
+          <div class="today-card-icon"><q-icon name="shopping_cart" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.resultado?.lucro_bruto) }}</div>
-            <div class="today-card-label">Lucro bruto</div>
-            <div class="today-card-sub" v-if="todayStats.resultado?.margem_contribuicao != null">
-              {{ (todayStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') }}% do GMV · {{ todayStats.resultado.pedidos }} pedidos
-            </div>
+            <div class="today-card-val">{{ formatCurrency(todayStats.total_amount) }}</div>
+            <div class="today-card-label">GMV</div>
+            <div class="today-card-sub">valor bruto vendido hoje</div>
           </div>
         </div>
 
-        <!-- Qtd de vendas -->
         <div class="today-card today-card--neutral">
-          <div class="today-card-icon">
-            <q-icon name="receipt_long" size="16px" />
-          </div>
+          <div class="today-card-icon"><q-icon name="receipt_long" size="16px" /></div>
           <div class="today-card-body">
             <div class="today-card-val">{{ todayStats.count }}</div>
             <div class="today-card-label">Vendas</div>
-            <div class="today-card-sub">{{ formatCurrency(todayStats.total_amount) }} bruto</div>
+            <div class="today-card-sub"><template v-if="todayStats.refunded_count">{{ todayStats.refunded_count }} devolvida{{ todayStats.refunded_count !== 1 ? 's' : '' }} · </template>{{ todayStats.order_count }} pedidos</div>
           </div>
         </div>
 
-        <!-- Lucro médio por venda -->
-        <div class="today-card" :class="(todayStats.resultado?.lucro_bruto_medio ?? 0) >= 0 ? 'today-card--pos' : 'today-card--neg'">
-          <div class="today-card-icon">
-            <q-icon name="equalizer" size="16px" />
-          </div>
+        <div class="today-card today-card--neutral">
+          <div class="today-card-icon"><q-icon name="campaign" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.resultado?.lucro_bruto_medio) }}</div>
-            <div class="today-card-label">Lucro bruto / pedido</div>
-            <div class="today-card-sub" v-if="todayStats.resultado?.pedidos">
-              preparação {{ formatCurrency(todayStats.resultado.preparacao) }} no dia
+            <div class="today-card-val">{{ formatCurrency(todayStats.resultado?.ads) }}</div>
+            <div class="today-card-label">Ads</div>
+            <div class="today-card-sub">
+              <template v-if="todayStats.resultado?.gmv">
+                {{ (todayStats.resultado.ads / todayStats.resultado.gmv * 100).toFixed(1).replace('.', ',') }}% do GMV
+              </template>
+              <span class="text-grey-5"> · atualiza a cada 2h</span>
             </div>
+          </div>
+        </div>
+
+        <div class="today-card"
+          :class="todayStats.resultado?.pedidos
+            ? (todayStats.resultado.lucro_bruto >= 0 ? 'today-card--pos' : 'today-card--neg')
+            : 'today-card--neutral'">
+          <div class="today-card-icon"><q-icon name="trending_up" size="16px" /></div>
+          <div class="today-card-body">
+            <div class="today-card-val">{{ todayStats.resultado?.pedidos ? formatCurrency(todayStats.resultado.lucro_bruto) : '—' }}</div>
+            <div class="today-card-label">Lucro bruto</div>
+            <div class="today-card-sub">
+              <template v-if="todayStats.resultado?.pedidos">
+                {{ formatCurrency(todayStats.resultado.lucro_bruto_medio) }} / pedido
+                <span v-if="todayStats.resultado.pedidos_custo_incompleto" class="text-orange-6">
+                  · {{ todayStats.resultado.pedidos_custo_incompleto }} c/ custo incompleto
+                </span>
+              </template>
+              <template v-else>calculado a cada 2h</template>
+            </div>
+          </div>
+        </div>
+
+        <div class="today-card"
+          :class="todayStats.resultado?.margem_contribuicao != null
+            ? (todayStats.resultado.margem_contribuicao >= 0 ? 'today-card--pos' : 'today-card--neg')
+            : 'today-card--neutral'">
+          <div class="today-card-icon"><q-icon name="percent" size="16px" /></div>
+          <div class="today-card-body">
+            <div class="today-card-val">
+              {{ todayStats.resultado?.margem_contribuicao != null
+                ? (todayStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') + '%' : '—' }}
+            </div>
+            <div class="today-card-label">Margem de contribuição</div>
+            <div class="today-card-sub">lucro bruto ÷ GMV</div>
           </div>
         </div>
       </template>

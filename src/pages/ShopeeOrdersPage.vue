@@ -38,90 +38,77 @@
       </div>
 
       <template v-if="todayLoading || !todayStats">
-        <div class="today-card today-card--skeleton" v-for="n in 3" :key="n" />
+        <div class="today-card today-card--skeleton" v-for="n in 5" :key="n" />
       </template>
 
       <template v-else>
+        <!-- Cards do dia (CUSTO-14, ordem do dono): GMV · Vendas · Ads · Lucro bruto · Margem de contribuição -->
+        <div class="today-card today-card--neutral">
+          <div class="today-card-icon"><q-icon name="shopping_cart" size="16px" /></div>
+          <div class="today-card-body">
+            <div class="today-card-val">{{ formatCurrency(todayStats.gmv) }}</div>
+            <div class="today-card-label">GMV</div>
+            <div class="today-card-sub">valor bruto vendido hoje</div>
+          </div>
+        </div>
 
-        <!-- Pedidos pagos -->
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="receipt_long" size="16px" /></div>
           <div class="today-card-body">
             <div class="today-card-val">{{ todayStats.count_paid }}</div>
-            <div class="today-card-label">Pedidos pagos</div>
-            <div class="today-card-sub">
-              <span v-if="todayStats.count_cancelled > 0" class="text-red-5">
-                {{ todayStats.count_cancelled }} cancelado{{ todayStats.count_cancelled !== 1 ? 's' : '' }}
-              </span>
-              <span v-if="todayStats.count_cancelled > 0 && todayStats.count_unpaid > 0"> · </span>
-              <span v-if="todayStats.count_unpaid > 0" class="text-orange-6">
-                {{ todayStats.count_unpaid }} aguardando pagamento
-              </span>
-              <span v-if="todayStats.count_cancelled === 0 && todayStats.count_unpaid === 0">
-                {{ todayStats.count }} total
-              </span>
-            </div>
+            <div class="today-card-label">Vendas</div>
+            <div class="today-card-sub"><span v-if="todayStats.count_cancelled > 0" class="text-red-5">{{ todayStats.count_cancelled }} cancelado{{ todayStats.count_cancelled !== 1 ? 's' : '' }}</span><span v-if="todayStats.count_cancelled > 0 && todayStats.count_unpaid > 0"> · </span><span v-if="todayStats.count_unpaid > 0" class="text-orange-6">{{ todayStats.count_unpaid }} aguardando pagamento</span><span v-if="!todayStats.count_cancelled && !todayStats.count_unpaid">pedidos pagos</span></div>
           </div>
         </div>
 
-        <!-- Receita Líquida real (escrow) -->
         <div class="today-card today-card--neutral">
-          <div class="today-card-icon"><q-icon name="payments" size="16px" /></div>
+          <div class="today-card-icon"><q-icon name="campaign" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.faturamento) }}</div>
-            <div class="today-card-label">Receita líquida</div>
+            <div class="today-card-val">{{ formatCurrency(todayStats.resultado?.ads) }}</div>
+            <div class="today-card-label">Ads</div>
             <div class="today-card-sub">
-              <span :class="todayStats.revenue_basis === 'escrow' ? 'text-primary' : 'text-orange-6'">
-                {{ revenueBasisLabel(todayStats) }}
-              </span>
-              <span v-if="todayStats.revenue_basis !== 'escrow'" class="text-grey-5">
-                · {{ todayStats.orders_with_escrow ?? todayStats.escrow_count ?? 0 }}/{{ todayStats.count_paid }} c/ escrow
-              </span>
+              <template v-if="todayStats.resultado?.gmv">
+                {{ (todayStats.resultado.ads / todayStats.resultado.gmv * 100).toFixed(1).replace('.', ',') }}% do GMV
+              </template>
+              <span class="text-grey-5"> · atualiza a cada 2h</span>
             </div>
           </div>
         </div>
 
-        <!-- Lucro bruto do dia (CUSTO-14) -->
         <div class="today-card"
           :class="todayStats.resultado?.pedidos
             ? (todayStats.resultado.lucro_bruto >= 0 ? 'today-card--pos' : 'today-card--neg')
             : 'today-card--neutral'">
           <div class="today-card-icon"><q-icon name="trending_up" size="16px" /></div>
           <div class="today-card-body">
-            <template v-if="todayStats.resultado?.pedidos">
-              <div class="today-card-val">{{ formatCurrency(todayStats.resultado.lucro_bruto) }}</div>
-              <div class="today-card-label">
-                Lucro bruto
-                <span v-if="todayStats.resultado.margem_contribuicao != null" class="today-card-badge">
-                  {{ (todayStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') }}%
+            <div class="today-card-val">{{ todayStats.resultado?.pedidos ? formatCurrency(todayStats.resultado.lucro_bruto) : '—' }}</div>
+            <div class="today-card-label">Lucro bruto</div>
+            <div class="today-card-sub">
+              <template v-if="todayStats.resultado?.pedidos">
+                {{ formatCurrency(todayStats.resultado.lucro_bruto_medio) }} / pedido
+                <span v-if="todayStats.resultado.pedidos_custo_incompleto" class="text-orange-6">
+                  · {{ todayStats.resultado.pedidos_custo_incompleto }} c/ custo incompleto
                 </span>
-              </div>
-              <div class="today-card-sub">
-                <span v-if="todayStats.resultado.pedidos_custo_incompleto" class="text-orange-5">
-                  {{ todayStats.resultado.pedidos_custo_incompleto }} c/ custo incompleto
-                </span>
-                <span v-else>{{ todayStats.resultado.pedidos }} pedidos calculados</span>
-              </div>
-            </template>
-            <template v-else>
-              <div class="today-card-val today-card-val--muted">—</div>
-              <div class="today-card-label">Lucro bruto</div>
-              <div class="today-card-sub">calculado no fim do sync</div>
-            </template>
+              </template>
+              <template v-else>calculado a cada 2h</template>
+            </div>
           </div>
         </div>
 
-        <!-- Lucro bruto médio -->
-        <div v-if="todayStats.resultado?.pedidos"
-          class="today-card" :class="todayStats.resultado.lucro_bruto_medio >= 0 ? 'today-card--pos' : 'today-card--neg'">
-          <div class="today-card-icon"><q-icon name="equalizer" size="16px" /></div>
+        <div class="today-card"
+          :class="todayStats.resultado?.margem_contribuicao != null
+            ? (todayStats.resultado.margem_contribuicao >= 0 ? 'today-card--pos' : 'today-card--neg')
+            : 'today-card--neutral'">
+          <div class="today-card-icon"><q-icon name="percent" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.resultado.lucro_bruto_medio) }}</div>
-            <div class="today-card-label">Lucro bruto / pedido</div>
-            <div class="today-card-sub">preparação {{ formatCurrency(todayStats.resultado.preparacao) }} no dia</div>
+            <div class="today-card-val">
+              {{ todayStats.resultado?.margem_contribuicao != null
+                ? (todayStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') + '%' : '—' }}
+            </div>
+            <div class="today-card-label">Margem de contribuição</div>
+            <div class="today-card-sub">lucro bruto ÷ GMV</div>
           </div>
         </div>
-
       </template>
     </div>
 
@@ -947,7 +934,7 @@ import { useQuasar } from 'quasar'
 import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
-import { isDirectDeliveryCarrier, isEscrowReal, orderRevenue, revenueBasisLabel } from 'src/utils/shopeeFinance'
+import { isDirectDeliveryCarrier, isEscrowReal, orderRevenue } from 'src/utils/shopeeFinance'
 
 const $q = useQuasar()
 const authStore = useStore()
