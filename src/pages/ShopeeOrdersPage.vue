@@ -901,10 +901,35 @@
           <div class="fadv-section">
             <div class="fadv-section-label">Período personalizado</div>
             <div class="fadv-range-row">
-              <input type="date" class="fadv-input" v-model="filters.dateFrom" />
+              <input type="date" class="fadv-input" v-model="filters.dateFrom" @input="filters.quickDate = null" />
               <span class="fadv-range-sep">→</span>
-              <input type="date" class="fadv-input" v-model="filters.dateTo" />
+              <input type="date" class="fadv-input" v-model="filters.dateTo" @input="filters.quickDate = null" />
             </div>
+          </div>
+
+          <!-- Margem de contribuição (%) — CUSTO-15 -->
+          <div class="fadv-section">
+            <div class="fadv-section-label">Margem de contribuição (%)</div>
+            <div class="fadv-chips">
+              <button v-for="f in FAIXAS_MARGEM" :key="f.label" type="button"
+                :class="['fadv-chip', faixaAtiva(filters.margemPctMin, filters.margemPctMax)?.label === f.label && 'fadv-chip--on']"
+                @click="aplicarFaixaMargem(f)">{{ f.label }}</button>
+            </div>
+            <div class="fadv-range-row">
+              <input type="number" step="0.1" placeholder="Mín %" class="fadv-input" v-model.number="filters.margemPctMin" />
+              <span class="fadv-range-sep">→</span>
+              <input type="number" step="0.1" placeholder="Máx %" class="fadv-input" v-model.number="filters.margemPctMax" />
+            </div>
+            <div class="fadv-sort-row">
+              <span class="fadv-sort-label">Ordenar pela margem</span>
+              <button type="button"
+                :class="['fadv-chip', currentSort === 'resultado__margem_contribuicao' && 'fadv-chip--on']"
+                @click="marcarOrdemMargem(false)">↑ Crescente</button>
+              <button type="button"
+                :class="['fadv-chip', currentSort === '-resultado__margem_contribuicao' && 'fadv-chip--on']"
+                @click="marcarOrdemMargem(true)">↓ Decrescente</button>
+            </div>
+            <div class="fadv-hint">Pedidos sem cascata (cancelados, fora do estudo) não entram no filtro de margem.</div>
           </div>
 
           <div class="fadv-section">
@@ -938,6 +963,7 @@ import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 import { isDirectDeliveryCarrier, isEscrowReal, orderRevenue } from 'src/utils/shopeeFinance'
+import { FAIXAS_MARGEM, faixaAtiva, paramsMargem, textoFaixaMargem } from 'src/utils/resultadoPedido'
 
 const $q = useQuasar()
 const authStore = useStore()
@@ -982,6 +1008,8 @@ const filters = reactive({
   dateTo:     null,
   amountMin:  null,
   amountMax:  null,
+  margemPctMin: null,   // margem de contribuição em % (CUSTO-15)
+  margemPctMax: null,
 })
 
 // ── Colunas ────────────────────────────────────────────────────────────────
@@ -1043,7 +1071,8 @@ const sortOptions = [
   { value: '-pay_time',     label: 'Último pago'   },
   { value: '-resultado__lucro_bruto',        label: 'Maior lucro bruto' },
   { value: 'resultado__lucro_bruto',         label: 'Menor lucro bruto' },
-  { value: 'resultado__margem_contribuicao', label: 'Pior margem %'     },
+  { value: 'resultado__margem_contribuicao',  label: 'Pior margem %'     },
+  { value: '-resultado__margem_contribuicao', label: 'Melhor margem %'   },
 ]
 
 // ── Computeds ──────────────────────────────────────────────────────────────
@@ -1051,13 +1080,18 @@ const currentSortLabel = computed(() =>
   sortOptions.find(o => o.value === currentSort.value)?.label || 'Ordenar'
 )
 
+const temFiltroMargemPct = computed(() =>
+  Object.keys(paramsMargem(filters.margemPctMin, filters.margemPctMax)).length > 0)
+
 const advancedFilterCount = computed(() =>
-  [filters.dateFrom, filters.dateTo, filters.amountMin, filters.amountMax].filter(Boolean).length
+  [filters.dateFrom || filters.dateTo, filters.amountMin || filters.amountMax, temFiltroMargemPct.value]
+    .filter(Boolean).length
 )
 
 const hasActiveFilters = computed(() =>
   filters.search || filters.account.length || filters.status.length ||
-  filters.quickDate || filters.dateFrom || filters.dateTo
+  filters.quickDate || filters.dateFrom || filters.dateTo ||
+  filters.amountMin || filters.amountMax || temFiltroMargemPct.value
 )
 
 const activeFilterTags = computed(() => {
@@ -1077,6 +1111,15 @@ const activeFilterTags = computed(() => {
   if (filters.quickDate) {
     const opt = quickDateOptions.find(o => o.value === filters.quickDate)
     tags.push({ key: 'quickDate', value: filters.quickDate, catLabel: 'Período', label: opt?.label, icon: 'calendar_today' })
+  } else if (filters.dateFrom || filters.dateTo) {
+    const br = (d) => (d ? d.split('-').reverse().join('/') : '…')
+    tags.push({ key: 'quickDate', value: 'custom', catLabel: 'Período', label: br(filters.dateFrom) + ' → ' + br(filters.dateTo), icon: 'calendar_today' })
+  }
+  if (filters.amountMin || filters.amountMax) {
+    tags.push({ key: 'amount', value: 'amount', catLabel: 'Valor', label: 'R$' + (filters.amountMin || '0') + ' → R$' + (filters.amountMax || '∞'), icon: 'attach_money' })
+  }
+  if (temFiltroMargemPct.value) {
+    tags.push({ key: 'margemPct', value: 'margemPct', catLabel: 'Margem %', label: textoFaixaMargem(filters.margemPctMin, filters.margemPctMax), icon: 'percent' })
   }
   return tags
 })
@@ -1214,6 +1257,10 @@ function toggleFilter(key, value) {
 function removeFilterTag(tag) {
   if (tag.key === 'quickDate') {
     filters.quickDate = null; filters.dateFrom = null; filters.dateTo = null
+  } else if (tag.key === 'amount') {
+    filters.amountMin = null; filters.amountMax = null
+  } else if (tag.key === 'margemPct') {
+    filters.margemPctMin = null; filters.margemPctMax = null
   } else {
     const arr = filters[tag.key]
     const idx = arr.indexOf(tag.value)
@@ -1226,12 +1273,32 @@ function clearFilters() {
   filters.search = ''; filters.account = []; filters.status = []
   filters.shipping_carrier = []
   filters.quickDate = null; filters.dateFrom = null; filters.dateTo = null
+  filters.amountMin = null; filters.amountMax = null
+  filters.margemPctMin = null; filters.margemPctMax = null
   loadOrders()
 }
 
 function clearAdvanced() {
+  filters.quickDate = null
   filters.dateFrom = null; filters.dateTo = null
   filters.amountMin = null; filters.amountMax = null
+  filters.margemPctMin = null; filters.margemPctMax = null
+}
+
+// Faixa de margem: marca a faixa e já ordena pela margem crescente (CUSTO-15)
+function aplicarFaixaMargem(faixa) {
+  const ativa = faixaAtiva(filters.margemPctMin, filters.margemPctMax)
+  if (ativa && ativa.label === faixa.label) {
+    filters.margemPctMin = null; filters.margemPctMax = null
+  } else {
+    filters.margemPctMin = faixa.min; filters.margemPctMax = faixa.max
+    marcarOrdemMargem(false)
+  }
+}
+function marcarOrdemMargem(descending) {
+  currentSort.value = (descending ? '-' : '') + 'resultado__margem_contribuicao'
+  pagination.value.sortBy = 'lucro_bruto'
+  pagination.value.descending = descending
 }
 
 function applyAdvanced() {
@@ -1256,13 +1323,15 @@ function setView(status) {
 function applyQuickDate(val) {
   filters.quickDate = val
   const now = new Date()
-  const today = now.toISOString().split('T')[0]
+  // data local (toISOString usa UTC e, depois das 21h, "hoje" virava amanhã)
+  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+  const today = iso(now)
   if (val === 'today') {
     filters.dateFrom = today; filters.dateTo = today
   } else {
     const days = val === '7d' ? 7 : val === '30d' ? 30 : 90
     const from = new Date(now); from.setDate(from.getDate() - days)
-    filters.dateFrom = from.toISOString().split('T')[0]; filters.dateTo = today
+    filters.dateFrom = iso(from); filters.dateTo = today
   }
   loadOrders()
 }
@@ -1303,6 +1372,7 @@ async function loadOrders(pg = null) {
     if (filters.dateTo)   axiosParams.date_to   = filters.dateTo
     if (filters.amountMin) axiosParams.amount_min = filters.amountMin
     if (filters.amountMax) axiosParams.amount_max = filters.amountMax
+    Object.assign(axiosParams, paramsMargem(filters.margemPctMin, filters.margemPctMax))
 
     const { data } = await ShopeeService.listOrders(axiosParams)
     orders.value = data.results ?? data
@@ -1982,6 +2052,17 @@ onMounted(() => {
 }
 .fadv-range-row { display: flex; align-items: center; gap: 8px; }
 .fadv-range-sep { color: #6b8498; font-size: 12px; }
+/* CUSTO-15: faixas e ordenação da margem */
+.fadv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.fadv-chip {
+  border: 1px solid #c9d6df; background: #fff; color: #36505f; border-radius: 16px;
+  padding: 3px 10px; font-size: 12px; cursor: pointer; line-height: 18px;
+}
+.fadv-chip:hover { border-color: #ee4d2d; }
+.fadv-chip--on { background: #ee4d2d; border-color: #ee4d2d; color: #fff; }
+.fadv-sort-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fadv-sort-label { font-size: 12px; color: #4c6272; margin-right: 2px; }
+.fadv-hint { font-size: 11px; color: #6b8498; margin-top: 8px; }
 .fadv-input {
   height: 34px; width: 100px; padding: 0 10px;
   border: 1.5px solid #b8cbd6; border-radius: 8px;

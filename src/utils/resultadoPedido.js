@@ -193,3 +193,41 @@ export function indicePorDiaConta(linhas) {
 export function margemTexto(lucro, gmv) {
   return Number(gmv) ? `${((Number(lucro) / Number(gmv)) * 100).toFixed(1).replace('.', ',')}%` : '—'
 }
+
+// ── Filtro por margem de contribuição (CUSTO-15) ───────────────────────────
+// A API guarda a margem como fração do GMV; a tela trabalha em %.
+export const FAIXAS_MARGEM = [
+  { label: 'Negativa', min: null, max: 0 },
+  { label: '0 a 10%', min: 0, max: 10 },
+  { label: '10 a 20%', min: 10, max: 20 },
+  { label: '20 a 30%', min: 20, max: 30 },
+  { label: '30% ou mais', min: 30, max: null },
+]
+
+const _num = (v) => (v === null || v === undefined || v === '' || Number.isNaN(Number(v)) ? null : Number(v))
+
+/** Parâmetros `margem_contribuicao__gte/lte` (fração) a partir de mínimo/máximo em %. */
+export function paramsMargem(minPct, maxPct) {
+  const p = {}
+  const min = _num(minPct)
+  const max = _num(maxPct)
+  if (min !== null) p.margem_contribuicao__gte = +(min / 100).toFixed(6)
+  if (max !== null) p.margem_contribuicao__lte = +(max / 100).toFixed(6)
+  return p
+}
+
+/** Texto da faixa para o índice de filtros: "10% → 20%", "… → 0%". */
+export function textoFaixaMargem(minPct, maxPct) {
+  const fmt = (v) => `${String(v).replace('.', ',')}%`
+  const min = _num(minPct)
+  const max = _num(maxPct)
+  if (min === null && max === null) return ''
+  return `${min === null ? '…' : fmt(min)} → ${max === null ? '∞' : fmt(max)}`
+}
+
+/** A faixa pré-definida que corresponde ao mínimo/máximo atuais (para destacar o chip). */
+export function faixaAtiva(minPct, maxPct) {
+  const min = _num(minPct)
+  const max = _num(maxPct)
+  return FAIXAS_MARGEM.find((f) => f.min === min && f.max === max) || null
+}

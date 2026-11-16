@@ -87,3 +87,21 @@ describe('agregarCascata (dashboard, CUSTO-14)', async () => {
     expect(variacaoPct(10, 0)).toBeNull()
   })
 })
+
+describe('filtro de margem (CUSTO-15)', () => {
+  it('converte % em fração e ignora vazio', async () => {
+    const { paramsMargem } = await import('src/utils/resultadoPedido')
+    expect(paramsMargem(10, 20)).toEqual({ margem_contribuicao__gte: 0.1, margem_contribuicao__lte: 0.2 })
+    expect(paramsMargem(null, 0)).toEqual({ margem_contribuicao__lte: 0 })
+    expect(paramsMargem('', undefined)).toEqual({})
+    expect(paramsMargem(-5.5, null)).toEqual({ margem_contribuicao__gte: -0.055 })
+  })
+  it('texto e faixa ativa', async () => {
+    const { textoFaixaMargem, faixaAtiva } = await import('src/utils/resultadoPedido')
+    expect(textoFaixaMargem(10, null)).toBe('10% → ∞')
+    expect(textoFaixaMargem(null, 0)).toBe('… → 0%')
+    expect(textoFaixaMargem(null, null)).toBe('')
+    expect(faixaAtiva(0, 10).label).toBe('0 a 10%')
+    expect(faixaAtiva(5, 10)).toBeNull()
+  })
+})

@@ -493,6 +493,17 @@
               </div>
             </div>
 
+            <div v-if="temFiltroMargemPct" class="fb-index-row">
+              <div class="fb-index-cat"><q-icon name="percent" size="12px" />Margem %</div>
+              <div class="fb-index-pills">
+                <span class="fb-index-pill fb-index-pill--teal"
+                  @click="filters.margemPctMin = null; filters.margemPctMax = null">
+                  {{ textoFaixaMargem(filters.margemPctMin, filters.margemPctMax) }}
+                  <q-icon name="close" size="9px" />
+                </span>
+              </div>
+            </div>
+
             <div v-if="filters.is_catalog != null" class="fb-index-row">
               <div class="fb-index-cat"><q-icon name="auto_awesome" size="12px" />Catálogo</div>
               <div class="fb-index-pills">
@@ -1277,6 +1288,38 @@
 
             <div class="fadv-divider" />
 
+            <!-- Seção: Margem de contribuição (%) — CUSTO-15 -->
+            <div class="fadv-section">
+              <div class="fadv-section-title">
+                <q-icon name="percent" size="15px" color="primary" />
+                Margem de contribuição (%)
+              </div>
+              <div class="fadv-chips">
+                <button v-for="f in FAIXAS_MARGEM" :key="f.label" type="button"
+                  :class="['fadv-chip', faixaAtiva(filters.margemPctMin, filters.margemPctMax)?.label === f.label && 'fadv-chip--on']"
+                  @click="aplicarFaixaMargem(f)">{{ f.label }}</button>
+              </div>
+              <div class="fadv-row">
+                <q-input v-model.number="filters.margemPctMin" type="number" label="Mínimo %"
+                  suffix="%" outlined dense bg-color="white" color="primary" class="fadv-input" clearable stack-label />
+                <span class="fadv-range-sep">→</span>
+                <q-input v-model.number="filters.margemPctMax" type="number" label="Máximo %"
+                  suffix="%" outlined dense bg-color="white" color="primary" class="fadv-input" clearable stack-label />
+              </div>
+              <div class="fadv-sort-row">
+                <span class="fadv-sort-label">Ordenar pela margem</span>
+                <button type="button"
+                  :class="['fadv-chip', pagination.sortBy === 'lucro_bruto' && !pagination.descending && 'fadv-chip--on']"
+                  @click="ordenarPorMargem(false)">↑ Crescente</button>
+                <button type="button"
+                  :class="['fadv-chip', pagination.sortBy === 'lucro_bruto' && pagination.descending && 'fadv-chip--on']"
+                  @click="ordenarPorMargem(true)">↓ Decrescente</button>
+              </div>
+              <div class="fadv-hint">Pedidos sem cascata (cancelados, fora do estudo) não entram no filtro de margem.</div>
+            </div>
+
+            <div class="fadv-divider" />
+
             <!-- Seção: Valor da Venda -->
             <div class="fadv-section">
               <div class="fadv-section-title">
@@ -1369,8 +1412,8 @@
         <div class="fadv-footer">
           <q-btn flat no-caps icon="filter_alt_off" label="Limpar filtros"
             color="red-5" @click="clearFilters" size="sm" />
-          <q-btn unelevated no-caps label="Fechar" color="primary"
-            v-close-popup size="sm" class="q-px-lg" />
+          <q-btn unelevated no-caps label="Aplicar" color="primary"
+            v-close-popup size="sm" class="q-px-lg" @click="buscar" />
         </div>
 
       </div>
@@ -1387,7 +1430,9 @@ import SbStickyHScroll from 'src/components/common/SbStickyHScroll.vue'
 import CascataCelula from 'src/components/pedidos/CascataCelula.vue'
 import CascataDetalhe from 'src/components/pedidos/CascataDetalhe.vue'
 import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
-import { motivoDaLinha, resultadoDaLinha } from 'src/utils/resultadoPedido'
+import {
+  FAIXAS_MARGEM, faixaAtiva, motivoDaLinha, paramsMargem, resultadoDaLinha, textoFaixaMargem,
+} from 'src/utils/resultadoPedido'
 import { useQuasar, copyToClipboard, date } from 'quasar'
 
 const $q = useQuasar()
@@ -1531,10 +1576,31 @@ const filters = reactive({
   priceMax: null,
   marginMin: null,
   marginMax: null,
+  margemPctMin: null,   // margem de contribuição em % (CUSTO-15)
+  margemPctMax: null,
   is_catalog: null,
   fulfilled: null,
   _substatus: null,   // filtro interno: 'ready_to_print' para smart view "Imprimir Etiqueta"
 })
+
+const temFiltroMargemPct = computed(() =>
+  Object.keys(paramsMargem(filters.margemPctMin, filters.margemPctMax)).length > 0)
+
+// Faixa de margem: aplica e já ordena pela margem crescente (pedido do dono em 16/11/2026)
+const aplicarFaixaMargem = (faixa) => {
+  const ativa = faixaAtiva(filters.margemPctMin, filters.margemPctMax)
+  if (ativa && ativa.label === faixa.label) {
+    filters.margemPctMin = null; filters.margemPctMax = null
+  } else {
+    filters.margemPctMin = faixa.min; filters.margemPctMax = faixa.max
+    pagination.value.sortBy = 'lucro_bruto'; pagination.value.descending = false
+  }
+  buscar()
+}
+const ordenarPorMargem = (descending) => {
+  pagination.value.sortBy = 'lucro_bruto'; pagination.value.descending = descending
+  buscar()
+}
 
 const hasActiveFilters = computed(() =>
   filters.search ||
@@ -1546,6 +1612,7 @@ const hasActiveFilters = computed(() =>
   filters.dateFrom || filters.dateTo ||
   filters.priceMin || filters.priceMax ||
   filters.marginMin != null || filters.marginMax != null ||
+  temFiltroMargemPct.value ||
   filters.is_catalog != null ||
   filters.fulfilled != null
 )
@@ -1557,6 +1624,7 @@ const advancedFilterCount = computed(() => [
   filters.dateFrom || filters.dateTo ? 1 : 0,
   filters.priceMin || filters.priceMax ? 1 : 0,
   filters.marginMin != null || filters.marginMax != null ? 1 : 0,
+  temFiltroMargemPct.value ? 1 : 0,
   filters.is_catalog != null ? 1 : 0,
   filters.fulfilled != null ? 1 : 0,
 ].reduce((a, b) => a + (b ? 1 : 0), 0))
@@ -1603,7 +1671,9 @@ const sortOptions = [
   // CUSTO-14: ordenação server-side pela cascata
   { label: 'Lucro bruto ↓',       field: 'resultado__lucro_bruto', desc: true },
   { label: 'Lucro bruto ↑',       field: 'resultado__lucro_bruto', desc: false },
-  { label: 'Margem % ↑ (piores)', field: 'resultado__margem_contribuicao', desc: false },
+  // pelo nome da coluna, para o cabeçalho "Lucro bruto · Margem %" acompanhar (CUSTO-15)
+  { label: 'Margem % ↑ (piores)',   field: 'lucro_bruto', desc: false },
+  { label: 'Margem % ↓ (melhores)', field: 'lucro_bruto', desc: true  },
 ]
 const currentSortLabel = computed(() => {
   const opt = sortOptions.find(o => o.field === pagination.value.sortBy && o.desc === pagination.value.descending)
@@ -1657,7 +1727,8 @@ const accountOptions = computed(() => availableAccounts.value)
 const resetFiltersState = () => Object.assign(filters, {
   search: '', account: [], status: [], shipment_status: [], logistic_type: [], cost_type: [],
   dateFrom: null, dateTo: null, priceMin: null, priceMax: null,
-  marginMin: null, marginMax: null, is_catalog: null, fulfilled: null,
+  marginMin: null, marginMax: null, margemPctMin: null, margemPctMax: null,
+  is_catalog: null, fulfilled: null,
   _substatus: null,
 })
 const clearFilters = () => { resetFiltersState(); marginFilterMode.value = 'lucro_bruto'; buscar() }
@@ -1752,6 +1823,7 @@ const onRequest = async (props) => {
       [`${marginFilterMode.value}__lte`]: filters.marginMax != null ? filters.marginMax            : undefined,
       is_catalog:              filters.is_catalog != null      ? filters.is_catalog                : undefined,
       fulfilled:               filters.fulfilled  != null      ? filters.fulfilled                 : undefined,
+      ...paramsMargem(filters.margemPctMin, filters.margemPctMax),
     }
     Object.keys(params).forEach(k => params[k] == null && delete params[k])
     fetchPeriodKpis(params)  // KPIs do período com os MESMOS filtros (feedback #8)
@@ -2643,6 +2715,17 @@ onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
 }
 .fadv-divider { height: 1px; background: #f0f3f8; margin: 0 20px; }
 .fadv-row { display: flex; align-items: flex-end; gap: 8px; }
+/* CUSTO-15: faixas e ordenação da margem */
+.fadv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.fadv-chip {
+  border: 1px solid #c9d6df; background: #fff; color: #36505f; border-radius: 16px;
+  padding: 3px 10px; font-size: 12px; cursor: pointer; line-height: 18px;
+}
+.fadv-chip:hover { border-color: #1976d2; }
+.fadv-chip--on { background: #1976d2; border-color: #1976d2; color: #fff; }
+.fadv-sort-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fadv-sort-label { font-size: 12px; color: #4c6272; margin-right: 2px; }
+.fadv-hint { font-size: 11px; color: #6b8498; margin-top: 8px; }
 .fadv-row--col { flex-direction: column; gap: 6px; }
 .fb-date-input--dt { font-size: 12px; padding-right: 10px; }
 .fadv-input { flex: 1; min-width: 0; }
