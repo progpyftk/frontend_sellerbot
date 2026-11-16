@@ -9,6 +9,11 @@ import { api } from "src/boot/axios";
  * pela API nem registrados em log por este service.
  */
 export default {
+  /** Cascata GMV → lucro bruto por conta e dia (CUSTO-14), para o dashboard. */
+  getResultadoPedidosResumo(params) {
+    return api.get("/api/financeiro/resultado-pedidos/resumo/", { params });
+  },
+
   /** Lista os bancos suportados e os campos de credencial de cada um. */
   getBancos() {
     return api.get("/api/financeiro/bancos/");

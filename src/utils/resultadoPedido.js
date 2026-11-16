@@ -139,3 +139,57 @@ export function motivoDaLinha(row) {
   }
   return row.resultado_motivo || null;
 }
+
+const COLS_RESUMO = ['gmv', 'imposto', 'receita_liquida', 'taxas', 'frete', 'ads', 'custo_mao_de_obra', 'custo_embalagens', 'custo_produto', 'lucro_bruto']
+
+/**
+ * Soma as linhas de `/api/financeiro/resultado-pedidos/resumo/` das contas selecionadas.
+ * `contas` vazio = todas; `canais` limita a 'ml' / 'shopee'. Devolve o formato dos KPIs da cascata
+ * (mesmas chaves de `CascataKpis`) e a série diária (para sparkline), ou `null` sem linhas.
+ */
+export function agregarCascata(linhas, { contas = [], canais = ['ml', 'shopee'] } = {}) {
+  const sel = new Set(contas)
+  const filtradas = (linhas || []).filter((l) => canais.includes(l.canal) && (!sel.size || sel.has(l.conta)))
+  if (!filtradas.length) return null
+  const t = { pedidos: 0, pedidos_custo_incompleto: 0 }
+  for (const c of COLS_RESUMO) t[c] = 0
+  const dias = {}
+  for (const l of filtradas) {
+    t.pedidos += l.pedidos || 0
+    t.pedidos_custo_incompleto += l.pedidos_custo_incompleto || 0
+    for (const c of COLS_RESUMO) t[c] += Number(l[c] || 0)
+    if (l.data) {
+      const d = (dias[l.data] ||= { data: l.data, gmv: 0, imposto: 0, lucro_bruto: 0, ads: 0, pedidos: 0 })
+      d.gmv += Number(l.gmv || 0); d.imposto += Number(l.imposto || 0); d.lucro_bruto += Number(l.lucro_bruto || 0)
+      d.ads += Number(l.ads || 0); d.pedidos += l.pedidos || 0
+    }
+  }
+  for (const c of COLS_RESUMO) t[c] = arred(t[c])
+  // nomes da faixa de KPIs (CascataKpis): produção/embalagens/produto
+  t.producao = t.custo_mao_de_obra
+  t.embalagens = t.custo_embalagens
+  t.produto = t.custo_produto
+  t.preparacao = arred(t.custo_mao_de_obra + t.custo_embalagens)
+  t.margem_contribuicao = t.gmv ? t.lucro_bruto / t.gmv : null
+  t.lucro_bruto_medio = t.pedidos ? arred(t.lucro_bruto / t.pedidos) : null
+  t.diario = Object.values(dias)
+    .map((d) => ({ ...d, gmv: arred(d.gmv), imposto: arred(d.imposto), lucro_bruto: arred(d.lucro_bruto), ads: arred(d.ads) }))
+    .sort((a, b) => a.data.localeCompare(b.data))
+  return t
+}
+
+/** Variação % entre dois valores (para o delta dos cards); sem base, `null`. */
+export function variacaoPct(atual, anterior) {
+  if (anterior == null || !Number(anterior) || atual == null) return null
+  return ((Number(atual) - Number(anterior)) / Math.abs(Number(anterior))) * 100
+}
+
+/** `{ 'AAAA-MM-DD|conta': linha }` das linhas do resumo, para o detalhe por conta de cada dia. */
+export function indicePorDiaConta(linhas) {
+  return Object.fromEntries((linhas || []).filter((l) => l.data).map((l) => [`${l.data}|${l.conta}`, l]))
+}
+
+/** Margem (lucro bruto ÷ GMV) em texto `12,3%`; sem GMV, `—`. */
+export function margemTexto(lucro, gmv) {
+  return Number(gmv) ? `${((Number(lucro) / Number(gmv)) * 100).toFixed(1).replace('.', ',')}%` : '—'
+}

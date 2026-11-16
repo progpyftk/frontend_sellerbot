@@ -58,3 +58,32 @@ describe('motivo do "—" (CUSTO-14)', async () => {
     expect(motivoDaLinha(pack)).toBe('pendente')
   })
 })
+
+describe('agregarCascata (dashboard, CUSTO-14)', async () => {
+  const { agregarCascata, variacaoPct } = await import('src/utils/resultadoPedido')
+  const linhas = [
+    { canal: 'ml', conta: 'ml:A', data: '2026-11-01', pedidos: 2, gmv: 100, ads: 10, lucro_bruto: 20, custo_mao_de_obra: 2, custo_embalagens: 1, custo_produto: 30 },
+    { canal: 'ml', conta: 'ml:A', data: '2026-11-02', pedidos: 1, gmv: 50, ads: 5, lucro_bruto: 5, custo_mao_de_obra: 1, custo_embalagens: 1, custo_produto: 20 },
+    { canal: 'shopee', conta: 'shopee:7', data: '2026-11-01', pedidos: 1, gmv: 50, ads: 0, lucro_bruto: 15, custo_mao_de_obra: 1, custo_embalagens: 0, custo_produto: 10 },
+  ]
+  it('soma todas as contas, calcula margem e série diária', () => {
+    const t = agregarCascata(linhas)
+    expect(t.gmv).toBe(200)
+    expect(t.lucro_bruto).toBe(40)
+    expect(t.margem_contribuicao).toBeCloseTo(0.2)
+    expect(t.preparacao).toBe(6)
+    expect(t.diario).toEqual([
+      { data: '2026-11-01', gmv: 150, imposto: 0, lucro_bruto: 35, ads: 10, pedidos: 3 },
+      { data: '2026-11-02', gmv: 50, imposto: 0, lucro_bruto: 5, ads: 5, pedidos: 1 },
+    ])
+  })
+  it('respeita contas e canais selecionados', () => {
+    expect(agregarCascata(linhas, { contas: ['shopee:7'] }).gmv).toBe(50)
+    expect(agregarCascata(linhas, { canais: ['ml'] }).pedidos).toBe(3)
+    expect(agregarCascata(linhas, { canais: ['tiktokshop'] })).toBeNull()
+  })
+  it('variação percentual', () => {
+    expect(variacaoPct(110, 100)).toBeCloseTo(10)
+    expect(variacaoPct(10, 0)).toBeNull()
+  })
+})

@@ -76,17 +76,18 @@
                 <div class="today-kpi-label">Pedidos</div>
                 <div class="today-kpi-val">{{ combinedToday.orders_count || 0 }}</div>
               </div>
+              <!-- CUSTO-14: Ads, lucro bruto e margem de contribuição pela cascata (ML + Shopee no estudo) -->
               <div class="today-kpi">
-                <div class="today-kpi-label">Rec. líquida</div>
-                <div class="today-kpi-val">{{ fmt(combinedToday.net_revenue) }}</div>
+                <div class="today-kpi-label">Ads</div>
+                <div class="today-kpi-val">{{ cascataHoje ? fmt(cascataHoje.ads) : '—' }}</div>
               </div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Margem Contrib. Antes do Ads</div>
-                <div class="today-kpi-val" :class="(combinedToday.gross_profit || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.gross_profit) }}</div>
+                <div class="today-kpi-label">Lucro bruto</div>
+                <div class="today-kpi-val" :class="(cascataHoje?.lucro_bruto || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ cascataHoje ? fmt(cascataHoje.lucro_bruto) : '—' }}</div>
               </div>
               <div class="today-kpi">
-                <div class="today-kpi-label">Margem Contrib. Após Ads</div>
-                <div class="today-kpi-val" :class="(combinedToday.lucro_liquido || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmt(combinedToday.lucro_liquido) }}</div>
+                <div class="today-kpi-label">Margem de contribuição</div>
+                <div class="today-kpi-val" :class="(cascataHoje?.margem_contribuicao || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmtMargem(cascataHoje) }}</div>
               </div>
               <div class="today-kpi">
                 <div class="today-kpi-label">Ticket médio</div>
@@ -239,52 +240,49 @@
           </template>
         </SbKpiCard>
 
-        <!-- Receita Líquida -->
+        <!-- Receita líquida de impostos (CUSTO-14) -->
         <SbKpiCard
           label="Receita Líquida"
-          :value="fmt(op?.net_revenue)"
+          :value="cascata ? fmt(cascata.receita_liquida) : '—'"
           variant="sky"
-          :delta="deltaFmt(op?.vs_prev?.net_revenue)"
-          :sparkline-data="sparklineData('net_revenue')"
-          sparkline-color="#0284c7"
+          :sub="cascata ? 'Imposto ' + fmt(cascata.imposto) + ' (' + pctRaw(cascata.imposto, cascata.gmv) + ')' : ''"
+          :delta="deltaFmt(cascataDelta('receita_liquida'))"
+          :sparkline-data="null"
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">GMV menos as tarifas cobradas pelo Mercado Livre. É o que entra na sua conta.</q-tooltip>
+              <q-tooltip max-width="240px" class="kpi-tooltip-pop">GMV menos o imposto (alíquota efetiva do Simples, média móvel de 90 dias, por CNPJ). Só contas com custo cadastrado (Dose Verde e Casa dos Suportes).</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
 
-        <!-- Margem de Contribuição Antes do Ads -->
+        <!-- Lucro bruto (CUSTO-14) -->
         <SbKpiCard
-          label="Margem Contrib. Antes do Ads"
-          :value="fmt(op?.gross_profit)"
-          variant="green"
-          :sub="'Margem ' + pct(op?.gross_profit, op?.net_revenue)"
-          :delta="deltaFmt(op?.vs_prev?.gross_profit)"
-          :sparkline-data="sparklineData('gross_profit')"
+          label="Lucro Bruto"
+          :value="cascata ? fmt(cascata.lucro_bruto) : '—'"
+          :variant="(cascata?.lucro_bruto || 0) >= 0 ? 'green' : 'red'"
+          :sub="cascata ? fmt(cascata.lucro_bruto_medio) + ' / pedido · ' + cascata.pedidos.toLocaleString('pt-BR') + ' pedidos' : ''"
+          :delta="deltaFmt(cascataDelta('lucro_bruto'))"
+          :sparkline-data="cascata?.diario?.length > 1 ? cascata.diario.map(d => d.lucro_bruto) : null"
           sparkline-color="#16a34a"
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Receita Líquida menos o Custo Médio do Produto (CMV), antes de descontar Ads. É o que sobra para cobrir custos fixos e marketing.</q-tooltip>
+              <q-tooltip max-width="260px" class="kpi-tooltip-pop">GMV − imposto − taxas − frete − Ads − custo de produção − embalagens − custo do produto. É a margem de contribuição em reais; o custo fixo ainda não foi descontado.</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
 
-        <!-- Margem de Contribuição Após Ads -->
+        <!-- Margem de contribuição % (CUSTO-14) -->
         <SbKpiCard
-          label="Margem Contrib. Após Ads"
-          :value="fmt(op?.lucro_liquido)"
-          variant="teal"
-          :sub="'Margem ' + pct(op?.lucro_liquido, op?.gmv)"
-          :delta="deltaFmt(op?.vs_prev?.lucro_liquido)"
-          :sparkline-data="sparklineData('lucro_liquido')"
-          sparkline-color="#a51e55"
+          label="Margem de Contribuição"
+          :value="fmtMargem(cascata)"
+          :variant="(cascata?.margem_contribuicao || 0) >= 0 ? 'teal' : 'red'"
+          :sub="margemDeltaPp != null ? (margemDeltaPp >= 0 ? '+' : '') + margemDeltaPp.toFixed(1).replace('.', ',') + ' p.p. vs período anterior' : 'lucro bruto ÷ GMV'"
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">Margem de Contribuição Antes do Ads menos o investimento em Ads. O resultado real da operação, antes de impostos.</q-tooltip>
+              <q-tooltip max-width="240px" class="kpi-tooltip-pop">Lucro bruto ÷ GMV das contas com custo cadastrado.</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
@@ -359,18 +357,18 @@
           </template>
         </SbKpiCard>
 
-        <!-- Margem Contrib. Após Ads (%) -->
+        <!-- Custos do pedido (CUSTO-14) -->
         <SbKpiCard
-          label="Margem Contrib. Após Ads (%)"
-          :value="op?.lucro_liquido_pct != null ? op?.lucro_liquido_pct + '%' : '—'"
-          :variant="(op?.lucro_liquido_pct || 0) >= 0 ? 'green' : 'red'"
-          :sub="'Margem contrib. antes ' + (op?.gross_margin_pct != null ? op?.gross_margin_pct + '%' : '—')"
+          label="Produto + Preparação"
+          :value="cascata ? fmt(cascata.custo_produto + cascata.preparacao) : '—'"
+          variant="slate"
+          :sub="cascata ? 'Produto ' + fmt(cascata.custo_produto) + ' · Preparação ' + fmt(cascata.preparacao) : ''"
+          :delta="deltaFmt(variacaoPct(cascata && cascata.custo_produto + cascata.preparacao, cascataAnterior && cascataAnterior.custo_produto + cascataAnterior.preparacao))"
+          :invert-delta="true"
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="220px" class="kpi-tooltip-pop">
-                Margem de Contribuição (após CMV e Ads) ÷ GMV. Não desconta despesas fixas nem impostos — para a cascata completa, veja o Módulo Financeiro (aba DRE).
-              </q-tooltip>
+              <q-tooltip max-width="240px" class="kpi-tooltip-pop">Custo do produto (custo médio do Tiny na data da venda) mais preparação: mão de obra, saco, etiquetas e stretch.</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
@@ -420,6 +418,14 @@
         </SbKpiCard>
       </SbKpiGrid>
 
+      <!-- Cascata do período, coluna a coluna (CUSTO-14) -->
+      <div v-if="cascata" class="cascata-dash">
+        <div class="cascata-dash-title">
+          Cascata do período <span class="cascata-dash-note">ML + Shopee · Dose Verde e Casa dos Suportes</span>
+        </div>
+        <CascataKpis :kpis="cascata" canal="ml" />
+      </div>
+
           <!-- ══════════ ABAS ═══════════════════════════════════════════════════ -->
           <div class="tab-bar">
             <button v-for="t in tabs" :key="t.key" :class="['tab-btn', activeTab === t.key && 'tab-btn--on']"
@@ -453,22 +459,21 @@
                 <tr>
                   <th class="col-date">Data</th>
                   <th class="col-num">GMV</th>
-                  <th class="col-num">Rec. Líquida</th>
-                  <th class="col-num col-before">Margem Contrib. Antes do Ads</th>
+                  <th class="col-num col-before">Imposto</th>
                   <th class="col-num col-ads">Ads</th>
                   <th class="col-num col-ads">TACoS</th>
                   <th class="col-num col-ll">
-                    <span class="desktop-only-label">Margem Contrib. Após Ads</span>
-                    <span class="mobile-only-label">Pós-Ads</span>
+                    <span class="desktop-only-label">Lucro Bruto</span>
+                    <span class="mobile-only-label">Lucro</span>
                   </th>
                   <th class="col-num">Pedidos</th>
-                  <th class="col-num col-margin">Margem</th>
+                  <th class="col-num col-margin">Margem Contrib.</th>
                 </tr>
               </thead>
               <tbody>
-                <template v-for="d in chartDataDesc" :key="d.date" v-memo="[d.date, d.gmv, d.net_revenue, d.gross_profit, d.ads_cost, d.lucro_liquido, d.dateLabel, expandedDays.has(d.date), d.orders_count, d.units_sold]">
+                <template v-for="d in chartDataDesc" :key="d.date" v-memo="[d.date, d.gmv, d.ads_cost, d.dateLabel, expandedDays.has(d.date), d.orders_count, d.units_sold, cascDia(d.date)]">
                   <!-- Linha principal do dia -->
-                  <tr :class="['dt-row', d.lucro_liquido < 0 ? 'dt-row--neg' : '', expandedDays.has(d.date) ? 'dt-row--open' : '']"
+                  <tr :class="['dt-row', (cascDia(d.date)?.lucro_bruto || 0) < 0 ? 'dt-row--neg' : '', expandedDays.has(d.date) ? 'dt-row--open' : '']"
                     @click="toggleDayExpand(d.date)">
                     <td class="col-date">
                       <span class="dt-expand-btn">
@@ -477,8 +482,7 @@
                       <span class="dt-date-label">{{ d.dateLabel }}</span>
                     </td>
                     <td class="col-num dt-gmv">{{ fmt(d.gmv) }}</td>
-                    <td class="col-num">{{ fmt(d.net_revenue) }}</td>
-                    <td class="col-num col-before" :class="d.gross_profit >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(d.gross_profit) }}</td>
+                    <td class="col-num col-before">{{ cascDia(d.date) ? fmt(cascDia(d.date).imposto) : '—' }}</td>
                     <td class="col-num col-ads dt-warn">{{ fmt(d.ads_cost) }}</td>
                     <td class="col-num col-ads">
                       <span v-if="d.gmv > 0" :class="['dt-tacos-badge', tacosBadgeClass(d.ads_cost / d.gmv * 100)]">
@@ -486,15 +490,16 @@
                       </span>
                       <span v-else class="dt-empty">—</span>
                     </td>
-                    <td class="col-num col-ll" :class="d.lucro_liquido >= 0 ? 'dt-pos' : 'dt-neg'">
-                      <strong>{{ fmt(d.lucro_liquido) }}</strong>
-                      <span class="dt-mobile-pct">{{ pct(d.lucro_liquido, d.gmv) }}</span>
+                    <td class="col-num col-ll" :class="(cascDia(d.date)?.lucro_bruto || 0) >= 0 ? 'dt-pos' : 'dt-neg'">
+                      <strong>{{ cascDia(d.date) ? fmt(cascDia(d.date).lucro_bruto) : '—' }}</strong>
+                      <span class="dt-mobile-pct">{{ cascDia(d.date) ? margemTexto(cascDia(d.date).lucro_bruto, cascDia(d.date).gmv) : '' }}</span>
                     </td>
                     <td class="col-num">{{ d.orders_count }}</td>
                     <td class="col-num col-margin">
-                      <span :class="d.gmv > 0 ? (d.lucro_liquido / d.gmv >= 0.15 ? 'dt-pos' : d.lucro_liquido / d.gmv >= 0.05 ? '' : 'dt-warn-text') : ''">
-                        {{ pct(d.lucro_liquido, d.gmv) }}
+                      <span v-if="cascDia(d.date)" :class="cascDia(d.date).gmv > 0 ? (cascDia(d.date).lucro_bruto / cascDia(d.date).gmv >= 0.15 ? 'dt-pos' : cascDia(d.date).lucro_bruto / cascDia(d.date).gmv >= 0.05 ? '' : 'dt-warn-text') : ''">
+                        {{ margemTexto(cascDia(d.date).lucro_bruto, cascDia(d.date).gmv) }}
                       </span>
+                      <span v-else class="dt-empty">—</span>
                     </td>
                   </tr>
                   <!-- Breakdown por conta -->
@@ -508,19 +513,21 @@
                         </span>
                       </td>
                       <td class="col-num dt-sub">{{ fmt(a.gmv) }}</td>
-                      <td class="col-num dt-sub">{{ fmt(a.net_revenue) }}</td>
-                      <td class="col-num col-before dt-sub" :class="(a.gross_profit || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(a.gross_profit) }}</td>
+                      <td class="col-num col-before dt-sub">{{ cascDiaConta(d.date, a.key) ? fmt(cascDiaConta(d.date, a.key).imposto) : '—' }}</td>
                       <td class="col-num col-ads dt-sub dt-warn">{{ a.ads_cost ? fmt(a.ads_cost) : '—' }}</td>
                       <td class="col-num col-ads dt-sub">
                         <span v-if="a.gmv > 0">{{ (a.ads_cost / a.gmv * 100).toFixed(1) }}%</span>
                         <span v-else class="dt-empty">—</span>
                       </td>
-                      <td class="col-num col-ll dt-sub" :class="(a.lucro_liquido || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(a.lucro_liquido) }}</td>
+                      <td class="col-num col-ll dt-sub" :class="(cascDiaConta(d.date, a.key)?.lucro_bruto || 0) >= 0 ? 'dt-pos' : 'dt-neg'">
+                        {{ cascDiaConta(d.date, a.key) ? fmt(cascDiaConta(d.date, a.key).lucro_bruto) : '—' }}
+                        <q-tooltip v-if="!cascDiaConta(d.date, a.key)" class="bg-grey-9">Conta fora do estudo de custo (sem custo de produto cadastrado)</q-tooltip>
+                      </td>
                       <td class="col-num dt-sub">{{ a.orders_count || 0 }}</td>
-                      <td class="col-num col-margin dt-sub">{{ pct(a.lucro_liquido, a.gmv) }}</td>
+                      <td class="col-num col-margin dt-sub">{{ cascDiaConta(d.date, a.key) ? margemTexto(cascDiaConta(d.date, a.key).lucro_bruto, cascDiaConta(d.date, a.key).gmv) : '—' }}</td>
                     </tr>
                     <tr v-if="!dayAccountRows(d.date).length" class="dt-acct-row">
-                      <td colspan="9" class="dt-loading-hint">
+                      <td colspan="8" class="dt-loading-hint">
                         <q-spinner-dots size="12px" color="primary" />
                         Carregando dados por conta…
                       </td>
@@ -535,16 +542,15 @@
                     Total {{ chartDataDesc.length }}d
                   </td>
                   <td class="col-num dt-gmv">{{ fmt(chartTotals.gmv) }}</td>
-                  <td class="col-num">{{ fmt(chartTotals.net_revenue) }}</td>
-                  <td class="col-num col-before" :class="(chartTotals.gross_profit || 0) >= 0 ? 'dt-pos' : 'dt-neg'">{{ fmt(chartTotals.gross_profit) }}</td>
+                  <td class="col-num col-before">{{ cascata ? fmt(cascata.imposto) : '—' }}</td>
                   <td class="col-num col-ads dt-warn">{{ fmt(chartTotals.ads_cost) }}</td>
                   <td class="col-num col-ads">{{ chartTotals.gmv > 0 ? (chartTotals.ads_cost / chartTotals.gmv * 100).toFixed(1) + '%' : '—' }}</td>
-                  <td class="col-num col-ll" :class="(chartTotals.lucro_liquido || 0) >= 0 ? 'dt-pos' : 'dt-neg'">
-                    <strong>{{ fmt(chartTotals.lucro_liquido) }}</strong>
-                    <span class="dt-mobile-pct">{{ pct(chartTotals.lucro_liquido, chartTotals.gmv) }}</span>
+                  <td class="col-num col-ll" :class="(cascata?.lucro_bruto || 0) >= 0 ? 'dt-pos' : 'dt-neg'">
+                    <strong>{{ cascata ? fmt(cascata.lucro_bruto) : '—' }}</strong>
+                    <span class="dt-mobile-pct">{{ fmtMargem(cascata) }}</span>
                   </td>
                   <td class="col-num">{{ chartTotals.orders_count }}</td>
-                  <td class="col-num col-margin">{{ pct(chartTotals.lucro_liquido, chartTotals.gmv) }}</td>
+                  <td class="col-num col-margin">{{ fmtMargem(cascata) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -625,10 +631,8 @@
             <div class="table-controls">
               <select v-model="rankingSortKey" class="sort-select">
                 <option value="gmv">Maior GMV</option>
-                <option value="lucro_liquido">Maior Margem Contrib. Após Ads</option>
-                <option value="gross_profit">Maior Margem Contrib. Antes do Ads</option>
-                <option value="lucro_liquido_pct">Melhor Margem Contrib. Após (%)</option>
-                <option value="gross_margin_pct">Melhor Margem Contrib. Antes (%)</option>
+                <option value="lucro_bruto">Maior lucro bruto</option>
+                <option value="margem_contribuicao">Melhor margem de contribuição (%)</option>
                 <option value="roas">Melhor ROAS</option>
                 <option value="tacos">Menor TACoS</option>
                 <option value="orders_count">Mais pedidos</option>
@@ -643,13 +647,11 @@
                   <th>Marketplace</th>
                   <th>Conta</th>
                   <th class="right">GMV</th>
-                  <th class="right">Rec. Líq.</th>
-                  <th class="right">Margem Contrib. Antes do Ads</th>
-                  <th class="right">Marg. Contrib. Antes (%)</th>
+                  <th class="right">Imposto</th>
                   <th class="right">Ads</th>
                   <th class="right">TACoS</th>
-                  <th class="right">Margem Contrib. Após Ads</th>
-                  <th class="right">Marg. Contrib. Após (%)</th>
+                  <th class="right">Lucro Bruto</th>
+                  <th class="right">Margem Contrib. (%)</th>
                   <th class="right">ROAS</th>
                   <th class="right">Pedidos</th>
                 </tr>
@@ -671,22 +673,19 @@
                     {{ a.label }}
                   </td>
                   <td class="right">{{ fmt(a.gmv) }}</td>
-                  <td class="right">{{ fmt(a.net_revenue) }}</td>
-                  <td class="right" :class="(a.gross_profit || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.gross_profit) }}</td>
-                  <td class="right">
-                    <span :class="a.gross_margin_pct >= 30 ? 'pos' : a.gross_margin_pct >= 15 ? '' : 'neg'">
-                      {{ a.gross_margin_pct != null ? a.gross_margin_pct + '%' : '—' }}
-                    </span>
-                  </td>
+                  <td class="right">{{ a.imposto != null ? fmt(a.imposto) : '—' }}</td>
                   <td class="right warn">{{ a.ads_cost ? fmt(a.ads_cost) : '—' }}</td>
                   <td class="right">
                     <span v-if="a.tacos != null" :class="tacosBadgeClass(a.tacos)">{{ a.tacos.toFixed(1) }}%</span>
                     <span v-else class="muted">—</span>
                   </td>
-                  <td class="right" :class="(a.lucro_liquido || 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido) }}</td>
+                  <td class="right" :class="(a.lucro_bruto || 0) >= 0 ? 'pos' : 'neg'">
+                    {{ a.lucro_bruto != null ? fmt(a.lucro_bruto) : '—' }}
+                    <q-tooltip v-if="a.lucro_bruto == null" class="bg-grey-9">Conta fora do estudo de custo (sem custo cadastrado)</q-tooltip>
+                  </td>
                   <td class="right">
-                    <span :class="a.lucro_liquido_pct >= 15 ? 'pos' : a.lucro_liquido_pct >= 5 ? '' : 'neg'">
-                      {{ a.lucro_liquido_pct != null ? a.lucro_liquido_pct + '%' : '—' }}
+                    <span :class="a.margem_contribuicao >= 15 ? 'pos' : a.margem_contribuicao >= 5 ? '' : 'neg'">
+                      {{ a.margem_contribuicao != null ? String(a.margem_contribuicao).replace('.', ',') + '%' : '—' }}
                     </span>
                   </td>
                   <td class="right">{{ a.roas ? a.roas + 'x' : '—' }}</td>
@@ -730,8 +729,10 @@
                 <div class="cnpj-kpi-val">{{ fmt(c.gmv) }}</div>
               </div>
               <div class="cnpj-kpi">
-                <div class="cnpj-kpi-label">Margem Contrib. Após Ads</div>
-                <div class="cnpj-kpi-val" :class="c.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(c.lucro_liquido) }}</div>
+                <div class="cnpj-kpi-label">Lucro Bruto</div>
+                <div class="cnpj-kpi-val" :class="(cascCnpj(c.cnpj)?.lucro_bruto || 0) >= 0 ? 'pos' : 'neg'">
+                  {{ cascCnpj(c.cnpj) ? fmt(cascCnpj(c.cnpj).lucro_bruto) + ' · ' + margemTexto(cascCnpj(c.cnpj).lucro_bruto, cascCnpj(c.cnpj).gmv) : '—' }}
+                </div>
               </div>
               <div class="cnpj-kpi">
                 <div class="cnpj-kpi-label">Pedidos</div>
@@ -756,8 +757,8 @@
             </div>
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(mp.gmv) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Rec. Líquida</span> <span class="mp-kpi-val">{{ fmt(mp.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Margem Contrib. Após Ads</span> <span class="mp-kpi-val" :class="mp.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(mp.lucro_liquido) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Repasse ML</span> <span class="mp-kpi-val">{{ fmt(mp.net_revenue) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Lucro Bruto</span> <span class="mp-kpi-val" :class="(cascataPorCanal.ml?.lucro_bruto || 0) >= 0 ? 'pos' : 'neg'">{{ cascataPorCanal.ml ? fmt(cascataPorCanal.ml.lucro_bruto) + ' · ' + margemTexto(cascataPorCanal.ml.lucro_bruto, cascataPorCanal.ml.gmv) : '—' }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ mp.orders_count }}</span></div>
             </div>
             <div class="gmv-bar-wrap q-mt-sm">
@@ -774,7 +775,7 @@
             <div class="mp-kpis">
               <div class="mp-kpi"><span class="mp-kpi-label">GMV</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.gmv) }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Rec. Auditada</span> <span class="mp-kpi-val">{{ fmt(filteredShopeeOp.audited_net_revenue ?? filteredShopeeOp.net_revenue) }}</span></div>
-              <div class="mp-kpi"><span class="mp-kpi-label">Margem Contrib. Após Ads</span> <span class="mp-kpi-val" :class="(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit ?? 0) >= 0 ? 'pos' : 'neg'">{{ fmt(filteredShopeeOp.lucro_liquido ?? filteredShopeeOp.gross_profit) }}</span></div>
+              <div class="mp-kpi"><span class="mp-kpi-label">Lucro Bruto</span> <span class="mp-kpi-val" :class="(cascataPorCanal.shopee?.lucro_bruto || 0) >= 0 ? 'pos' : 'neg'">{{ cascataPorCanal.shopee ? fmt(cascataPorCanal.shopee.lucro_bruto) + ' · ' + margemTexto(cascataPorCanal.shopee.lucro_bruto, cascataPorCanal.shopee.gmv) : '—' }}</span></div>
               <div class="mp-kpi"><span class="mp-kpi-label">Pedidos</span> <span class="mp-kpi-val">{{ filteredShopeeOp.orders_count }}</span></div>
             </div>
             <div v-if="Number(filteredShopeeOp.direct_delivery_cost_total || 0) > 0" class="text-caption text-orange-7 q-mt-xs">
@@ -817,8 +818,9 @@
                 <th>Conta</th>
                 <th>CNPJ</th>
                 <th class="right">GMV</th>
-                <th class="right">Rec. Líq.</th>
-                <th class="right">Margem Contrib. Após Ads</th>
+                <th class="right">Repasse</th>
+                <th class="right">Lucro Bruto</th>
+                <th class="right">Margem Contrib.</th>
                 <th class="right">Ads</th>
                 <th class="right">Pedidos</th>
                 <th class="right">Share GMV</th>
@@ -833,7 +835,8 @@
                   <td class="muted">{{ a.cnpj || '—' }}</td>
                   <td class="right">{{ fmt(a.gmv) }}</td>
                   <td class="right">{{ fmt(a.net_revenue) }}</td>
-                  <td class="right" :class="a.lucro_liquido >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido) }}</td>
+                  <td class="right" :class="(cascataPorConta['ml:' + a.account_id]?.lucro_bruto || 0) >= 0 ? 'pos' : 'neg'">{{ cascataPorConta['ml:' + a.account_id] ? fmt(cascataPorConta['ml:' + a.account_id].lucro_bruto) : '—' }}</td>
+                  <td class="right">{{ cascataPorConta['ml:' + a.account_id] ? margemTexto(cascataPorConta['ml:' + a.account_id].lucro_bruto, cascataPorConta['ml:' + a.account_id].gmv) : '—' }}</td>
                   <td class="right warn">{{ fmt(a.ads_cost) }}</td>
                   <td class="right">{{ a.orders_count }}</td>
                   <td class="right">
@@ -852,7 +855,8 @@
                   <td class="muted">—</td>
                   <td class="right">{{ fmt(a.gmv) }}</td>
                   <td class="right">{{ fmt(a.net_revenue) }}</td>
-                  <td class="right" :class="(a.lucro_liquido ?? a.gross_profit ?? 0) >= 0 ? 'pos' : 'neg'">{{ fmt(a.lucro_liquido ?? a.gross_profit) }}</td>
+                  <td class="right" :class="(cascataPorConta['shopee:' + a.account_id]?.lucro_bruto || 0) >= 0 ? 'pos' : 'neg'">{{ cascataPorConta['shopee:' + a.account_id] ? fmt(cascataPorConta['shopee:' + a.account_id].lucro_bruto) : '—' }}</td>
+                  <td class="right">{{ cascataPorConta['shopee:' + a.account_id] ? margemTexto(cascataPorConta['shopee:' + a.account_id].lucro_bruto, cascataPorConta['shopee:' + a.account_id].gmv) : '—' }}</td>
                   <td class="right warn">{{ fmt(a.ads_cost) }}</td>
                   <td class="right">{{ a.orders_count }}</td>
                   <td class="right">
@@ -1426,6 +1430,9 @@ import { useQuasar } from 'quasar'
 import MercadoLivreService from 'src/services/MercadoLivreService'
 import ShopeeService from 'src/services/ShopeeService'
 import TikTokShopService from 'src/services/TikTokShopService'
+import FinanceiroService from 'src/services/FinanceiroService'
+import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
+import { agregarCascata, indicePorDiaConta, margemTexto, variacaoPct } from 'src/utils/resultadoPedido'
 import { calculateNetMarginPct } from 'src/utils/dashboardMetrics'
 import { nomeConta } from 'src/utils/nomeConta'
 import { isDirectDeliveryCarrier } from 'src/utils/shopeeFinance'
@@ -1452,6 +1459,74 @@ const showFilters = ref($q.screen.gt.sm)  // aberto no desktop, fechado no mobil
 // ── Multi-select account filter ─────────────────────────────────────────
 const showAccountPicker = ref(false)
 const selectedAccountKeys = ref([])  // e.g. ['ml:123', 'shopee:456']
+
+// ── Cascata GMV → lucro bruto (CUSTO-14) ─────────────────────────────────────
+// Lida de /api/financeiro/resultado-pedidos/resumo/ (só ML e Shopee de Dose Verde e Casa dos
+// Suportes têm custo); filtrada no front pelas mesmas contas/marketplaces do dashboard.
+const cascataResumo = ref(null)
+const cascataHojeResumo = ref(null)
+function filtroCascata() {
+  const canais = (activeMarketplaces.value?.length ? activeMarketplaces.value : ['ml', 'shopee'])
+    .filter(c => c === 'ml' || c === 'shopee')
+  return { contas: selectedAccountKeys.value, canais }
+}
+const cascata = computed(() => agregarCascata(cascataResumo.value?.por_conta_dia, filtroCascata()))
+const cascataAnterior = computed(() => agregarCascata(cascataResumo.value?.anterior_por_conta, filtroCascata()))
+const cascataHoje = computed(() => agregarCascata(cascataHojeResumo.value?.por_conta_dia, filtroCascata()))
+const cascataIdxDiaConta = computed(() => indicePorDiaConta(cascataResumo.value?.por_conta_dia))
+const cascataDiaMap = computed(() => Object.fromEntries((cascata.value?.diario || []).map(d => [d.data, d])))
+const cascDia = (date) => cascataDiaMap.value[date] || null
+const cascDiaConta = (date, key) => cascataIdxDiaConta.value[`${date}|${key}`] || null
+// Totais da cascata por conta no período (chave igual à do dashboard: 'ml:<account_id>' / 'shopee:<id>')
+const cascataPorConta = computed(() => {
+  const out = {}
+  for (const l of cascataResumo.value?.por_conta_dia || []) {
+    const c = (out[l.conta] ||= { gmv: 0, imposto: 0, lucro_bruto: 0 })
+    c.gmv += l.gmv || 0; c.imposto += l.imposto || 0; c.lucro_bruto += l.lucro_bruto || 0
+  }
+  return out
+})
+// Lucro bruto por CNPJ e por canal no período, respeitando as contas selecionadas
+const somaCascataPor = (campo) => {
+  const sel = new Set(selectedAccountKeys.value)
+  const out = {}
+  for (const l of cascataResumo.value?.por_conta_dia || []) {
+    if (sel.size && !sel.has(l.conta)) continue
+    const k = campo === 'cnpj' ? String(l.cnpj || '').replace(/\D/g, '') : l.canal
+    const c = (out[k] ||= { gmv: 0, lucro_bruto: 0 })
+    c.gmv += l.gmv || 0; c.lucro_bruto += l.lucro_bruto || 0
+  }
+  return out
+}
+const cascataPorCnpj = computed(() => somaCascataPor('cnpj'))
+const cascataPorCanal = computed(() => somaCascataPor('canal'))
+const cascCnpj = (cnpj) => cascataPorCnpj.value[String(cnpj || '').replace(/\D/g, '')] || null
+const cascataDelta = (campo) => variacaoPct(cascata.value?.[campo], cascataAnterior.value?.[campo])
+const fmtMargem = (t) => (t?.margem_contribuicao != null ? (t.margem_contribuicao * 100).toFixed(1).replace('.', ',') + '%' : '—')
+// Diferença da margem de contribuição em pontos percentuais vs o período anterior
+const margemDeltaPp = computed(() => {
+  const a = cascata.value?.margem_contribuicao, b = cascataAnterior.value?.margem_contribuicao
+  return a == null || b == null ? null : (a - b) * 100
+})
+async function loadCascata() {
+  try {
+    const { data } = await FinanceiroService.getResultadoPedidosResumo({ date_from: dateFrom.value, date_to: dateTo.value })
+    cascataResumo.value = data
+  } catch (e) {
+    console.error('Cascata (resultado-pedidos) error', e)
+    cascataResumo.value = null
+  }
+}
+async function loadCascataHoje() {
+  try {
+    const hoje = fmtDate(today)
+    const { data } = await FinanceiroService.getResultadoPedidosResumo({ date_from: hoje, date_to: hoje })
+    cascataHojeResumo.value = data
+  } catch (e) {
+    console.error('Cascata de hoje error', e)
+    cascataHojeResumo.value = null
+  }
+}
 const knownMlAccounts    = ref([])   // { key, id, marketplace, label, color }
 const knownShopeeAccounts = ref([])
 const knownTiktokAccounts = ref([])
@@ -1618,7 +1693,7 @@ function dayAccountRows(date) {
     if (!selected.has(a.key)) continue
     const day = (accountDailyData.value[a.key] || []).find(d => d.date === date)
     if (day && (day.gmv || day.orders_count)) {
-      rows.push({ ...day, label: a.label, color: a.color, marketplace: 'ml' })
+      rows.push({ ...day, key: a.key, label: a.label, color: a.color, marketplace: 'ml' })
     }
   }
   for (const a of knownShopeeAccounts.value) {
@@ -1626,7 +1701,7 @@ function dayAccountRows(date) {
     const shopeeAccountDaily = accountDailyData.value[a.key] || []
     const day = shopeeAccountDaily.find(d => d.date === date)
     if (day && (day.gmv || day.orders_count)) {
-      rows.push({ ...day, label: a.label, color: a.color, marketplace: 'shopee' })
+      rows.push({ ...day, key: a.key, label: a.label, color: a.color, marketplace: 'shopee' })
     }
   }
   return rows
@@ -1635,7 +1710,7 @@ function dayAccountRows(date) {
 // ── Legacy compat (kept for tabs/sazonalidade that reference these) ──────
 const hoveredIdx = ref(null)
 const activeTab = ref('evolucao')
-const activeMetrics = ref(['gmv', 'lucro_liquido'])
+const activeMetrics = ref(['gmv', 'lucro_bruto'])
 const activeDatePreset = ref('30d')
 const normalizeChart = ref(false)
 const topGroupBy = ref('item')
@@ -1863,9 +1938,8 @@ const tabs = [
 
 const chartMetrics = [
   { key: 'gmv', label: 'GMV', color: '#152d43' },           // blue
-  { key: 'net_revenue', label: 'Rec. Líquida', color: '#658aa1' },  // green
-  { key: 'gross_profit', label: 'Margem Contrib. Antes do Ads', color: '#b1547b' },  // magenta
-  { key: 'lucro_liquido', label: 'Margem Contrib. Após Ads', color: '#a51e55' },  // yellow
+  { key: 'net_revenue', label: 'Repasse', color: '#658aa1' },  // green
+  { key: 'lucro_bruto', label: 'Lucro Bruto', color: '#a51e55' },  // CUSTO-14: cascata
   { key: 'ads_cost', label: 'Ads', color: '#8a6175' },       // aqua
 ]
 
@@ -1958,7 +2032,12 @@ const chartData = computed(() => {
 
   return Object.values(byDate)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map(d => ({ ...d, dateLabel: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) }))
+    .map(d => ({
+      ...d,
+      // CUSTO-14: lucro bruto do dia pela cascata (contas com custo cadastrado)
+      lucro_bruto: cascDia(d.date)?.lucro_bruto ?? 0,
+      dateLabel: new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+    }))
 })
 
 // Descendente (mais recente primeiro) — usado na tabela
@@ -2038,7 +2117,7 @@ function showFlexXLabel(i) {
 }
 
 // Eixo esquerdo — exclui ads_cost (que tem escala própria à direita)
-const LEFT_KEYS = ['gmv', 'net_revenue', 'gross_profit', 'lucro_liquido']
+const LEFT_KEYS = ['gmv', 'net_revenue', 'gross_profit', 'lucro_liquido', 'lucro_bruto']
 
 const chartYMax = computed(() => {
   if (normalizeChart.value) return 100
@@ -2243,6 +2322,9 @@ async function load() {
     // Carrega classificação de compradores (N1)
     loadBuyerClassification()
 
+    // Cascata GMV → lucro bruto do período (CUSTO-14) — aguardada: o gráfico usa o lucro bruto do dia
+    await loadCascata()
+
     // Sempre carrega dados por conta para per_account mode e filtros reativos
     loadAccountDailyData()
 
@@ -2303,6 +2385,7 @@ async function loadToday() {
       ShopeeService.getTodayStats(shopeeParams),
       TikTokShopService.getTodayStats(tiktokParams),
     ])
+    loadCascataHoje()  // CUSTO-14
     todayData.value       = mlRes.status === 'fulfilled' ? mlRes.value.data : null
     shopeeTodayData.value = shopeeRes.status === 'fulfilled' ? shopeeRes.value.data : null
     tiktokTodayData.value = tiktokRes.status === 'fulfilled' ? tiktokRes.value.data : null
@@ -2649,7 +2732,10 @@ async function renderPlotlyChart() {
 
         const nPts    = daily.length
         const showAll = nPts <= 14
-        const rawVals = daily.map(d => d[metric] || 0)
+        // CUSTO-14: lucro bruto por conta vem da cascata (resumo por conta e dia)
+        const rawVals = daily.map(d => metric === 'lucro_bruto'
+          ? (cascDiaConta(d.date, acc.key)?.lucro_bruto || 0)
+          : (d[metric] || 0))
         const total   = rawVals.reduce((s, v) => s + v, 0)
         const maxIdx  = rawVals.indexOf(Math.max(...rawVals))
         const lastIdx = rawVals.length - 1
@@ -3343,6 +3429,14 @@ const rankingRows = computed(() => {
     })
   }
 
+  // Cascata por conta no período (CUSTO-14): lucro bruto e margem de contribuição
+  for (const r of rows) {
+    const c = cascataPorConta.value[r.key]
+    r.imposto = c ? c.imposto : null
+    r.lucro_bruto = c ? c.lucro_bruto : null
+    r.margem_contribuicao = c && c.gmv ? +(c.lucro_bruto / c.gmv * 100).toFixed(1) : null
+  }
+
   // Sort
   return rows.sort((a, b) => {
     const key = rankingSortKey.value
@@ -3379,13 +3473,14 @@ const rankingHighlights = computed(() => {
     positive: true,
   })
 
-  const margin = sorted('lucro_liquido_pct')
+  // CUSTO-14: margem de contribuição da cascata (só contas com custo cadastrado)
+  const margin = sorted('margem_contribuicao')
   if (margin.winner) highlights.push({
-    label: '💹 Melhor Margem',
+    label: '💹 Melhor Margem de Contribuição',
     winner: margin.winner,
-    value: (margin.winner.lucro_liquido_pct ?? '—') + '%',
+    value: String(margin.winner.margem_contribuicao).replace('.', ',') + '%',
     loser: margin.loser !== margin.winner ? margin.loser : null,
-    loserValue: margin.loser ? (margin.loser.lucro_liquido_pct ?? '—') + '%' : null,
+    loserValue: margin.loser ? String(margin.loser.margem_contribuicao).replace('.', ',') + '%' : null,
     positive: true,
   })
 
@@ -3720,6 +3815,9 @@ watch(selectedAccountKeys, () => {
 .today-neg { color: #dc2626; }
 
 /* ── KPI Grid header ────────────────────────────────────────────────────── */
+.cascata-dash { margin-top: 12px; background: #fff; border-radius: 12px; padding: 10px 4px 6px; }
+.cascata-dash-title { font-size: 12px; font-weight: 700; color: #2d3748; padding: 0 16px; }
+.cascata-dash-note { font-weight: 400; color: #a0aec0; margin-left: 6px; }
 .kpi-grid-header {
   display: flex;
   align-items: center;
