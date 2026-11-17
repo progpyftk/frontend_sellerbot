@@ -1436,7 +1436,7 @@ import CascataCelula from 'src/components/pedidos/CascataCelula.vue'
 import CascataDetalhe from 'src/components/pedidos/CascataDetalhe.vue'
 import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
 import {
-  ATALHOS_PERIODO, FAIXAS_MARGEM, faixaAtiva, motivoDaLinha, paramsMargem, resultadoDaLinha, textoFaixaMargem, textoPeriodo,
+  ATALHOS_PERIODO, FAIXAS_MARGEM, diaLocalIso, faixaAtiva, motivoDaLinha, paramsMargem, resultadoDaLinha, textoFaixaMargem, textoPeriodo,
 } from 'src/utils/resultadoPedido'
 import { useQuasar, copyToClipboard, date } from 'quasar'
 
@@ -1836,18 +1836,21 @@ const onRequest = async (props) => {
 
 // KPIs do período filtrado (feedback #8) — mesmo filterset da listagem
 const periodKpis = ref(null)
-// Cards do topo (CUSTO-16): seguem os filtros aplicados, não mais o "hoje" fixo
-const cardStats = computed(() => periodKpis.value && {
-  total_amount: periodKpis.value.gmv,
-  count: periodKpis.value.pack_count,
-  order_count: periodKpis.value.orders_count,
-  refunded_count: periodKpis.value.refunded_count,
-  resultado: periodKpis.value.resultado,
+// Cards do topo (CUSTO-16): abrem em "hoje" (dia de Brasília) com os demais filtros; com um período
+// no filtro, mostram esse período
+const cardKpis = ref(null)
+const temPeriodo = () => Boolean(filters.dateFrom || filters.dateTo)
+const cardStats = computed(() => cardKpis.value && {
+  total_amount: cardKpis.value.gmv,
+  count: cardKpis.value.pack_count,
+  order_count: cardKpis.value.orders_count,
+  refunded_count: cardKpis.value.refunded_count,
+  resultado: cardKpis.value.resultado,
 })
-const periodoCards = computed(() => textoPeriodo(filters.dateFrom, filters.dateTo))
+const periodoCards = computed(() => (temPeriodo() ? textoPeriodo(filters.dateFrom, filters.dateTo) : 'Hoje'))
 // Atalhos de período (CUSTO-16): dia local de Brasília, como no dashboard
 function aplicarPeriodo(dias) {
-  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+  const iso = diaLocalIso
   const hoje = new Date()
   const ini = new Date(hoje)
   if (dias === 'mes') ini.setDate(1)
@@ -1861,8 +1864,13 @@ const fetchPeriodKpis = async (baseParams) => {
   try {
     const p = { ...baseParams }
     delete p.page; delete p.page_size; delete p.ordering
-    const { data } = await MercadoLivreService.getOrderKpis(p)
+    const periodo = MercadoLivreService.getOrderKpis(p)
+    const hoje = temPeriodo() ? periodo : MercadoLivreService.getOrderKpis({
+      ...p, date_created__gte: `${diaLocalIso()}T00:00:00`, date_created__lte: `${diaLocalIso()}T23:59:59`,
+    })
+    const [{ data }, { data: dataCards }] = await Promise.all([periodo, hoje])
     periodKpis.value = data
+    cardKpis.value = dataCards
   } catch (e) { console.error('KPIs do período:', e) }
 }
 

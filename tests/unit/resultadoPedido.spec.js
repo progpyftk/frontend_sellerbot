@@ -143,3 +143,10 @@ describe('rótulo do período dos cards (CUSTO-16)', () => {
     expect(textoPeriodo('2026-11-01', null, agora)).toBe('Desde 01/11')
   })
 })
+
+describe('diaLocalIso (CUSTO-16)', () => {
+  it('formata a data local em YYYY-MM-DD', async () => {
+    const { diaLocalIso } = await import('src/utils/resultadoPedido')
+    expect(diaLocalIso(new Date(2026, 10, 7, 23, 50))).toBe('2026-11-07')
+  })
+})

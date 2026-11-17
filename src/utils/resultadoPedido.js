@@ -278,6 +278,11 @@ export const ATALHOS_PERIODO = [
  * Rótulo do período filtrado para os cards (CUSTO-16): "Hoje", "Ontem", "Últimos 7 dias", "Este mês",
  * "01/11 – 15/11" ou "Todo o período". Aceita `AAAA-MM-DD` ou `AAAA-MM-DDTHH:MM`; `agora` é para teste.
  */
+// Data local (navegador, Brasília) em YYYY-MM-DD: o "hoje" dos cards de Vendas e Pedidos (CUSTO-16)
+export function diaLocalIso(agora = new Date()) {
+  return agora.getFullYear() + '-' + String(agora.getMonth() + 1).padStart(2, '0') + '-' + String(agora.getDate()).padStart(2, '0')
+}
+
 export function textoPeriodo(de, ate, agora = new Date()) {
   const dia = (v) => (v ? String(v).slice(0, 10) : null)
   const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')

@@ -963,7 +963,7 @@ import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 import { isDirectDeliveryCarrier, isEscrowReal, orderRevenue } from 'src/utils/shopeeFinance'
-import { FAIXAS_MARGEM, faixaAtiva, paramsMargem, textoFaixaMargem, textoPeriodo } from 'src/utils/resultadoPedido'
+import { FAIXAS_MARGEM, diaLocalIso, faixaAtiva, paramsMargem, textoFaixaMargem, textoPeriodo } from 'src/utils/resultadoPedido'
 
 const $q = useQuasar()
 const authStore = useStore()
@@ -980,7 +980,9 @@ const currentSort    = ref('-create_time')
 const tabelaWrap     = ref(null)  // wrapper da tabela (barra horizontal fixa, CUSTO-14)
 const periodKpis     = ref(null)  // cascata do período filtrado (CUSTO-14)
 const cardStats      = ref(null)  // GMV, contagens e cascata do período filtrado: cards do topo (CUSTO-16)
-const periodoCards   = computed(() => textoPeriodo(filters.dateFrom, filters.dateTo))
+// CUSTO-16: os cards abrem em "hoje" (dia de Brasília) com os demais filtros; com período no filtro, seguem o período
+const temPeriodo     = () => Boolean(filters.dateFrom || filters.dateTo)
+const periodoCards   = computed(() => (temPeriodo() ? textoPeriodo(filters.dateFrom, filters.dateTo) : 'Hoje'))
 const detailOpen       = ref(false)
 const selectedOrder    = ref(null)
 const syncingEscrow    = ref(false)
@@ -1404,9 +1406,12 @@ function onRequest(requestProps) {
 async function loadPeriodKpis(axiosParams) {
   const { page, page_size, sort, ...filtros } = axiosParams // eslint-disable-line no-unused-vars
   try {
-    const { data } = await ShopeeService.getOrdersKpis(filtros)
+    const periodo = ShopeeService.getOrdersKpis(filtros)
+    const hoje = temPeriodo() ? periodo
+      : ShopeeService.getOrdersKpis({ ...filtros, date_from: diaLocalIso(), date_to: diaLocalIso() })
+    const [{ data }, { data: dataCards }] = await Promise.all([periodo, hoje])
     periodKpis.value = data.resultado
-    cardStats.value = data  // CUSTO-16: cards do topo seguem os filtros
+    cardStats.value = dataCards
   } catch (e) {
     console.error('Erro ao carregar KPIs da cascata:', e)
     periodKpis.value = null
