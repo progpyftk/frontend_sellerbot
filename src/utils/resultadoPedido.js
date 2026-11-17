@@ -231,3 +231,36 @@ export function faixaAtiva(minPct, maxPct) {
   const max = _num(maxPct)
   return FAIXAS_MARGEM.find((f) => f.min === min && f.max === max) || null
 }
+
+/**
+ * Margem de contribuição → custo fixo → lucro operacional → empréstimo → sobra de caixa (CUSTO-11).
+ *
+ * O custo fixo é um valor só para a operação (Dose Verde + Casa). Quando a cascata é parte do total
+ * (contas/marketplaces filtrados ou uma empresa), ele é ponderado pelo GMV: `cascata.gmv ÷ gmvTotal`.
+ * Valores considerando empresa do Simples Nacional.
+ */
+export function resultadoOperacao(cascata, custoFixo, gmvTotal) {
+  if (!cascata || !custoFixo) return null
+  const gmv = Number(cascata.gmv || 0)
+  const peso = gmvTotal ? Math.min(1, gmv / gmvTotal) : 1
+  const margem = Number(cascata.lucro_bruto || 0)
+  const fixo = arred(Number(custoFixo.operacional || 0) * peso)
+  const emprestimo = arred(Number(custoFixo.financeiro || 0) * peso)
+  const lucroOperacional = arred(margem - fixo)
+  const sobra = arred(lucroOperacional - emprestimo)
+  const pct = (v) => (gmv ? v / gmv : null)
+  return {
+    gmv, peso, pedidos: cascata.pedidos || 0,
+    margem_contribuicao: margem, margem_pct: pct(margem),
+    custo_fixo: fixo, custo_fixo_pct: pct(fixo),
+    custo_fixo_por_pedido: cascata.pedidos ? arred(fixo / cascata.pedidos) : null,
+    lucro_operacional: lucroOperacional, lucro_operacional_pct: pct(lucroOperacional),
+    emprestimo, emprestimo_pct: pct(emprestimo),
+    sobra_caixa: sobra, sobra_caixa_pct: pct(sobra),
+  }
+}
+
+/** GMV de todas as linhas do resumo (todas as contas e canais): base da ponderação do custo fixo. */
+export function gmvTotalResumo(linhas) {
+  return arred((linhas || []).reduce((s, l) => s + Number(l.gmv || 0), 0))
+}

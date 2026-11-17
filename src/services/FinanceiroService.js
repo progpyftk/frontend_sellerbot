@@ -14,6 +14,23 @@ export default {
     return api.get("/api/financeiro/resultado-pedidos/resumo/", { params });
   },
 
+  /** Custo fixo mensal com vigência (CUSTO-11): itens em vigor na data e histórico. */
+  getCustosFixos(params) {
+    return api.get("/api/financeiro/custos-fixos/", { params });
+  },
+  /** Novo valor de um item a partir de `vigencia_de` (item novo: informar `grupo`). */
+  salvarCustoFixo(payload) {
+    return api.post("/api/financeiro/custos-fixos/", payload);
+  },
+  /** O item deixa de valer depois de `ultimo_dia`. */
+  encerrarCustoFixo(payload) {
+    return api.post("/api/financeiro/custos-fixos/encerrar/", payload);
+  },
+  /** Apaga um registro lançado errado; o valor anterior volta a valer. */
+  excluirCustoFixo(id) {
+    return api.delete(`/api/financeiro/custos-fixos/${id}/`);
+  },
+
   /** Lista os bancos suportados e os campos de credencial de cada um. */
   getBancos() {
     return api.get("/api/financeiro/bancos/");

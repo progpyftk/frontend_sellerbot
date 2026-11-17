@@ -105,3 +105,26 @@ describe('filtro de margem (CUSTO-15)', () => {
     expect(faixaAtiva(5, 10)).toBeNull()
   })
 })
+
+describe('resultado da operação (CUSTO-11)', () => {
+  it('desconta custo fixo e empréstimo da margem de contribuição', async () => {
+    const { resultadoOperacao } = await import('src/utils/resultadoPedido')
+    const r = resultadoOperacao({ gmv: 1000, lucro_bruto: 150, pedidos: 10 }, { operacional: 70, financeiro: 25 }, 1000)
+    expect(r.custo_fixo).toBe(70)
+    expect(r.lucro_operacional).toBe(80)
+    expect(r.sobra_caixa).toBe(55)
+    expect(r.lucro_operacional_pct).toBeCloseTo(0.08)
+    expect(r.custo_fixo_por_pedido).toBe(7)
+  })
+  it('pondera o custo fixo pelo GMV quando a cascata é parte do total', async () => {
+    const { resultadoOperacao, gmvTotalResumo } = await import('src/utils/resultadoPedido')
+    const total = gmvTotalResumo([{ gmv: 300 }, { gmv: 700 }])
+    expect(total).toBe(1000)
+    const r = resultadoOperacao({ gmv: 300, lucro_bruto: 45, pedidos: 3 }, { operacional: 100, financeiro: 10 }, total)
+    expect(r.peso).toBeCloseTo(0.3)
+    expect(r.custo_fixo).toBe(30)
+    expect(r.emprestimo).toBe(3)
+    expect(r.sobra_caixa).toBe(12)
+    expect(resultadoOperacao(null, { operacional: 1 }, 1)).toBeNull()
+  })
+})

@@ -426,6 +426,18 @@
         <CascataKpis :kpis="cascata" canal="ml" />
       </div>
 
+      <!-- Margem de contribuição → custo fixo → lucro operacional → empréstimo → sobra de caixa (CUSTO-11) -->
+      <ResultadoOperacao
+        v-if="cascataResumo"
+        :cascata="cascata"
+        :custo-fixo="cascataResumo.custo_fixo"
+        :gmv-total="cascataGmvTotal"
+        :empresas="cascataEmpresas"
+        :read-only="authStore.isReadOnly"
+        @editar="showCustoFixo = true"
+      />
+      <CustoFixoDialog v-model="showCustoFixo" @salvo="loadCascata" />
+
           <!-- ══════════ ABAS ═══════════════════════════════════════════════════ -->
           <div class="tab-bar">
             <button v-for="t in tabs" :key="t.key" :class="['tab-btn', activeTab === t.key && 'tab-btn--on']"
@@ -1432,7 +1444,10 @@ import ShopeeService from 'src/services/ShopeeService'
 import TikTokShopService from 'src/services/TikTokShopService'
 import FinanceiroService from 'src/services/FinanceiroService'
 import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
-import { agregarCascata, indicePorDiaConta, margemTexto, variacaoPct } from 'src/utils/resultadoPedido'
+import ResultadoOperacao from 'src/components/dashboard/ResultadoOperacao.vue'
+import CustoFixoDialog from 'src/components/dashboard/CustoFixoDialog.vue'
+import { useStore } from 'src/stores/store'
+import { agregarCascata, gmvTotalResumo, indicePorDiaConta, margemTexto, variacaoPct } from 'src/utils/resultadoPedido'
 import { calculateNetMarginPct } from 'src/utils/dashboardMetrics'
 import { nomeConta } from 'src/utils/nomeConta'
 import { isDirectDeliveryCarrier } from 'src/utils/shopeeFinance'
@@ -1500,6 +1515,23 @@ const somaCascataPor = (campo) => {
 }
 const cascataPorCnpj = computed(() => somaCascataPor('cnpj'))
 const cascataPorCanal = computed(() => somaCascataPor('canal'))
+// Resultado da operação (CUSTO-11): custo fixo único da operação, ponderado pelo GMV do recorte
+const authStore = useStore()
+const showCustoFixo = ref(false)
+const cascataGmvTotal = computed(() => gmvTotalResumo(cascataResumo.value?.por_conta_dia))
+const cascataEmpresas = computed(() => {
+  const canais = filtroCascata().canais
+  const sel = new Set(selectedAccountKeys.value)
+  const out = {}
+  for (const l of cascataResumo.value?.por_conta_dia || []) {
+    if (!canais.includes(l.canal) || (sel.size && !sel.has(l.conta))) continue
+    const k = String(l.cnpj || '').replace(/\D/g, '')
+    const e = (out[k] ||= { chave: k || 'sem', gmv: 0, lucro_bruto: 0, pedidos: 0 })
+    e.gmv += l.gmv || 0; e.lucro_bruto += l.lucro_bruto || 0; e.pedidos += l.pedidos || 0
+  }
+  const nomes = Object.fromEntries((data.value?.by_cnpj || []).map(c => [String(c.cnpj || '').replace(/\D/g, ''), (c.accounts || []).join(' · ')]))
+  return Object.values(out).map(e => ({ ...e, nome: nomes[e.chave] || e.chave }))
+})
 const cascCnpj = (cnpj) => cascataPorCnpj.value[String(cnpj || '').replace(/\D/g, '')] || null
 const cascataDelta = (campo) => variacaoPct(cascata.value?.[campo], cascataAnterior.value?.[campo])
 const fmtMargem = (t) => (t?.margem_contribuicao != null ? (t.margem_contribuicao * 100).toFixed(1).replace('.', ',') + '%' : '—')
