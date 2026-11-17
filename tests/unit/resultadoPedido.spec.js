@@ -128,3 +128,18 @@ describe('resultado da operação (CUSTO-11)', () => {
     expect(resultadoOperacao(null, { operacional: 1 }, 1)).toBeNull()
   })
 })
+
+describe('rótulo do período dos cards (CUSTO-16)', () => {
+  it('reconhece os atalhos e formata o resto', async () => {
+    const { textoPeriodo } = await import('src/utils/resultadoPedido')
+    const agora = new Date(2026, 10, 16, 22, 30) // 16/11 22h30 local
+    expect(textoPeriodo(null, null, agora)).toBe('Todo o período')
+    expect(textoPeriodo('2026-11-16T00:00', '2026-11-16T23:59', agora)).toBe('Hoje')
+    expect(textoPeriodo('2026-11-15', '2026-11-15', agora)).toBe('Ontem')
+    expect(textoPeriodo('2026-11-09', '2026-11-16', agora)).toBe('Últimos 7 dias')
+    expect(textoPeriodo('2026-10-17', '2026-11-16', agora)).toBe('Últimos 30 dias')
+    expect(textoPeriodo('2026-11-01', '2026-11-16', agora)).toBe('Este mês')
+    expect(textoPeriodo('2026-11-01', '2026-11-10', agora)).toBe('01/11 – 10/11')
+    expect(textoPeriodo('2026-11-01', null, agora)).toBe('Desde 01/11')
+  })
+})

@@ -34,10 +34,10 @@
     <!-- ══ MINI DASHBOARD — HOJE ════════════════════════════════ -->
     <div class="today-bar">
       <div class="today-bar-label">
-        <q-icon name="today" size="13px" class="q-mr-xs" />Hoje
+        <q-icon name="event" size="13px" class="q-mr-xs" />{{ periodoCards }}
       </div>
 
-      <template v-if="todayLoading || !todayStats">
+      <template v-if="!cardStats">
         <div class="today-card today-card--skeleton" v-for="n in 5" :key="n" />
       </template>
 
@@ -46,29 +46,29 @@
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="shopping_cart" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.gmv) }}</div>
+            <div class="today-card-val">{{ formatCurrency(cardStats.gmv) }}</div>
             <div class="today-card-label">GMV</div>
-            <div class="today-card-sub">valor bruto vendido hoje</div>
+            <div class="today-card-sub">valor bruto vendido no período</div>
           </div>
         </div>
 
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="receipt_long" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ todayStats.count_paid }}</div>
+            <div class="today-card-val">{{ cardStats.count_paid }}</div>
             <div class="today-card-label">Vendas</div>
-            <div class="today-card-sub"><span v-if="todayStats.count_cancelled > 0" class="text-red-5">{{ todayStats.count_cancelled }} cancelado{{ todayStats.count_cancelled !== 1 ? 's' : '' }}</span><span v-if="todayStats.count_cancelled > 0 && todayStats.count_unpaid > 0"> · </span><span v-if="todayStats.count_unpaid > 0" class="text-orange-6">{{ todayStats.count_unpaid }} aguardando pagamento</span><span v-if="!todayStats.count_cancelled && !todayStats.count_unpaid">pedidos pagos</span></div>
+            <div class="today-card-sub"><span v-if="cardStats.count_cancelled > 0" class="text-red-5">{{ cardStats.count_cancelled }} cancelado{{ cardStats.count_cancelled !== 1 ? 's' : '' }}</span><span v-if="cardStats.count_cancelled > 0 && cardStats.count_unpaid > 0"> · </span><span v-if="cardStats.count_unpaid > 0" class="text-orange-6">{{ cardStats.count_unpaid }} aguardando pagamento</span><span v-if="!cardStats.count_cancelled && !cardStats.count_unpaid">pedidos pagos</span></div>
           </div>
         </div>
 
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="campaign" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.resultado?.ads) }}</div>
+            <div class="today-card-val">{{ formatCurrency(cardStats.resultado?.ads) }}</div>
             <div class="today-card-label">Ads</div>
             <div class="today-card-sub">
-              <template v-if="todayStats.resultado?.gmv">
-                {{ (todayStats.resultado.ads / todayStats.resultado.gmv * 100).toFixed(1).replace('.', ',') }}% do GMV
+              <template v-if="cardStats.resultado?.gmv">
+                {{ (cardStats.resultado.ads / cardStats.resultado.gmv * 100).toFixed(1).replace('.', ',') }}% do GMV
               </template>
               <span class="text-grey-5"> · atualiza a cada 2h</span>
             </div>
@@ -76,18 +76,18 @@
         </div>
 
         <div class="today-card"
-          :class="todayStats.resultado?.pedidos
-            ? (todayStats.resultado.lucro_bruto >= 0 ? 'today-card--pos' : 'today-card--neg')
+          :class="cardStats.resultado?.pedidos
+            ? (cardStats.resultado.lucro_bruto >= 0 ? 'today-card--pos' : 'today-card--neg')
             : 'today-card--neutral'">
           <div class="today-card-icon"><q-icon name="trending_up" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ todayStats.resultado?.pedidos ? formatCurrency(todayStats.resultado.lucro_bruto) : '—' }}</div>
+            <div class="today-card-val">{{ cardStats.resultado?.pedidos ? formatCurrency(cardStats.resultado.lucro_bruto) : '—' }}</div>
             <div class="today-card-label">Lucro bruto</div>
             <div class="today-card-sub">
-              <template v-if="todayStats.resultado?.pedidos">
-                {{ formatCurrency(todayStats.resultado.lucro_bruto_medio) }} / pedido
-                <span v-if="todayStats.resultado.pedidos_custo_incompleto" class="text-orange-6">
-                  · {{ todayStats.resultado.pedidos_custo_incompleto }} c/ custo incompleto
+              <template v-if="cardStats.resultado?.pedidos">
+                {{ formatCurrency(cardStats.resultado.lucro_bruto_medio) }} / pedido
+                <span v-if="cardStats.resultado.pedidos_custo_incompleto" class="text-orange-6">
+                  · {{ cardStats.resultado.pedidos_custo_incompleto }} c/ custo incompleto
                 </span>
               </template>
               <template v-else>calculado a cada 2h</template>
@@ -96,14 +96,14 @@
         </div>
 
         <div class="today-card"
-          :class="todayStats.resultado?.margem_contribuicao != null
-            ? (todayStats.resultado.margem_contribuicao >= 0 ? 'today-card--pos' : 'today-card--neg')
+          :class="cardStats.resultado?.margem_contribuicao != null
+            ? (cardStats.resultado.margem_contribuicao >= 0 ? 'today-card--pos' : 'today-card--neg')
             : 'today-card--neutral'">
           <div class="today-card-icon"><q-icon name="percent" size="16px" /></div>
           <div class="today-card-body">
             <div class="today-card-val">
-              {{ todayStats.resultado?.margem_contribuicao != null
-                ? (todayStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') + '%' : '—' }}
+              {{ cardStats.resultado?.margem_contribuicao != null
+                ? (cardStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') + '%' : '—' }}
             </div>
             <div class="today-card-label">Margem de contribuição</div>
             <div class="today-card-sub">lucro bruto ÷ GMV</div>
@@ -963,7 +963,7 @@ import ShopeeService from 'src/services/ShopeeService'
 import { useStore } from 'src/stores/store'
 import SbTableScrollHint from 'src/components/common/SbTableScrollHint.vue'
 import { isDirectDeliveryCarrier, isEscrowReal, orderRevenue } from 'src/utils/shopeeFinance'
-import { FAIXAS_MARGEM, faixaAtiva, paramsMargem, textoFaixaMargem } from 'src/utils/resultadoPedido'
+import { FAIXAS_MARGEM, faixaAtiva, paramsMargem, textoFaixaMargem, textoPeriodo } from 'src/utils/resultadoPedido'
 
 const $q = useQuasar()
 const authStore = useStore()
@@ -978,9 +978,9 @@ const showAdvanced   = ref(false)
 const accountOptions = ref([])
 const currentSort    = ref('-create_time')
 const tabelaWrap     = ref(null)  // wrapper da tabela (barra horizontal fixa, CUSTO-14)
-const todayStats     = ref(null)
 const periodKpis     = ref(null)  // cascata do período filtrado (CUSTO-14)
-const todayLoading   = ref(false)
+const cardStats      = ref(null)  // GMV, contagens e cascata do período filtrado: cards do topo (CUSTO-16)
+const periodoCards   = computed(() => textoPeriodo(filters.dateFrom, filters.dateTo))
 const detailOpen       = ref(false)
 const selectedOrder    = ref(null)
 const syncingEscrow    = ref(false)
@@ -1399,14 +1399,6 @@ function onRequest(requestProps) {
   loadOrders(requestProps.pagination.page)
 }
 
-async function fetchTodayStats() {
-  todayLoading.value = true
-  try {
-    const { data } = await ShopeeService.getOrderTodayStats()
-    todayStats.value = data
-  } catch (e) { console.error(e) }
-  finally { todayLoading.value = false }
-}
 
 // KPIs da cascata com os mesmos filtros da tabela (CUSTO-14); falha não derruba a listagem
 async function loadPeriodKpis(axiosParams) {
@@ -1414,9 +1406,11 @@ async function loadPeriodKpis(axiosParams) {
   try {
     const { data } = await ShopeeService.getOrdersKpis(filtros)
     periodKpis.value = data.resultado
+    cardStats.value = data  // CUSTO-16: cards do topo seguem os filtros
   } catch (e) {
     console.error('Erro ao carregar KPIs da cascata:', e)
     periodKpis.value = null
+    cardStats.value = null
   }
 }
 
@@ -1518,7 +1512,6 @@ async function syncOrderEscrow(order) {
 onMounted(() => {
   loadAccounts()
   loadOrders()
-  fetchTodayStats()
 })
 </script>
 

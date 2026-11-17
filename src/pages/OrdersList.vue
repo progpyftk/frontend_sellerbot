@@ -22,45 +22,45 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════ -->
-    <!-- MINI DASHBOARD — HOJE                                 -->
+    <!-- MINI DASHBOARD — PERÍODO FILTRADO (CUSTO-16)       -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="today-bar">
       <div class="today-bar-label">
-        <q-icon name="today" size="13px" class="q-mr-xs" />Hoje
+        <q-icon name="event" size="13px" class="q-mr-xs" />{{ periodoCards }}
       </div>
 
-      <template v-if="todayLoading || !todayStats">
+      <template v-if="!cardStats">
         <div class="today-card today-card--skeleton" v-for="n in 5" :key="n" />
       </template>
 
       <template v-else>
-        <!-- Cards do dia (CUSTO-14, ordem do dono): GMV · Vendas · Ads · Lucro bruto · Margem de contribuição -->
+        <!-- Cards do período filtrado (CUSTO-16; ordem do dono, CUSTO-14): GMV · Vendas · Ads · Lucro bruto · Margem de contribuição -->
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="shopping_cart" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.total_amount) }}</div>
+            <div class="today-card-val">{{ formatCurrency(cardStats.total_amount) }}</div>
             <div class="today-card-label">GMV</div>
-            <div class="today-card-sub">valor bruto vendido hoje</div>
+            <div class="today-card-sub">valor bruto vendido no período</div>
           </div>
         </div>
 
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="receipt_long" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ todayStats.count }}</div>
+            <div class="today-card-val">{{ cardStats.count }}</div>
             <div class="today-card-label">Vendas</div>
-            <div class="today-card-sub"><template v-if="todayStats.refunded_count">{{ todayStats.refunded_count }} devolvida{{ todayStats.refunded_count !== 1 ? 's' : '' }} · </template>{{ todayStats.order_count }} pedidos</div>
+            <div class="today-card-sub"><template v-if="cardStats.refunded_count">{{ cardStats.refunded_count }} devolvida{{ cardStats.refunded_count !== 1 ? 's' : '' }} · </template>{{ cardStats.order_count }} pedidos</div>
           </div>
         </div>
 
         <div class="today-card today-card--neutral">
           <div class="today-card-icon"><q-icon name="campaign" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ formatCurrency(todayStats.resultado?.ads) }}</div>
+            <div class="today-card-val">{{ formatCurrency(cardStats.resultado?.ads) }}</div>
             <div class="today-card-label">Ads</div>
             <div class="today-card-sub">
-              <template v-if="todayStats.resultado?.gmv">
-                {{ (todayStats.resultado.ads / todayStats.resultado.gmv * 100).toFixed(1).replace('.', ',') }}% do GMV
+              <template v-if="cardStats.resultado?.gmv">
+                {{ (cardStats.resultado.ads / cardStats.resultado.gmv * 100).toFixed(1).replace('.', ',') }}% do GMV
               </template>
               <span class="text-grey-5"> · atualiza a cada 2h</span>
             </div>
@@ -68,18 +68,18 @@
         </div>
 
         <div class="today-card"
-          :class="todayStats.resultado?.pedidos
-            ? (todayStats.resultado.lucro_bruto >= 0 ? 'today-card--pos' : 'today-card--neg')
+          :class="cardStats.resultado?.pedidos
+            ? (cardStats.resultado.lucro_bruto >= 0 ? 'today-card--pos' : 'today-card--neg')
             : 'today-card--neutral'">
           <div class="today-card-icon"><q-icon name="trending_up" size="16px" /></div>
           <div class="today-card-body">
-            <div class="today-card-val">{{ todayStats.resultado?.pedidos ? formatCurrency(todayStats.resultado.lucro_bruto) : '—' }}</div>
+            <div class="today-card-val">{{ cardStats.resultado?.pedidos ? formatCurrency(cardStats.resultado.lucro_bruto) : '—' }}</div>
             <div class="today-card-label">Lucro bruto</div>
             <div class="today-card-sub">
-              <template v-if="todayStats.resultado?.pedidos">
-                {{ formatCurrency(todayStats.resultado.lucro_bruto_medio) }} / pedido
-                <span v-if="todayStats.resultado.pedidos_custo_incompleto" class="text-orange-6">
-                  · {{ todayStats.resultado.pedidos_custo_incompleto }} c/ custo incompleto
+              <template v-if="cardStats.resultado?.pedidos">
+                {{ formatCurrency(cardStats.resultado.lucro_bruto_medio) }} / pedido
+                <span v-if="cardStats.resultado.pedidos_custo_incompleto" class="text-orange-6">
+                  · {{ cardStats.resultado.pedidos_custo_incompleto }} c/ custo incompleto
                 </span>
               </template>
               <template v-else>calculado a cada 2h</template>
@@ -88,14 +88,14 @@
         </div>
 
         <div class="today-card"
-          :class="todayStats.resultado?.margem_contribuicao != null
-            ? (todayStats.resultado.margem_contribuicao >= 0 ? 'today-card--pos' : 'today-card--neg')
+          :class="cardStats.resultado?.margem_contribuicao != null
+            ? (cardStats.resultado.margem_contribuicao >= 0 ? 'today-card--pos' : 'today-card--neg')
             : 'today-card--neutral'">
           <div class="today-card-icon"><q-icon name="percent" size="16px" /></div>
           <div class="today-card-body">
             <div class="today-card-val">
-              {{ todayStats.resultado?.margem_contribuicao != null
-                ? (todayStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') + '%' : '—' }}
+              {{ cardStats.resultado?.margem_contribuicao != null
+                ? (cardStats.resultado.margem_contribuicao * 100).toFixed(1).replace('.', ',') + '%' : '—' }}
             </div>
             <div class="today-card-label">Margem de contribuição</div>
             <div class="today-card-sub">lucro bruto ÷ GMV</div>
@@ -1268,6 +1268,11 @@
                 <q-icon name="calendar_month" size="15px" color="primary" />
                 Período
               </div>
+              <div class="fadv-chips">
+                <button v-for="p in ATALHOS_PERIODO" :key="p.label" type="button"
+                  :class="['fadv-chip', periodoCards === p.label && 'fadv-chip--on']"
+                  @click="aplicarPeriodo(p.dias)">{{ p.label }}</button>
+              </div>
               <div class="fadv-row fadv-row--col">
                 <div class="fb-date-field" :class="filters.dateFrom && 'fb-date-field--filled'">
                   <label class="fb-date-label">De</label>
@@ -1431,7 +1436,7 @@ import CascataCelula from 'src/components/pedidos/CascataCelula.vue'
 import CascataDetalhe from 'src/components/pedidos/CascataDetalhe.vue'
 import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
 import {
-  FAIXAS_MARGEM, faixaAtiva, motivoDaLinha, paramsMargem, resultadoDaLinha, textoFaixaMargem,
+  ATALHOS_PERIODO, FAIXAS_MARGEM, faixaAtiva, motivoDaLinha, paramsMargem, resultadoDaLinha, textoFaixaMargem, textoPeriodo,
 } from 'src/utils/resultadoPedido'
 import { useQuasar, copyToClipboard, date } from 'quasar'
 
@@ -1518,17 +1523,6 @@ const pagination = ref({
   sortBy: 'date_created', descending: true, page: 1, rowsPerPage: 50, rowsNumber: 0
 })
 
-// Mini-dashboard: resumo do dia
-const todayStats     = ref(null)
-const todayLoading   = ref(false)
-const fetchTodayStats = async () => {
-  todayLoading.value = true
-  try {
-    const { data } = await MercadoLivreService.getOrderTodaySummary()
-    todayStats.value = data
-  } catch (e) { console.error(e) }
-  finally { todayLoading.value = false }
-}
 
 // Labels conforme docs/glossario_metricas.md (feedback #9)
 // Largura de cada coluna é controlada só via CSS (.cell-*), abaixo — o campo `style`
@@ -1795,7 +1789,7 @@ const loadFacets = async () => {
     availableAccounts.value = data.map(a => ({ id: a.account_id, nickname: a.account_nickname }))
   } catch (e) { console.error(e) }
 }
-const refreshData = () => { onRequest({ pagination: pagination.value }); fetchTodayStats() }
+const refreshData = () => { onRequest({ pagination: pagination.value }) }
 const onRequest = async (props) => {
   const { page, rowsPerPage, sortBy, descending } = props.pagination
   loading.value = true
@@ -1842,6 +1836,27 @@ const onRequest = async (props) => {
 
 // KPIs do período filtrado (feedback #8) — mesmo filterset da listagem
 const periodKpis = ref(null)
+// Cards do topo (CUSTO-16): seguem os filtros aplicados, não mais o "hoje" fixo
+const cardStats = computed(() => periodKpis.value && {
+  total_amount: periodKpis.value.gmv,
+  count: periodKpis.value.pack_count,
+  order_count: periodKpis.value.orders_count,
+  refunded_count: periodKpis.value.refunded_count,
+  resultado: periodKpis.value.resultado,
+})
+const periodoCards = computed(() => textoPeriodo(filters.dateFrom, filters.dateTo))
+// Atalhos de período (CUSTO-16): dia local de Brasília, como no dashboard
+function aplicarPeriodo(dias) {
+  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+  const hoje = new Date()
+  const ini = new Date(hoje)
+  if (dias === 'mes') ini.setDate(1)
+  else ini.setDate(ini.getDate() - dias)
+  const fim = dias === 1 ? ini : hoje  // "ontem": só o dia anterior
+  filters.dateFrom = `${iso(ini)}T00:00`
+  filters.dateTo = `${iso(fim)}T23:59`
+  buscar()
+}
 const fetchPeriodKpis = async (baseParams) => {
   try {
     const p = { ...baseParams }
@@ -2158,7 +2173,7 @@ const getPaymentMethodLabel = (row) => {
   return p.installments > 1 ? `${type} (${p.installments}×)` : type
 }
 
-onMounted(() => { loadFacets(); refreshData(); fetchTodayStats() })
+onMounted(() => { loadFacets(); refreshData() })
 </script>
 
 <style scoped>

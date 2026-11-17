@@ -264,3 +264,35 @@ export function resultadoOperacao(cascata, custoFixo, gmvTotal) {
 export function gmvTotalResumo(linhas) {
   return arred((linhas || []).reduce((s, l) => s + Number(l.gmv || 0), 0))
 }
+
+/** Atalhos de período das telas de pedidos (CUSTO-16); `dias` 0 = hoje, 1 = ontem, 'mes' = este mês. */
+export const ATALHOS_PERIODO = [
+  { label: 'Hoje', dias: 0 },
+  { label: 'Ontem', dias: 1 },
+  { label: 'Últimos 7 dias', dias: 7 },
+  { label: 'Últimos 30 dias', dias: 30 },
+  { label: 'Este mês', dias: 'mes' },
+]
+
+/**
+ * Rótulo do período filtrado para os cards (CUSTO-16): "Hoje", "Ontem", "Últimos 7 dias", "Este mês",
+ * "01/11 – 15/11" ou "Todo o período". Aceita `AAAA-MM-DD` ou `AAAA-MM-DDTHH:MM`; `agora` é para teste.
+ */
+export function textoPeriodo(de, ate, agora = new Date()) {
+  const dia = (v) => (v ? String(v).slice(0, 10) : null)
+  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+  const menos = (n) => { const d = new Date(agora); d.setDate(d.getDate() - n); return iso(d) }
+  const ddmm = (v) => v.slice(8, 10) + '/' + v.slice(5, 7)
+  const a = dia(de), b = dia(ate), hoje = iso(agora)
+  if (!a && !b) return 'Todo o período'
+  if (a && b) {
+    if (a === b) return a === hoje ? 'Hoje' : a === menos(1) ? 'Ontem' : ddmm(a)
+    if (b === hoje) {
+      if (a === menos(7)) return 'Últimos 7 dias'
+      if (a === menos(30)) return 'Últimos 30 dias'
+      if (a === hoje.slice(0, 8) + '01') return 'Este mês'
+    }
+    return `${ddmm(a)} – ${ddmm(b)}`
+  }
+  return a ? `Desde ${ddmm(a)}` : `Até ${ddmm(b)}`
+}
