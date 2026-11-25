@@ -14,6 +14,19 @@ export default {
     return api.get("/api/financeiro/resultado-pedidos/resumo/", { params });
   },
 
+  /** Parâmetros da margem por CNPJ (MCS-3/4/5): alíquota, produção e embalagem em vigor e histórico. */
+  getParametrosMargem(params) {
+    return api.get("/api/financeiro/parametros-margem/", { params });
+  },
+  /** Novo valor `{tipo, cnpj_id?, modo?, valor?, percentual?}`; sem `vigencia_de`, vale a partir de hoje. */
+  salvarParametroMargem(payload) {
+    return api.post("/api/financeiro/parametros-margem/", payload);
+  },
+  /** O valor digitado deixa de valer depois de `ultimo_dia`. */
+  encerrarParametroMargem(payload) {
+    return api.post("/api/financeiro/parametros-margem/encerrar/", payload);
+  },
+
   /** Custo fixo mensal com vigência (CUSTO-11): itens em vigor na data e histórico. */
   getCustosFixos(params) {
     return api.get("/api/financeiro/custos-fixos/", { params });

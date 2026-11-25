@@ -184,4 +184,21 @@ export default {
       temp_object: tempObject,
     });
   },
+
+  /** Histórico do regime tributário do CNPJ (MCS-1). */
+  getRegimeCnpj(cnpjId) {
+    return api.get(`/api/fiscal/cnpjs/${cnpjId}/regime/`);
+  },
+  /** Declara o regime `{regime, vigencia_de}`; encerra o anterior na véspera. Só o dono do CNPJ. */
+  declararRegimeCnpj(cnpjId, payload) {
+    return api.post(`/api/fiscal/cnpjs/${cnpjId}/regime/`, payload);
+  },
+  /** Cadastra um CNPJ do login `{cnpj, razao_social?, regime?, vigencia_de?}` e liga Tiny e contas (MCS-2). */
+  cadastrarCnpj(payload) {
+    return api.post("/api/fiscal/cnpjs/cadastrar/", payload);
+  },
+  /** Liga ao CNPJ o Tiny e as contas de marketplace do login que declaram esse CNPJ. */
+  vincularContasCnpj(cnpjId) {
+    return api.post(`/api/fiscal/cnpjs/${cnpjId}/vincular/`);
+  },
 };

@@ -29,6 +29,7 @@ describe('ABAS_FINANCEIRO', () => {
       'visao-geral',
       'marketplace',
       'margem',
+      'parametros-margem',
       'dre',
       'balanco',
       'dfc',

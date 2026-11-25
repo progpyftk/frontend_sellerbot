@@ -6,7 +6,10 @@
       <span v-if="resultado" class="cd-meta">rates de {{ formatDiaMes(resultado.snapshot_data) }}</span>
     </div>
 
-    <div v-if="!resultado" class="cd-vazio">{{ textoMotivo(motivo) }}</div>
+    <div v-if="!resultado" class="cd-vazio">
+      {{ textoMotivo(motivo) }}
+      <router-link v-if="motivoPedeConfiguracao(motivo)" :to="ROTA_PARAMETROS_MARGEM" class="cd-link">Abrir Parâmetros da margem</router-link>
+    </div>
 
     <template v-else>
       <template v-for="c in COLUNAS_CASCATA" :key="c.chave">
@@ -44,7 +47,8 @@
 
 <script setup>
 import {
-  COLUNAS_CASCATA, formatAliquota, formatDiaMes, linhasEmbalagens, linhasFrete, margemPct, textoMotivo,
+  COLUNAS_CASCATA, ROTA_PARAMETROS_MARGEM, formatAliquota, formatDiaMes, linhasEmbalagens, linhasFrete, margemPct,
+  motivoPedeConfiguracao, rotuloOrigemCustoPedido, rotuloOrigemImposto, textoMotivo,
 } from 'src/utils/resultadoPedido'
 
 const props = defineProps({
@@ -60,7 +64,11 @@ const rotulo = (c) => (c.chave === 'taxas' ? `Taxas ${props.canal === 'shopee' ?
 
 const extra = (chave) => {
   const r = props.resultado
-  if (chave === 'imposto') return formatAliquota(r.aliquota_imposto)
+  const o = r.origens || {}
+  const com = (base, origem) => (origem ? `${base} · ${origem}` : base)
+  if (chave === 'imposto') return com(formatAliquota(r.aliquota_imposto), rotuloOrigemImposto(o.aliquota))
+  if (chave === 'producao') return rotuloOrigemCustoPedido(o.producao)
+  if (chave === 'embalagens') return rotuloOrigemCustoPedido(o.embalagem)
   if (chave === 'produto') return `${r.unidades} un.`
   return ''
 }
@@ -85,6 +93,7 @@ const classe = (c) => {
 .cd-title { display: flex; align-items: center; font-weight: 700; font-size: 13px; color: #2d3748; margin-bottom: 8px; }
 .cd-meta { margin-left: auto; font-weight: 400; font-size: 11px; color: #718096; }
 .cd-vazio { font-size: 12px; color: #718096; }
+.cd-link { margin-left: 4px; color: #3182ce; }
 .cd-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 3px 0; font-size: 12.5px; }
 .cd-row--sub { border-top: 1px solid #e2e8f0; margin-top: 2px; padding-top: 5px; font-weight: 700; }
 .cd-row--det { padding: 0 0 0 18px; font-size: 11.5px; color: #718096; }

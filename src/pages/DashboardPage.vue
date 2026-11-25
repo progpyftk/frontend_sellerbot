@@ -83,11 +83,13 @@
               </div>
               <div class="today-kpi">
                 <div class="today-kpi-label">Lucro bruto</div>
-                <div class="today-kpi-val" :class="(cascataHoje?.lucro_bruto || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ cascataHoje ? fmt(cascataHoje.lucro_bruto) : '—' }}</div>
+                <router-link v-if="!cascataHoje && margemNaoConfigurada" :to="ROTA_PARAMETROS_MARGEM" class="today-kpi-val today-kpi-link">—<q-tooltip>Margem ainda não configurada para este login. Clique para configurar.</q-tooltip></router-link>
+                <div v-else class="today-kpi-val" :class="(cascataHoje?.lucro_bruto || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ cascataHoje ? fmt(cascataHoje.lucro_bruto) : '—' }}</div>
               </div>
               <div class="today-kpi">
                 <div class="today-kpi-label">Margem de contribuição</div>
-                <div class="today-kpi-val" :class="(cascataHoje?.margem_contribuicao || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmtMargem(cascataHoje) }}</div>
+                <router-link v-if="!cascataHoje && margemNaoConfigurada" :to="ROTA_PARAMETROS_MARGEM" class="today-kpi-val today-kpi-link">—<q-tooltip>Margem ainda não configurada para este login. Clique para configurar.</q-tooltip></router-link>
+                <div v-else class="today-kpi-val" :class="(cascataHoje?.margem_contribuicao || 0) >= 0 ? 'today-pos' : 'today-neg'">{{ fmtMargem(cascataHoje) }}</div>
               </div>
               <div class="today-kpi">
                 <div class="today-kpi-label">Ticket médio</div>
@@ -251,7 +253,7 @@
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="240px" class="kpi-tooltip-pop">GMV menos o imposto (alíquota efetiva do Simples, média móvel de 90 dias, por CNPJ). Só contas com custo cadastrado (Dose Verde e Casa dos Suportes).</q-tooltip>
+              <q-tooltip max-width="240px" class="kpi-tooltip-pop">GMV menos o imposto (alíquota efetiva do Simples, média móvel de 90 dias, por CNPJ). Só contas de CNPJ do Simples com a margem configurada (Financeiro → Parâmetros da margem).</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
@@ -421,9 +423,15 @@
       <!-- Cascata do período, coluna a coluna (CUSTO-14) -->
       <div v-if="cascata" class="cascata-dash">
         <div class="cascata-dash-title">
-          Cascata do período <span class="cascata-dash-note">ML + Shopee · Dose Verde e Casa dos Suportes</span>
+          Cascata do período <span class="cascata-dash-note">ML + Shopee · contas com a margem configurada</span>
         </div>
         <CascataKpis :kpis="cascata" canal="ml" />
+      </div>
+      <!-- MCS-7: login sem margem configurada vê o caminho para configurar, não um vazio -->
+      <div v-else-if="margemNaoConfigurada" class="cascata-dash cascata-dash--vazia">
+        <q-icon name="tune" size="16px" />
+        Margem de contribuição ainda não configurada para este login.
+        <router-link :to="ROTA_PARAMETROS_MARGEM">Configurar em Parâmetros da margem</router-link>
       </div>
 
       <!-- Margem de contribuição → custo fixo → lucro operacional → empréstimo → sobra de caixa (CUSTO-11) -->
@@ -1447,7 +1455,8 @@ import CascataKpis from 'src/components/pedidos/CascataKpis.vue'
 import ResultadoOperacao from 'src/components/dashboard/ResultadoOperacao.vue'
 import CustoFixoDialog from 'src/components/dashboard/CustoFixoDialog.vue'
 import { useStore } from 'src/stores/store'
-import { agregarCascata, gmvTotalResumo, indicePorDiaConta, margemTexto, variacaoPct } from 'src/utils/resultadoPedido'
+import { ROTA_PARAMETROS_MARGEM, agregarCascata, gmvTotalResumo, indicePorDiaConta, margemTexto, variacaoPct } from 'src/utils/resultadoPedido'
+import { passosConfiguracao } from 'src/utils/parametrosMargem'
 import { calculateNetMarginPct } from 'src/utils/dashboardMetrics'
 import { nomeConta } from 'src/utils/nomeConta'
 import { isDirectDeliveryCarrier } from 'src/utils/shopeeFinance'
@@ -1476,8 +1485,8 @@ const showAccountPicker = ref(false)
 const selectedAccountKeys = ref([])  // e.g. ['ml:123', 'shopee:456']
 
 // ── Cascata GMV → lucro bruto (CUSTO-14) ─────────────────────────────────────
-// Lida de /api/financeiro/resultado-pedidos/resumo/ (só ML e Shopee de Dose Verde e Casa dos
-// Suportes têm custo); filtrada no front pelas mesmas contas/marketplaces do dashboard.
+// Lida de /api/financeiro/resultado-pedidos/resumo/ (contas de CNPJ do Simples com a margem configurada,
+// MCS-6); filtrada no front pelas mesmas contas/marketplaces do dashboard.
 const cascataResumo = ref(null)
 const cascataHojeResumo = ref(null)
 function filtroCascata() {
@@ -1549,6 +1558,23 @@ async function loadCascata() {
     cascataResumo.value = null
   }
 }
+// MCS-7: sem cascata, pergunta (uma vez) se falta configurar a margem, para o "—" virar link.
+const margemNaoConfigurada = ref(false)
+let parametrosConsultados = false
+async function checarConfiguracaoMargem() {
+  if (parametrosConsultados) return
+  parametrosConsultados = true
+  try {
+    const { data } = await FinanceiroService.getParametrosMargem()
+    margemNaoConfigurada.value = !passosConfiguracao(data).pronto
+  } catch {
+    margemNaoConfigurada.value = false
+  }
+}
+watch([cascataResumo, cascataHojeResumo], ([periodo, hoje]) => {
+  const vazio = (r) => r && !(r.por_conta_dia || []).length
+  if (vazio(periodo) || vazio(hoje)) checarConfiguracaoMargem()
+})
 async function loadCascataHoje() {
   try {
     const hoje = fmtDate(today)
@@ -3850,6 +3876,9 @@ watch(selectedAccountKeys, () => {
 .cascata-dash { margin-top: 12px; background: #fff; border-radius: 12px; padding: 10px 4px 6px; }
 .cascata-dash-title { font-size: 12px; font-weight: 700; color: #2d3748; padding: 0 16px; }
 .cascata-dash-note { font-weight: 400; color: #a0aec0; margin-left: 6px; }
+.cascata-dash--vazia { display: flex; align-items: center; gap: 6px; padding: 10px 16px; font-size: 12.5px; color: #4a5568; }
+.cascata-dash--vazia a, .today-kpi-link { color: #3182ce; text-decoration: none; }
+.cascata-dash--vazia a:hover, .today-kpi-link:hover { text-decoration: underline; }
 .kpi-grid-header {
   display: flex;
   align-items: center;

@@ -37,6 +37,15 @@ export const ABAS_FINANCEIRO = [
     disponivel: true,
   },
   {
+    id: 'parametros-margem',
+    label: 'Parâmetros da margem',
+    icone: 'tune',
+    onda: 'MCS-7',
+    endpoint: '/api/financeiro/parametros-margem/',
+    descricao: 'Regime, alíquota efetiva, produção/processamento e embalagem por CNPJ, com vigência.',
+    disponivel: true,
+  },
+  {
     id: 'dre',
     label: 'DRE',
     icone: 'stacked_line_chart',

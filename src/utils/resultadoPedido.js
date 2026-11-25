@@ -23,7 +23,7 @@ const SOMAVEIS = [
   'lucro_bruto', 'unidades', 'unidades_sem_custo',
 ];
 const SOMAVEIS_DETALHE = {
-  embalagens_detalhe: ['saco', 'etiqueta_identificacao', 'etiqueta_envio', 'stretch'],
+  embalagens_detalhe: ['saco', 'etiqueta_identificacao', 'etiqueta_envio', 'stretch', 'por_pedido'],
 };
 
 const n = (v) => Number(v || 0);
@@ -95,6 +95,7 @@ const ROTULOS_EMBALAGEM = {
   etiqueta_identificacao: 'Etiqueta de identificação',
   etiqueta_envio: 'Etiqueta de envio',
   stretch: 'Stretch',
+  por_pedido: 'Valor por pedido',
 };
 
 /** Linhas do tooltip das embalagens: [rótulo, valor] dos insumos usados no pedido. */
@@ -118,17 +119,47 @@ export function formatDiaMes(iso) {
 }
 
 const MOTIVOS = {
-  fora_do_estudo:
-    'Conta fora do estudo de custo: só Dose Verde e Casa dos Suportes têm custo de produto, preparação e alíquota cadastrados.',
+  fora_do_estudo: 'Margem ainda não configurada para este login: informe a alíquota efetiva em Parâmetros da margem.',
+  sem_cnpj: 'A conta não está ligada a um CNPJ: cadastre o CNPJ em Parâmetros da margem.',
+  regime_nao_declarado: 'O regime tributário deste CNPJ não foi declarado: escolha o regime em Parâmetros da margem.',
+  regime_nao_suportado:
+    'CNPJ fora do Simples Nacional: a margem de Lucro Presumido e Real ainda não é calculada.',
+  sem_aliquota: 'Este CNPJ está sem alíquota efetiva na data da venda: informe-a em Parâmetros da margem.',
   nao_e_venda: 'Pedido cancelado ou não pago: não entra na cascata.',
   antes_da_base: 'Venda anterior a 01/01/2026, início da base de custo.',
   pendente:
     'Venda ainda não calculada: o resultado é recalculado a cada 2 horas (com o Ads do dia) e no sync diário de pedidos.',
 };
 
+/** Motivos que se resolvem na aba "Parâmetros da margem" (MCS-7): o "—" vira link para ela. */
+const MOTIVOS_DE_CONFIGURACAO = new Set(['fora_do_estudo', 'sem_cnpj', 'regime_nao_declarado', 'sem_aliquota']);
+
+/** Rota da aba de parâmetros da margem no Financeiro. */
+export const ROTA_PARAMETROS_MARGEM = { name: 'financeiro', params: { aba: 'parametros-margem' } };
+
 /** Texto do "—" quando o pedido não tem cascata (`resultado_motivo` da API). */
 export function textoMotivo(motivo) {
   return MOTIVOS[motivo] || MOTIVOS.pendente;
+}
+
+/** O "—" deste motivo some configurando a margem? */
+export function motivoPedeConfiguracao(motivo) {
+  return MOTIVOS_DE_CONFIGURACAO.has(motivo);
+}
+
+/** De onde veio a alíquota do pedido (`resultado.origens.aliquota`). */
+export function rotuloOrigemImposto(origem) {
+  if (origem === 'digitada') return 'alíquota digitada';
+  if (origem === 'pgdas') return 'PGDAS';
+  return '';
+}
+
+/** De onde veio produção/embalagem do pedido (`resultado.origens.producao|embalagem`). */
+export function rotuloOrigemCustoPedido(origem) {
+  if (origem === 'simples') return 'valor por pedido';
+  if (origem === 'detalhado') return 'detalhado';
+  if (origem === 'sem_valor') return 'não informado';
+  return '';
 }
 
 /** Motivo da linha: pack do ML usa o primeiro sub-pedido sem resultado. */

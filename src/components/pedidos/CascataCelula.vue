@@ -1,8 +1,11 @@
 <template>
   <!-- Uma coluna da cascata GMV → lucro bruto (CUSTO-14). Sem `resultado`, "—" com o motivo. -->
   <div v-if="!resultado" class="cc cc--vazio">
-    —
-    <q-tooltip class="bg-grey-9" max-width="280px">{{ textoMotivo(motivo) }}</q-tooltip>
+    <router-link v-if="motivoPedeConfiguracao(motivo)" :to="ROTA_PARAMETROS_MARGEM" class="cc-link" @click.stop>—</router-link>
+    <template v-else>—</template>
+    <q-tooltip class="bg-grey-9" max-width="280px">
+      {{ textoMotivo(motivo) }}<template v-if="motivoPedeConfiguracao(motivo)"> Clique para abrir.</template>
+    </q-tooltip>
   </div>
 
   <div v-else-if="coluna === 'lucro_bruto'" class="cc">
@@ -43,7 +46,8 @@
 <script setup>
 import { computed } from 'vue'
 import {
-  COLUNAS_CASCATA, formatAliquota, formatDiaMes, linhasEmbalagens, linhasFrete, margemPct, pctDoGmv, textoMotivo,
+  COLUNAS_CASCATA, ROTA_PARAMETROS_MARGEM, formatAliquota, formatDiaMes, linhasEmbalagens, linhasFrete, margemPct,
+  motivoPedeConfiguracao, pctDoGmv, rotuloOrigemCustoPedido, rotuloOrigemImposto, textoMotivo,
 } from 'src/utils/resultadoPedido'
 
 const props = defineProps({
@@ -51,7 +55,8 @@ const props = defineProps({
   // imposto | receita_liquida | frete | ads | producao | embalagens | produto | lucro_bruto
   coluna: { type: String, required: true },
   canal: { type: String, default: 'ml' },
-  // por que não há cascata: fora_do_estudo | nao_e_venda | antes_da_base | pendente
+  // por que não há cascata: fora_do_estudo | sem_cnpj | regime_nao_declarado | regime_nao_suportado |
+  // sem_aliquota | nao_e_venda | antes_da_base | pendente
   motivo: { type: String, default: null },
 })
 
@@ -61,7 +66,18 @@ const fmtPct = (v) => (v == null ? '—' : `${String(v).replace('.', ',')}%`)
 const r = computed(() => props.resultado || {})
 const valor = computed(() => Number(r.value[props.coluna] || 0))
 const pct = computed(() => pctDoGmv(valor.value, r.value))
+// MCS-7: de onde veio cada parâmetro do pedido (alíquota digitada/PGDAS; produção e embalagem por pedido,
+// detalhado ou não informado).
+const origem = computed(() => {
+  const o = r.value.origens || {}
+  if (props.coluna === 'imposto') return rotuloOrigemImposto(o.aliquota)
+  if (props.coluna === 'producao') return rotuloOrigemCustoPedido(o.producao)
+  if (props.coluna === 'embalagens') return rotuloOrigemCustoPedido(o.embalagem)
+  return ''
+})
+
 const sub = computed(() => {
+  if ((props.coluna === 'producao' || props.coluna === 'embalagens') && origem.value === 'não informado') return 'não informado'
   if (props.coluna === 'imposto') return `${formatAliquota(r.value.aliquota_imposto)} do GMV`
   if (props.coluna === 'produto') return `${r.value.unidades || 0} un.`
   return pct.value == null ? '' : `${String(pct.value).replace('.', ',')}% do GMV`
@@ -80,7 +96,7 @@ const titulo = computed(() => ({
   imposto: 'Imposto (Simples Nacional)',
   frete: 'Frete',
   ads: 'Ads rateado',
-  producao: 'Custo de produção (mão de obra)',
+  producao: 'Custo de produção/processamento',
   embalagens: 'Embalagens',
   produto: 'Custo do produto',
 }[props.coluna] || props.coluna))
@@ -89,14 +105,20 @@ const linhas = computed(() => {
   const x = r.value
   switch (props.coluna) {
     case 'imposto':
-      return [['Alíquota efetiva', formatAliquota(x.aliquota_imposto)], ['Sobre o GMV', Number(x.gmv || 0)]]
+      return [
+        ['Alíquota efetiva', formatAliquota(x.aliquota_imposto)],
+        ...(origem.value ? [['Origem', origem.value]] : []),
+        ['Sobre o GMV', Number(x.gmv || 0)],
+      ]
+    case 'producao':
+      return origem.value ? [['Origem', origem.value]] : []
     case 'frete':
       return [
         ...linhasFrete(x),
         [`Repasse ${marketplace.value}${x.repasse_estimado ? ' (estimado)' : ''}`, Number(x.repasse || 0)],
       ]
     case 'embalagens':
-      return linhasEmbalagens(x)
+      return [...(origem.value ? [['Origem', origem.value]] : []), ...linhasEmbalagens(x)]
     case 'produto': {
       const origens = Object.entries(x.origens_custo || {}).map(([o, q]) => [`origem ${o}`, `${q} un.`])
       return [['Unidades', `${x.unidades || 0}`], ...origens]
@@ -106,7 +128,21 @@ const linhas = computed(() => {
   }
 })
 
-const nota = computed(() => ({
+const NAO_INFORMADO = 'Não informado em Parâmetros da margem: entra como zero.'
+const nota = computed(() => {
+  const o = origem.value
+  if (props.coluna === 'imposto' && o === 'alíquota digitada') return 'Alíquota efetiva digitada em Parâmetros da margem, vigente na data da venda.'
+  if (props.coluna === 'producao' || props.coluna === 'embalagens') {
+    if (o === 'não informado') return NAO_INFORMADO
+    if (o === 'valor por pedido') {
+      return props.coluna === 'producao'
+        ? 'Valor por pedido digitado em Parâmetros da margem, vigente na data da venda.'
+        : 'Valor por pedido digitado em Parâmetros da margem; não entra em venda Full.'
+    }
+  }
+  return notaPadrao.value
+})
+const notaPadrao = computed(() => ({
   imposto: 'DAS ÷ receita bruta das 3 últimas competências do PGDAS (média móvel ~90 dias), do CNPJ da conta.',
   frete: `O que o ${marketplace.value} desconta além das taxas: GMV − taxas − frete = repasse.`,
   ads: `Gasto de Ads da conta no dia × participação deste pedido no GMV do dia.${r.value.ads_parcial ? ' O gasto do dia ainda não chegou; recalcula no próximo sync.' : ''}`,
@@ -119,6 +155,8 @@ const nota = computed(() => ({
 <style scoped>
 .cc { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; white-space: nowrap; cursor: default; }
 .cc--vazio { color: #a0aec0; }
+.cc-link { color: #3182ce; text-decoration: none; padding: 0 4px; }
+.cc-link:hover { text-decoration: underline; }
 .cc-main { font-size: 13px; font-weight: 500; color: #2d3748; font-variant-numeric: tabular-nums; }
 .cc-strong { font-weight: 700; }
 .cc-ded { color: #c05621; }

@@ -56,6 +56,10 @@
           <FinanceiroMargem />
         </q-tab-panel>
 
+        <q-tab-panel name="parametros-margem" class="q-pa-none">
+          <FinanceiroParametrosMargem />
+        </q-tab-panel>
+
         <q-tab-panel name="dre" class="q-pa-none">
           <FinanceiroDre />
         </q-tab-panel>
@@ -137,6 +141,7 @@ import FinanceiroDre from 'src/components/financeiro/FinanceiroDre.vue'
 import FinanceiroLivro from 'src/components/financeiro/FinanceiroLivro.vue'
 import FinanceiroMargem from 'src/components/financeiro/FinanceiroMargem.vue'
 import FinanceiroMarketplace from 'src/components/financeiro/FinanceiroMarketplace.vue'
+import FinanceiroParametrosMargem from 'src/components/financeiro/FinanceiroParametrosMargem.vue'
 import FinanceiroTributos from 'src/components/financeiro/FinanceiroTributos.vue'
 import FinanceiroVisaoGeral from 'src/components/financeiro/FinanceiroVisaoGeral.vue'
 import SbCard from 'src/components/common/SbCard.vue'

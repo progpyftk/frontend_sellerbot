@@ -52,7 +52,8 @@ describe('cascata do pedido (CUSTO-14)', () => {
 describe('motivo do "—" (CUSTO-14)', async () => {
   const { motivoDaLinha, textoMotivo } = await import('src/utils/resultadoPedido')
   it('explica conta fora do estudo e usa o sub-pedido sem resultado do pack', () => {
-    expect(textoMotivo('fora_do_estudo')).toMatch(/fora do estudo/)
+    expect(textoMotivo('fora_do_estudo')).toMatch(/ainda não configurada/)
+    expect(textoMotivo('fora_do_estudo')).not.toMatch(/Dose Verde/)
     expect(textoMotivo(undefined)).toMatch(/2 horas/)
     const pack = { _isPack: true, _packOrders: [{ resultado: {} }, { resultado: null, resultado_motivo: 'pendente' }] }
     expect(motivoDaLinha(pack)).toBe('pendente')
@@ -148,5 +149,37 @@ describe('diaLocalIso (CUSTO-16)', () => {
   it('formata a data local em YYYY-MM-DD', async () => {
     const { diaLocalIso } = await import('src/utils/resultadoPedido')
     expect(diaLocalIso(new Date(2026, 10, 7, 23, 50))).toBe('2026-11-07')
+  })
+})
+
+describe('motivos e origens da margem para todos (MCS-7)', async () => {
+  const {
+    ROTA_PARAMETROS_MARGEM, motivoPedeConfiguracao, rotuloOrigemCustoPedido, rotuloOrigemImposto, textoMotivo,
+  } = await import('src/utils/resultadoPedido')
+
+  it('tem texto próprio para os motivos do MCS-1 e MCS-6', () => {
+    expect(textoMotivo('sem_cnpj')).toMatch(/CNPJ/)
+    expect(textoMotivo('regime_nao_declarado')).toMatch(/regime/)
+    expect(textoMotivo('regime_nao_suportado')).toMatch(/fora do Simples/)
+    expect(textoMotivo('sem_aliquota')).toMatch(/alíquota/)
+  })
+
+  it('só os motivos que se resolvem configurando levam à aba', () => {
+    for (const m of ['fora_do_estudo', 'sem_cnpj', 'regime_nao_declarado', 'sem_aliquota']) {
+      expect(motivoPedeConfiguracao(m)).toBe(true)
+    }
+    for (const m of ['regime_nao_suportado', 'nao_e_venda', 'antes_da_base', 'pendente', null]) {
+      expect(motivoPedeConfiguracao(m)).toBe(false)
+    }
+    expect(ROTA_PARAMETROS_MARGEM).toEqual({ name: 'financeiro', params: { aba: 'parametros-margem' } })
+  })
+
+  it('rotula a origem de cada parâmetro do pedido', () => {
+    expect(rotuloOrigemImposto('digitada')).toBe('alíquota digitada')
+    expect(rotuloOrigemImposto('pgdas')).toBe('PGDAS')
+    expect(rotuloOrigemImposto('')).toBe('')
+    expect(rotuloOrigemCustoPedido('simples')).toBe('valor por pedido')
+    expect(rotuloOrigemCustoPedido('detalhado')).toBe('detalhado')
+    expect(rotuloOrigemCustoPedido('sem_valor')).toBe('não informado')
   })
 })
