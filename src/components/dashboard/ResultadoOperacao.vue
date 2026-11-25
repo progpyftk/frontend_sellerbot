@@ -4,7 +4,7 @@
       <div>
         <div class="rop-title">Resultado da operação</div>
         <div class="rop-note">
-          Margem de contribuição − custo fixo = lucro operacional · empréstimo abaixo da linha
+          Margem de contribuição − custo fixo = lucro operacional · empréstimo e retirada dos sócios abaixo da linha
           <span v-if="resultado && resultado.peso < 0.999">
             · custo fixo ponderado pelo GMV ({{ pct(resultado.peso) }} do total)
           </span>
@@ -60,6 +60,20 @@
             <td class="r" :class="cor(resultado.sobra_caixa)">{{ brl(resultado.sobra_caixa) }}</td>
             <td class="r" :class="cor(resultado.sobra_caixa)">{{ pct(resultado.sobra_caixa_pct) }}</td>
           </tr>
+          <!-- MCS-10: retirada dos sócios é distribuição de lucro — sai depois da sobra de caixa -->
+          <tr class="rop-menos">
+            <td>
+              (−) Retirada dos sócios
+              <a v-if="!readOnly && !resultado.retirada" href="#" class="rop-sub" @click.prevent="$emit('editar')">cadastrar</a>
+            </td>
+            <td class="r">{{ brl(-resultado.retirada) }}</td>
+            <td class="r">{{ pct(resultado.retirada_pct) }}</td>
+          </tr>
+          <tr class="rop-total">
+            <td>= Sobra final</td>
+            <td class="r" :class="cor(resultado.sobra_final)">{{ brl(resultado.sobra_final) }}</td>
+            <td class="r" :class="cor(resultado.sobra_final)">{{ pct(resultado.sobra_final_pct) }}</td>
+          </tr>
         </tbody>
       </table>
 
@@ -67,7 +81,7 @@
         <div class="rop-emp-title">Por empresa <span class="rop-sub">(custo fixo ponderado pelo faturamento)</span></div>
         <table class="rop-table">
           <thead>
-            <tr><th>Empresa</th><th class="r">GMV</th><th class="r">Margem contrib.</th><th class="r">Custo fixo</th><th class="r">Lucro operacional</th><th class="r">Sobra de caixa</th></tr>
+            <tr><th>Empresa</th><th class="r">GMV</th><th class="r">Margem contrib.</th><th class="r">Custo fixo</th><th class="r">Lucro operacional</th><th class="r">Sobra de caixa</th><th class="r">Sobra final</th></tr>
           </thead>
           <tbody>
             <tr v-for="e in porEmpresa" :key="e.chave">
@@ -77,6 +91,7 @@
               <td class="r">{{ brl(-e.r.custo_fixo) }}</td>
               <td class="r" :class="cor(e.r.lucro_operacional)">{{ brl(e.r.lucro_operacional) }} <span class="rop-sub">{{ pct(e.r.lucro_operacional_pct) }}</span></td>
               <td class="r" :class="cor(e.r.sobra_caixa)">{{ brl(e.r.sobra_caixa) }}</td>
+              <td class="r" :class="cor(e.r.sobra_final)">{{ brl(e.r.sobra_final) }}</td>
             </tr>
           </tbody>
         </table>
@@ -104,7 +119,7 @@ const props = defineProps({
 defineEmits(['editar'])
 
 const resultado = computed(() => resultadoOperacao(props.cascata, props.custoFixo, props.gmvTotal))
-const temCustoFixo = computed(() => !!(props.custoFixo && (props.custoFixo.operacional || props.custoFixo.financeiro)))
+const temCustoFixo = computed(() => !!(props.custoFixo && (props.custoFixo.operacional || props.custoFixo.financeiro || props.custoFixo.retirada)))
 const itensOperacionais = computed(() => (props.custoFixo?.itens || []).filter(i => i.grupo === 'operacional' && i.valor))
 const porEmpresa = computed(() => props.empresas
   .map(e => ({ ...e, r: resultadoOperacao(e, props.custoFixo, props.gmvTotal) }))

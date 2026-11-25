@@ -183,3 +183,28 @@ describe('motivos e origens da margem para todos (MCS-7)', async () => {
     expect(rotuloOrigemCustoPedido('sem_valor')).toBe('não informado')
   })
 })
+
+describe('retirada dos sócios (MCS-10)', () => {
+  it('sai depois da sobra de caixa e dá a sobra final, sem mexer na margem nem no lucro operacional', async () => {
+    const { resultadoOperacao } = await import('src/utils/resultadoPedido')
+    const r = resultadoOperacao({ gmv: 1000, lucro_bruto: 150, pedidos: 10 }, { operacional: 70, financeiro: 25, retirada: 40 }, 1000)
+    expect(r.margem_contribuicao).toBe(150)
+    expect(r.lucro_operacional).toBe(80)
+    expect(r.sobra_caixa).toBe(55)
+    expect(r.retirada).toBe(40)
+    expect(r.sobra_final).toBe(15)
+    expect(r.sobra_final_pct).toBeCloseTo(0.015)
+  })
+  it('sem retirada cadastrada, a sobra final é a sobra de caixa', async () => {
+    const { resultadoOperacao } = await import('src/utils/resultadoPedido')
+    const r = resultadoOperacao({ gmv: 1000, lucro_bruto: 150 }, { operacional: 70, financeiro: 25 }, 1000)
+    expect(r.retirada).toBe(0)
+    expect(r.sobra_final).toBe(r.sobra_caixa)
+  })
+  it('é ponderada pelo GMV como o resto do custo fixo', async () => {
+    const { resultadoOperacao } = await import('src/utils/resultadoPedido')
+    const r = resultadoOperacao({ gmv: 300, lucro_bruto: 45 }, { operacional: 100, financeiro: 10, retirada: 50 }, 1000)
+    expect(r.retirada).toBe(15)
+    expect(r.sobra_final).toBe(-3)
+  })
+})

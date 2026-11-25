@@ -4,7 +4,7 @@
       <q-card-section class="cfd-head">
         <div>
           <div class="text-subtitle1 text-weight-bold">Custos fixos mensais</div>
-          <div class="cfd-sub">Um cadastro só para a operação (Dose Verde + Casa). Mudar um valor cria uma nova vigência; o valor antigo fica no histórico.</div>
+          <div class="cfd-sub">Um cadastro para todas as empresas deste login. Mudar um valor cria uma nova vigência; o valor antigo fica no histórico.</div>
         </div>
         <q-btn flat round dense icon="close" v-close-popup />
       </q-card-section>
@@ -63,11 +63,17 @@ const $q = useQuasar()
 const grupos = [
   { key: 'operacional', titulo: 'Custo fixo operacional (antes do lucro operacional)' },
   { key: 'financeiro', titulo: 'Empréstimos (abaixo do lucro operacional)' },
+  { key: 'retirada', titulo: 'Retirada dos sócios (abaixo da sobra de caixa)' },
 ]
-const opcoesGrupo = grupos.map(g => ({ value: g.key, label: g.key === 'operacional' ? 'Custo fixo operacional' : 'Empréstimo (abaixo do lucro operacional)' }))
+const ROTULOS_GRUPO = {
+  operacional: 'Custo fixo operacional',
+  financeiro: 'Empréstimo (abaixo do lucro operacional)',
+  retirada: 'Retirada dos sócios (abaixo da sobra de caixa)',
+}
+const opcoesGrupo = grupos.map(g => ({ value: g.key, label: ROTULOS_GRUPO[g.key] }))
 
 const itens = ref([])
-const totais = reactive({ operacional: 0, financeiro: 0 })
+const totais = reactive({ operacional: 0, financeiro: 0, retirada: 0 })
 const aberto = reactive({})
 const carregando = ref(false)
 const salvando = ref(false)
@@ -85,6 +91,7 @@ async function carregar() {
     itens.value = d.itens || []
     totais.operacional = d.total_operacional
     totais.financeiro = d.total_financeiro
+    totais.retirada = d.total_retirada || 0
   } catch (e) {
     $q.notify({ type: 'negative', message: 'Não foi possível carregar os custos fixos.' })
   } finally {
