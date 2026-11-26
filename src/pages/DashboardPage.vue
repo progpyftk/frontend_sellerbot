@@ -253,7 +253,7 @@
         >
           <template #info>
             <q-icon name="help_outline" size="12px" class="kpi-info">
-              <q-tooltip max-width="240px" class="kpi-tooltip-pop">GMV menos o imposto (alíquota efetiva do Simples, média móvel de 90 dias, por CNPJ). Só contas de CNPJ do Simples com a margem configurada (Financeiro → Parâmetros da margem).</q-tooltip>
+              <q-tooltip max-width="240px" class="kpi-tooltip-pop">GMV menos o imposto (alíquota efetiva do CNPJ: a digitada em Parâmetros da margem ou, sem ela, a das PGDAS, média de 90 dias). Só contas de CNPJ do Simples com a margem configurada (Financeiro → Parâmetros da margem).</q-tooltip>
             </q-icon>
           </template>
         </SbKpiCard>
@@ -423,7 +423,15 @@
       <!-- Cascata do período, coluna a coluna (CUSTO-14) -->
       <div v-if="cascata" class="cascata-dash">
         <div class="cascata-dash-title">
-          Cascata do período <span class="cascata-dash-note">ML + Shopee · contas com a margem configurada</span>
+          <span>Cascata do período <span class="cascata-dash-note">ML + Shopee · contas com a margem configurada</span></span>
+          <!-- MCS-11: atalho para editar alíquota, produção e embalagem (a edição fica na aba do Financeiro) -->
+          <q-btn
+            v-if="!authStore.isReadOnly"
+            flat dense no-caps size="sm" icon="edit" label="Parâmetros da margem" color="primary"
+            :to="ROTA_PARAMETROS_MARGEM"
+          >
+            <q-tooltip>Editar alíquota efetiva, produção/processamento e embalagem de cada CNPJ</q-tooltip>
+          </q-btn>
         </div>
         <CascataKpis :kpis="cascata" canal="ml" />
       </div>
@@ -3874,7 +3882,7 @@ watch(selectedAccountKeys, () => {
 
 /* ── KPI Grid header ────────────────────────────────────────────────────── */
 .cascata-dash { margin-top: 12px; background: #fff; border-radius: 12px; padding: 10px 4px 6px; }
-.cascata-dash-title { font-size: 12px; font-weight: 700; color: #2d3748; padding: 0 16px; }
+.cascata-dash-title { font-size: 12px; font-weight: 700; color: #2d3748; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .cascata-dash-note { font-weight: 400; color: #a0aec0; margin-left: 6px; }
 .cascata-dash--vazia { display: flex; align-items: center; gap: 6px; padding: 10px 16px; font-size: 12.5px; color: #4a5568; }
 .cascata-dash--vazia a, .today-kpi-link { color: #3182ce; text-decoration: none; }
