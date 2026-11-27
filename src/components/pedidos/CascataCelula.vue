@@ -145,7 +145,7 @@ const nota = computed(() => {
 const notaPadrao = computed(() => ({
   imposto: 'DAS ÷ receita bruta das 3 últimas competências do PGDAS (média móvel ~90 dias), do CNPJ da conta.',
   frete: `O que o ${marketplace.value} desconta além das taxas: GMV − taxas − frete = repasse.`,
-  ads: `Gasto de Ads da conta no dia × participação deste pedido no GMV do dia.${r.value.ads_parcial ? ' O gasto do dia ainda não chegou; recalcula no próximo sync.' : ''}`,
+  ads: `Gasto do dia das campanhas que anunciam os produtos deste pedido, dividido entre as vendas desses anúncios; o que nenhuma venda de anúncio cobriu (ex.: Shopee GMV Max) entra pela participação no GMV da conta no dia.${r.value.ads_parcial ? ' O gasto do dia ainda não chegou; recalcula no próximo sync.' : ''}`,
   producao: `Mão de obra de preparação por pedido (média móvel de 90 dias, rates de ${formatDiaMes(r.value.snapshot_data)}).`,
   embalagens: `Saco e etiqueta de identificação se fracionado; etiqueta de envio se postado; stretch se postado. Rates de ${formatDiaMes(r.value.snapshot_data)}.`,
   produto: 'Custo médio do Tiny vigente na data da venda, com o frete de compra lançado na nota.',
