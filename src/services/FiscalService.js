@@ -185,6 +185,10 @@ export default {
     });
   },
 
+  /** UF, inscrição estadual e regime especial de ICMS do CNPJ (MCR-3). Só o dono grava; ausente = não muda. */
+  salvarDadosIcmsCnpj(cnpjId, payload) {
+    return api.patch(`/api/fiscal/cnpjs/${cnpjId}/dados-icms/`, payload);
+  },
   /** Histórico do regime tributário do CNPJ (MCS-1). */
   getRegimeCnpj(cnpjId) {
     return api.get(`/api/fiscal/cnpjs/${cnpjId}/regime/`);

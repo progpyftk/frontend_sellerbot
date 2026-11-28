@@ -26,7 +26,36 @@ export const TEXTO_VIGENCIA =
   'Vale para as vendas a partir de hoje. As vendas anteriores continuam com o valor da época.';
 
 export const TEXTO_FORA_DO_SIMPLES =
-  'A margem deste CNPJ chega com a sprint de Lucro Presumido e Real. Por enquanto só o Simples Nacional tem margem calculada.';
+  'A margem do Lucro Real e do Presumido está em construção (projeção pelas regras de 2027). Preencha o cadastro fiscal abaixo: é dele que o cálculo vai ler o ICMS e os créditos.';
+
+/** MCR-3: Lucro Real e Presumido têm o cadastro fiscal do regime regular. */
+export function regimeRegular(regime) {
+  return regime === 'real' || regime === 'presumido';
+}
+
+export const UFS = [
+  'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA',
+  'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO',
+];
+
+/** Situação da alíquota no cadastro do regime regular (`status` da API). */
+export function rotuloStatusAliquota(status) {
+  return {
+    lei: 'Fixada em lei',
+    parametro: 'Parâmetro — aguarda o ato oficial',
+    divergente: 'Fontes divergem',
+    nao_verificado: 'Não verificada',
+  }[status] || '—';
+}
+
+export function varianteStatusAliquota(status) {
+  return status === 'lei' ? 'green' : status === 'parametro' ? 'sky' : 'amber';
+}
+
+/** Corpo do POST das frações de crédito (`icms_recuperavel`, `credito_simples`), digitadas em %. */
+export function payloadFracao(tipo, cnpjId, texto) {
+  return { tipo, cnpj_id: cnpjId, percentual: numeroDigitado(texto) };
+}
 
 export const TEXTO_EMBALAGEM_FULL = 'Não entra em venda Full (a embalagem é do marketplace).';
 
@@ -162,7 +191,13 @@ export function passosConfiguracao(dados) {
   return { passos, atual, pronto };
 }
 
-const ROTULOS_TIPO = { aliquota: 'Alíquota efetiva', producao: 'Produção/processamento', embalagem: 'Embalagem' };
+const ROTULOS_TIPO = {
+  aliquota: 'Alíquota efetiva',
+  producao: 'Produção/processamento',
+  embalagem: 'Embalagem',
+  icms_recuperavel: 'ICMS recuperável no custo',
+  credito_simples: 'Crédito de compras do Simples',
+};
 
 /** Linhas da tabela de histórico, com o CNPJ resolvido e o valor formatado pelo tipo. */
 export function linhasHistorico(historico, cnpjs) {
@@ -171,7 +206,7 @@ export function linhasHistorico(historico, cnpjs) {
     const c = porId[h.cnpj_id];
     let valor;
     if (h.modo === 'detalhado') valor = 'Detalhado';
-    else if (h.tipo === 'aliquota') valor = formatPct(h.valor);
+    else if (h.tipo === 'aliquota' || h.tipo === 'icms_recuperavel' || h.tipo === 'credito_simples') valor = formatPct(h.valor);
     else valor = `${formatReais(h.valor)} por pedido`;
     return {
       id: h.id,

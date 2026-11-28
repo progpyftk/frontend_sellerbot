@@ -77,6 +77,16 @@
 
         <div v-if="c.regime && !regimeTemMargem(c.regime)" class="fpm-aviso">{{ TEXTO_FORA_DO_SIMPLES }}</div>
 
+        <CadastroRegimeRegular
+          v-if="regimeRegular(c.regime) && c.regime_regular"
+          :cnpj="c"
+          :read-only="readOnly"
+          :salvando="salvando"
+          @salvar-icms="(corpo) => salvarDadosIcms(c, corpo)"
+          @salvar-fracao="(tipo, e) => salvarFracao(tipo, c.id, e)"
+          @encerrar-fracao="(tipo) => encerrar(tipo, c.id)"
+        />
+
         <template v-if="regimeTemMargem(c.regime)">
           <CampoParametro
             titulo="Alíquota efetiva"
@@ -166,11 +176,13 @@
 
 <script setup>
 // Aba "Parâmetros da margem" do Financeiro (ticket MCS-7). Lê e grava o que o backend já entrega
-// (MCS-1 a 6): regime por CNPJ, alíquota efetiva, produção/processamento e embalagem por pedido.
+// (MCS-1 a 6): regime por CNPJ, alíquota efetiva, produção/processamento e embalagem por pedido; e, no
+// Lucro Real e no Presumido, o cadastro fiscal do regime regular (MCR-3, `CadastroRegimeRegular`).
 // Regras de apresentação em `utils/parametrosMargem.js`; nenhum custo é calculado aqui.
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 
+import CadastroRegimeRegular from 'src/components/financeiro/parametros/CadastroRegimeRegular.vue'
 import CampoParametro from 'src/components/financeiro/parametros/CampoParametro.vue'
 import SbBadge from 'src/components/common/SbBadge.vue'
 import SbCard from 'src/components/common/SbCard.vue'
@@ -183,7 +195,7 @@ import { diaLocalIso } from 'src/utils/resultadoPedido'
 import {
   REGIMES, TEXTO_EMBALAGEM_FULL, TEXTO_FORA_DO_SIMPLES, TEXTO_VIGENCIA, custoDoCnpj, formatCnpj, formatData,
   formatPct, formatReais, fracaoParaCampoPct, linhasHistorico, mensagemErro, passosConfiguracao, payloadAliquota,
-  payloadCusto, reaisParaCampo, regimeTemMargem, rotuloOrigemAliquota, rotuloOrigemCusto, rotuloRegime,
+  payloadCusto, payloadFracao, reaisParaCampo, regimeRegular, regimeTemMargem, rotuloOrigemAliquota, rotuloOrigemCusto, rotuloRegime,
 } from 'src/utils/parametrosMargem'
 
 const TIPOS_CUSTO = [
@@ -278,6 +290,14 @@ function salvar(tipo, cnpjId, { modo, texto }) {
   return executar(`${tipo}-${cnpjId || 'geral'}`, () => FinanceiroService.salvarParametroMargem(corpo), `Salvo. ${TEXTO_VIGENCIA}`)
 }
 
+function salvarFracao(tipo, cnpjId, { texto }) {
+  return executar(`${tipo}-${cnpjId}`, () => FinanceiroService.salvarParametroMargem(payloadFracao(tipo, cnpjId, texto)), `Salvo. ${TEXTO_VIGENCIA}`)
+}
+
+function salvarDadosIcms(c, corpo) {
+  return executar(`icms-${c.id}`, () => FiscalService.salvarDadosIcmsCnpj(c.id, corpo), 'Dados de ICMS salvos.')
+}
+
 function ontem() {
   const d = new Date()
   d.setDate(d.getDate() - 1)
@@ -285,7 +305,9 @@ function ontem() {
 }
 
 function encerrar(tipo, cnpjId) {
-  const mensagem = tipo === 'aliquota'
+  const mensagem = tipo === 'icms_recuperavel' || tipo === 'credito_simples'
+    ? 'O valor deixa de valer a partir de hoje. As vendas anteriores não mudam.'
+    : tipo === 'aliquota'
     ? 'A alíquota digitada deixa de valer a partir de hoje; volta a valer a sugestão das PGDAS, quando houver. As vendas anteriores não mudam.'
     : cnpjId
       ? 'O valor deste CNPJ deixa de valer a partir de hoje e passa a valer o de todos os CNPJs. As vendas anteriores não mudam.'

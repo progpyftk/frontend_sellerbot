@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   custoDoCnpj, formatCnpj, formatPct, fracaoParaCampoPct, linhasHistorico, mensagemErro, numeroDigitado,
   passosConfiguracao, payloadAliquota, payloadCusto, reaisParaCampo, regimeTemMargem, rotuloOrigemAliquota,
-  rotuloOrigemCusto, rotuloRegime, validarPercentual, validarReais,
+  rotuloOrigemCusto, rotuloRegime, validarPercentual, validarReais, payloadFracao, regimeRegular, rotuloStatusAliquota,
+  varianteStatusAliquota, UFS,
 } from 'src/utils/parametrosMargem'
 
 const semValor = { origem: 'sem_valor', modo: 'simples', valor: null, registro: null }
@@ -133,5 +134,29 @@ describe('histórico', () => {
     expect(linhas[1]).toMatchObject({ cnpj: 'Todos os CNPJs', ate: '30/11/2026', quem: '—' })
     expect(linhas[1].valor).toMatch(/0,90 por pedido/)
     expect(linhas[2].valor).toBe('Detalhado')
+  })
+})
+
+describe('cadastro do regime regular (MCR-3)', () => {
+  it('só Real e Presumido têm o cadastro', () => {
+    expect(regimeRegular('real')).toBe(true)
+    expect(regimeRegular('presumido')).toBe(true)
+    expect(regimeRegular('simples')).toBe(false)
+    expect(regimeRegular(null)).toBe(false)
+  })
+  it('frações de crédito vão em percentual', () => {
+    expect(payloadFracao('icms_recuperavel', 7, '4,5')).toEqual({ tipo: 'icms_recuperavel', cnpj_id: 7, percentual: 4.5 })
+  })
+  it('status das alíquotas e as 27 UFs', () => {
+    expect(rotuloStatusAliquota('parametro')).toMatch(/aguarda/)
+    expect(varianteStatusAliquota('lei')).toBe('green')
+    expect(varianteStatusAliquota('nao_verificado')).toBe('amber')
+    expect(UFS).toHaveLength(27)
+  })
+  it('histórico mostra as frações em %', () => {
+    const [l] = linhasHistorico([{ id: 1, tipo: 'credito_simples', cnpj_id: null, modo: 'simples', valor: '0.035000',
+      vigencia_de: '2026-11-27', vigencia_ate: null }], [])
+    expect(l.valor).toBe('3,50%')
+    expect(l.tipo).toBe('Crédito de compras do Simples')
   })
 })
